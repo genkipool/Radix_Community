@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Rola } from '@radixdlt/rola';
 import { z } from 'zod';
 import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
+import { verifyRolaProofs } from '@/services/rola/verify';
+import { gatewayOwnerKeys } from '@/services/rola/gateway';
 
 const bodySchema = z.object({
   networkId: z.union([z.literal(1), z.literal(2)]),
@@ -11,8 +12,8 @@ const bodySchema = z.object({
       type: z.enum(['account', 'persona']),
       address: z.string().min(10).max(120),
       proof: z.object({
-        publicKey: z.string(),
-        signature: z.string(),
+        publicKey: z.string().max(200),
+        signature: z.string().max(300),
         curve: z.enum(['curve25519', 'secp256k1']),
       }),
     }),
@@ -21,7 +22,8 @@ const bodySchema = z.object({
 
 /**
  * Stateless ROLA verification for the wallet playground: checks ownership
- * proofs without creating any session or cookie.
+ * proofs (accounts and personas) without creating any session or cookie, and
+ * explains every failure.
  */
 export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
@@ -36,24 +38,14 @@ export async function POST(req: NextRequest) {
   }
 
   const config = NETWORKS[networkId as RadixNetworkId];
-  const { verifySignedChallenge } = Rola({
+  const results = await verifyRolaProofs({
     networkId: config.networkId,
-    applicationName: 'Radix Community',
     dAppDefinitionAddress: config.dAppDefinitionAddress,
-    expectedOrigin,
+    origin: expectedOrigin,
+    challenge,
+    proofs: items,
+    ownerKeys: gatewayOwnerKeys(networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'),
   });
-
-  const results = await Promise.all(
-    items.map(async (item) => {
-      const result = await verifySignedChallenge({
-        type: item.type,
-        challenge,
-        proof: item.proof,
-        address: item.address,
-      });
-      return { address: item.address, verified: result.isOk() };
-    }),
-  );
 
   return NextResponse.json({ results });
 }

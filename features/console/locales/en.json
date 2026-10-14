@@ -936,72 +936,142 @@
         }
       },
       "wallet-playground": {
-        "title": "Wallet Playground",
-        "description": "Experiment with Radix Wallet data requests: ask for accounts with ownership proofs and verify them with ROLA, like a real dApp.",
+        "title": "Wallet Lab",
+        "description": "Try every request a dApp can send to the Radix Wallet: one-time data, persona login and proofs of ownership. See the exact JSON sent and received, and verify every signature with ROLA.",
         "guide": {
-          "guideTitle": "Guide: Wallet Playground",
-          "guideDescription": "The ultimate simulation tool for Front-End and Web3 developers. This utility lets you act as a 'customs agent', attempting to request private user data from the connected wallet exactly as a real DApp (like an exchange or web3 game) would.",
+          "guideTitle": "Guide: Wallet Lab",
+          "guideDescription": "A test bench for dApp developers. Build any request the Radix Wallet supports, send it to your phone and study the real response, without touching your session on this site.",
           "guideSteps": [
-            "1. Request Mode: Select the desired intrusion level. Request simple 'Accounts' (knowing where to charge/pay), escalate to 'Persona' (abstract identity), or even private data like linked Emails/Phones.",
-            "2. Authentication Parameters: Decide if requested accounts/data must be accompanied by strict cryptographic proof (ROLA), demanding the user's phone sign an unmistakable digital declaration.",
-            "3. Send Request (Dapp-to-Wallet): Click 'Send Request'. Watch your mobile phone; the native Radix Connect system interface will pop up asking end-user permission.",
-            "4. Response Analysis: Approve the request on your phone. Your computer's console will print the security JSON packet returned by the wallet, allowing you to program your DApp based on real structures."
+            "1. Request type: pick one-time data (accounts and persona data, just once), persona login (with a signed challenge, without one, or reusing the session persona) or proof of ownership (the wallet signs with accounts you already know, nothing to pick).",
+            "2. What to ask for: choose how many addresses you want. Click the selected number again to ask for none: that way you can send a challenge only the persona signs, sharing no address.",
+            "3. Check the JSON: the request.json button always shows what is about to be sent. Once sent, it is replaced by the real interaction with its id and challenge.",
+            "4. Send it and approve on the phone. The response.json button shows what the wallet returned and every signature is verified automatically with ROLA, like a dApp backend would, explaining why if one fails."
           ],
           "glossary": [
             {
-              "term": "ROLA (Radix Off-Ledger Authentication)",
-              "definition": "A security standard where the wallet proves account ownership without making a financial network transaction; akin to showing an ID card instead of paying with a bank card."
-            },
-            {
-              "term": "DApp (Decentralized Application)",
-              "definition": "A conventional web application holding direct, two-way communication capabilities with cryptocurrency networks and smart contracts, bypassing intermediary servers."
-            },
-            {
+              "group": "Basics",
               "term": "Persona",
-              "definition": "A Radix Wallet exclusive concept. An abstract mobile identity (e.g., 'Business Profile' or 'Gamer Profile') linking specific accounts without exposing your entire wealth."
+              "definition": "An identity the user creates inside the Radix Wallet to log in to dApps, for example \"Personal\" or \"Work\". It is not an account and holds no funds: it is who you log in as. Data (name, emails, phones) can be attached to a persona and each dApp only sees what the user chooses to share.",
+              "example": "Example: you log in to an exchange as \"Work\" and share only your savings account."
+            },
+            {
+              "group": "Basics",
+              "term": "Challenge",
+              "definition": "32 random bytes the dApp generates right before asking for a signature. The wallet signs the challenge together with the dApp address and its web origin. The signature is therefore only valid for this site and this request: copying it to another site or replaying it later does not work.",
+              "example": "Example: 8f3a…c91e, a different value on every send."
+            },
+            {
+              "group": "Basics",
+              "term": "ROLA (Radix Off-Ledger Authentication)",
+              "definition": "The standard way to prove, with no transaction and no fees, that the user controls a persona or an account. The wallet signs the challenge and the dApp checks the signature on its server before trusting it."
+            },
+            {
+              "group": "Request types",
+              "term": "One-time data",
+              "definition": "Asks for accounts or persona data just once, without logging in and without a persona. It is what a dApp uses when it only needs to know which account to send something to.",
+              "example": "Example: a giveaway site asks for 1 account to send you the prize."
+            },
+            {
+              "group": "Request types",
+              "term": "Login",
+              "definition": "The user logs in with a persona. It can also share accounts and data, once or on an ongoing basis. It is the basis of a session in a dApp.",
+              "example": "Example: the persona signs a challenge and shares its name on an ongoing basis."
+            },
+            {
+              "group": "Request types",
+              "term": "Proof of ownership",
+              "definition": "The dApp already knows the addresses (for example, from an earlier login) and asks them to sign the challenge, with nothing for the user to pick. It is used to check ownership again later. It requires the session persona.",
+              "example": "Example: before a sensitive action, the dApp asks the account it already knows to sign again."
+            },
+            {
+              "group": "Request types",
+              "term": "Why only one type at a time",
+              "definition": "Each request carries a single identification mode: no persona (one-time data), picking a persona (login) or reusing the known persona (proof of ownership). The wallet does not accept two modes in the same request, so the types are exclusive."
+            },
+            {
+              "group": "Request options",
+              "term": "Number of addresses",
+              "definition": "How many accounts are requested. \"At least\" lets the user share more; \"Exactly\" makes them pick that number. If you mark none, the request asks for no address."
+            },
+            {
+              "group": "Request options",
+              "term": "Persona signature and account signatures",
+              "definition": "Two different proofs that can be asked for separately or together. \"Persona signs a challenge\" proves who logs in. \"Account signatures\" prove the user controls every account shared, not just that it knows its address."
+            },
+            {
+              "group": "Request options",
+              "term": "Duration: just this time",
+              "definition": "The data arrives in this response and the wallet keeps nothing. If the dApp needs it again it must ask again and the user picks again.",
+              "example": "Example: asking for an email to send a single receipt."
+            },
+            {
+              "group": "Request options",
+              "term": "Duration: ongoing",
+              "definition": "The wallet remembers which accounts and data the user shared with this dApp and sends them on every login without asking again, until they are reset. It only exists with a login, because it is tied to the persona.",
+              "example": "Example: a dApp that always shows your name and accounts when you log in."
+            },
+            {
+              "group": "Request options",
+              "term": "Reset",
+              "definition": "Asks the wallet to forget what it shares with the dApp on an ongoing basis, so the user picks accounts or data again."
+            },
+            {
+              "group": "Verification",
+              "term": "Server-side verification",
+              "definition": "As soon as the answer arrives, the site verifies every signature the way a dApp backend must: it checks that it matches the challenge, this dApp and this origin, and that the signing key really controls the persona or account. The result shows in the table, in the ROLA column and in the \"ROLA verification\" row."
+            },
+            {
+              "group": "Verification",
+              "term": "owner_keys and virtual address",
+              "definition": "owner_keys is ledger metadata with the hashes of the keys that control an account or persona. If the signing key is listed there, the proof is valid. If the entity has no owner_keys yet, it is accepted when its address derives directly from that key."
+            },
+            {
+              "group": "Verification",
+              "term": "request.json and response.json",
+              "definition": "request.json is the exact interaction the wallet receives; before sending you see a preview and, once sent, it shows its real id and challenge. response.json is what the wallet returned, as is, so you can build your dApp on real data."
             }
           ],
           "example": [
+            {
+              "field": "Request type",
+              "type": "button-group",
+              "options": [
+                "One-time data",
+                "Login",
+                "Proof of ownership"
+              ],
+              "selected": "Login"
+            },
+            {
+              "field": "Persona login",
+              "type": "button-group",
+              "options": [
+                "Persona signs a challenge",
+                "No signature",
+                "Session persona"
+              ],
+              "selected": "Persona signs a challenge"
+            },
             {
               "field": "Number of addresses",
               "type": "button-group",
               "options": [
                 "1",
                 "2",
-                "3"
+                "3",
+                "4",
+                "5"
               ],
-              "selected": "1"
+              "selected": []
             },
             {
-              "field": "",
+              "field": "Duration",
               "type": "button-group",
               "options": [
-                "At least",
-                "Exactly"
+                "Ongoing",
+                "Just this time"
               ],
-              "selected": "Exactly"
-            },
-            {
-              "field": "Proof of ownership (ROLA)",
-              "type": "button-group",
-              "options": [
-                "No proof",
-                "With proof"
-              ],
-              "selected": "No proof"
-            },
-            {
-              "field": "Persona data",
-              "type": "button-group",
-              "options": [
-                "Full name",
-                "Email",
-                "Phone"
-              ],
-              "selected": [
-                "Full name",
-                "Email"
-              ]
+              "selected": "Ongoing"
             }
           ]
         }
@@ -3039,32 +3109,145 @@
       }
     },
     "walletPlayground": {
-      "configTitle": "Data request",
-      "configHint": "Builds a one-time data request, exactly like a dApp integrating the Radix Wallet would. It does not affect your session.",
-      "dataToRequest": "Data to request",
-      "dataAccounts": "Number of addresses",
-      "dataPersonaData": "Persona Data",
+      "configTitle": "Wallet request",
+      "configHint": "Build any request a dApp can send to the Radix Wallet. It leaves through an isolated channel, so it does not affect your session.",
+      "kindTitle": "Request type",
+      "kinds": {
+        "oneTime": {
+          "title": "One-time data",
+          "desc": "Accounts and persona data just once, without logging in."
+        },
+        "login": {
+          "title": "Login",
+          "desc": "The user picks a persona; it may sign a challenge and share data."
+        },
+        "proof": {
+          "title": "Proof of ownership",
+          "desc": "The wallet signs with accounts or the persona you already know."
+        }
+      },
+      "authTitle": "Persona login",
+      "authHint": "What the persona the user logs in with has to do.",
+      "authChallenge": "Persona signs a challenge",
+      "authChallengeHint": "The persona signs the challenge (ROLA): it proves who it is without sharing any address. This is the persona's signature, not the accounts'.",
+      "authNoChallenge": "No signature",
+      "authNoChallengeHint": "The user picks a persona but signs nothing: the dApp knows which persona it claims to be, without proof.",
+      "authUsePersona": "Session persona",
+      "authUsePersonaHint": "Reuses the persona you are already logged in with on this site, without picking it again.",
+      "accountsTitle": "Number of addresses",
+      "accountsHint": "Click the selected number again to ask for no address.",
+      "atLeast": "At least",
+      "atLeastHint": "The user may share more than requested",
+      "exactly": "Exactly",
+      "exactlyHint": "The user must share exactly this number",
+      "proofLabel": "Account signatures (ROLA)",
+      "proofHint": "If every shared account also signs the challenge, the dApp can check server-side that the user controls those accounts, not just that it knows their addresses. It is independent of the persona's signature.",
+      "proofOff": "No signature",
+      "proofOffHint": "Only the addresses are shared",
+      "proofOn": "With signature",
+      "proofOnHint": "Every account signs the challenge, proving the user controls it",
+      "scopeLabel": "Duration",
+      "scopeHint": "Just this time: the data arrives in this response and the wallet does not remember it. Ongoing: the wallet remembers what the user shared and sends it again on every login without asking, until it is reset.",
+      "scopeOneTime": "Just this time",
+      "scopeOneTimeHint": "The dApp gets the data in this response and nothing more",
+      "scopeOngoing": "Ongoing",
+      "scopeOngoingHint": "The wallet remembers what was shared and sends it on every login",
+      "personaDataTitle": "Persona data",
+      "personaDataHint": "Persona data the user chooses to share. Click again to remove a field.",
       "personaDataName": "Full name",
       "personaDataEmail": "Email",
       "personaDataPhone": "Phone",
-      "atLeast": "At least",
-      "atLeastHint": "The user may share more accounts than requested",
-      "exactly": "Exactly",
-      "exactlyHint": "The user must share exactly this number of accounts",
-      "proofLabel": "Ownership proof (ROLA)",
-      "proofOff": "Without proof",
-      "proofOffHint": "Only asks for the account addresses",
-      "proofOn": "With proof",
-      "proofOnHint": "The wallet signs a challenge proving the user owns the accounts",
+      "emailsLabel": "Email addresses",
+      "phonesLabel": "Phone numbers",
+      "resetTitle": "Reset what is shared",
+      "resetHint": "Asks the wallet to forget what it already shares with this dApp and ask again.",
+      "resetAccounts": "Accounts",
+      "resetPersonaData": "Persona data",
+      "proofAccountsTitle": "Accounts to prove",
+      "proofAccountsHint": "Your session accounts. Mark the ones that must sign the challenge.",
+      "proofIdentity": "Include the persona",
+      "proofIdentityHint": "The session persona signs the challenge too",
+      "proofPersonaBug": "Because of a Radix Wallet bug, a proof of the persona alone never completes (\"Verify persona\" keeps coming back). That is why at least one account must be marked too. To have only the persona sign, use Login with a signed challenge.",
+      "proofNoAccounts": "Your session has no shared accounts.",
+      "sessionPersona": "Session persona",
+      "requestJson": "request.json",
+      "responseJson": "response.json",
+      "requestJsonHint": "Interaction sent to the wallet",
+      "responseJsonHint": "Response returned by the wallet",
+      "previewNote": "Preview: the id and the challenge are generated when sending.",
+      "pendingValue": "(generated on send)",
+      "sentNote": "Interaction sent to the wallet.",
+      "responseEmpty": "No response yet. Send a request.",
+      "parsedNote": "Data as the dApp toolkit hands it over.",
+      "copyJson": "Copy JSON",
       "requestButton": "Send to wallet",
-      "requestHint": "Opens the Radix Wallet with this data request",
+      "requestHint": "Opens the Radix Wallet with this request",
+      "waitingHint": "Approve or reject the request on your phone.",
+      "stopWaiting": "Stop waiting",
       "responseTitle": "Wallet response",
-      "accountsReceived": "Accounts received",
-      "rolaButton": "Verify proofs (ROLA)",
-      "rolaHint": "Verifies the signatures server-side, like a dApp backend would",
-      "rolaOkHint": "Ownership proof verified",
-      "rolaFailHint": "The proof could not be verified",
-      "rawResponse": "Raw response (JSON)"
+      "proofsCount": "{count} signatures over the challenge",
+      "proofsCountOne": "1 signature over the challenge",
+      "nothingShared": "No account or data was shared.",
+      "challengeLabel": "Challenge",
+      "rolaRow": "ROLA verification",
+      "rolaVerifying": "Verifying…",
+      "rolaOk": "Verified",
+      "rolaFail": "Invalid",
+      "rolaAllOk": "Every signature is valid",
+      "rolaSomeFail": "Some signatures fail verification",
+      "rolaMethods": {
+        "ownerKeys": "The key is listed in the entity's owner_keys",
+        "derivedAddress": "The virtual address derives from the key"
+      },
+      "rolaReasons": {
+        "invalidChallenge": "The challenge is not 32 bytes of hex",
+        "typeMismatch": "The proof type does not match the address",
+        "malformedProof": "The public key or the signature is malformed",
+        "invalidSignature": "The signature does not match this challenge, dApp and origin",
+        "keyNotInOwnerKeys": "The key is not listed in the entity's owner_keys",
+        "addressNotDerivedFromKey": "The address does not derive from the key and has no owner_keys",
+        "ledgerUnavailable": "The ledger could not be queried"
+      },
+      "proofType": {
+        "account": "Account",
+        "persona": "Persona"
+      },
+      "issues": {
+        "empty": "Pick at least one address or one persona data field.",
+        "personaDataEmpty": "Mark at least one persona data field or clear the section.",
+        "ongoingNeedsPersona": "Ongoing data requires logging in with a persona.",
+        "resetNeedsPersona": "Reset requires logging in with a persona.",
+        "proofNeedsPersona": "A proof of ownership requires the session persona.",
+        "proofEmpty": "Mark at least one account or include the persona.",
+        "proofPersonaNeedsAccount": "Mark at least one account too: the wallet does not complete a proof when only the include-persona option is selected.",
+        "identityMissing": "There is no persona in the session: log in on this site first.",
+        "challengeMissing": "The challenge to sign is missing."
+      },
+      "errors": {
+        "rejectedByUser": "You rejected the request in the wallet.",
+        "canceledByUser": "The request was cancelled.",
+        "wrongNetwork": "The wallet is on another network. Switch it in Settings > App Settings > Gateways.",
+        "invalidPersona": "The wallet does not know that persona for this dApp.",
+        "invalidRequest": "The wallet found the request invalid.",
+        "incompatibleVersion": "The wallet version does not support this request.",
+        "failedToPrepareResponse": "The wallet could not prepare the response.",
+        "failedToSignAuthChallenge": "The wallet could not sign the challenge.",
+        "failedToFindAccount": "The wallet could not find one of the given accounts.",
+        "unknownWebsite": "The wallet could not verify this website.",
+        "radixJsonNotFound": "The radix.json file of this site was not found.",
+        "unknownDappDefinitionAddress": "The wallet does not know the dApp definition address.",
+        "invalidOriginURL": "The request origin is not valid for the wallet.",
+        "walletRequestValidation": "The request is not well formed.",
+        "walletResponseValidation": "The wallet response is not well formed.",
+        "missingExtension": "The Radix connector was not found in the browser.",
+        "SupportedTransportNotFound": "There is no way to reach the wallet: install the connector or open the site on your phone.",
+        "toolkitUnavailable": "The wallet toolkit is not configured for this network.",
+        "verifyFailed": "The verifier could not be reached.",
+        "generic": "The wallet returned an unexpected error."
+      },
+      "colType": "Type",
+      "colValue": "Value",
+      "colRola": "ROLA"
     },
     "staking": {
       "accountTitle": "Account",

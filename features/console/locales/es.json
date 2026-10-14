@@ -936,72 +936,142 @@
         }
       },
       "wallet-playground": {
-        "title": "Playground de Wallet",
-        "description": "Experimenta con las solicitudes de datos de la Radix Wallet: pide cuentas con pruebas de propiedad y verifícalas con ROLA, como una dApp real.",
+        "title": "Laboratorio de la billetera",
+        "description": "Prueba todas las solicitudes que una dApp puede enviar a la Radix Wallet: datos puntuales, inicio de sesión con persona y pruebas de propiedad. Mira el JSON exacto que se envía y el que vuelve, y verifica cada firma con ROLA.",
         "guide": {
-          "guideTitle": "Guía: Playground de Wallet",
-          "guideDescription": "La herramienta de simulación para desarrolladores Front-End y Web3. Esta utilidad te permite hacer de 'agente de aduanas' e intentar solicitar a la billetera conectada datos privados del usuario, de la misma forma que lo haría una DApp real como un exchange o un videojuego web3.",
+          "guideTitle": "Guía: Laboratorio de la billetera",
+          "guideDescription": "Un banco de pruebas para desarrolladores de dApps. Construye cualquier solicitud que admite la Radix Wallet, envíala a tu teléfono y estudia la respuesta real, sin tocar tu sesión en esta web.",
           "guideSteps": [
-            "1. Modo de Petición: Selecciona qué nivel de intrusión quieres pedir. Puedes pedir simplemente 'Cuentas' (para saber a dónde cobrar/pagar), o subir el nivel pidiendo 'Persona' (identidad abstracta), e incluso datos privados como Correos Electrónicos o Teléfonos asociados.",
-            "2. Parámetros de Autenticación: Decide si las cuentas o datos solicitados deben venir acompañados de una prueba criptográfica estricta (ROLA), exigiendo al usuario que el teléfono firme una declaración digital inconfundible.",
-            "3. Envío de Petición (Dapp-to-Wallet): Pulsa 'Enviar Petición'. Observa tu teléfono móvil; verás cómo salta la interfaz nativa del sistema Radix Connect pidiéndote permiso como usuario final.",
-            "4. Análisis de Respuesta: Aprueba la solicitud en tu teléfono. La consola en la pantalla de tu ordenador imprimirá el paquete JSON de seguridad devuelto por la billetera, para que puedas programar tu DApp basándote en esta estructura real."
+            "1. Tipo de solicitud: elige entre datos puntuales (cuentas y datos personales de una sola vez), inicio de sesión con persona (con reto firmado, sin reto o reutilizando la persona de la sesión) o prueba de propiedad (la billetera firma con cuentas que ya conoces, sin elegir nada).",
+            "2. Qué pedir: marca cuántas direcciones quieres. Pulsa otra vez el número seleccionado para no pedir ninguna: así puedes enviar un reto que solo firma la persona, sin compartir direcciones.",
+            "3. Revisa el JSON: el botón solicitud.json muestra en todo momento lo que se va a enviar. Al enviar, se sustituye por la interacción real con su identificador y su reto.",
+            "4. Envía y aprueba en el teléfono. El botón respuesta.json muestra lo que devolvió la billetera y cada firma se verifica sola con ROLA, como lo haría el backend de una dApp, explicando el motivo si alguna falla."
           ],
           "glossary": [
             {
-              "term": "ROLA (Radix Off-Ledger Authentication)",
-              "definition": "Un estándar de seguridad donde la billetera demuestra ser dueña de una cuenta sin tener que hacer una transacción financiera en la red; es como enseñar el DNI en lugar de pagar con la tarjeta."
-            },
-            {
-              "term": "DApp (Decentralized Application)",
-              "definition": "Una aplicación web convencional que tiene capacidad directa de comunicarse de ida y vuelta con las redes de criptomonedas y contratos inteligentes sin servidores intermedios."
-            },
-            {
+              "group": "Conceptos básicos",
               "term": "Persona",
-              "definition": "Un concepto exclusivo de Radix Wallet. Es una identidad abstracta que creas en tu móvil (ej: 'Perfil de Negocios' o 'Perfil Gamer') a la que asocias cuentas concretas sin exponer el resto de tu dinero."
+              "definition": "Una identidad que el usuario crea dentro de la Radix Wallet para entrar en las dApps, por ejemplo «Personal» o «Trabajo». No es una cuenta ni tiene fondos: es con quién inicias sesión. A una persona se le pueden asociar datos (nombre, correos, teléfonos) y cada dApp solo ve lo que el usuario decide compartir.",
+              "example": "Ejemplo: entras en un exchange con la persona «Trabajo» y le compartes solo tu cuenta de ahorro."
+            },
+            {
+              "group": "Conceptos básicos",
+              "term": "Reto (challenge)",
+              "definition": "32 bytes aleatorios que genera la dApp justo antes de pedir una firma. La billetera firma el reto junto con la dirección de la dApp y su origen web. Así la firma solo vale para esta web y para esta petición: copiarla a otra web o repetirla más tarde no sirve.",
+              "example": "Ejemplo: 8f3a…c91e, un valor distinto en cada envío."
+            },
+            {
+              "group": "Conceptos básicos",
+              "term": "ROLA (Radix Off-Ledger Authentication)",
+              "definition": "La forma estándar de demostrar, sin hacer ninguna transacción ni pagar comisiones, que el usuario controla una persona o una cuenta. La billetera firma el reto y la dApp comprueba la firma en su servidor antes de confiar en ella."
+            },
+            {
+              "group": "Tipos de solicitud",
+              "term": "Datos puntuales",
+              "definition": "Pide cuentas o datos personales una sola vez, sin iniciar sesión y sin persona. Es lo que usa una dApp que solo necesita saber a qué cuenta enviar algo.",
+              "example": "Ejemplo: una web de sorteos pide 1 cuenta para enviarte el premio."
+            },
+            {
+              "group": "Tipos de solicitud",
+              "term": "Inicio de sesión",
+              "definition": "El usuario entra con una persona. Además puede compartir cuentas y datos, de forma puntual o permanente. Es la base de una sesión en una dApp.",
+              "example": "Ejemplo: la persona firma un reto y comparte su nombre de forma permanente."
+            },
+            {
+              "group": "Tipos de solicitud",
+              "term": "Prueba de propiedad",
+              "definition": "La dApp ya conoce las direcciones (por ejemplo, de un inicio de sesión anterior) y pide que firmen el reto, sin que el usuario elija nada. Sirve para volver a comprobar la propiedad más tarde. Requiere la persona de la sesión.",
+              "example": "Ejemplo: antes de una acción sensible, la dApp pide que la cuenta que ya conoce firme otra vez."
+            },
+            {
+              "group": "Tipos de solicitud",
+              "term": "Por qué solo se elige un tipo",
+              "definition": "Cada solicitud lleva un único modo de identificación: sin persona (datos puntuales), eligiendo persona (inicio de sesión) o reutilizando la persona ya conocida (prueba de propiedad). La billetera no admite dos modos en la misma solicitud, por eso los tipos son excluyentes."
+            },
+            {
+              "group": "Opciones de la solicitud",
+              "term": "Número de direcciones",
+              "definition": "Cuántas cuentas se piden. «Al menos» deja al usuario compartir más; «Exactamente» le obliga a elegir ese número. Si no marcas ninguno, la solicitud no pide direcciones."
+            },
+            {
+              "group": "Opciones de la solicitud",
+              "term": "Firma de la persona y firma de las cuentas",
+              "definition": "Son dos pruebas distintas que se pueden pedir por separado o juntas. «La persona firma un reto» demuestra quién inicia sesión. «Firma de las cuentas» demuestra que el usuario controla cada cuenta que comparte, no solo que conoce su dirección."
+            },
+            {
+              "group": "Opciones de la solicitud",
+              "term": "Duración: solo esta vez",
+              "definition": "Los datos llegan en esta respuesta y la billetera no guarda nada. Si la dApp los necesita otra vez, tiene que volver a pedirlos y el usuario vuelve a elegir.",
+              "example": "Ejemplo: pedir un correo para enviar un único recibo."
+            },
+            {
+              "group": "Opciones de la solicitud",
+              "term": "Duración: permanente",
+              "definition": "La billetera recuerda qué cuentas y datos compartió el usuario con esta dApp y los envía en cada inicio de sesión sin volver a preguntar, hasta que se restablezcan. Solo existe con inicio de sesión, porque queda ligado a la persona.",
+              "example": "Ejemplo: una dApp que muestra siempre tu nombre y tus cuentas al entrar."
+            },
+            {
+              "group": "Opciones de la solicitud",
+              "term": "Restablecer",
+              "definition": "Pide a la billetera que olvide lo que comparte de forma permanente con la dApp, para que el usuario vuelva a elegir cuentas o datos."
+            },
+            {
+              "group": "Verificación",
+              "term": "Verificación en el servidor",
+              "definition": "En cuanto llega la respuesta, la web verifica cada firma como debe hacerlo el backend de una dApp: comprueba que corresponde al reto, a esta dApp y a este origen, y que la clave que firmó controla de verdad la persona o la cuenta. El resultado aparece en la tabla, en la columna ROLA y en la fila «Verificación ROLA»."
+            },
+            {
+              "group": "Verificación",
+              "term": "owner_keys y dirección virtual",
+              "definition": "owner_keys es un metadato del ledger con los hashes de las claves que controlan una cuenta o persona. Si la clave que firmó figura ahí, la prueba es válida. Si la entidad aún no tiene owner_keys, se acepta cuando su dirección deriva directamente de esa clave."
+            },
+            {
+              "group": "Verificación",
+              "term": "solicitud.json y respuesta.json",
+              "definition": "solicitud.json es la interacción exacta que recibe la billetera; antes de enviar se ve una vista previa y, al enviar, aparece con su identificador y su reto reales. respuesta.json es lo que devolvió la billetera, tal cual, para programar tu dApp sobre datos reales."
             }
           ],
           "example": [
+            {
+              "field": "Tipo de solicitud",
+              "type": "button-group",
+              "options": [
+                "Datos puntuales",
+                "Inicio de sesión",
+                "Prueba de propiedad"
+              ],
+              "selected": "Inicio de sesión"
+            },
+            {
+              "field": "Inicio de sesión de la persona",
+              "type": "button-group",
+              "options": [
+                "La persona firma un reto",
+                "Sin firma",
+                "Persona de la sesión"
+              ],
+              "selected": "La persona firma un reto"
+            },
             {
               "field": "Número de direcciones",
               "type": "button-group",
               "options": [
                 "1",
                 "2",
-                "3"
+                "3",
+                "4",
+                "5"
               ],
-              "selected": "1"
+              "selected": []
             },
             {
-              "field": "",
+              "field": "Duración",
               "type": "button-group",
               "options": [
-                "Al menos",
-                "Exactamente"
+                "Permanente",
+                "Solo esta vez"
               ],
-              "selected": "Exactamente"
-            },
-            {
-              "field": "Prueba de propiedad (ROLA)",
-              "type": "button-group",
-              "options": [
-                "Sin prueba",
-                "Con prueba"
-              ],
-              "selected": "Sin prueba"
-            },
-            {
-              "field": "Datos personales",
-              "type": "button-group",
-              "options": [
-                "Nombre completo",
-                "Email",
-                "Teléfono"
-              ],
-              "selected": [
-                "Nombre completo",
-                "Email"
-              ]
+              "selected": "Permanente"
             }
           ]
         }
@@ -3040,32 +3110,145 @@
       }
     },
     "walletPlayground": {
-      "configTitle": "Solicitud de datos",
-      "configHint": "Construye una solicitud de datos puntual, exactamente como lo haría una dApp que integra la Radix Wallet. No afecta a tu sesión.",
-      "dataToRequest": "Datos a solicitar",
-      "dataAccounts": "Número de direcciones",
-      "dataPersonaData": "Datos personales",
+      "configTitle": "Solicitud a la billetera",
+      "configHint": "Construye cualquier solicitud que una dApp puede enviar a la Radix Wallet. Sale por un canal aislado, así que no afecta a tu sesión.",
+      "kindTitle": "Tipo de solicitud",
+      "kinds": {
+        "oneTime": {
+          "title": "Datos puntuales",
+          "desc": "Cuentas y datos personales de una sola vez, sin iniciar sesión."
+        },
+        "login": {
+          "title": "Inicio de sesión",
+          "desc": "El usuario elige una persona; puede firmar un reto y compartir datos."
+        },
+        "proof": {
+          "title": "Prueba de propiedad",
+          "desc": "La billetera firma con cuentas o la persona que ya conoces."
+        }
+      },
+      "authTitle": "Inicio de sesión de la persona",
+      "authHint": "Qué tiene que hacer la persona con la que el usuario entra en la dApp.",
+      "authChallenge": "La persona firma un reto",
+      "authChallengeHint": "La persona firma el reto (ROLA): demuestra quién es sin compartir ninguna dirección. Esta firma es de la persona, no de las cuentas.",
+      "authNoChallenge": "Sin firma",
+      "authNoChallengeHint": "El usuario elige una persona, pero no firma nada: la dApp sabe qué persona dice ser, sin prueba.",
+      "authUsePersona": "Persona de la sesión",
+      "authUsePersonaHint": "Reutiliza la persona con la que ya iniciaste sesión en esta web, sin volver a elegirla.",
+      "accountsTitle": "Número de direcciones",
+      "accountsHint": "Pulsa otra vez el número marcado para no pedir ninguna dirección.",
+      "atLeast": "Al menos",
+      "atLeastHint": "El usuario puede compartir más de las solicitadas",
+      "exactly": "Exactamente",
+      "exactlyHint": "El usuario debe compartir exactamente este número",
+      "proofLabel": "Firma de las cuentas (ROLA)",
+      "proofHint": "Si cada cuenta compartida firma también el reto, la dApp puede comprobar en su servidor que el usuario controla esas cuentas y no solo que conoce sus direcciones. Es independiente de la firma de la persona.",
+      "proofOff": "Sin firma",
+      "proofOffHint": "Solo se comparten las direcciones",
+      "proofOn": "Con firma",
+      "proofOnHint": "Cada cuenta firma el reto demostrando que el usuario la controla",
+      "scopeLabel": "Duración",
+      "scopeHint": "Solo esta vez: los datos llegan en esta respuesta y la billetera no los recuerda. Permanente: la billetera recuerda lo que el usuario compartió y lo vuelve a enviar en cada inicio de sesión sin preguntar, hasta que se restablezca.",
+      "scopeOneTime": "Solo esta vez",
+      "scopeOneTimeHint": "La dApp recibe los datos en esta respuesta y nada más",
+      "scopeOngoing": "Permanente",
+      "scopeOngoingHint": "La billetera recuerda lo compartido y lo envía en cada inicio de sesión",
+      "personaDataTitle": "Datos personales",
+      "personaDataHint": "Datos de la persona que el usuario decide compartir. Pulsa de nuevo para quitar un campo.",
       "personaDataName": "Nombre completo",
       "personaDataEmail": "Email",
       "personaDataPhone": "Teléfono",
-      "atLeast": "Al menos",
-      "atLeastHint": "El usuario puede compartir más cuentas de las solicitadas",
-      "exactly": "Exactamente",
-      "exactlyHint": "El usuario debe compartir exactamente este número de cuentas",
-      "proofLabel": "Prueba de propiedad (ROLA)",
-      "proofOff": "Sin prueba",
-      "proofOffHint": "Solo pide las direcciones de las cuentas",
-      "proofOn": "Con prueba",
-      "proofOnHint": "La billetera firma un desafío demostrando que el usuario posee las cuentas",
+      "emailsLabel": "Correos electrónicos",
+      "phonesLabel": "Teléfonos",
+      "resetTitle": "Restablecer lo compartido",
+      "resetHint": "Pide a la billetera que olvide lo que ya comparte con esta dApp y vuelva a preguntar.",
+      "resetAccounts": "Cuentas",
+      "resetPersonaData": "Datos personales",
+      "proofAccountsTitle": "Cuentas a demostrar",
+      "proofAccountsHint": "Las cuentas de tu sesión. Marca las que deben firmar el reto.",
+      "proofIdentity": "Incluir la persona",
+      "proofIdentityHint": "La persona de la sesión también firma el reto",
+      "proofPersonaBug": "Por un fallo de la Radix Wallet, una prueba solo de la persona no termina nunca (vuelve a pedir «Verificar persona»). Por eso hay que marcar también al menos una cuenta. Para que firme solo la persona, usa Inicio de sesión con reto firmado.",
+      "proofNoAccounts": "Tu sesión no tiene cuentas compartidas.",
+      "sessionPersona": "Persona de la sesión",
+      "requestJson": "solicitud.json",
+      "responseJson": "respuesta.json",
+      "requestJsonHint": "Interacción que se envía a la billetera",
+      "responseJsonHint": "Respuesta que devolvió la billetera",
+      "previewNote": "Vista previa: el identificador y el reto se generan al enviar.",
+      "pendingValue": "(se genera al enviar)",
+      "sentNote": "Interacción enviada a la billetera.",
+      "responseEmpty": "Aún no hay respuesta. Envía una solicitud.",
+      "parsedNote": "Datos tal como los entrega el dApp toolkit.",
+      "copyJson": "Copiar JSON",
       "requestButton": "Enviar a la billetera",
-      "requestHint": "Abre la Radix Wallet con esta solicitud de datos",
+      "requestHint": "Abre la Radix Wallet con esta solicitud",
+      "waitingHint": "Aprueba o rechaza la solicitud en tu teléfono.",
+      "stopWaiting": "Dejar de esperar",
       "responseTitle": "Respuesta de la billetera",
-      "accountsReceived": "Cuentas recibidas",
-      "rolaButton": "Verificar pruebas (ROLA)",
-      "rolaHint": "Verifica las firmas en el servidor, como haría el backend de una dApp",
-      "rolaOkHint": "Prueba de propiedad verificada",
-      "rolaFailHint": "No se pudo verificar la prueba",
-      "rawResponse": "Respuesta en crudo (JSON)"
+      "proofsCount": "{count} firmas sobre el reto",
+      "proofsCountOne": "1 firma sobre el reto",
+      "nothingShared": "No se compartió ninguna cuenta ni dato.",
+      "challengeLabel": "Reto",
+      "rolaRow": "Verificación ROLA",
+      "rolaVerifying": "Verificando…",
+      "rolaOk": "Verificada",
+      "rolaFail": "No válida",
+      "rolaAllOk": "Todas las firmas son válidas",
+      "rolaSomeFail": "Hay firmas que no superan la verificación",
+      "rolaMethods": {
+        "ownerKeys": "La clave figura en owner_keys de la entidad",
+        "derivedAddress": "La dirección virtual deriva de la clave"
+      },
+      "rolaReasons": {
+        "invalidChallenge": "El reto no tiene 32 bytes en hexadecimal",
+        "typeMismatch": "El tipo de prueba no corresponde a la dirección",
+        "malformedProof": "La clave pública o la firma están mal formadas",
+        "invalidSignature": "La firma no corresponde a este reto, esta dApp y este origen",
+        "keyNotInOwnerKeys": "La clave no figura en owner_keys de la entidad",
+        "addressNotDerivedFromKey": "La dirección no deriva de la clave y no tiene owner_keys",
+        "ledgerUnavailable": "No se pudo consultar el ledger"
+      },
+      "proofType": {
+        "account": "Cuenta",
+        "persona": "Persona"
+      },
+      "issues": {
+        "empty": "Elige al menos una dirección o un dato personal.",
+        "personaDataEmpty": "Marca al menos un dato personal o quita la sección.",
+        "ongoingNeedsPersona": "Los datos permanentes requieren iniciar sesión con una persona.",
+        "resetNeedsPersona": "Restablecer requiere iniciar sesión con una persona.",
+        "proofNeedsPersona": "La prueba de propiedad requiere la persona de la sesión.",
+        "proofEmpty": "Marca al menos una cuenta o incluye la persona.",
+        "proofPersonaNeedsAccount": "Marca también al menos una cuenta: la billetera no completa una prueba si se selecciona solo la opción de incluir persona.",
+        "identityMissing": "No hay persona en la sesión: inicia sesión en esta web primero.",
+        "challengeMissing": "Falta el reto que debe firmarse."
+      },
+      "errors": {
+        "rejectedByUser": "Has rechazado la solicitud en la billetera.",
+        "canceledByUser": "La solicitud se canceló.",
+        "wrongNetwork": "La billetera está en otra red. Cámbiala en Ajustes > Ajustes de la app > Gateways.",
+        "invalidPersona": "La billetera no reconoce esa persona para esta dApp.",
+        "invalidRequest": "La billetera consideró la solicitud inválida.",
+        "incompatibleVersion": "La versión de la billetera no es compatible con esta solicitud.",
+        "failedToPrepareResponse": "La billetera no pudo preparar la respuesta.",
+        "failedToSignAuthChallenge": "La billetera no pudo firmar el reto.",
+        "failedToFindAccount": "La billetera no encontró alguna de las cuentas indicadas.",
+        "unknownWebsite": "La billetera no pudo verificar esta web.",
+        "radixJsonNotFound": "No se encontró el archivo radix.json de esta web.",
+        "unknownDappDefinitionAddress": "La billetera no reconoce la dirección de definición de la dApp.",
+        "invalidOriginURL": "El origen de la solicitud no es válido para la billetera.",
+        "walletRequestValidation": "La solicitud no tiene un formato válido.",
+        "walletResponseValidation": "La respuesta de la billetera no tiene un formato válido.",
+        "missingExtension": "No se encontró el conector de Radix en el navegador.",
+        "SupportedTransportNotFound": "No hay forma de contactar con la billetera: instala el conector o abre la web en el móvil.",
+        "toolkitUnavailable": "El toolkit de la billetera no está configurado para esta red.",
+        "verifyFailed": "No se pudo contactar con el verificador.",
+        "generic": "La billetera devolvió un error inesperado."
+      },
+      "colType": "Tipo",
+      "colValue": "Valor",
+      "colRola": "ROLA"
     },
     "staking": {
       "accountTitle": "Cuenta",
