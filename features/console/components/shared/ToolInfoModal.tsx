@@ -257,10 +257,21 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
                 </h3>
 
                 <div className="grid grid-cols-1 gap-4 mt-6">
-                  {guide.glossary.map((item: { term: string; definition: string }, idx: number) => (
-                    <div key={idx} className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)]/50 hover:border-[var(--color-primary)]/30 transition-colors">
-                      <p className="text-sm font-bold text-[var(--color-primary)] mb-1.5">{item.term}</p>
-                      <p className="text-[13px] leading-relaxed text-[var(--color-text-muted)]">{item.definition}</p>
+                  {guide.glossary.map((item: { term: string; definition: string; group?: string; example?: string }, idx: number, all: Array<{ group?: string }>) => (
+                    <div key={idx} className="space-y-4">
+                      {/* Optional grouping: a heading before the first term of each group. */}
+                      {item.group && item.group !== all[idx - 1]?.group && (
+                        <p className={`text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-main)] ${idx > 0 ? 'pt-4' : ''}`}>
+                          {item.group}
+                        </p>
+                      )}
+                      <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)]/50 hover:border-[var(--color-primary)]/30 transition-colors">
+                        <p className="text-sm font-bold text-[var(--color-primary)] mb-1.5">{item.term}</p>
+                        <p className="text-[13px] leading-relaxed text-[var(--color-text-muted)]">{item.definition}</p>
+                        {item.example && (
+                          <p className="mt-2 text-[12px] leading-relaxed italic text-[var(--color-text-muted)]">{item.example}</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

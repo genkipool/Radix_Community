@@ -124,6 +124,9 @@ export const setupWalletConnectorTool = defineMcpTool({
         '  • request_ownership_proof — prove EXACT accounts / the persona, nothing to pick.\n' +
         '  • request_authorized — use_persona, reset, one-time or ONGOING accounts and data.\n' +
         '  • request_data — exact/minimum accounts, name, emails, phone numbers.\n' +
+        '  • On THIS server: build_wallet_request prepares any of them (exact JSON + challenge +\n' +
+        '    the connector call; requests may share no address), and verify_rola_proofs checks the\n' +
+        '    returned signatures server-side with the reason for any failure.\n' +
         'The wallet shows ONE request at a time and cannot withdraw one: send one, wait for it.\n' +
         'Failures carry code / stage / retry_safe. retry_safe = NO (NO_ANSWER) → do not resend:\n' +
         'the user answers on the phone and await_response collects it. PENDING_IN_WALLET → an\n' +

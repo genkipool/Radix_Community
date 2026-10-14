@@ -1,126 +1,207 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle2, ShieldQuestion, XCircle } from 'lucide-react';
-import { OneTimeDataRequestBuilder, type WalletDataStateAccount, type WalletDataStatePersonaData, type OneTimeDataRequestBuilderItem } from '@radixdlt/radix-dapp-toolkit';
+import { useId, useRef, useState, type ReactNode } from 'react';
+import { AlertTriangle, Database, Fingerprint, Info, LogIn, ShieldCheck, UserRound } from 'lucide-react';
+import type { WalletData } from '@radixdlt/radix-dapp-toolkit';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
-import { CopyButton } from '@/components/ui/CopyButton';
+import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
+import {
+  buildWalletInteraction,
+  buildWalletRequestItems,
+  generateRolaChallenge,
+  needsChallenge,
+  validateWalletRequest,
+  type Quantifier,
+  type WalletAuthMode,
+  type WalletInteraction,
+  type WalletRequestSpec,
+} from '@/features/wallet/lib/wallet-interaction';
+import { sendPlaygroundRequest } from '../../lib/playground-wallet';
+import type { RolaProofResult } from '@/services/rola/verify';
 import { truncateAddress } from '@/utils/formatters';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { OptionButtons } from '../shared/OptionButtons';
 import { RadixLogo } from '@/components/shared/RadixLogo';
+import { JsonFileButton, JsonPanel } from './wallet-playground/JsonFile';
+import { ResponseView } from './wallet-playground/ResponseView';
 
-interface ProofItem {
-  type: 'account' | 'persona';
-  address: string;
-  proof: { publicKey: string; signature: string; curve: 'curve25519' | 'secp256k1' };
+type Kind = 'oneTime' | 'login' | 'proof';
+type LoginAuth = Exclude<WalletAuthMode, 'none'>;
+type Scope = 'oneTime' | 'ongoing';
+type JsonFile = 'request' | 'response';
+
+type Outcome =
+  | { status: 'idle' }
+  | { status: 'waiting' }
+  | { status: 'ok'; sent: WalletInteraction; walletData: WalletData; walletResponse: unknown; challenge: string | null }
+  | { status: 'error'; sent: WalletInteraction | null; code: string; message?: string };
+
+/** Taller option buttons than the console default, for an easier target. */
+const OPTION_HEIGHT = 'min-h-11 py-2.5';
+
+const COUNT_OPTIONS = ['1', '2', '3', '4', '5'] as const;
+const VALUE_COUNT_OPTIONS = ['1', '2', '3'] as const;
+
+const KIND_ICONS: Record<Kind, ReactNode> = {
+  oneTime: <Database className="size-4" />,
+  login: <LogIn className="size-4" />,
+  proof: <ShieldCheck className="size-4" />,
+};
+
+/**
+ * Turns a multi-select OptionButtons into a single choice that can be cleared:
+ * clicking another value selects only it, clicking the active one empties it.
+ */
+const toggleOne = (next: string[], prev: string[]) => next.filter((v) => !prev.includes(v)).slice(-1);
+
+/** A labelled block, in the console's plain style. */
+function Group({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+          {label}
+        </span>
+        {hint && (
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {hint}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
 }
-
-interface PlaygroundResponse {
-  accounts: WalletDataStateAccount[];
-  personaLabel: string | null;
-  personaData: WalletDataStatePersonaData[] | null;
-  proofs: ProofItem[];
-  challenge: string | null;
-  raw: string;
-}
-
-type RolaStatus = Record<string, boolean>;
 
 export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
-  const labels = t.walletPlayground as Record<string, string>;
-  const { activeNetworkId } = useRadixWallet();
+  const labels = t.walletPlayground;
+  const issueText = labels.issues as Record<string, string>;
+  const errorTexts = labels.errors as Record<string, string>;
+  const { activeNetworkId, accounts: sessionAccounts, persona } = useRadixWallet();
+  const panelId = useId();
 
-  // Accounts config
-  const [accountCount, setAccountCount] = useState('1');
-  const [quantifier, setQuantifier] = useState<'atLeast' | 'exactly'>('atLeast');
+  // ── Request builder state ────────────────────────────────────────────────
+  const [kind, setKind] = useState<Kind>('oneTime');
+  const [auth, setAuth] = useState<LoginAuth>('loginWithChallenge');
+  const [accountCount, setAccountCount] = useState<string[]>([]);
+  const [quantifier, setQuantifier] = useState<Quantifier>('atLeast');
   const [withProof, setWithProof] = useState(false);
+  const [accountsScope, setAccountsScope] = useState<Scope>('ongoing');
+  const [wantsName, setWantsName] = useState(false);
+  const [emails, setEmails] = useState<string[]>([]);
+  const [emailQuantifier, setEmailQuantifier] = useState<Quantifier>('atLeast');
+  const [phones, setPhones] = useState<string[]>([]);
+  const [phoneQuantifier, setPhoneQuantifier] = useState<Quantifier>('atLeast');
+  const [personaScope, setPersonaScope] = useState<Scope>('ongoing');
+  const [reset, setReset] = useState<string[]>([]);
+  const [proofAccounts, setProofAccounts] = useState<string[]>([]);
+  const [proofIdentity, setProofIdentity] = useState(true);
 
-  // Persona Data config
-  const [personaFields, setPersonaFields] = useState<string[]>([]);
-  const personaName = personaFields.includes('name');
-  const personaEmail = personaFields.includes('email');
-  const personaPhone = personaFields.includes('phone');
-
-  const requestAccounts = true;
-  const requestPersonaData = personaFields.length > 0;
-
-  const [isRequesting, setIsRequesting] = useState(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
-  const [response, setResponse] = useState<PlaygroundResponse | null>(null);
-  const [rolaStatus, setRolaStatus] = useState<RolaStatus | null>(null);
+  // ── Request lifecycle ────────────────────────────────────────────────────
+  const [outcome, setOutcome] = useState<Outcome>({ status: 'idle' });
+  const [openFile, setOpenFile] = useState<JsonFile | null>(null);
+  const [rola, setRola] = useState<RolaProofResult[] | null>(null);
+  const [rolaError, setRolaError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const requestSeq = useRef(0);
 
-  const handleRequest = async () => {
-    if (!activeNetworkId) return;
-    const rdt = getOrCreateToolkit(activeNetworkId);
-    if (!rdt) return;
+  const identityAddress = persona?.identityAddress || undefined;
+  const quantity = Number(accountCount[0] ?? 0);
+  const isWaiting = outcome.status === 'waiting';
 
-    if (!requestAccounts && !requestPersonaData) {
-      setRequestError('Please select at least one type of data to request.');
-      return;
+  const spec: WalletRequestSpec = (() => {
+    if (kind === 'proof') {
+      return {
+        auth: 'usePersona',
+        identityAddress,
+        proofOfOwnership: { accountAddresses: proofAccounts, proveIdentity: proofIdentity },
+      };
     }
+    const wantsData = wantsName || emails.length > 0 || phones.length > 0;
+    const scopeFor = (scope: Scope): Scope => (kind === 'oneTime' ? 'oneTime' : scope);
+    return {
+      auth: kind === 'oneTime' ? 'none' : auth,
+      identityAddress: kind === 'login' && auth === 'usePersona' ? identityAddress : undefined,
+      accounts: quantity > 0 ? { scope: scopeFor(accountsScope), quantifier, quantity, withProof } : undefined,
+      personaData: wantsData
+        ? {
+            scope: scopeFor(personaScope),
+            fullName: wantsName,
+            ...(emails.length > 0 ? { emailAddresses: { quantifier: emailQuantifier, quantity: Number(emails[0]) } } : {}),
+            ...(phones.length > 0 ? { phoneNumbers: { quantifier: phoneQuantifier, quantity: Number(phones[0]) } } : {}),
+          }
+        : undefined,
+      reset: kind === 'login' ? { accounts: reset.includes('accounts'), personaData: reset.includes('personaData') } : undefined,
+    };
+  })();
 
-    if (requestPersonaData && !personaName && !personaEmail && !personaPhone) {
-      setRequestError('Please select at least one persona data field to request.');
-      return;
-    }
+  const issues = validateWalletRequest(spec);
+  const signs = needsChallenge(spec);
+  const network = activeNetworkId ? NETWORKS[activeNetworkId as RadixNetworkId] : null;
 
-    setIsRequesting(true);
-    setRequestError(null);
-    setResponse(null);
-    setRolaStatus(null);
-
-    let challenge: string | null = null;
-    if (requestAccounts && withProof) {
-      rdt.walletApi.provideChallengeGenerator(async () => {
-        const res = await fetch('/api/auth/radix/challenge', { method: 'POST' });
-        const data = (await res.json()) as { challenge: string };
-        challenge = data.challenge;
-        return data.challenge;
-      });
-    }
-
-    const requestItems: OneTimeDataRequestBuilderItem[] = [];
-
-    if (requestAccounts) {
-      const accountsReq = withProof
-        ? OneTimeDataRequestBuilder.accounts()[quantifier](Number(accountCount)).withProof()
-        : OneTimeDataRequestBuilder.accounts()[quantifier](Number(accountCount));
-      requestItems.push(accountsReq);
-    }
-
-    if (requestPersonaData) {
-      let personaReq = OneTimeDataRequestBuilder.personaData();
-      if (personaName) personaReq = personaReq.fullName();
-      if (personaEmail) personaReq = personaReq.emailAddresses();
-      if (personaPhone) personaReq = personaReq.phoneNumbers();
-      requestItems.push(personaReq);
-    }
-
-    const result = await rdt.walletApi.sendOneTimeRequest(...requestItems);
-
-    if (result.isErr()) {
-      setRequestError(result.error.message || result.error.error || 'rejected');
-      setIsRequesting(false);
-      return;
-    }
-
-    const data = result.value;
-    setResponse({
-      accounts: data.accounts ?? [],
-      personaLabel: data.persona?.label ?? null,
-      personaData: data.personaData ?? null,
-      proofs: (data.proofs ?? []) as ProofItem[],
-      challenge,
-      raw: JSON.stringify(data, null, 2),
+  /** What will be sent, or what was sent once the wallet has it. */
+  const requestJson = (() => {
+    const sent = outcome.status === 'ok' || outcome.status === 'error' ? outcome.sent : null;
+    if (sent) return JSON.stringify(sent, null, 2);
+    if (issues.length > 0 || !network) return null;
+    const placeholder = labels.pendingValue;
+    const interaction = buildWalletInteraction({
+      items: buildWalletRequestItems(spec, signs ? placeholder : undefined),
+      networkId: network.networkId,
+      dAppDefinitionAddress: network.dAppDefinitionAddress,
+      origin: typeof window === 'undefined' ? '' : window.location.origin,
+      interactionId: placeholder,
     });
-    setIsRequesting(false);
+    return JSON.stringify(interaction, null, 2);
+  })();
+
+  const requestIsLive = outcome.status === 'ok' || (outcome.status === 'error' && !!outcome.sent);
+  const responseJson =
+    outcome.status === 'ok'
+      ? JSON.stringify(outcome.walletResponse ?? outcome.walletData, null, 2)
+      : null;
+
+  // Any edit makes the previous answer stale: the request file goes back to preview.
+  const edit = <T,>(setter: (value: T) => void) => (value: T) => {
+    setter(value);
+    if (outcome.status !== 'waiting' && outcome.status !== 'idle') {
+      setOutcome({ status: 'idle' });
+      setRola(null);
+      setRolaError(null);
+      if (openFile === 'response') setOpenFile(null);
+    }
   };
 
-  const handleVerifyRola = async () => {
-    if (!response || !response.challenge || response.proofs.length === 0) return;
+  const handleSend = async () => {
+    if (!activeNetworkId || issues.length > 0 || isWaiting) return;
+    const seq = ++requestSeq.current;
+    const challenge = signs ? generateRolaChallenge() : null;
+    const items = buildWalletRequestItems(spec, challenge ?? undefined);
+    setOutcome({ status: 'waiting' });
+    setRola(null);
+    setRolaError(null);
+    setIsVerifying(false);
+
+    const result = await sendPlaygroundRequest(activeNetworkId as RadixNetworkId, items);
+    if (seq !== requestSeq.current) return;
+    if (result.ok) {
+      setOutcome({ status: 'ok', sent: result.sent, walletData: result.walletData, walletResponse: result.walletResponse, challenge });
+      void verifyProofs(seq, result.walletData, challenge);
+    } else {
+      setOutcome({ status: 'error', sent: result.sent, code: result.error, message: result.message });
+    }
+  };
+
+  const handleStopWaiting = () => {
+    requestSeq.current += 1;
+    setOutcome({ status: 'idle' });
+  };
+
+  /** Checks every returned signature server-side, as a dApp backend would. */
+  const verifyProofs = async (seq: number, walletData: WalletData, challenge: string | null) => {
+    const proofs = walletData.proofs ?? [];
+    const signed = challenge ?? proofs[0]?.challenge;
+    if (!activeNetworkId || !signed || proofs.length === 0) return;
     setIsVerifying(true);
     try {
       const res = await fetch('/api/auth/radix/rola-verify', {
@@ -128,17 +209,120 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           networkId: activeNetworkId,
-          challenge: response.challenge,
-          items: response.proofs,
+          challenge: signed,
+          items: proofs.map(({ type, address, proof }) => ({ type, address, proof })),
         }),
       });
-      const data = (await res.json()) as { results?: Array<{ address: string; verified: boolean }> };
-      setRolaStatus(Object.fromEntries((data.results ?? []).map((r) => [r.address, r.verified])));
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as { results: RolaProofResult[] };
+      if (seq === requestSeq.current) setRola(data.results);
     } catch {
-      setRolaStatus({});
+      if (seq === requestSeq.current) setRolaError(labels.errors.verifyFailed);
     }
-    setIsVerifying(false);
+    if (seq === requestSeq.current) setIsVerifying(false);
   };
+
+  const errorText = (code: string) =>
+    errorTexts[code] ?? labels.errors.generic;
+
+  // ── Reusable builder fragments ───────────────────────────────────────────
+  const quantifierButtons = (value: Quantifier, onChange: (q: Quantifier) => void, inactive = false) => (
+    <OptionButtons<Quantifier>
+      options={[
+        { value: 'atLeast', label: labels.atLeast, title: labels.atLeastHint },
+        { value: 'exactly', label: labels.exactly, title: labels.exactlyHint },
+      ]}
+      value={value}
+      onChange={edit(onChange)}
+      size="sm"
+      buttonClassName={OPTION_HEIGHT}
+      disabled={isWaiting || inactive}
+    />
+  );
+
+  const scopeButtons = (value: Scope, onChange: (s: Scope) => void, inactive = false) => (
+    <Group label={labels.scopeLabel} hint={labels.scopeHint}>
+      <OptionButtons<Scope>
+        options={[
+          { value: 'ongoing', label: labels.scopeOngoing, title: labels.scopeOngoingHint },
+          { value: 'oneTime', label: labels.scopeOneTime, title: labels.scopeOneTimeHint },
+        ]}
+        value={value}
+        onChange={edit(onChange)}
+        size="sm"
+        buttonClassName={OPTION_HEIGHT}
+        disabled={isWaiting || inactive}
+      />
+    </Group>
+  );
+
+  const countButtons = (options: readonly string[], value: string[], onChange: (v: string[]) => void) => (
+    <OptionButtons
+      multiple
+      hideCheck
+      options={options.map((n) => ({ value: n, label: n }))}
+      value={value}
+      onChange={(next) => edit(onChange)(toggleOne(next, value))}
+      size="sm"
+      buttonClassName={OPTION_HEIGHT}
+      disabled={isWaiting}
+    />
+  );
+
+  const accountsGroup = (
+    <Group label={labels.accountsTitle} hint={labels.accountsHint}>
+      <div className="space-y-6">
+        {countButtons(COUNT_OPTIONS, accountCount, setAccountCount)}
+        {/* Always rendered (disabled without addresses) so the page never jumps. */}
+        {quantifierButtons(quantifier, setQuantifier, quantity === 0)}
+        <Group label={labels.proofLabel} hint={labels.proofHint}>
+              <OptionButtons
+                options={[
+                  { value: 'no', label: labels.proofOff, title: labels.proofOffHint },
+                  { value: 'yes', label: labels.proofOn, title: labels.proofOnHint },
+                ]}
+                value={withProof ? 'yes' : 'no'}
+                onChange={(v) => edit(setWithProof)(v === 'yes')}
+                size="sm"
+                buttonClassName={OPTION_HEIGHT}
+                disabled={isWaiting || quantity === 0}
+              />
+        </Group>
+        {kind === 'login' && scopeButtons(accountsScope, setAccountsScope, quantity === 0)}
+      </div>
+    </Group>
+  );
+
+  const valueRow = (label: string, value: string[], onChange: (v: string[]) => void, q: Quantifier, onQuantifier: (q: Quantifier) => void) => (
+    <div className="space-y-2">
+      <span className="block text-xs font-semibold" style={{ color: 'var(--color-text-main)' }}>
+        {label}
+      </span>
+      {countButtons(VALUE_COUNT_OPTIONS, value, onChange)}
+      {quantifierButtons(q, onQuantifier, value.length === 0)}
+    </div>
+  );
+
+  const personaDataGroup = (
+    <Group label={labels.personaDataTitle} hint={labels.personaDataHint}>
+      <div className="space-y-5">
+        <OptionButtons
+          multiple
+          options={[{ value: 'name', label: labels.personaDataName, icon: <UserRound className="size-3.5" /> }]}
+          value={wantsName ? ['name'] : []}
+          onChange={(v) => edit(setWantsName)(v.length > 0)}
+          size="sm"
+          buttonClassName={OPTION_HEIGHT}
+          disabled={isWaiting}
+        />
+        {valueRow(labels.emailsLabel, emails, setEmails, emailQuantifier, setEmailQuantifier)}
+        {valueRow(labels.phonesLabel, phones, setPhones, phoneQuantifier, setPhoneQuantifier)}
+        {kind === 'login' && scopeButtons(personaScope, setPersonaScope, !(wantsName || emails.length > 0 || phones.length > 0))}
+      </div>
+    </Group>
+  );
+
+  const toggleFile = (file: JsonFile) => setOpenFile(openFile === file ? null : file);
 
   return (
     <div className="space-y-8">
@@ -151,80 +335,125 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
             {labels.configHint}
           </p>
         </header>
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
-              {labels.dataAccounts}
-            </span>
-            <div className="space-y-6">
-              <div className="flex flex-wrap gap-3">
-                <OptionButtons
-                  options={['1', '2', '3'].map((n) => ({ value: n, label: n }))}
-                  value={accountCount}
-                  onChange={setAccountCount}
-                  size="sm"
-                  disabled={isRequesting}
-                />
-                <OptionButtons<'atLeast' | 'exactly'>
-                  options={[
-                    { value: 'atLeast', label: labels.atLeast, title: labels.atLeastHint },
-                    { value: 'exactly', label: labels.exactly, title: labels.exactlyHint },
-                  ]}
-                  value={quantifier}
-                  onChange={setQuantifier}
-                  size="sm"
-                  disabled={isRequesting}
-                />
-              </div>
 
-              <div className="space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
-                  {labels.proofLabel}
-                </span>
-                <OptionButtons
-                  options={[
-                    { value: 'no', label: labels.proofOff, title: labels.proofOffHint },
-                    { value: 'yes', label: labels.proofOn, title: labels.proofOnHint },
-                  ]}
-                  value={withProof ? 'yes' : 'no'}
-                  onChange={(value) => setWithProof(value === 'yes')}
-                  size="sm"
-                  disabled={isRequesting}
-                />
-              </div>
-            </div>
-          </div>
+        {/* Every top-level section is closed by a bottom rule. */}
+        <div className="space-y-8 [&>*]:border-b [&>*]:border-[var(--color-card-border)] [&>*]:pb-8">
+          <Group label={labels.kindTitle}>
+            <OptionButtons<Kind>
+              layout="grid"
+              className="sm:grid-cols-3"
+              options={(['oneTime', 'login', 'proof'] as const).map((k) => ({
+                value: k,
+                label: labels.kinds[k].title,
+                description: labels.kinds[k].desc,
+                icon: KIND_ICONS[k],
+              }))}
+              value={kind}
+              onChange={edit(setKind)}
+              size="sm"
+              buttonClassName={OPTION_HEIGHT}
+              disabled={isWaiting}
+            />
+          </Group>
 
-          <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
-              {labels.dataPersonaData}
-            </span>
-            <div>
+          {kind === 'login' && (
+            <Group label={labels.authTitle} hint={labels.authHint}>
+              <div className="space-y-3">
+                <OptionButtons<LoginAuth>
+                  options={[
+                    { value: 'loginWithChallenge', label: labels.authChallenge, title: labels.authChallengeHint, icon: <Fingerprint className="size-3.5" /> },
+                    { value: 'loginWithoutChallenge', label: labels.authNoChallenge, title: labels.authNoChallengeHint },
+                    { value: 'usePersona', label: labels.authUsePersona, title: labels.authUsePersonaHint },
+                  ]}
+                  value={auth}
+                  onChange={edit(setAuth)}
+                  size="sm"
+                  buttonClassName={OPTION_HEIGHT}
+                  disabled={isWaiting}
+                />
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  {auth === 'loginWithChallenge' ? labels.authChallengeHint : auth === 'loginWithoutChallenge' ? labels.authNoChallengeHint : labels.authUsePersonaHint}
+                </p>
+              </div>
+            </Group>
+          )}
+
+          {kind === 'proof' && (
+            <>
+              <Group label={labels.sessionPersona} hint={labels.proofIdentityHint}>
+                <div className="space-y-3">
+                  <OptionButtons
+                    multiple
+                    options={[{ value: 'identity', label: labels.proofIdentity, icon: <Fingerprint className="size-3.5" /> }]}
+                    value={proofIdentity ? ['identity'] : []}
+                    onChange={(v) => edit(setProofIdentity)(v.length > 0)}
+                    size="sm"
+                    buttonClassName={OPTION_HEIGHT}
+                    disabled={isWaiting || !identityAddress}
+                  />
+                  <p className="flex items-start gap-1.5 text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    <Info className="mt-px size-3.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                    {labels.proofPersonaBug}
+                  </p>
+                </div>
+              </Group>
+              <Group label={labels.proofAccountsTitle} hint={labels.proofAccountsHint}>
+                {sessionAccounts.length === 0 ? (
+                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                    {labels.proofNoAccounts}
+                  </p>
+                ) : (
+                  <OptionButtons
+                    multiple
+                    layout="grid"
+                    className="sm:grid-cols-2"
+                    options={sessionAccounts.map((a) => ({
+                      value: a.address,
+                      label: a.label,
+                      description: truncateAddress(a.address, 10, 6),
+                      title: a.address,
+                    }))}
+                    value={proofAccounts}
+                    onChange={edit(setProofAccounts)}
+                    size="sm"
+                    buttonClassName={OPTION_HEIGHT}
+                    disabled={isWaiting}
+                  />
+                )}
+              </Group>
+            </>
+          )}
+
+          {kind !== 'proof' && accountsGroup}
+          {kind !== 'proof' && personaDataGroup}
+
+          {kind === 'login' && (
+            <Group label={labels.resetTitle} hint={labels.resetHint}>
               <OptionButtons
                 multiple
                 options={[
-                  { value: 'name', label: labels.personaDataName },
-                  { value: 'email', label: labels.personaDataEmail },
-                  { value: 'phone', label: labels.personaDataPhone }
+                  { value: 'accounts', label: labels.resetAccounts },
+                  { value: 'personaData', label: labels.resetPersonaData },
                 ]}
-                value={personaFields}
-                onChange={setPersonaFields}
+                value={reset}
+                onChange={edit(setReset)}
                 size="sm"
-                disabled={isRequesting}
+                buttonClassName={OPTION_HEIGHT}
+                disabled={isWaiting}
               />
-            </div>
-          </div>
+            </Group>
+          )}
         </div>
 
         <button
           type="button"
-          onClick={handleRequest}
-          disabled={isRequesting}
+          onClick={handleSend}
+          disabled={isWaiting || issues.length > 0 || !activeNetworkId}
           title={labels.requestHint}
           className="flex w-full items-center justify-center bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] h-11 rounded-full font-bold text-sm hover:opacity-90 transition-opacity px-6 shadow active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
         >
           <RadixLogo
-            label={labels.requestButton as string}
+            label={labels.requestButton}
             showBeta={false}
             width="180"
             height="32"
@@ -237,127 +466,95 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
             logoTranslateX={5}
             strokeColor="white"
             textColor="white"
-            className={isRequesting ? "animate-pulse" : ""}
+            className={isWaiting ? 'animate-pulse' : ''}
           />
         </button>
-        {requestError && <p className="text-xs font-medium text-red-500">{requestError}</p>}
+
+        {isWaiting && (
+          <p role="status" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            <span>{labels.waitingHint}</span>
+            <button type="button" onClick={handleStopWaiting} className="font-semibold underline-offset-2 hover:underline cursor-pointer" style={{ color: 'var(--color-text-main)' }}>
+              {labels.stopWaiting}
+            </button>
+          </p>
+        )}
+        {issues.length > 0 && (
+          <ul className="space-y-1">
+            {issues.map((issue) =>
+              // Nothing chosen yet is a prompt, not a problem.
+              issue === 'empty' ? (
+                <li key={issue} className="flex items-start gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  <Info className="mt-px size-3.5 shrink-0" />
+                  {issueText[issue]}
+                </li>
+              ) : (
+                <li key={issue} className="flex items-start gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="mt-px size-3.5 shrink-0" />
+                  {issueText[issue] ?? labels.errors.generic}
+                </li>
+              ),
+            )}
+          </ul>
+        )}
+        {outcome.status === 'error' && (
+          <p role="alert" className="text-xs font-medium text-red-500">
+            {errorText(outcome.code)}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <JsonFileButton
+              name={labels.requestJson}
+              hint={labels.requestJsonHint}
+              open={openFile === 'request'}
+              disabled={!requestJson}
+              controls={`${panelId}-json`}
+              onToggle={() => toggleFile('request')}
+            />
+            <JsonFileButton
+              name={labels.responseJson}
+              hint={labels.responseJsonHint}
+              open={openFile === 'response'}
+              disabled={!responseJson}
+              controls={`${panelId}-json`}
+              onToggle={() => toggleFile('response')}
+            />
+          </div>
+          {openFile === 'request' && requestJson && (
+            <JsonPanel
+              id={`${panelId}-json`}
+              name={labels.requestJson}
+              json={requestJson}
+              note={requestIsLive ? labels.sentNote : labels.previewNote}
+              copyLabel={labels.copyJson}
+            />
+          )}
+          {openFile === 'response' && responseJson && (
+            <JsonPanel
+              id={`${panelId}-json`}
+              name={labels.responseJson}
+              json={responseJson}
+              note={outcome.status === 'ok' && !outcome.walletResponse ? labels.parsedNote : undefined}
+              copyLabel={labels.copyJson}
+            />
+          )}
+        </div>
       </div>
 
-      {response && (
+      {outcome.status === 'ok' && (
         <div className="space-y-4 pt-6 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
-          <header className="space-y-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
-              {labels.responseTitle}
-            </h3>
-          </header>
-          {response.accounts.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.accountsReceived}
-              </p>
-              {response.accounts.map((account) => {
-                const verified = rolaStatus?.[account.address];
-                return (
-                  <div key={account.address} className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="font-semibold" style={{ color: 'var(--color-text-main)' }}>{account.label}</span>
-                    <code title={account.address} style={{ color: 'var(--color-text-muted)' }}>
-                      {truncateAddress(account.address, 10, 6)}
-                    </code>
-                    <CopyButton value={account.address} size="xs" variant="minimal" />
-                    {rolaStatus && verified !== undefined && (
-                      verified ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold" title={labels.rolaOkHint}>
-                          <CheckCircle2 className="size-3.5" /> ROLA
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-red-500 font-semibold" title={labels.rolaFailHint}>
-                          <XCircle className="size-3.5" /> ROLA
-                        </span>
-                      )
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {response.personaData && response.personaData.length > 0 && (
-            <div className="space-y-1.5 mt-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.dataPersonaData}
-              </p>
-              <div className="flex flex-col gap-1 text-xs">
-                {response.personaData.map((pd: WalletDataStatePersonaData, i: number) => {
-                  if (pd.entry === 'fullName') {
-                    return (
-                      <div key={i}>
-                        <span className="font-semibold" style={{ color: 'var(--color-text-muted)' }}>{labels.personaDataName}: </span>
-                        {pd.fields.givenNames} {pd.fields.familyName} {pd.fields.nickname ? `(${pd.fields.nickname})` : ''}
-                      </div>
-                    );
-                  }
-                  if (pd.entry === 'emailAddresses') {
-                    return pd.fields.map((email: string) => (
-                      <div key={email}>
-                        <span className="font-semibold" style={{ color: 'var(--color-text-muted)' }}>{labels.personaDataEmail}: </span>
-                        {email}
-                      </div>
-                    ));
-                  }
-                  if (pd.entry === 'phoneNumbers') {
-                    return pd.fields.map((phone: string) => (
-                      <div key={phone}>
-                        <span className="font-semibold" style={{ color: 'var(--color-text-muted)' }}>{labels.personaDataPhone}: </span>
-                        {phone}
-                      </div>
-                    ));
-                  }
-                  return null;
-                })}
-              </div>
-            </div>
-          )}
-
-          {response.proofs.length > 0 && (
-            <button
-              type="button"
-              onClick={handleVerifyRola}
-              disabled={isVerifying}
-              title={labels.rolaHint}
-              className="inline-flex items-center gap-2 px-4 h-9 rounded-full text-xs font-bold border transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40 cursor-pointer"
-              style={{
-                background: 'var(--color-surface)',
-                borderColor: 'var(--color-card-border)',
-                color: 'var(--color-text-main)',
-              }}
-            >
-              {isVerifying ? (
-                <span className="size-3.5 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
-              ) : (
-                <ShieldQuestion className="size-3.5" style={{ color: 'var(--color-primary)' }} />
-              )}
-              {labels.rolaButton}
-            </button>
-          )}
-
-          <details>
-            <summary
-              className="text-xs font-semibold cursor-pointer transition-colors hover:text-[var(--color-accent)]"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              {labels.rawResponse}
-            </summary>
-            <pre
-              className="mt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words max-h-[50vh] overflow-y-auto rounded-xl border p-4"
-              style={{
-                background: 'var(--code-bg)',
-                borderColor: 'var(--color-card-border)',
-                color: 'var(--color-text-main)',
-              }}
-            >
-              {response.raw}
-            </pre>
-          </details>
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+            {labels.responseTitle}
+          </h3>
+          <ResponseView
+            labels={labels}
+            walletData={outcome.walletData}
+            challenge={outcome.challenge ?? outcome.walletData.proofs?.[0]?.challenge ?? null}
+            rola={rola}
+            rolaError={rolaError}
+            isVerifying={isVerifying}
+          />
         </div>
       )}
     </div>

@@ -11,6 +11,7 @@ import { consoleTools } from './console';
 import { validatorTools } from './validator';
 import { signTools } from './sign';
 import { connectorTools } from './connector';
+import { walletTools } from './wallet';
 import { siteTools } from './site';
 
 export const knowledgeTools = [searchRadixDocsTool, readRadixDocTool];
@@ -27,6 +28,7 @@ export function getMcpRegistry(): McpToolRegistry {
     ...validatorTools,
     ...signTools,
     ...connectorTools,
+    ...walletTools,
   ]);
   return registry;
 }
