@@ -11,7 +11,9 @@ import {
   claimManifest,
   createLockerAndAirdropManifest,
   createLockerManifest,
+  recoverAllManifest,
   recoverManifest,
+  withdrawManifest,
 } from '@/features/console/lib/locker-manifests';
 import {
   RESIM,
@@ -149,6 +151,63 @@ CALL_METHOD Address("${stranger.address}") "deposit_batch" Expression("ENTIRE_WO
     });
     expectCommitted(ledger.run(manifest, sender.address), manifest);
     expect(Number(ledger.balance(sender.address, token))).toBe(before + 5);
+  });
+
+  it('claims its own and recovers a recipient\'s in one transaction', () => {
+    ledger.use(sender);
+    const store = airdropManifest({
+      account: sender.address,
+      locker,
+      badge: { account: sender.address, resource: badge },
+      resource: token,
+      claimants: [
+        { account: sender.address, amount: '2' },
+        { account: stranger.address, amount: '3' },
+      ],
+      tryDirectSend: false,
+    });
+    expectCommitted(ledger.run(store, sender.address), store);
+
+    const before = Number(ledger.balance(sender.address, token));
+    const proof = { account: sender.address, resource: badge };
+    const manifest = withdrawManifest(sender.address, [
+      { kind: 'claim', locker, claimant: sender.address, item: { resource: token, amount: '2' } },
+      { kind: 'recover', locker, claimant: stranger.address, item: { resource: token, amount: '3' }, badge: proof },
+    ]);
+    expect(manifest.match(/create_proof/g)).toHaveLength(1);
+    expectCommitted(ledger.run(manifest, sender.address), manifest);
+    expect(Number(ledger.balance(sender.address, token))).toBe(before + 5);
+  });
+
+  it('recovers what several recipients never claimed, in one transaction', () => {
+    ledger.use(sender);
+    const store = airdropManifest({
+      account: sender.address,
+      locker,
+      badge: { account: sender.address, resource: badge },
+      resource: token,
+      claimants: [
+        { account: accepter.address, amount: '4' },
+        { account: stranger.address, amount: '6' },
+      ],
+      tryDirectSend: false,
+    });
+    expectCommitted(ledger.run(store, sender.address), store);
+
+    const before = Number(ledger.balance(sender.address, token));
+    const manifest = recoverAllManifest({
+      account: sender.address,
+      locker,
+      badge: { account: sender.address, resource: badge },
+      items: [
+        { claimant: accepter.address, claims: [{ resource: token, amount: '4' }] },
+        { claimant: stranger.address, claims: [{ resource: token, amount: '6' }] },
+      ],
+    });
+    expect(manifest.match(/create_proof/g)).toHaveLength(1);
+    expect(manifest.match(/deposit_batch/g)).toHaveLength(1);
+    expectCommitted(ledger.run(manifest, sender.address), manifest);
+    expect(Number(ledger.balance(sender.address, token))).toBe(before + 10);
   });
 
   it('airdrops NFTs', () => {

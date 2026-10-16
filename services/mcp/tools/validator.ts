@@ -51,14 +51,10 @@ import { defineMcpTool } from '../registry';
 import { staticallyValidateManifest } from '@/services/ret';
 import { signingSteps } from '../dapp';
 import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection, cliTable } from '../cli';
+import { networkSchema } from './schemas';
 
 /** Largest stakers listed per validator. */
 const MAX_STAKERS = 10;
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
 
 const networkIdOf = (network: Network) =>
   network === 'stokenet' ? RadixNetworkId.Stokenet : RadixNetworkId.Mainnet;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Gift, PackagePlus } from 'lucide-react';
+import { Gift, PackagePlus, Undo2 } from 'lucide-react';
 
 import { CopyButton } from '@/components/ui/CopyButton';
 import { useLanguage } from '@/context/LanguageContext';
@@ -12,11 +12,12 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { gatewayPost } from '@/services/gateway/bases';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
-import { useAccountLockerList } from '../../hooks/useAccountLockerList';
+import { useAccountLockerRoles } from '../../hooks/useAccountLockerRoles';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
+import { useLockerActivity } from '../../hooks/useLockerActivity';
 import { MAX_LOCKER_RECIPIENTS, useLockerWaiting } from '../../hooks/useLockerWaiting';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
-import { fetchLockerActivity, fetchLockerClaims, parseLockerState } from '../../lib/locker-lookup';
+import { fetchLockerClaims, parseLockerState } from '../../lib/locker-lookup';
 import { heldBadgeFor, isGlobalCallerBadge, isPackageCallerBadge, ownerRule, type RuleView } from '../../lib/role-lookup';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import type { ConsoleToolProps } from '../ConsoleToolView';
@@ -48,8 +49,9 @@ export default function LockerInfoTool({ t }: ConsoleToolProps) {
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
   const [lockers, setLockers] = useConsoleQueryState<string[]>(() => addressesFromUrl('locker'), []);
   const { activeNetwork } = useRadixWallet();
-  // The account's own lockers, offered as one-tap toggles.
-  const { data: own } = useAccountLockerList(account, activeNetwork);
+  const { data: roles, isLoading: loadingOwn } = useAccountLockerRoles(account, activeNetwork);
+  // Lockers the account has a part in (it can claim, store or recover), not every one it once touched.
+  const own = roles?.filter((l) => l.hasClaims || l.canStore || l.canRecover);
   const suggestions = (own ?? []).map((l) => ({
     address: l.address,
     label: l.name || truncateAddress(l.address, 10, 6),
@@ -70,6 +72,7 @@ export default function LockerInfoTool({ t }: ConsoleToolProps) {
             values={lockers}
             onChange={setLockers}
             suggestions={suggestions}
+            suggestionsLoading={loadingOwn}
             placeholder="locker_rdx1…"
           />
         </div>
@@ -132,13 +135,7 @@ function LockerInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionar
     queryFn: () => fetchLockerClaims((path, body) => gatewayPost(activeNetwork, path, body), address, account!),
   });
   // Totals come from the locker's history: read once per visit, not per render.
-  const { data: activity, isLoading: loadingActivity } = useQuery({
-    queryKey: ['console-locker-activity', activeNetwork, address],
-    enabled: !!state,
-    staleTime: 5 * 60_000,
-    retry: false,
-    queryFn: () => fetchLockerActivity((path, body) => gatewayPost(activeNetwork, path, body), address),
-  });
+  const { data: activity, isLoading: loadingActivity } = useLockerActivity(address, activeNetwork, !!state);
   const heldResources = activity ? [...Object.keys(activity.fungibles), ...Object.keys(activity.nonFungibles)] : [];
   // Each recipient and what still waits for them, the picked account first.
   const allRecipients = activity?.claimantAccounts ?? [];
@@ -207,6 +204,16 @@ function LockerInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionar
           icon: <Gift className="size-4" />,
           tool: { slug: 'locker-claim', query },
         },
+        ...(state.recoverer.type !== 'denyAll' && holds(state.recoverer) !== false
+          ? [
+              {
+                href: `/${language}/console/locker-recover?${query}`,
+                label: t.tools['locker-recover'].title,
+                icon: <Undo2 className="size-4" />,
+                tool: { slug: 'locker-recover' as const, query },
+              },
+            ]
+          : []),
         ...(canStore !== false
           ? [
               {

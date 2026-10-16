@@ -10,8 +10,10 @@ import {
   Code2,
   Coins,
   Flame,
+  Gift,
   Globe2,
   Image as ImageIcon,
+  Inbox,
   KeyRound,
   MessageSquare,
   PackageOpen,
@@ -54,6 +56,8 @@ const BLOCK_ICONS: Record<BlockDef['icon'], ReactNode> = {
   key: <KeyRound className="size-4" />,
   globe: <Globe2 className="size-4" />,
   sparkles: <Sparkles className="size-4" />,
+  inbox: <Inbox className="size-4" />,
+  gift: <Gift className="size-4" />,
 };
 
 interface BlockLabels {

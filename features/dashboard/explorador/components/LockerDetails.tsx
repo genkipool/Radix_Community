@@ -1,16 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
 
 import { useLanguage } from '@/context/LanguageContext';
 import { useResourceLabels } from '@/features/console/hooks/useResourceLabels';
 import { MAX_LOCKER_RECIPIENTS, useLockerWaiting } from '@/features/console/hooks/useLockerWaiting';
-import { fetchLockerActivity, parseLockerState } from '@/features/console/lib/locker-lookup';
-import type { GatewayPost } from '@/features/console/lib/resource-holders';
+import { LOCKER_HISTORY_PAGES, useLockerActivity as useSharedLockerActivity } from '@/features/console/hooks/useLockerActivity';
+import { parseLockerState } from '@/features/console/lib/locker-lookup';
 import type { RuleView } from '@/features/console/lib/role-lookup';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 import type { Network } from '@/features/dashboard/types';
-import { gatewayPost } from '@/services/gateway/bases';
 import { formatNumber } from '@/utils/formatters';
 import { RuleBadgeChip, badgeOfRule, ruleText } from '../utils/ruleText';
 import { SummaryInlineRow } from './EntityPanelShared';
@@ -18,26 +16,13 @@ import { useExplorerEntity } from './ExplorerEntityCard';
 import { HeldResourcesList } from './HeldResourcesList';
 import { CopyButton, PlainSummary } from './SummaryCardKit';
 
-/** Transactions read to add up a locker's contents (pages of 100). */
-export const LOCKER_HISTORY_PAGES = 5;
-
-const postFor = (network: Network): GatewayPost => (path, body) => gatewayPost(network, path, body);
-
 /**
- * What a locker holds and has done. The Gateway reports no balances for a
- * locker, so they come from adding up its history, with the same function the
- * console's locker info uses. Shared by the card's facts and its details.
+ * What a locker holds and has done, for the explorer: the shared reader,
+ * once the Gateway confirms the address is a locker.
  */
 export function useLockerActivity(address: string, network: Network) {
     const { data } = useExplorerEntity(address, network);
-    const isLocker = !!data && !!parseLockerState(data);
-    return useQuery({
-        queryKey: ['explorer-locker-activity', network, address],
-        enabled: isLocker,
-        staleTime: 60_000,
-        retry: false,
-        queryFn: () => fetchLockerActivity(postFor(network), address, LOCKER_HISTORY_PAGES),
-    });
+    return useSharedLockerActivity(address, network, !!data && !!parseLockerState(data));
 }
 
 /**

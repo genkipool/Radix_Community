@@ -4,7 +4,17 @@
  */
 
 
+import {
+  addAuthorizedDepositorInstruction,
+  DEFAULT_DEPOSIT_RULES,
+  removeAuthorizedDepositorInstruction,
+  removeResourcePreferenceInstruction,
+  setDefaultDepositRuleInstruction,
+  setResourcePreferenceInstruction,
+  type DefaultDepositRule,
+} from './account-deposits';
 import { buildBadgeProofManifest } from './badge-proof-manifest';
+import { claimManifest, recoverManifest, type LockerClaimItem } from './locker-manifests';
 import { escapeManifestString as escapeStr } from './manifest-escape';
 import { setStringMetadata } from './metadata-manifests';
 import { contributeManifest, createPoolManifest, poolKindOfBlueprint, redeemManifest } from './pool-manifests';
@@ -81,7 +91,9 @@ export interface ManifestTemplate {
     | 'tags'
     | 'braces'
     | 'droplets'
-    | 'crown';
+    | 'crown'
+    | 'inbox'
+    | 'gift';
   gradient: string;
   fields: TemplateField[];
   /** Present when the template operates on a validator owned by the signer. */
@@ -97,6 +109,17 @@ const VALIDATOR_OWNER: ValidatorOwnerBinding = {
 };
 
 const v = (values: Record<string, string>, key: string) => (values[key] ?? '').trim();
+
+/** "#1#, #2#" → ['#1#', '#2#'] */
+const idList = (raw: string) => raw.split(',').map((id) => id.trim()).filter(Boolean);
+
+/** What a locker template claims or recovers: NFT ids when given, otherwise the amount. */
+const lockerItem = (values: Record<string, string>): LockerClaimItem => {
+  const nftIds = idList(v(values, 'nftIds'));
+  return nftIds.length
+    ? { resource: v(values, 'resource'), nftIds }
+    : { resource: v(values, 'resource'), amount: v(values, 'amount') || '{amount}' };
+};
 
 const DEPOSIT_ALL = (account: string) => `
 CALL_METHOD
@@ -1027,6 +1050,91 @@ TAKE_FROM_WORKTOP
         iconUrl: v(values, 'iconUrl'),
         infoUrl: v(values, 'infoUrl'),
       }),
+  },
+  /* ── Account deposit rules: what third parties may deposit; the account signs ── */
+  {
+    id: 'deposit-rule',
+    icon: 'inbox',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'rule', kind: 'choice', options: [...DEFAULT_DEPOSIT_RULES] },
+    ],
+    build: (values) => setDefaultDepositRuleInstruction(v(values, 'account'), (v(values, 'rule') || 'Accept') as DefaultDepositRule),
+  },
+  {
+    id: 'resource-preference',
+    icon: 'inbox',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'preference', kind: 'choice', options: ['Allowed', 'Disallowed', 'Remove'] },
+    ],
+    build: (values) => {
+      const [account, resource, preference] = [v(values, 'account'), v(values, 'resource'), v(values, 'preference')];
+      return preference === 'Remove'
+        ? removeResourcePreferenceInstruction(account, resource)
+        : setResourcePreferenceInstruction(account, resource, preference === 'Disallowed' ? 'Disallowed' : 'Allowed');
+    },
+  },
+  {
+    id: 'authorized-depositor',
+    icon: 'inbox',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'action', kind: 'choice', options: ['add', 'remove'] },
+      { key: 'badge', kind: 'resource' },
+      { key: 'badgeId', kind: 'nonFungibleId', optional: true },
+    ],
+    build: (values) => {
+      const badgeId = v(values, 'badgeId');
+      const badge = { resource: v(values, 'badge'), ...(badgeId ? { nftId: badgeId } : {}) };
+      return v(values, 'action') === 'remove'
+        ? removeAuthorizedDepositorInstruction(v(values, 'account'), badge)
+        : addAuthorizedDepositorInstruction(v(values, 'account'), badge);
+    },
+  },
+
+  /* ── Account locker ── */
+  {
+    id: 'locker-claim',
+    icon: 'gift',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'locker', kind: 'address' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'amount', kind: 'decimal', optional: true },
+      { key: 'nftIds', kind: 'nonFungibleId', optional: true },
+    ],
+    build: (values) => claimManifest({ account: v(values, 'account'), locker: v(values, 'locker'), claims: [lockerItem(values)] }),
+  },
+  {
+    id: 'locker-recover',
+    icon: 'gift',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'locker', kind: 'address' },
+      { key: 'recovererBadge', kind: 'resource' },
+      { key: 'recovererBadgeId', kind: 'nonFungibleId', optional: true },
+      { key: 'claimant', kind: 'address' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'amount', kind: 'decimal', optional: true },
+      { key: 'nftIds', kind: 'nonFungibleId', optional: true },
+    ],
+    build: (values) => {
+      const account = v(values, 'account');
+      return recoverManifest({
+        account,
+        locker: v(values, 'locker'),
+        badge: { account, resource: v(values, 'recovererBadge'), nonFungibleId: v(values, 'recovererBadgeId') },
+        claimant: v(values, 'claimant'),
+        ...lockerItem(values),
+      });
+    },
   },
 ];
 

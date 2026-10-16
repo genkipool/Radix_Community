@@ -413,6 +413,74 @@
           ]
         }
       },
+      "account-deposits": {
+        "title": "Depósitos de la cuenta",
+        "description": "Decide quién puede depositar en tu cuenta: la regla general, excepciones por token y las insignias autorizadas.",
+        "guide": {
+          "guideTitle": "Guía: depósitos de la cuenta",
+          "guideDescription": "Cada cuenta de Radix decide qué depósitos de terceros acepta. La regla general puede aceptar todo, aceptar solo los tokens que ya tienes o rechazarlo todo. Por encima de ella, cada token puede estar siempre permitido o siempre bloqueado, y una insignia autorizada deja depositar cualquier cosa a quien la presente. Estas reglas solo afectan a lo que te envían otros: lo que depositas tú mismo siempre entra. Un airdrop a una cuenta que lo rechaza no se pierde: espera en el locker.",
+          "guideSteps": [
+            "1. Cuenta: la que quieres configurar; firma ella misma.",
+            "2. Regla general: aceptar todo, solo lo que ya tienes o rechazar todo.",
+            "3. Excepciones: añade tokens y marca si se permiten o se bloquean siempre.",
+            "4. Depositantes autorizados: añade la insignia (y su ID si es un NFT concreto).",
+            "5. Revisa, simula y firma: solo se envía lo que has cambiado."
+          ],
+          "fields": [
+            {
+              "label": "Regla general",
+              "description": "Lo que pasa con un depósito de otra cuenta cuando no hay excepción para ese token.",
+              "example": "Solo lo que ya tengo"
+            },
+            {
+              "label": "Excepción por token",
+              "description": "Permitido: entra aunque la regla general lo rechace. Bloqueado: no entra aunque la regla general lo acepte.",
+              "example": "TPA · Bloquear"
+            },
+            {
+              "label": "Depositante autorizado",
+              "description": "Una insignia: quien la presente puede depositar cualquier cosa en tu cuenta, sean cuales sean las reglas.",
+              "example": "resource_rdx1… (Insignia de mi dApp)"
+            },
+            {
+              "label": "ID del NFT",
+              "description": "Si la insignia es un NFT concreto de una colección, su ID. Vacío: vale cualquier NFT o cantidad de ese recurso.",
+              "example": "#1#"
+            }
+          ],
+          "example": [
+            {
+              "field": "Regla general",
+              "type": "button-group",
+              "options": [
+                "Aceptar todo",
+                "Solo lo que ya tengo",
+                "Rechazar todo"
+              ],
+              "selected": "Solo lo que ya tengo"
+            },
+            {
+              "field": "Excepción",
+              "type": "input",
+              "value": "resource_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Depósito de terceros",
+              "definition": "Un try_deposit hecho por otra cuenta o un componente. Es lo único que estas reglas deciden."
+            },
+            {
+              "term": "AllowExisting",
+              "definition": "Acepta solo los recursos que la cuenta ya tiene o ha tenido, y XRD."
+            },
+            {
+              "term": "Depositante autorizado",
+              "definition": "Una insignia que salta las reglas: su portador puede depositar siempre."
+            }
+          ]
+        }
+      },
       "build-manifest": {
         "title": "Construir Manifiesto",
         "description": "Crea manifiestos visualmente usando plantillas o bloques interactivos con vista previa en tiempo real.",
@@ -2236,7 +2304,7 @@
             "3. Destinatarios: pega o sube un CSV, o reparte entre los poseedores de un token y revisa la lista.",
             "4. Entrega: deja \"Guardarlo todo\" (lo más seguro) o entrega directo a quien acepte depósitos.",
             "5. Firma cada lote y comparte el enlace de reclamo con los destinatarios.",
-            "6. Recuperar: más tarde, retira lo que alguien no haya reclamado."
+            "6. Recuperar: más tarde, retira lo que nadie haya reclamado desde \"Recuperar del locker\"."
           ],
           "fields": [
             {
@@ -2317,36 +2385,89 @@
       },
       "locker-claim": {
         "title": "Reclamar del Locker",
-        "description": "Mira lo que un Account Locker guarda para tu cuenta y reclámalo en una transacción.",
+        "description": "Para quien recibió un airdrop: retira a tu cuenta lo que un Account Locker guarda para ella.",
         "guide": {
           "guideTitle": "Guía: reclamar del locker",
-          "guideDescription": "La página que abren los destinatarios de un airdrop. Muestra lo que el locker guarda para tu cuenta y lo reclama todo en una transacción. Solo tu cuenta puede retirar lo que es suyo, así que el enlace es seguro de compartir.",
+          "guideDescription": "Esta página es para quien RECIBIÓ un airdrop. Cuando un airdrop no puede entregarse directamente (por ejemplo, porque tu cuenta no acepta tokens desconocidos), lo que te enviaron queda guardado en un locker a tu nombre. Aquí ves lo que te espera y lo retiras a tu cuenta en una transacción. Solo tu cuenta puede retirar lo suyo, así que el enlace es seguro de compartir. Si eres quien hizo el airdrop y quieres que te devuelvan lo que nadie reclamó, usa Recuperar del Locker.",
           "guideSteps": [
-            "1. Cuenta: elige la que recibió el airdrop.",
-            "2. Locker: viene en el enlace; si no, pega su dirección o búscala con el botón +.",
-            "3. Revisa lo que te espera en el locker.",
+            "1. Cuenta: la que recibió el airdrop. La consola elige sola la que tiene algo pendiente.",
+            "2. Lockers: vienen en el enlace que te pasaron; si no, pega su dirección o pulsa uno de tus lockers.",
+            "3. Revisa lo que te espera en cada locker.",
             "4. Pulsa Reclamar todo y firma en la billetera."
           ],
           "fields": [
             {
               "label": "Cuenta",
-              "description": "La cuenta a la que iba destinado el airdrop. Con otra cuenta el locker no mostrará nada pendiente.",
+              "description": "La cuenta a la que iba el airdrop. Con otra cuenta el locker no mostrará nada pendiente.",
               "example": "Mi cuenta principal"
             },
             {
-              "label": "Locker",
-              "description": "Dirección locker_… del airdrop. Tiene que ser de la misma red en la que estás conectado.",
+              "label": "Lockers",
+              "description": "Una o varias direcciones locker_… de la red en la que estás conectado.",
               "example": "locker_rdx1…"
             },
             {
               "label": "Te espera",
-              "description": "Cada recurso guardado para tu cuenta, con su cantidad o su número de NFT. Si ya lo reclamaste o lo recuperaron, no aparece.",
+              "description": "Cada recurso guardado para tu cuenta, con su cantidad o su número de NFT. Si ya lo reclamaste o te lo recuperaron, no aparece.",
               "example": "25 HUG · 2 NFT"
             },
             {
               "label": "Reclamar todo",
-              "description": "Una sola transacción que retira todo lo pendiente y lo deposita en tu cuenta. Solo se activa cuando hay algo que reclamar.",
+              "description": "Una sola transacción que retira todo lo pendiente y lo deposita en tu cuenta.",
               "example": "Reclamar todo"
+            }
+          ],
+          "example": [
+            {
+              "field": "Lockers",
+              "type": "input",
+              "value": "locker_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "Componente nativo que guarda recursos a nombre de cuentas concretas hasta que las reclaman."
+            },
+            {
+              "term": "Reclamar",
+              "definition": "El destinatario retira lo que el locker guarda para él; el locker comprueba que firma su dueño."
+            },
+            {
+              "term": "Recuperar",
+              "definition": "Lo contrario: quien hizo el airdrop retira lo que otro no reclamó. Se hace en Recuperar del Locker."
+            }
+          ]
+        }
+      },
+      "locker-recover": {
+        "title": "Recuperar del Locker",
+        "description": "Para quien hizo un airdrop: recupera lo que tus destinatarios no han reclamado, de uno, de varios o de todos.",
+        "guide": {
+          "guideTitle": "Guía: recuperar del locker",
+          "guideDescription": "Esta página es para quien HIZO un airdrop con un locker. Lo que tus destinatarios no han reclamado sigue guardado a su nombre. Si el locker se creó permitiendo recuperar, la insignia de recuperación (al crear el locker en la consola es la misma insignia del locker) te deja retirarlo a tu cuenta, por ejemplo al acabar el plazo de reclamo o si enviaste a una dirección equivocada. Si eres destinatario y quieres retirar lo tuyo, usa Reclamar del Locker.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene la insignia de recuperación del locker.",
+            "2. Locker: pégalo o pulsa uno de tus lockers.",
+            "3. Revisa la tabla: cada destinatario con lo que le espera. Todos salen marcados.",
+            "4. Desmarca a quien no quieras recuperar. Dejar marcado uno solo recupera solo de ese destinatario.",
+            "5. Simula y firma. Si son muchos destinatarios, se envía en varios lotes."
+          ],
+          "fields": [
+            {
+              "label": "Cuenta",
+              "description": "Debe tener la insignia de recuperación del locker; la prueba de la insignia se añade sola.",
+              "example": "Mi cuenta de airdrops"
+            },
+            {
+              "label": "Locker",
+              "description": "El locker del que recuperar. Solo se puede si se creó permitiendo recuperar.",
+              "example": "locker_rdx1…"
+            },
+            {
+              "label": "Destinatarios",
+              "description": "Cada cuenta con algo pendiente y lo que le espera. Lo marcado vuelve entero a tu cuenta; lo desmarcado sigue esperando a su destinatario.",
+              "example": "account_rdx1… · 25 XRD · 2 NFT"
             }
           ],
           "example": [
@@ -2358,16 +2479,16 @@
           ],
           "glossary": [
             {
-              "term": "Account Locker",
-              "definition": "Componente nativo que guarda recursos a nombre de cuentas concretas hasta que las reclaman."
-            },
-            {
-              "term": "claim",
-              "definition": "Método del locker que entrega a una cuenta lo que guarda para ella; comprueba que firma su dueño."
-            },
-            {
               "term": "Recuperar",
-              "definition": "El creador del locker puede retirar lo no reclamado si activó la recuperación al crearlo."
+              "definition": "Retirar del locker lo guardado para un destinatario que no lo ha reclamado."
+            },
+            {
+              "term": "Insignia de recuperación",
+              "definition": "El recurso que el locker exige para recuperar."
+            },
+            {
+              "term": "Lote",
+              "definition": "Una transacción con hasta 40 recuperaciones, por el límite de eventos del motor."
             }
           ]
         }
@@ -3137,6 +3258,58 @@
             "iconUrl": "URL del icono",
             "infoUrl": "Web"
           }
+        },
+        "deposit-rule": {
+          "name": "Regla general de depósitos",
+          "description": "Decide qué aceptan tus cuentas de terceros: todo, solo lo que ya tienes, o nada.",
+          "fields": {
+            "account": "Cuenta",
+            "rule": "Regla (Accept, AllowExisting o Reject)"
+          }
+        },
+        "resource-preference": {
+          "name": "Excepción de depósito por token",
+          "description": "Un token que siempre entra (Allowed), que nunca entra (Disallowed) o que vuelve a seguir la regla general (Remove).",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token (dirección del recurso)",
+            "preference": "Excepción"
+          }
+        },
+        "authorized-depositor": {
+          "name": "Depositante autorizado",
+          "description": "Añade o quita una insignia cuyo portador puede depositar siempre en tu cuenta.",
+          "fields": {
+            "account": "Cuenta",
+            "action": "Acción (add o remove)",
+            "badge": "Insignia (dirección del recurso)",
+            "badgeId": "ID del NFT (vacío: cualquiera de la colección)"
+          }
+        },
+        "locker-claim": {
+          "name": "Reclamar de un locker",
+          "description": "Reclama a tu cuenta lo que un locker guarda para ella. Pon la cantidad, o los ID si son NFT.",
+          "fields": {
+            "account": "Tu cuenta (la destinataria)",
+            "locker": "Dirección del locker",
+            "resource": "Recurso guardado",
+            "amount": "Cantidad",
+            "nftIds": "ID de los NFT"
+          }
+        },
+        "locker-recover": {
+          "name": "Recuperar de un locker",
+          "description": "Con la insignia de recuperación, retira lo que el locker guarda para una cuenta y lo devuelve a la tuya.",
+          "fields": {
+            "account": "Cuenta con la insignia",
+            "locker": "Dirección del locker",
+            "recovererBadge": "Insignia de recuperación (recurso)",
+            "recovererBadgeId": "ID de la insignia",
+            "claimant": "Cuenta destinataria",
+            "resource": "Recurso guardado",
+            "amount": "Cantidad",
+            "nftIds": "ID de los NFT"
+          }
         }
       },
       "blocks": {
@@ -3529,10 +3702,95 @@
           "fields": {
             "validator": "Dirección del validador"
           }
+        },
+        "setDefaultDepositRule": {
+          "name": "Regla general de depósitos",
+          "description": "set_default_deposit_rule: qué depósitos de terceros acepta la cuenta. Firma la propia cuenta.",
+          "fields": {
+            "account": "Cuenta",
+            "rule": "Regla"
+          }
+        },
+        "setResourcePreference": {
+          "name": "Excepción por token",
+          "description": "set_resource_preference: un token que siempre entra (Allowed) o nunca entra (Disallowed).",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token",
+            "preference": "Excepción"
+          }
+        },
+        "removeResourcePreference": {
+          "name": "Quitar excepción",
+          "description": "remove_resource_preference: el token vuelve a seguir la regla general.",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token"
+          }
+        },
+        "addAuthorizedDepositor": {
+          "name": "Autorizar depositante",
+          "description": "add_authorized_depositor: quien presente esta insignia puede depositar siempre.",
+          "fields": {
+            "account": "Cuenta",
+            "badge": "Insignia (recurso)",
+            "badgeId": "ID del NFT"
+          }
+        },
+        "removeAuthorizedDepositor": {
+          "name": "Quitar depositante",
+          "description": "remove_authorized_depositor: la insignia deja de saltarse las reglas.",
+          "fields": {
+            "account": "Cuenta",
+            "badge": "Insignia (recurso)",
+            "badgeId": "ID del NFT"
+          }
+        },
+        "lockerClaim": {
+          "name": "Reclamar del locker",
+          "description": "claim: la cuenta destinataria toma una cantidad guardada. Queda en el worktop: añade después un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "account": "Cuenta destinataria",
+            "resource": "Recurso",
+            "amount": "Cantidad"
+          }
+        },
+        "lockerClaimNfts": {
+          "name": "Reclamar NFT del locker",
+          "description": "claim_non_fungibles: la cuenta destinataria toma NFT guardados por ID. Añade después un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "account": "Cuenta destinataria",
+            "resource": "Colección",
+            "nftIds": "ID de los NFT"
+          }
+        },
+        "lockerRecover": {
+          "name": "Recuperar del locker",
+          "description": "recover: retira lo guardado para una cuenta. Antes, un bloque \"prueba\" con la insignia de recuperación; después, un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "claimant": "Cuenta destinataria",
+            "resource": "Recurso",
+            "amount": "Cantidad"
+          }
+        },
+        "lockerRecoverNfts": {
+          "name": "Recuperar NFT del locker",
+          "description": "recover_non_fungibles: retira NFT guardados por ID. Antes, la prueba de la insignia de recuperación; después, un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "claimant": "Cuenta destinataria",
+            "resource": "Colección",
+            "nftIds": "ID de los NFT"
+          }
         }
       },
       "blockCategories": {
         "account": "Cuenta",
+        "deposits": "Reglas de depósito",
+        "locker": "Locker",
         "annotation": "Anotación",
         "invoke": "Invocación",
         "bucket": "Buckets",
@@ -4875,13 +5133,7 @@
       "directOff": "Guardarlo todo",
       "directOffHint": "Todos reclaman; recuperable",
       "needsStorer": "Esta cuenta no tiene la insignia del locker.",
-      "recoverTitle": "Recuperar",
-      "recoverHint": "Retira lo que sigue guardado para una cuenta, por ejemplo tras un plazo de reclamo.",
       "needsRecoverer": "Esta cuenta no tiene la insignia de recuperación.",
-      "claimantLabel": "Cuenta destinataria",
-      "nothingStored": "No hay nada guardado para esa cuenta.",
-      "recoverAmount": "Cantidad a recuperar",
-      "recoverButton": "Recuperar",
       "showManifest": "Ver manifiesto",
       "hideManifest": "Ocultar manifiesto",
       "info": {
@@ -4927,8 +5179,6 @@
         "allClaimed": "Todo reclamado",
         "recipientsMore": "Y {count} destinatarios más."
       },
-      "needsClaimant": "Indica la cuenta destinataria cuyo saldo quieres recuperar.",
-      "needsAmount": "Indica una cantidad válida, como mucho lo guardado.",
       "createAndSend": "Crear locker y hacer el airdrop",
       "restAfterCreate": "Esta transacción crea el locker y envía el primer lote. Los {count} lotes restantes se preparan en cuanto el locker exista.",
       "createEmpty": "Crear locker vacío",
@@ -4937,22 +5187,87 @@
       "allSent": "Airdrop completado: todos los destinatarios de la lista ya recibieron su parte con la creación del locker."
     },
     "lockerClaim": {
+      "roleWho": "Para quien recibió un airdrop",
+      "roleWhat": "Retira a tu cuenta lo que el locker guarda para ella. Solo tu cuenta puede hacerlo.",
+      "otherQuestion": "¿Hiciste tú el airdrop y quieres lo que nadie reclamó?",
       "accountTitle": "Tu cuenta",
       "lockerTitle": "Lockers",
       "lockerHint": "Elige uno o varios lockers: todo lo que guarden para tu cuenta se reclama en una sola transacción.",
       "waitingTitle": "Te espera",
+      "waitingHint": "Lo que cada locker guarda para tu cuenta.",
       "nothing": "No hay nada pendiente para esta cuenta en este locker.",
       "claimAll": "Reclamar todo",
       "showManifest": "Ver manifiesto",
       "hideManifest": "Ocultar manifiesto",
       "pickAccount": "Elige la cuenta que recibió el airdrop.",
-      "error": "No se pudo leer lo que te espera: {message}"
+      "error": "No se pudo leer lo que te espera: {message}",
+      "resourcesCount": "{count} recursos",
+      "unnamed": "Recurso sin nombre",
+      "unnamedLocker": "Locker sin nombre"
+    },
+    "lockerRecover": {
+      "roleWho": "Para quien hizo el airdrop",
+      "roleWhat": "Recupera a tu cuenta lo que tus destinatarios no han reclamado. Necesitas la insignia de recuperación del locker.",
+      "otherQuestion": "¿Recibiste un airdrop y quieres retirar lo tuyo?",
+      "accountTitle": "Cuenta",
+      "accountHint": "La que tiene la insignia de recuperación del locker.",
+      "lockerTitle": "Locker",
+      "lockerHint": "Pégalo o pulsa uno de tus lockers.",
+      "pickLocker": "Elige un locker.",
+      "waitingTitle": "Sin reclamar",
+      "waitingHint": "Cada destinatario con lo que el locker aún le guarda. Lo marcado vuelve a tu cuenta; lo desmarcado sigue esperando a su destinatario.",
+      "recipientColumn": "Destinatarios ({count})",
+      "waitingColumn": "Pendiente",
+      "noRecovery": "Este locker se creó sin recuperación: solo sus destinatarios pueden retirar lo guardado.",
+      "needsRecoverer": "Esta cuenta no tiene la insignia de recuperación de este locker.",
+      "loading": "Leyendo lo que queda en el locker…",
+      "nothing": "No queda nada sin reclamar en este locker.",
+      "noneTicked": "Marca al menos un destinatario.",
+      "truncated": "Historial largo: los destinatarios salen de las últimas {count} transacciones del locker.",
+      "button": "Recuperar ({count})"
     },
     "badges": {
       "unnamed": "Insignia sin nombre",
       "grants": "Da permiso para",
       "issuedLabel": "Emitidas",
       "yourAccount": "Tu cuenta"
+    },
+    "accountDeposits": {
+      "ruleTitle": "Regla general",
+      "ruleHint": "Lo que pasa con lo que te envían otros cuando no hay una excepción para ese token. Lo que depositas tú siempre entra.",
+      "rules": {
+        "Accept": {
+          "label": "Aceptar todo",
+          "hint": "Cualquiera puede enviarte cualquier token"
+        },
+        "AllowExisting": {
+          "label": "Solo lo que ya tengo",
+          "hint": "Solo tokens que ya tienes, y XRD"
+        },
+        "Reject": {
+          "label": "Rechazar todo",
+          "hint": "Nadie puede enviarte nada"
+        }
+      },
+      "exceptionsTitle": "Excepciones por recurso",
+      "exceptionsHint": "Tokens o NFT que siempre entran o que nunca entran, digan lo que digan las reglas generales.",
+      "depositorsTitle": "Depositantes autorizados",
+      "depositorsHint": "Quien presente una de estas insignias puede depositar cualquier cosa en tu cuenta.",
+      "allow": "Permitir",
+      "block": "Bloquear",
+      "remove": "Quitar",
+      "add": "Añadir",
+      "badgeIdPlaceholder": "ID de NFT (opcional)",
+      "noChanges": "No has cambiado nada.",
+      "readError": "No se pudieron leer los depósitos de la cuenta: {message}",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "sendButton": "Guardar reglas de depósito",
+      "noExceptions": "Sin excepciones: todos los recursos siguen la regla general.",
+      "addException": "Pega o elige un token o NFT para añadirlo como excepción",
+      "noDepositors": "Ninguna insignia autorizada.",
+      "addDepositor": "Pega o elige la insignia que podrá depositar siempre",
+      "accountTitle": "Cuenta"
     }
   }
 }

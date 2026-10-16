@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, BookUser, CornerDownLeft, Crown, Database, Plus, ServerCog, Wallet } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
@@ -21,13 +21,17 @@ import { gatewayPost } from '@/services/gateway/bases';
 import { shortAddress } from '@/utils/format';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useLockedResources } from '../../hooks/useLockedResources';
+import { usePickerPopup } from '../../hooks/usePickerPopup';
 import { fetchOwnedValidators } from '../../hooks/useOwnedValidators';
 import type { KnownPoolRow } from '../../lib/known-pools';
+import { isNonFungibleResource } from '../../lib/bulk-send';
 import { findLedgerEntities, type LedgerEntityKind } from '../../lib/ledger-entities';
 
 /** Where an option comes from; also the popup's tabs, in this order. */
 const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'network', 'validators'] as const;
-type Tab = 'all' | (typeof SOURCES)[number];
+/** A picker of resources only is split by kind instead: tokens and NFTs. */
+const KINDS = ['tokens', 'nfts'] as const;
+type Tab = 'all' | (typeof SOURCES)[number] | (typeof KINDS)[number];
 /** `typed`: a selected address no list has; it shows under "All" only. */
 type Source = (typeof SOURCES)[number] | 'typed';
 
@@ -46,7 +50,6 @@ const LEDGER_KINDS: LedgerEntityKind[] = ['pool', 'locker'];
 /** Shown before searching; the search runs over everything found. */
 const INITIAL_ROWS = 40;
 /** Tall enough for about eight rows, short enough not to cover the form. */
-const MAX_HEIGHT = 420;
 
 const fmtAmount = (amount: string) => Number(amount).toLocaleString(undefined, { maximumFractionDigits: 4 });
 
@@ -75,6 +78,9 @@ const TEXT = {
     ownBadge: 'Tienes su insignia',
     tabs: {
       all: 'Todas',
+      allResources: 'Todos',
+      tokens: 'Tokens',
+      nfts: 'NFTs',
       wallet: 'Tu billetera',
       myValidators: 'Tuyos',
       agenda: 'Agenda',
@@ -110,6 +116,9 @@ const TEXT = {
     ownBadge: 'You hold its badge',
     tabs: {
       all: 'All',
+      allResources: 'All',
+      tokens: 'Tokens',
+      nfts: 'NFTs',
       wallet: 'Your wallet',
       myValidators: 'Yours',
       agenda: 'Address book',
@@ -180,12 +189,9 @@ export function AddressPickerButton({
   const multi = !!onConfirm;
   const draft = useSelectionDraft<string>();
 
-  const [open, setOpen] = useState(false);
+  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, style: popupStyle, direction } = usePickerPopup();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('all');
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const popRef = useRef<HTMLDivElement>(null);
 
   const L = language === 'es' ? TEXT.es : TEXT.en;
   // Named after what it picks when it picks one kind only.
@@ -313,7 +319,12 @@ export function AddressPickerButton({
     }),
   );
 
-  const counts = SOURCES.map((src) => [src, options.filter((o) => o.source === src).length] as const).filter(([, n]) => n > 0);
+  const unique = options.filter((o, i) => options.findIndex((x) => x.address === o.address) === i);
+  const byKind = categories.length === 1 && categories[0] === 'resource';
+  const ofKind = (kind: (typeof KINDS)[number]) => unique.filter((o) => isNonFungibleResource(o.address) === (kind === 'nfts'));
+  const counts: Array<readonly [Exclude<Tab, 'all'>, number]> = byKind
+    ? KINDS.map((kind) => [kind, ofKind(kind).length] as const)
+    : SOURCES.map((src) => [src, options.filter((o) => o.source === src).length] as const).filter(([, n]) => n > 0);
   const activeTab: Tab = tab === 'all' || counts.some(([src]) => src === tab) ? tab : 'all';
 
   // Picked addresses no list has (typed or pasted) still show, under "All".
@@ -327,8 +338,12 @@ export function AddressPickerButton({
     : [];
 
   const q = query.trim().toLowerCase();
-  const unique = options.filter((o, i) => options.findIndex((x) => x.address === o.address) === i);
-  const inTab = activeTab === 'all' ? [...typedSelected, ...unique] : options.filter((o) => o.source === activeTab);
+  const inTab =
+    activeTab === 'all'
+      ? [...typedSelected, ...unique]
+      : activeTab === 'tokens' || activeTab === 'nfts'
+        ? ofKind(activeTab)
+        : options.filter((o) => o.source === activeTab);
   const found = q
     ? inTab.filter((o) => o.label.toLowerCase().includes(q) || o.address.toLowerCase().includes(q))
     : inTab;
@@ -347,53 +362,11 @@ export function AddressPickerButton({
     o.label || L.unnamed[o.category === 'pool' || o.category === 'locker' || o.category === 'resource' ? o.category : 'other'];
 
   const openPopup = () => {
-    if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
     setQuery('');
     setTab('all');
     if (multi) draft.open(selected);
-    setOpen(true);
+    showPopup();
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      const n = e.target as Node;
-      if (!btnRef.current?.contains(n) && !popRef.current?.contains(n)) setOpen(false);
-    };
-    const reposition = () => {
-      if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    window.addEventListener('resize', reposition);
-    window.addEventListener('scroll', reposition, true);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      window.removeEventListener('resize', reposition);
-      window.removeEventListener('scroll', reposition, true);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  const style: CSSProperties = (() => {
-    if (typeof window === 'undefined' || !rect) {
-      return { position: 'fixed', left: 12, top: 72, width: 320, zIndex: 9999 };
-    }
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const width = Math.min(440, vw - 24);
-    const left = Math.min(Math.max(12, rect.right - width), Math.max(12, vw - width - 12));
-    const spaceBelow = vh - rect.bottom;
-    const spaceAbove = rect.top;
-    const below = spaceBelow >= 240 || spaceBelow >= spaceAbove;
-    const room = (space: number) => Math.min(MAX_HEIGHT, Math.max(200, space - 16));
-    return below
-      ? { position: 'fixed', left, top: rect.bottom + 6, width, height: room(spaceBelow), zIndex: 9999 }
-      : { position: 'fixed', left, bottom: vh - rect.top + 6, width, height: room(spaceAbove), zIndex: 9999 };
-  })();
 
   const pick = (address: string) => {
     if (multi) {
@@ -405,18 +378,18 @@ export function AddressPickerButton({
       return;
     }
     onSelect?.(address);
-    setOpen(false);
+    closePopup();
   };
 
   const confirm = () => {
     onConfirm?.(draft.draft);
-    setOpen(false);
+    closePopup();
   };
 
   return (
     <>
       <button
-        ref={btnRef}
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={openPopup}
@@ -437,10 +410,10 @@ export function AddressPickerButton({
           <AnimatePresence>
             {open && (
               <SelectPopup
-                ref={popRef}
-                style={style}
-                direction={style.bottom !== undefined ? 'up' : 'down'}
-                onClose={() => setOpen(false)}
+                ref={popupRef}
+                style={popupStyle}
+                direction={direction}
+                onClose={() => closePopup()}
                 closeLabel={L.close}
                 title={pickTitle}
                 header={
@@ -448,12 +421,12 @@ export function AddressPickerButton({
                     <SelectPopupTabs
                       tabs={([['all', unique.length + typedSelected.length] as const, ...counts]).map(([key, count]) => ({
                         value: key,
-                        label: L.tabs[key],
+                        label: key === 'all' && byKind ? L.tabs.allResources : L.tabs[key],
                         count,
                       }))}
                       active={activeTab}
                       onChange={setTab}
-                      onClose={() => setOpen(false)}
+                      onClose={() => closePopup()}
                       closeLabel={L.close}
                     />
                   ) : undefined

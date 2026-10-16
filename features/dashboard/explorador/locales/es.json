@@ -619,6 +619,46 @@
           "copy": "Copiar",
           "open_locker": "Abrir la tarjeta del locker"
         },
+        "deposits": {
+          "label": "Depósitos",
+          "tooltip": "Quién más puede depositar en esta cuenta: la regla general, excepciones por token e insignias autorizadas.",
+          "loading": "Leyendo las reglas de depósito…",
+          "error": "No se pudieron leer las reglas de depósito.",
+          "rules": {
+            "Accept": {
+              "label": "Acepta todo",
+              "hint": "Cualquiera puede enviarle cualquier token"
+            },
+            "AllowExisting": {
+              "label": "Solo lo que ya tiene",
+              "hint": "Solo tokens que ya tiene, y XRD"
+            },
+            "Reject": {
+              "label": "Rechaza todo",
+              "hint": "Nadie puede enviarle nada"
+            }
+          },
+          "exceptions": "Excepciones por recurso",
+          "no_exceptions": "Sin excepciones: todos los recursos siguen la regla general.",
+          "allowed": "Permitido",
+          "refused": "Bloqueado",
+          "allowed_short": "permitidos",
+          "refused_short": "bloqueados",
+          "none_short": "Ninguna",
+          "depositors": "Depositantes autorizados",
+          "no_depositors": "Ninguna insignia autorizada.",
+          "note": "Estas reglas solo deciden lo que envían otros; lo que deposita la propia cuenta siempre entra. Un airdrop rechazado no se pierde: espera en el locker.",
+          "edit": "Cambiar en la consola",
+          "copy": "Copiar",
+          "depositors_hint": "Quien presente una de estas insignias puede depositar cualquier cosa.",
+          "exceptions_hint": "Tokens o NFT que siempre entran o que nunca entran, diga lo que diga la regla general.",
+          "allowed_title": "Permitido: este token siempre entra en la cuenta, aunque la regla general lo rechace.",
+          "refused_title": "Bloqueado: nadie puede enviar este token a la cuenta, aunque la regla general lo acepte. Si llega por un airdrop, espera en el locker.",
+          "held": "En la cuenta",
+          "in_lockers": "En lockers",
+          "status": "Estado",
+          "unnamed": "Recurso sin nombre"
+        },
         "no_pool_units": "No hay unidades de pool en esta cuenta.",
         "open_pool": "Abrir la tarjeta del pool",
         "contributed_tokens_yours": "Lo que te corresponde",

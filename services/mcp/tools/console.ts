@@ -61,11 +61,7 @@ import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
 import { RADIX_COMMUNITY_ORIGIN, dappDefinitionFor, signingSteps } from '../dapp';
 import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSection, cliTable } from '../cli';
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
+import { networkSchema } from './schemas';
 
 const localeSchema = z
   .enum(['en', 'es'])

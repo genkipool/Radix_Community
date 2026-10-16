@@ -40,11 +40,7 @@ import {
 } from '@/features/console/lib/resource-holders';
 import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSection, cliTable } from '../cli';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
+import { networkSchema } from './schemas';
 
 const addressSchema = z
   .string()

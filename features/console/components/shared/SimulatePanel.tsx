@@ -111,11 +111,14 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
       {(preview.balanceChanges.length > 0 || preview.feeXrd) && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>
-              {t.balanceChanges}
-            </p>
+            {/* No heading for a transaction that moves no balance, e.g. a settings change. */}
+            {preview.balanceChanges.length > 0 && (
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>
+                {t.balanceChanges}
+              </p>
+            )}
             {preview.feeXrd && (
-              <span className="text-xs font-medium text-[var(--color-text-muted)]">
+              <span className="ml-auto text-xs font-medium text-[var(--color-text-muted)]">
                 Fee: <span className="text-[var(--color-text-main)]">{formatNumber(preview.feeXrd, 4, language)} XRD</span>
               </span>
             )}

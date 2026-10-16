@@ -142,55 +142,139 @@ export interface RecoverInput {
   nftIds?: string[];
 }
 
-/** Takes back what is stored for a claimant (only when the locker allows recovery). */
-export function recoverManifest({ account, locker, badge, claimant, resource, amount, nftIds }: RecoverInput): string {
-  const call = nftIds?.length
+/** What a locker call takes: an amount of a fungible, or some NFTs by id. */
+export interface LockerClaimItem {
+  resource: string;
+  amount?: string;
+  nftIds?: string[];
+}
+
+/** One locker call that leaves what it returns on the worktop: claim (by the claimant) or recover (by the recoverer). */
+const lockerCall = (kind: 'claim' | 'recover', locker: string, claimant: string, item: LockerClaimItem) =>
+  item.nftIds?.length
     ? `CALL_METHOD
     Address("${locker}")
-    "recover_non_fungibles"
+    "${kind}_non_fungibles"
     Address("${claimant}")
-    Address("${resource}")
-    Array<NonFungibleLocalId>(${nftIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ')})
+    Address("${item.resource}")
+    Array<NonFungibleLocalId>(${item.nftIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ')})
 ;`
     : `CALL_METHOD
     Address("${locker}")
-    "recover"
+    "${kind}"
     Address("${claimant}")
-    Address("${resource}")
-    Decimal("${amount}")
+    Address("${item.resource}")
+    Decimal("${item.amount}")
 ;`;
-  return `${proofOf(badge)}${call}
+
+/** The claimant takes one stored resource; shared with the templates and blocks. */
+export const lockerClaimInstruction = (locker: string, claimant: string, item: LockerClaimItem) => lockerCall('claim', locker, claimant, item);
+
+/** The recoverer takes back one stored resource of a claimant; needs the recoverer badge proof earlier. */
+export const lockerRecoverInstruction = (locker: string, claimant: string, item: LockerClaimItem) =>
+  lockerCall('recover', locker, claimant, item);
+
+/** Takes back what is stored for a claimant (only when the locker allows recovery). */
+export function recoverManifest({ account, locker, badge, claimant, resource, amount, nftIds }: RecoverInput): string {
+  return `${proofOf(badge)}${lockerRecoverInstruction(locker, claimant, { resource, amount, nftIds })}
 ${DEPOSIT_ALL(account)}`;
+}
+
+/** Everything still stored for one claimant. */
+export interface UnclaimedItem {
+  claimant: string;
+  claims: LockerClaimItem[];
+}
+
+/**
+ * Takes back several claimants' unclaimed tokens in one transaction: one
+ * proof of the recoverer badge, a recover call per stored resource, and one
+ * deposit of it all into the account. Returns '' when nothing is stored.
+ */
+export function recoverAllManifest({
+  account,
+  locker,
+  badge,
+  items,
+}: {
+  account: string;
+  locker: string;
+  badge: LockerBadgeProof;
+  items: UnclaimedItem[];
+}): string {
+  return withdrawManifest(
+    account,
+    items.flatMap((item) => item.claims.map((claim) => ({ kind: 'recover' as const, locker, claimant: item.claimant, item: claim, badge }))),
+  );
+}
+
+/* ─── Taking things out of lockers: claims and recoveries together ────────── */
+
+/**
+ * One thing taken out of a locker: a claim (by the claimant, for itself) or a
+ * recovery (by the recoverer badge holder, of what waits for someone else).
+ */
+export type LockerWithdrawal =
+  | { kind: 'claim'; locker: string; claimant: string; item: LockerClaimItem }
+  | { kind: 'recover'; locker: string; claimant: string; item: LockerClaimItem; badge: LockerBadgeProof };
+
+const badgeKey = (b: LockerBadgeProof) => `${b.resource}:${b.nonFungibleId ?? ''}`;
+
+/**
+ * Claims and recoveries from any number of lockers in one transaction: a
+ * proof of each recoverer badge needed (once), every call, and one deposit of
+ * it all into the signing account. Returns '' when there is nothing to take.
+ */
+export function withdrawManifest(account: string, withdrawals: LockerWithdrawal[]): string {
+  if (!withdrawals.length) return '';
+  const badges = new Map<string, LockerBadgeProof>();
+  for (const w of withdrawals) if (w.kind === 'recover') badges.set(badgeKey(w.badge), w.badge);
+  const proofs = [...badges.values()].map(proofOf).join('');
+  const calls = withdrawals.map((w) =>
+    w.kind === 'claim' ? lockerClaimInstruction(w.locker, w.claimant, w.item) : lockerRecoverInstruction(w.locker, w.claimant, w.item),
+  );
+  return `${proofs}${calls.join('\n')}\n${DEPOSIT_ALL(account)}`;
+}
+
+/**
+ * Recover calls per transaction. Each recover withdraws from the claimant's
+ * vault and emits its events; the engine allows 256 events per transaction,
+ * so this keeps well under it with room for the deposit at the end.
+ */
+export const RECOVERS_PER_TRANSACTION = 40;
+
+/** The unclaimed items split into transactions of at most RECOVERS_PER_TRANSACTION calls. */
+export function recoverAllBatches(items: UnclaimedItem[], size = RECOVERS_PER_TRANSACTION): UnclaimedItem[][] {
+  const batches: UnclaimedItem[][] = [];
+  let current: UnclaimedItem[] = [];
+  let calls = 0;
+  for (const item of items) {
+    for (const claim of item.claims) {
+      if (calls === size) {
+        batches.push(current);
+        current = [];
+        calls = 0;
+      }
+      const last = current[current.length - 1];
+      if (last?.claimant === item.claimant) last.claims.push(claim);
+      else current.push({ claimant: item.claimant, claims: [claim] });
+      calls++;
+    }
+  }
+  if (current.length) batches.push(current);
+  return batches;
 }
 
 export interface ClaimInput {
   /** The claimant: the account the tokens were stored for, and where they go. */
   account: string;
   locker: string;
-  claims: Array<{ resource: string; amount?: string; nftIds?: string[] }>;
+  claims: LockerClaimItem[];
 }
 
 /** The claim calls for one locker; what they return stays on the worktop. */
-const claimCalls = (account: string, locker: string, claims: ClaimInput['claims']) =>
-  claims
-    .map((c) =>
-      c.nftIds?.length
-        ? `CALL_METHOD
-    Address("${locker}")
-    "claim_non_fungibles"
-    Address("${account}")
-    Address("${c.resource}")
-    Array<NonFungibleLocalId>(${c.nftIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ')})
-;`
-        : `CALL_METHOD
-    Address("${locker}")
-    "claim"
-    Address("${account}")
-    Address("${c.resource}")
-    Decimal("${c.amount}")
-;`,
-    )
-    .join('\n');
+const claimCalls = (account: string, locker: string, claims: LockerClaimItem[]) =>
+  claims.map((c) => lockerClaimInstruction(locker, account, c)).join('\n');
 
 /**
  * Claims stored tokens into the claimant's own account. The engine checks the

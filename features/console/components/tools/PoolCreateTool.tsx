@@ -112,6 +112,12 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
         })
       : '';
 
+  // Kept in the order already chosen, new picks after; a one/two pool keeps only its slots.
+  const pickResources = (picked: string[]) => {
+    const ordered = [...chosen.filter((r) => picked.includes(r)), ...picked.filter((r) => !chosen.includes(r))];
+    const kept = kind === 'multi' ? ordered : ordered.slice(0, SLOTS[kind]);
+    setResources([...kept, ...Array(Math.max(0, SLOTS[kind] - kept.length)).fill('')]);
+  };
   const setResource = (index: number, value: string) =>
     setResources((prev) => {
       const next = [...prev];
@@ -209,6 +215,9 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
                   value={resources[i] ?? ''}
                   onChange={(value) => setResource(i, value)}
                   placeholder={t.buildManifest.fieldPlaceholders.resource}
+                  // Any slot's picker chooses the pool's whole set at once, filling the slots in order.
+                  pickerSelected={chosen}
+                  onPickerConfirm={pickResources}
                 />
               </div>
               {kind === 'multi' && slots > 2 && i >= 2 && (

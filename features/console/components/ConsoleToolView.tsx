@@ -62,6 +62,8 @@ import PoolInfoTool from './tools/PoolInfoTool';
 import ValidatorInfoTool from './tools/ValidatorInfoTool';
 import LockerInfoTool from './tools/LockerInfoTool';
 import PoolProfileTool from './tools/PoolProfileTool';
+import AccountDepositsTool from './tools/AccountDepositsTool';
+import LockerRecoverTool from './tools/LockerRecoverTool';
 import PoolManageTool from './tools/PoolManageTool';
 import ResourceHoldersTool from './tools/ResourceHoldersTool';
 import BulkSendTool from './tools/BulkSendTool';
@@ -93,6 +95,8 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'pool-reserves': PoolReservesTool,
   'pool-redeem': PoolRedeemTool,
   'pool-profile': PoolProfileTool,
+  'account-deposits': AccountDepositsTool,
+  'locker-recover': LockerRecoverTool,
   'pool-manage': PoolManageTool,
   'resource-holders': ResourceHoldersTool,
   'bulk-send': BulkSendTool,

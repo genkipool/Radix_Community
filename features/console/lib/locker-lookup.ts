@@ -97,6 +97,26 @@ export async function fetchLockerClaims(post: GatewayPost, locker: string, accou
   return claims;
 }
 
+/**
+ * What waits in a locker for each of many accounts, a few requests at a time
+ * so a long recipient list does not trip the Gateway's rate limit. An account
+ * that cannot be read counts as having nothing waiting.
+ */
+export async function fetchWaitingFor(
+  post: GatewayPost,
+  locker: string,
+  accounts: string[],
+  concurrency = 8,
+): Promise<Record<string, LockerClaim[]>> {
+  const waiting: Record<string, LockerClaim[]> = {};
+  for (let i = 0; i < accounts.length; i += concurrency) {
+    const slice = accounts.slice(i, i + concurrency);
+    const claims = await Promise.all(slice.map((account) => fetchLockerClaims(post, locker, account).catch(() => [])));
+    slice.forEach((account, j) => (waiting[account] = claims[j]));
+  }
+  return waiting;
+}
+
 async function fetchVaultIds(post: GatewayPost, entity: string, vault: string, resource: string): Promise<string[]> {
   const ids: string[] = [];
   let cursor: string | undefined;

@@ -15,6 +15,7 @@ import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountDepositsTab } from './AccountDepositsTab';
 import { AccountLockersTab } from './AccountLockersTab';
 import { getTabsForEntity, type EntityTab } from './ExpandableEntityBadge';
 import { AccountStakingTab } from './AccountStakingTab';
@@ -386,6 +387,17 @@ export function AccountCard({
 
                                         {activeTab === 'lockers' && (
                                             <AccountLockersTab
+                                                address={address}
+                                                tt={tt}
+                                                network={network}
+                                                locale={locale}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
+                                        {activeTab === 'deposits' && (
+                                            <AccountDepositsTab
                                                 address={address}
                                                 tt={tt}
                                                 network={network}

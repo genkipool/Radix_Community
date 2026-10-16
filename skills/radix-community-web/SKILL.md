@@ -452,9 +452,9 @@ Reads one or several AccountLockers, the same profile the console's "Locker info
 
 ### `build_locker_manifest` — Build AccountLocker manifests
 
-The right way to airdrop on Radix. Operations: "create" (new AccountLocker; its badge, owner + storer + recoverer, goes to the account; allowRecover decides whether unclaimed tokens can come back; with recipients it also sends the first batch in the same transaction, one signature, and the rest is an "airdrop" on the new locker once it exists), "airdrop" (recipients CSV, one transaction per resource per 40 recipients; with tryDirectSend accounts that accept deposits get the tokens at once and only refusals stay claimable), "recover" (badge holder takes back what is stored for a claimant), "claim" (the claimant takes everything waiting for them; only that account can). Badges are resolved from the account. Share the claim page (/{locale}/console/locker-claim?locker=…) with the recipients.
+The right way to airdrop on Radix. Operations: "create" (new AccountLocker; its badge, owner + storer + recoverer, goes to the account; allowRecover decides whether unclaimed tokens can come back; with recipients it also sends the first batch in the same transaction, one signature, and the rest is an "airdrop" on the new locker once it exists), "airdrop" (recipients CSV, one transaction per resource per 40 recipients; with tryDirectSend accounts that accept deposits get the tokens at once and only refusals stay claimable), "recover" (badge holder takes back what is stored for a claimant), "recoverAll" (badge holder takes back everything still unclaimed by any recipient, in as few transactions as the event limit allows), "claim" (the claimant takes everything waiting for them; only that account can). Badges are resolved from the account. Share the claim page (/{locale}/console/locker-claim?locker=…) with the recipients.
 
-- `operation` ("create" | "airdrop" | "recover" | "claim"; required) —
+- `operation` ("create" | "airdrop" | "recover" | "recoverAll" | "claim"; required) —
 - `account` (string; required) — Signing account: the badge holder, or the claimant for "claim"
 - `locker` (string; optional) — Locker address (every operation except create)
 - `lockers` (array; optional) — claim only: several lockers, everything waiting in all of them claimed in one transaction (instead of "locker")
@@ -466,6 +466,27 @@ The right way to airdrop on Radix. Operations: "create" (new AccountLocker; its 
 - `resource` (string; optional) — recover only: resource to take back
 - `amount` (string; optional) — recover only: fungible amount
 - `nftIds` (array; optional) — recover only: NFT ids
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+- `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
+
+### `get_deposit_rules` — Read account deposit rules
+
+Reads who may deposit into one or several accounts, the same view the console's "Account deposits" section shows: the default rule (Accept, AllowExisting or Reject), the per-resource exceptions (always allowed / always refused) and the authorised depositor badges. These rules only decide third-party deposits (try_deposit_*); the owner's own deposits always land. Use it to explain why an airdrop or a payment did not arrive, or before build_deposit_rules_manifest.
+
+- `account` (any; required) — Account address, or a list of up to 10
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `build_deposit_rules_manifest` — Build account deposit rules manifest
+
+Builds one transaction that changes who may deposit into an account, starting from what the ledger has now and writing only what changes: the default rule, resources always allowed or always refused, exceptions removed, and authorised depositor badges added or removed. The account itself signs. Refusing deposits does not lose airdrops: a locker keeps what an account refuses until it is claimed.
+
+- `account` (string; required) — Account whose rules change; it signs the transaction
+- `defaultRule` ("Accept" | "AllowExisting" | "Reject"; optional) — New default rule: "Accept", "AllowExisting" or "Reject"
+- `allow` (array; optional) — Resources always allowed, whatever the default rule
+- `refuse` (array; optional) — Resources always refused, whatever the default rule
+- `removeExceptions` (array; optional) — Resources whose exception is removed (they follow the default rule again)
+- `addDepositors` (array; optional) — Badges to authorise: "resource_…", or "resource_…:#id#" for one NFT
+- `removeDepositors` (array; optional) — Authorised badges to remove, written the same way
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 - `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
 

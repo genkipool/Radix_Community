@@ -40,6 +40,7 @@ import {
 } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountDepositsTab } from './AccountDepositsTab';
 import { AccountLockersTab } from './AccountLockersTab';
 import { HeldResourcesList, type FungibleItem } from './HeldResourcesList';
 const AccountStakingTab = React.lazy(() =>
@@ -58,7 +59,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'metadata' | 'configuration' | 'raw';
+export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'deposits' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -127,6 +128,12 @@ export function getTabsForEntity(
             key: 'transactions',
             label: accT?.transactions_tab || 'Transactions',
             tooltip: tt?.tab_transactions_tooltip
+        });
+        // Just before Metadata: who else may deposit into the account.
+        base.push({
+            key: 'deposits',
+            label: accT?.deposits?.label || 'Deposits',
+            tooltip: accT?.deposits?.tooltip
         });
     }
 
@@ -494,6 +501,17 @@ export function ExpandableEntityBadge({
 
                                         {activeTab === 'lockers' && (
                                             <AccountLockersTab
+                                                address={address}
+                                                tt={tt}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale ?? 'en'}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
+                                        {activeTab === 'deposits' && (
+                                            <AccountDepositsTab
                                                 address={address}
                                                 tt={tt}
                                                 network={network as 'mainnet' | 'stokenet'}

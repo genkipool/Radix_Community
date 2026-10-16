@@ -42,13 +42,7 @@ import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection } from
 import { signingSteps } from '../dapp';
 import { defineMcpTool } from '../registry';
 import { assertAddressOnNetwork } from './console';
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
-
-const localeSchema = z.enum(['en', 'es']).default('en').describe('Language of the console links: "en" or "es"');
+import { networkSchema, localeSchema } from './schemas';
 
 const ruleText = (rule: PoolRule) =>
   rule.type === 'allowAll'

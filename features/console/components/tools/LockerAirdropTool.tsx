@@ -2,27 +2,25 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link2, PackagePlus, Vault } from 'lucide-react';
+import Link from 'next/link';
+import { Link2, PackagePlus, Undo2, Vault } from 'lucide-react';
 
 import { CopyButton } from '@/components/ui/CopyButton';
 import { useLanguage } from '@/context/LanguageContext';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { gatewayPost } from '@/services/gateway/bases';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
-import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { useKnownAddresses } from '../../hooks/useKnownAddresses';
 import { useLockedResources } from '../../hooks/useLockedResources';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { DEFAULT_BATCH_SIZE, batchRows, fungibleTotals, parseBulkCsv, validateBulkRows, type BulkIssue } from '../../lib/bulk-send';
-import { isPositiveDecimal, lteDecimal, normalizeDecimal } from '../../lib/decimal';
-import { claimantsFor, fetchLockerClaims, parseLockerState } from '../../lib/locker-lookup';
-import { airdropManifest, createLockerAndAirdropManifest, createLockerManifest, recoverManifest } from '../../lib/locker-manifests';
+import { claimantsFor, parseLockerState } from '../../lib/locker-lookup';
+import { airdropManifest, createLockerAndAirdropManifest, createLockerManifest } from '../../lib/locker-manifests';
 import { otherNetworkOf } from '../../lib/address-network';
-import { accountFromQuery, consoleQueryParam } from '../../lib/console-query';
+import { accountFromQuery, consoleQueryParam, toolQuery } from '../../lib/console-query';
 import { heldBadgeFor } from '../../lib/role-lookup';
 import type { ConsoleTxResult } from '../../types/console.types';
 import type { ConsoleToolProps } from '../ConsoleToolView';
@@ -30,15 +28,11 @@ import { bulkIssueText } from '../distribution/bulkIssueText';
 import { RecipientListInput } from '../distribution/RecipientListInput';
 import { AccountPicker } from '../shared/AccountPicker';
 import { BatchRunner } from '../shared/BatchRunner';
-import { CollapsibleManifest } from '../shared/CollapsibleManifest';
 import { OptionButtons } from '../shared/OptionButtons';
 import { ToolSection } from '../shared/ToolSection';
-import { ResourceCard } from '../shared/ResourceCard';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
-import { SimulateResultCard } from '../shared/SimulatePanel';
-import { TxActions } from '../shared/TxActions';
 import { TxResultBanner } from '../shared/TxResultBanner';
-import { AddressField, TextField } from '../shared/fields';
+import { AddressField } from '../shared/fields';
 
 type LockerMode = 'existing' | 'new';
 
@@ -48,7 +42,8 @@ const lockerFromUrl = () => consoleQueryParam('locker') ?? '';
  * Airdrops through a native AccountLocker: tokens go straight to every account
  * that accepts them, and wait in the locker, claimable, for those that refuse
  * unknown deposits. The badge holder can create the locker, load it from a
- * CSV in batches, recover what was never claimed, and share the claim page.
+ * CSV in batches and share the claim page. Taking back what was never
+ * claimed is the "Recover from locker" tool, linked from the locker's details.
  */
 export default function LockerAirdropTool({ t }: ConsoleToolProps) {
   const labels = t.locker;
@@ -79,12 +74,6 @@ export default function LockerAirdropTool({ t }: ConsoleToolProps) {
   // recipient can still be recovered, instead of leaving the sender for good.
   const [direct, setDirect] = useState(false);
 
-  const [claimant, setClaimant] = useState('');
-  const [recoverResource, setRecoverResource] = useState('');
-  const [recoverAmount, setRecoverAmount] = useState('');
-  const recover = useConsoleTransaction();
-  const recoverPreview = useTransactionPreview();
-
   const lockerAddress = locker.trim();
   const { data: state, isLoading: loadingState } = useQuery({
     queryKey: ['console-locker-state', activeNetwork, lockerAddress],
@@ -112,7 +101,7 @@ export default function LockerAirdropTool({ t }: ConsoleToolProps) {
   const locked = useLockedResources(parsed.rows.map((r) => r.resource), activeNetwork);
   const issues: BulkIssue[] = [...parsed.issues, ...validateBulkRows(parsed.rows, activeNetwork, senderHoldings, locked)];
   const resources = [...new Set(parsed.rows.map((r) => r.resource))];
-  const names = useResourceLabels([...resources, recoverResource]);
+  const names = useResourceLabels(resources);
   const totals = fungibleTotals(parsed.rows);
 
   const storer = badgeProof(storerBadge);
@@ -187,51 +176,6 @@ export default function LockerAirdropTool({ t }: ConsoleToolProps) {
     switchToCreated(created);
   };
 
-  // ── Recovery ─────────────────────────────────────────────────────────────
-  const claimantAddress = claimant.trim();
-  const { data: claims } = useQuery({
-    queryKey: ['console-locker-claims', activeNetwork, lockerAddress, claimantAddress],
-    enabled: !!state && claimantAddress.startsWith('account_') && !otherNetworkOf(claimantAddress, activeNetwork),
-    staleTime: 10_000,
-    retry: false,
-    queryFn: () => fetchLockerClaims((path, body) => gatewayPost(activeNetwork, path, body), lockerAddress, claimantAddress),
-  });
-  const chosenClaim = claims?.find((c) => c.resource === recoverResource) ?? claims?.[0];
-  // Name and icon of what is stored, so the recovery choice reads like every other resource picker.
-  const { data: claimMeta } = useQuery({
-    queryKey: ['console-locker-claim-meta', activeNetwork, (claims ?? []).map((c) => c.resource).join(',')],
-    enabled: !!claims?.length,
-    staleTime: 5 * 60_000,
-    retry: false,
-    queryFn: async () => {
-      const page = await gatewayPost<{ items: Array<{ address: string; explicit_metadata?: { items?: Array<{ key: string; value?: { typed?: { value?: unknown } } }> } }> }>(
-        activeNetwork,
-        '/state/entity/details',
-        { addresses: claims!.map((c) => c.resource), opt_ins: { explicit_metadata: ['name', 'symbol', 'icon_url'] } },
-      );
-      const read = (items: Array<{ key: string; value?: { typed?: { value?: unknown } } }> | undefined, key: string) => {
-        const v = items?.find((m) => m.key === key)?.value?.typed?.value;
-        return typeof v === 'string' ? v : '';
-      };
-      return Object.fromEntries(
-        page.items.map((i) => [
-          i.address,
-          { name: read(i.explicit_metadata?.items, 'symbol') || read(i.explicit_metadata?.items, 'name'), iconUrl: read(i.explicit_metadata?.items, 'icon_url') },
-        ]),
-      );
-    },
-  });
-  const amount = normalizeDecimal(recoverAmount);
-  const recoverer = badgeProof(recovererBadge);
-  const recoverManifestText =
-    account && state && recoverer && chosenClaim
-      ? chosenClaim.nftIds?.length
-        ? recoverManifest({ account, locker: state.address, badge: recoverer, claimant: claimantAddress, resource: chosenClaim.resource, nftIds: chosenClaim.nftIds })
-        : isPositiveDecimal(amount) && lteDecimal(amount, chosenClaim.amount ?? '0')
-          ? recoverManifest({ account, locker: state.address, badge: recoverer, claimant: claimantAddress, resource: chosenClaim.resource, amount })
-          : ''
-      : '';
-
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const claimLink = state ? `${origin}/${language}/console/locker-claim?locker=${state.address}` : '';
 
@@ -305,6 +249,16 @@ export default function LockerAirdropTool({ t }: ConsoleToolProps) {
                   <CopyButton value={claimLink} size="xs" variant="ghost" title={t.common.copy} />
                 </div>
                 <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{labels.claimLinkHint}</p>
+                {state.recoverer.type !== 'denyAll' && (
+                  <Link
+                    href={`/${language}/console/locker-recover?${toolQuery({ locker: state.address, account })}`}
+                    className="inline-flex items-center gap-1.5 pt-1 text-xs font-bold hover:underline"
+                    style={{ color: 'var(--color-primary)' }}
+                  >
+                    <Undo2 className="size-3.5" />
+                    {t.tools['locker-recover'].title}
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -398,79 +352,6 @@ export default function LockerAirdropTool({ t }: ConsoleToolProps) {
 
       <TxResultBanner t={t.common} result={createEmpty.result} error={createEmpty.error} onReset={createEmpty.reset} createdEntityLabel={labels.created} />
 
-      {state && state.recoverer.type !== 'denyAll' && (
-        <>
-          <ToolSection title={labels.recoverTitle} hint={labels.recoverHint}>
-            <AddressField categories={['account']} label={labels.claimantLabel} value={claimant} onChange={setClaimant} placeholder="account_rdx1…" />
-            {claims && claims.length === 0 && <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{labels.nothingStored}</p>}
-            {claims && claims.length > 0 && (
-              <>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {claims.map((c) => {
-                    const meta = claimMeta?.[c.resource];
-                    const label = meta?.name || names[c.resource] || truncateAddress(c.resource, 10, 6);
-                    return (
-                      <ResourceCard
-                        key={c.resource}
-                        isActive={chosenClaim?.resource === c.resource}
-                        onClick={() => setRecoverResource(c.resource)}
-                        name={`${c.nftIds ? `${c.nftIds.length} NFT` : c.amount} ${label}`}
-                        address={truncateAddress(c.resource, 8, 6)}
-                        fullAddress={c.resource}
-                        iconUrl={meta?.iconUrl}
-                        title={c.resource}
-                      />
-                    );
-                  })}
-                </div>
-                {!chosenClaim?.nftIds && (
-                  <TextField
-                    label={labels.recoverAmount}
-                    value={recoverAmount}
-                    onChange={setRecoverAmount}
-                    placeholder={chosenClaim?.amount}
-                    trailing={
-                      <button type="button" onClick={() => setRecoverAmount(chosenClaim?.amount ?? '')} className="text-[11px] font-bold px-2 py-1 cursor-pointer" style={{ color: 'var(--color-primary)' }}>
-                        {t.pool.max}
-                      </button>
-                    }
-                  />
-                )}
-              </>
-            )}
-          </ToolSection>
-
-          <CollapsibleManifest manifest={recoverManifestText} showLabel={labels.showManifest} hideLabel={labels.hideManifest} copyLabel={t.common.copy} />
-          <TxActions
-            t={t}
-            onSend={() => recover.sendTransaction(recoverManifestText)}
-            onSimulate={() => recoverPreview.simulate(recoverManifestText)}
-            sendDisabled={!recoverManifestText || recover.isSending}
-            simulateDisabled={!recoverManifestText || recover.isSending}
-            sending={recover.isSending}
-            simulating={recoverPreview.isSimulating}
-            sendLabel={labels.recoverButton}
-            sendingLabel={t.common.sending}
-            blockedReason={
-              recoverManifestText
-                ? undefined
-                : !account
-                  ? t.batches.pickAccount
-                  : !recovererBadge
-                    ? labels.needsRecoverer
-                    : !claimantAddress.startsWith('account_')
-                      ? labels.needsClaimant
-                      : claims && claims.length === 0
-                        ? labels.nothingStored
-                        : claims
-                          ? labels.needsAmount
-                          : undefined
-            }
-          />
-          <SimulateResultCard t={t.simulate} preview={recoverPreview.preview} error={recoverPreview.error} onClose={recoverPreview.reset} />
-          <TxResultBanner t={t.common} result={recover.result} error={recover.error} onReset={recover.reset} />
-        </>
-      )}
     </div>
   );
 }

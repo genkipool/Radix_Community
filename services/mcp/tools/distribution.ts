@@ -25,7 +25,7 @@ import {
   type BulkRow,
 } from '@/features/console/lib/bulk-send';
 import { isPositiveDecimal } from '@/features/console/lib/decimal';
-import { claimantsFor, fetchLockerActivity, fetchLockerClaims, parseLockerState } from '@/features/console/lib/locker-lookup';
+import { claimantsFor, fetchLockerActivity, fetchLockerClaims, fetchWaitingFor, parseLockerState } from '@/features/console/lib/locker-lookup';
 import { canWithdraw, heldBadgeFor, ownerRule, type RuleView } from '@/features/console/lib/role-lookup';
 import {
   airdropManifest,
@@ -33,6 +33,8 @@ import {
   claimManifest,
   createLockerAndAirdropManifest,
   createLockerManifest,
+  recoverAllBatches,
+  recoverAllManifest,
   recoverManifest,
 } from '@/features/console/lib/locker-manifests';
 import {
@@ -51,13 +53,7 @@ import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSecti
 import { signingSteps } from '../dapp';
 import { defineMcpTool } from '../registry';
 import { assertAddressOnNetwork } from './console';
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
-
-const localeSchema = z.enum(['en', 'es']).default('en').describe('Language of the console links: "en" or "es"');
+import { networkSchema, localeSchema } from './schemas';
 
 const recipientsSchema = z
   .string()
@@ -398,12 +394,12 @@ export const getLockerClaimsTool = defineMcpTool({
   },
 });
 
-const LOCKER_OPERATIONS = ['create', 'airdrop', 'recover', 'claim'] as const;
+const LOCKER_OPERATIONS = ['create', 'airdrop', 'recover', 'recoverAll', 'claim'] as const;
 
 export const buildLockerManifestTool = defineMcpTool({
   name: 'build_locker_manifest',
   title: 'Build AccountLocker manifests',
-  description: `The right way to airdrop on Radix. Operations: "create" (new AccountLocker; its badge, owner + storer + recoverer, goes to the account; allowRecover decides whether unclaimed tokens can come back; with recipients it also sends the first batch in the same transaction, one signature, and the rest is an "airdrop" on the new locker once it exists), "airdrop" (recipients CSV, one transaction per resource per ${DEFAULT_BATCH_SIZE} recipients; with tryDirectSend accounts that accept deposits get the tokens at once and only refusals stay claimable), "recover" (badge holder takes back what is stored for a claimant), "claim" (the claimant takes everything waiting for them; only that account can). Badges are resolved from the account. Share the claim page (/{locale}/console/locker-claim?locker=…) with the recipients.`,
+  description: `The right way to airdrop on Radix. Operations: "create" (new AccountLocker; its badge, owner + storer + recoverer, goes to the account; allowRecover decides whether unclaimed tokens can come back; with recipients it also sends the first batch in the same transaction, one signature, and the rest is an "airdrop" on the new locker once it exists), "airdrop" (recipients CSV, one transaction per resource per ${DEFAULT_BATCH_SIZE} recipients; with tryDirectSend accounts that accept deposits get the tokens at once and only refusals stay claimable), "recover" (badge holder takes back what is stored for a claimant), "recoverAll" (badge holder takes back everything still unclaimed by any recipient, in as few transactions as the event limit allows), "claim" (the claimant takes everything waiting for them; only that account can). Badges are resolved from the account. Share the claim page (/{locale}/console/locker-claim?locker=…) with the recipients.`,
   category: 'console',
   inputSchema: z.object({
     operation: z.enum(LOCKER_OPERATIONS),
@@ -533,6 +529,32 @@ export const buildLockerManifestTool = defineMcpTool({
     if (!state) throw new Error(`${locker} is not an AccountLocker on ${network}.`);
     const { raw, sender } = await holdingsOf(account, network);
 
+    if (operation === 'recoverAll') {
+      const badge = heldBadgeFor(state.recoverer, raw.fungibles, raw.nonFungibles);
+      if (!badge) throw new Error('The account does not hold the locker recovery badge (or the locker does not allow recovery).');
+      // Every recipient the locker's history names, and what still waits for each.
+      const activity = await fetchLockerActivity(postFor(network), locker);
+      const waiting = await fetchWaitingFor(postFor(network), locker, activity.claimantAccounts);
+      const items = activity.claimantAccounts
+        .map((claimant) => ({ claimant, claims: waiting[claimant] ?? [] }))
+        .filter((item) => item.claims.length > 0);
+      if (!items.length) return `Nothing is left unclaimed in ${locker}.`;
+      const proof = { account, resource: badge.resource, nonFungibleId: badge.localId };
+      return renderBatches(
+        'Account locker · recover everything',
+        recoverAllBatches(items).map((batch) => ({ manifest: recoverAllManifest({ account, locker, badge: proof, items: batch }), count: batch.length })),
+        [
+          ['Recipients with something unclaimed', items.length],
+          ['Recover calls', items.reduce((n, i) => n + i.claims.length, 0)],
+          ...(activity.truncated ? ([['Note', `recipients read from the latest ${activity.transactions} transactions only`]] as Array<[string, string]>) : []),
+        ],
+        network,
+        locale,
+        ctx.origin,
+        'locker-recover',
+      );
+    }
+
     if (operation === 'recover') {
       const badge = heldBadgeFor(state.recoverer, raw.fungibles, raw.nonFungibles);
       if (!badge) throw new Error('The account does not hold the locker recovery badge (or the locker does not allow recovery).');
@@ -549,7 +571,7 @@ export const buildLockerManifestTool = defineMcpTool({
         amount: input.amount,
         nftIds: input.nftIds,
       });
-      return renderBatches('Account locker · recover', [{ manifest, count: 1 }], [['Claimant', input.claimant]], network, locale, ctx.origin, 'locker-airdrop');
+      return renderBatches('Account locker · recover', [{ manifest, count: 1 }], [['Claimant', input.claimant]], network, locale, ctx.origin, 'locker-recover');
     }
 
     // airdrop

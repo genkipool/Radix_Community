@@ -619,6 +619,46 @@
           "copy": "Copy",
           "open_locker": "Open the locker card"
         },
+        "deposits": {
+          "label": "Deposits",
+          "tooltip": "Who else may deposit into this account: the general rule, token exceptions and authorised badges.",
+          "loading": "Reading the deposit rules…",
+          "error": "Could not read the deposit rules.",
+          "rules": {
+            "Accept": {
+              "label": "Accepts anything",
+              "hint": "Anyone can send it any token"
+            },
+            "AllowExisting": {
+              "label": "Only what it holds",
+              "hint": "Only tokens it already holds, and XRD"
+            },
+            "Reject": {
+              "label": "Refuses everything",
+              "hint": "Nobody can send it anything"
+            }
+          },
+          "exceptions": "Resource exceptions",
+          "no_exceptions": "No exceptions: every resource follows the general rule.",
+          "allowed": "Allowed",
+          "refused": "Refused",
+          "allowed_short": "allowed",
+          "refused_short": "refused",
+          "none_short": "None",
+          "depositors": "Authorised depositors",
+          "no_depositors": "No authorised badges.",
+          "note": "These rules only decide what others send; the account's own deposits always land. A refused airdrop is not lost: it waits in the locker.",
+          "edit": "Change in the console",
+          "copy": "Copy",
+          "depositors_hint": "Whoever presents one of these badges can deposit anything.",
+          "exceptions_hint": "Tokens or NFTs that always land or never do, whatever the general rule says.",
+          "allowed_title": "Allowed: this token always lands in the account, even when the general rule refuses it.",
+          "refused_title": "Refused: nobody can send this token to the account, even when the general rule accepts it. An airdrop of it waits in the locker.",
+          "held": "In the account",
+          "in_lockers": "In lockers",
+          "status": "Status",
+          "unnamed": "Unnamed resource"
+        },
         "no_pool_units": "No pool units in this account.",
         "open_pool": "Open the pool card",
         "contributed_tokens_yours": "What you are entitled to",

@@ -47,6 +47,8 @@ interface MultiAddressSelectProps {
   onChange: (values: string[]) => void;
   /** The account's own entities, offered as one-tap toggles above the input. */
   suggestions?: Array<{ address: string; label: string; description?: string }>;
+  /** The suggestions are still loading: their place is held, so the field below does not jump when they arrive. */
+  suggestionsLoading?: boolean;
   placeholder: string;
   disabled?: boolean;
 }
@@ -59,7 +61,7 @@ interface MultiAddressSelectProps {
  * moment it is unticked. Picks the toggles do not show appear as chips, and
  * every pick is a card in the view, removable from there too.
  */
-export function MultiAddressSelect({ label, kind, values, onChange, suggestions = [], placeholder, disabled }: MultiAddressSelectProps) {
+export function MultiAddressSelect({ label, kind, values, onChange, suggestions = [], suggestionsLoading = false, placeholder, disabled }: MultiAddressSelectProps) {
   const { language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
   const [draft, setDraft] = useState('');
@@ -102,6 +104,13 @@ export function MultiAddressSelect({ label, kind, values, onChange, suggestions 
       <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
         {label}
       </span>
+      {suggestionsLoading && suggestions.length === 0 && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-busy>
+          {[0, 1].map((n) => (
+            <span key={n} className="block h-[52px] rounded-xl animate-pulse" style={{ background: 'var(--color-card-border)' }} />
+          ))}
+        </div>
+      )}
       {suggestions.length > 0 && (
         <OptionButtons
           multiple

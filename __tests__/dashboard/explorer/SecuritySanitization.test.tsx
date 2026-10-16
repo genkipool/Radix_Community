@@ -6,7 +6,9 @@ import { type TransactionCardProps } from '@/features/dashboard/explorador/types
 import { type TransactionInfo } from '@/types/radix';
 
 // Mock Lucide icons
-vi.mock('lucide-react', () => ({
+// Partial: the icons below are stubbed, any other comes from the real module.
+vi.mock('lucide-react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('lucide-react')>()),
   ArrowRight: () => <div data-testid="arrow-right" />,
   ChevronDown: () => <div data-testid="chevron-down" />,
   Clock: () => <div data-testid="clock" />,
