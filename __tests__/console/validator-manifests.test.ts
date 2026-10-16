@@ -27,7 +27,7 @@ const XRD = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd
 const KEY = '0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784';
 const LSU = 'resource_rdx1thnhmstrn255f3g5fmqm2rlnvxc9lhu6vhpsnkyc75dpfnkyuk8t8n';
 
-const CTX = { xrdAddress: XRD, poolPackage: '', validatorOwnerBadge: OWNER_BADGE };
+const CTX = { xrdAddress: XRD, poolPackage: '', resourcePackage: '', validatorOwnerBadge: OWNER_BADGE };
 
 const template = (id: string) => {
   const found = MANIFEST_TEMPLATES.find((candidate) => candidate.id === id);

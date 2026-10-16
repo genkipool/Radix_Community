@@ -13,15 +13,11 @@ import React from 'react';
 import { RefreshCw, Shield, TriangleAlert } from 'lucide-react';
 import { ValidatorCard } from '../staking/components/ValidatorCard';
 import { TransactionCard } from '../explorador/components/TransactionCard';
-import { AccountCard } from '../explorador/components/AccountCard';
-import { PackageCard } from '../explorador/components/PackageCard';
-import { ComponentCard } from '../explorador/components/ComponentCard';
-import { ResourceCard } from '../explorador/components/ResourceCard';
-import { SystemCard } from '../explorador/components/SystemCard';
+import { EntityCard } from '../explorador/components/entityCards';
 
 import type { DashboardCardGridProps } from '../types';
 
-const EMPTY_ACCOUNTS: string[] = [];
+const EMPTY_ENTITIES: string[] = [];
 
 /** A read that did not happen, and the offer to try it again. */
 const UnavailableState = ({
@@ -81,12 +77,7 @@ export const DashboardCardGrid = ({
   onExpand,
   onCopy,
   marketData,
-  accountsToShow = EMPTY_ACCOUNTS,
-  packagesToShow = EMPTY_ACCOUNTS,
-  componentsToShow = EMPTY_ACCOUNTS,
-  resourcesToShow = EMPTY_ACCOUNTS,
-  systemEntitiesToShow = EMPTY_ACCOUNTS,
-  validatorsToShow = EMPTY_ACCOUNTS,
+  entitiesToShow = EMPTY_ENTITIES,
 }: DashboardCardGridProps) => {
   return (
     <>
@@ -130,88 +121,8 @@ export const DashboardCardGrid = ({
           </>
         ) : (
           <>
-            {accountsToShow.length > 0 && accountsToShow.map((address) => (
-              <AccountCard
-                key={address}
-                address={address}
-                columns={columns}
-                isExpanded={expandedPosts.has(address) && !readingMode}
-                onExpand={onExpand}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                t={t}
-                network={network}
-                locale={locale}
-                marketData={marketData}
-                readingMode={readingMode}
-              />
-            ))}
-            {packagesToShow.length > 0 && packagesToShow.map((address) => (
-              <PackageCard
-                key={address}
-                address={address}
-                columns={columns}
-                isExpanded={expandedPosts.has(address) && !readingMode}
-                onExpand={onExpand}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                t={t}
-                network={network}
-                locale={locale}
-                marketData={marketData}
-                readingMode={readingMode}
-              />
-            ))}
-            {componentsToShow.length > 0 && componentsToShow.map((address) => (
-              <ComponentCard
-                key={address}
-                address={address}
-                columns={columns}
-                isExpanded={expandedPosts.has(address) && !readingMode}
-                onExpand={onExpand}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                t={t}
-                network={network}
-                locale={locale}
-                marketData={marketData}
-                readingMode={readingMode}
-              />
-            ))}
-            {resourcesToShow.length > 0 && resourcesToShow.map((address) => (
-              <ResourceCard
-                key={address}
-                address={address}
-                columns={columns}
-                isExpanded={expandedPosts.has(address) && !readingMode}
-                onExpand={onExpand}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                t={t}
-                network={network}
-                locale={locale}
-                marketData={marketData}
-                readingMode={readingMode}
-              />
-            ))}
-            {systemEntitiesToShow.length > 0 && systemEntitiesToShow.map((address) => (
-              <SystemCard
-                key={address}
-                address={address}
-                columns={columns}
-                isExpanded={expandedPosts.has(address) && !readingMode}
-                onExpand={onExpand}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                t={t}
-                network={network}
-                locale={locale}
-                marketData={marketData}
-                readingMode={readingMode}
-              />
-            ))}
-            {validatorsToShow.length > 0 && validatorsToShow.map((address) => (
-              <SystemCard
+            {entitiesToShow.map((address) => (
+              <EntityCard
                 key={address}
                 address={address}
                 columns={columns}

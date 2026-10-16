@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { HeroCollapse } from '@/components/layout/CollapsibleHeroSection';
 import { SidebarPageHero } from '@/components/layout/SidebarPageHero';
 import type { FeaturedCardProps } from '@/components/ui/FeaturedCard';
 import type { Dictionary } from '@/i18n';
@@ -14,10 +15,18 @@ import type { ConsoleToolSlug } from '../types/console.types';
 
 interface ConsoleHomeProps {
   dictionary?: Partial<Dictionary>;
+  /** True while a tool is open: the landing folds up and the tool rises into its place. */
+  collapsed?: boolean;
+  /** Opens a tool through the shell, which folds the landing on the click. */
+  onOpenTool?: (slug: ConsoleToolSlug) => void;
 }
 
-/** Console landing page — hero plus featured tool cards (docs-style). */
-export default function ConsoleHome({ dictionary }: ConsoleHomeProps) {
+/**
+ * Console landing page — hero plus featured tool cards (docs-style). It lives
+ * in the console layout, above the routed tool, so opening a tool folds it up
+ * with the same HeroCollapse as Docs and Games instead of swapping pages.
+ */
+export default function ConsoleHome({ dictionary, collapsed = false, onOpenTool }: ConsoleHomeProps) {
   const t = useConsoleDictionary(dictionary);
   const { language } = useLanguage();
   const router = useRouter();
@@ -26,13 +35,17 @@ export default function ConsoleHome({ dictionary }: ConsoleHomeProps) {
   const toolLabels = (t.tools ?? {}) as Record<string, { title?: string; description?: string }>;
   const groupLabels = (t.groups ?? {}) as Record<string, string>;
 
-  const openTool = (slug: ConsoleToolSlug) => router.push(`/${language}/console/${slug}`);
+  const openTool = (slug: ConsoleToolSlug) =>
+    onOpenTool ? onOpenTool(slug) : router.push(`/${language}/console/${slug}`);
+  // Warm the route while the pointer rests on a card, so the tool is ready by the click.
+  const warm = (slug: ConsoleToolSlug) => router.prefetch(`/${language}/console/${slug}`);
 
   const cards: FeaturedCardProps[] = FEATURED_TOOL_SLUGS.map((slug) => {
     const meta = CONSOLE_TOOLS[slug];
     const group = CONSOLE_GROUPS.find((g) => g.tools.includes(slug));
     return {
       onClick: () => openTool(slug),
+      onMouseEnter: () => warm(slug),
       gradient: meta.gradient,
       accentRgb: meta.accentRgb,
       iconVariant: 'gradient-text',
@@ -49,7 +62,7 @@ export default function ConsoleHome({ dictionary }: ConsoleHomeProps) {
   );
 
   return (
-    <>
+    <HeroCollapse collapsed={collapsed}>
       <SidebarPageHero
         title={t.heroTitle ?? 'Console'}
         heroDescription={t.heroDescription ?? ''}
@@ -73,6 +86,7 @@ export default function ConsoleHome({ dictionary }: ConsoleHomeProps) {
                   key={slug}
                   type="button"
                   onClick={() => openTool(slug)}
+                  onMouseEnter={() => warm(slug)}
                   className="group flex items-start gap-3.5 p-5 rounded-2xl border text-left transition-all duration-300 hover:shadow-lg cursor-pointer"
                   style={{
                     borderColor: 'var(--color-card-border)',
@@ -99,6 +113,6 @@ export default function ConsoleHome({ dictionary }: ConsoleHomeProps) {
           </div>
         </div>
       )}
-    </>
+    </HeroCollapse>
   );
 }

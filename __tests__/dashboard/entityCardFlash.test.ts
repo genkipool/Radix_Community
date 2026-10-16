@@ -17,15 +17,10 @@
  */
 import { describe, it, expect } from 'vitest';
 
-const ENTITY_PREFIXES = [
-  'account_',
-  'package_',
-  'component_',
-  'resource_',
-  'transactiontracker_',
-  'consensusmanager_',
-  'validator_',
-] as const;
+import { ENTITY_KINDS, isCardEntity } from '@/features/dashboard/lib/entityKinds';
+
+/** Every prefix the grid has a card for, from the explorer's own table. */
+const CARD_PREFIXES = Object.values(ENTITY_KINDS).filter((k) => k.hasCard).flatMap((k) => k.prefixes);
 
 const RESOURCE = 'resource_tdx_2_1n20d5q2y9p46zrjaw543vcpdmk3dygtlq4uzyw2zvssg48cxsteu3e';
 const ACCOUNT = 'account_rdx12yy8n09a0w907vrjyj4hws2yptrm3rdjv84l9sr24e3w7pk7nuxst8';
@@ -46,8 +41,7 @@ function focusedEntity({
   ready,
 }: FocusInput): string {
   const value = deferredSearch.trim();
-  const typed =
-    value.length >= 60 && ENTITY_PREFIXES.some((p) => value.startsWith(p)) ? value : null;
+  const typed = isCardEntity(value) ? value : null;
 
   const pending = isNavigating ? committedEntity : null;
   const requested = typed ?? pending;
@@ -163,7 +157,8 @@ describe('which entity card the explorer shows', () => {
   });
 
   it('recognises every kind the grid can render a card for', () => {
-    for (const prefix of ENTITY_PREFIXES) {
+    expect(CARD_PREFIXES).toEqual(expect.arrayContaining(['pool_', 'locker_']));
+    for (const prefix of CARD_PREFIXES) {
       const address = prefix + 'x'.repeat(70);
       expect(
         focusedEntity({

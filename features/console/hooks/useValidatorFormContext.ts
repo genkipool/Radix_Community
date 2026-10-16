@@ -10,6 +10,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { parseValidatorState, type ValidatorState } from '../lib/validator-lookup';
 import type { ValidatorBatchContext } from '../lib/validator-operations';
 import { useOwnedValidators } from './useOwnedValidators';
+import { accountFromQuery } from '../lib/console-query';
 
 /** One address the form can act on, and whether it is switched on. */
 export interface ValidatorRow {
@@ -56,7 +57,7 @@ const FIRST_MANUAL_ROW = { id: `${MANUAL_PREFIX}0`, address: '' };
  */
 export function useValidatorFormContext(): ValidatorFormContext {
   const { activeNetwork, activeNetworkId } = useRadixWallet();
-  const [account, setAccount] = useState<string | null>(null);
+  const [account, setAccount] = useState<string | null>(accountFromQuery);
   const [manual, setManual] = useState<Array<{ id: string; address: string }>>([]);
   const [unselected, setUnselected] = useState<string[]>([]);
   const [nextManualId, setNextManualId] = useState(1);

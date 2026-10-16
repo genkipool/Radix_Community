@@ -288,6 +288,8 @@ export interface ResourceInlinePanelProps {
     userBalance?: number;
     /** Address of the pool component associated with this LP token */
     poolAddress?: string;
+    /** The account holding it, when shown inside an account (its pool position). */
+    holder?: string;
 }
 
 export interface NftTransferCardProps {

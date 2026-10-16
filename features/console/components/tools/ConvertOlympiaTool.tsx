@@ -138,7 +138,7 @@ export default function ConvertOlympiaTool({ t }: ConsoleToolProps) {
               <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
                 {result.resultKind === 'babylon' ? labels.result : labels.olympiaResult}
               </h3>
-              <CopyButton value={result.address} size="xs" variant="ghost" label={t.common.copy} />
+              <CopyButton value={result.address} size="xs" variant="ghost" title={t.common.copy} />
             </div>
           </header>
           <code className="block p-4 rounded-xl text-xs break-all font-mono" style={{ background: 'var(--color-surface)', color: 'var(--color-text-main)' }}>

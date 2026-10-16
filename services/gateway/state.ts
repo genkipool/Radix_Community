@@ -1,8 +1,9 @@
 /**
  * services/gateway/state.ts
  *
- * Gateway state endpoints not wrapped elsewhere: non-fungible id listing,
- * resource holders and key-value store contents.
+ * Gateway state endpoints not wrapped elsewhere: non-fungible id listing
+ * and key-value store contents. (Resource holders are paged by
+ * features/console/lib/resource-holders, shared with the console.)
  * Used by: the MCP ledger tools.
  */
 
@@ -99,45 +100,6 @@ export async function fetchNonFungibleSupply(
     ),
   );
   return res.items?.[0]?.details?.total_supply ?? null;
-}
-
-/* ─── Top holders of a resource ───────────────────────────────────────────── */
-
-export interface ResourceHolder {
-  holderAddress: string;
-  amount: string;
-  /** 'Fungible' holds an amount; 'NonFungible' holds a count of ids */
-  type: string;
-}
-
-export async function fetchResourceHolders(
-  resourceAddress: string,
-  network: Network = 'mainnet',
-): Promise<{ totalCount: number | null; holders: ResourceHolder[] }> {
-  'use cache';
-  cacheLife('minutes');
-  cacheTag('holders', `holders-${resourceAddress}`);
-
-  const res = await withRetry(() =>
-    gatewayPost<{
-      total_count?: number;
-      items?: Array<{
-        holder_address?: string;
-        type?: string;
-        amount?: string;
-        non_fungible_ids_count?: number;
-      }>;
-    }>(network, '/extensions/resource-holders/page', { resource_address: resourceAddress }),
-  );
-
-  return {
-    totalCount: res.total_count ?? null,
-    holders: (res.items ?? []).map((item) => ({
-      holderAddress: item.holder_address ?? '',
-      amount: item.amount ?? String(item.non_fungible_ids_count ?? ''),
-      type: item.type ?? '',
-    })),
-  };
 }
 
 /* ─── Key-value store contents ────────────────────────────────────────────── */

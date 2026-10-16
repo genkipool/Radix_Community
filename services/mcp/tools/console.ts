@@ -48,6 +48,8 @@ import {
 import {
   SECURITY_LEVELS,
   securityImprovements,
+  shieldFactorsOf,
+  type FactorRequirement,
   VERDICT_LEVEL,
   type RuleSummary,
   type SecurityNote,
@@ -59,11 +61,7 @@ import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
 import { RADIX_COMMUNITY_ORIGIN, dappDefinitionFor, signingSteps } from '../dapp';
 import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSection, cliTable } from '../cli';
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
+import { networkSchema } from './schemas';
 
 const localeSchema = z
   .enum(['en', 'es'])
@@ -93,6 +91,7 @@ async function templateContext(network: Network): Promise<TemplateContext> {
   return {
     xrdAddress: constants.XRD,
     poolPackage: known.pool_package ?? '',
+    resourcePackage: known.resource_package ?? '',
     validatorOwnerBadge: constants.OWNER_BADGE,
   };
 }
@@ -102,7 +101,7 @@ async function templateContext(network: Network): Promise<TemplateContext> {
  * a different network, so the user gets a clear message instead of a cryptic
  * static-validation error (or a manifest that previews against the wrong net).
  */
-function assertAddressOnNetwork(label: string, address: string, network: Network): void {
+export function assertAddressOnNetwork(label: string, address: string, network: Network): void {
   const inspection = inspectAddress(address);
   if (!inspection) {
     throw new Error(`${label} "${address}" is not a valid Radix bech32m address.`);
@@ -904,11 +903,25 @@ const ruleText = (rule: RuleSummary | null): string => {
   return `${need} of ${rule.badges.length} badge${rule.badges.length === 1 ? '' : 's'}`;
 };
 
+const factorText = (f: FactorRequirement) =>
+  f.kind === 'multi'
+    ? `${f.need} of ${f.total} factors (multi-factor)`
+    : f.kind === 'single'
+      ? `${f.need} of ${f.total} factors (ONE factor is enough)`
+      : f.kind === 'anyone'
+        ? 'ANYONE (AllowAll)'
+        : f.kind === 'nobody'
+          ? 'nobody (DenyAll)'
+          : 'unreadable rule';
+
 function controllerBlock(report: AccountSecurityReport): string | false {
   const config = report.controllerConfig;
   if (!config) return false;
+  const factors = shieldFactorsOf(config)!;
   return `${cliSection('Access Controller')}\n${cliKeyValues([
     ['Controller', config.address],
+    ['Factors to sign', factorText(factors.signing)],
+    ['Factors to recover', factorText(factors.recovery)],
     ['Primary role', ruleText(config.roles.primary)],
     ['Recovery role', ruleText(config.roles.recovery)],
     ['Confirmation role', ruleText(config.roles.confirmation)],
@@ -929,7 +942,7 @@ export const verifyAccountSecurityTool = defineMcpTool({
   name: 'verify_account_security',
   title: 'Verify how an account is protected',
   description:
-    'Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge. When it is a badge, it also says whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller\'s roles, its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.',
+    'Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge. When it is a badge, it also says whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller\'s roles, how many factors signing and recovery need (multi-factor or one factor enough), its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.',
   category: 'console',
   readOnly: true,
   inputSchema: z.object({
@@ -994,6 +1007,7 @@ export const verifyAccountSecurityTool = defineMcpTool({
         verdict: report.verdict,
         level: VERDICT_LEVEL[report.verdict],
         improvements: securityImprovements(report, report.controllerConfig),
+        shieldFactors: shieldFactorsOf(report.controllerConfig),
         accountKind: report.accountKind,
         controller: report.controller,
         notes: report.notes,

@@ -8,13 +8,13 @@ const LABELS: Record<(typeof NETWORKS)[number], string> = {
   stokenet: 'STOKENET',
 };
 
-/** Compact mainnet/stokenet switch for the console sidebar controls row. */
+/** Mainnet/stokenet switch: takes the free width of the console sidebar controls row. */
 export function NetworkSwitch() {
   const { activeNetwork, switchNetwork } = useRadixWallet();
 
   return (
     <div
-      className="flex items-center h-8 p-0.5 rounded-lg shrink-0"
+      className="flex flex-1 min-w-0 items-center h-8 p-0.5 rounded-lg"
       style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}
       role="group"
       aria-label="Network"
@@ -28,7 +28,7 @@ export function NetworkSwitch() {
             title={network === 'mainnet' ? 'Mainnet' : 'Stokenet'}
             aria-pressed={isActive}
             onClick={() => switchNetwork(network)}
-            className="h-full px-1.5 rounded-md text-[9px] font-sans font-bold tracking-wide transition-all duration-150 cursor-pointer"
+            className="h-full flex-1 px-2 rounded-md text-[10px] font-sans font-bold tracking-wide transition-all duration-150 cursor-pointer"
             style={{
               background: isActive ? 'var(--color-accent)' : 'transparent',
               color: isActive ? 'var(--color-bg)' : 'var(--color-text-muted)',

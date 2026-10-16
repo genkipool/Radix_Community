@@ -20,7 +20,11 @@
       "home_aria": "Ir al inicio de la consola",
       "expand_all": "Expandir todo",
       "collapse_all": "Contraer todo",
-      "flat_view": "Vista de lista"
+      "flat_view": "Vista de lista",
+      "favorites_only": "Mostrar solo favoritos",
+      "favorite_add": "Añadir a favoritos",
+      "favorite_remove": "Quitar de favoritos",
+      "no_favorites": "Aún no tienes favoritos. Pasa el ratón por una herramienta y pulsa su estrella."
     },
     "groups": {
       "assets": "Activos",
@@ -28,7 +32,9 @@
       "radix-seal": "Radix Seal",
       "utilities": "Utilidades",
       "ai": "IA y Automatización",
-      "validator": "Validador"
+      "validator": "Validador",
+      "pools": "Pools",
+      "locker": "Locker"
     },
     "tools": {
       "sign-collection": {
@@ -403,6 +409,74 @@
               "type": "input",
               "value": "50000",
               "isNumeric": true
+            }
+          ]
+        }
+      },
+      "account-deposits": {
+        "title": "Depósitos de la cuenta",
+        "description": "Decide quién puede depositar en tu cuenta: la regla general, excepciones por token y las insignias autorizadas.",
+        "guide": {
+          "guideTitle": "Guía: depósitos de la cuenta",
+          "guideDescription": "Cada cuenta de Radix decide qué depósitos de terceros acepta. La regla general puede aceptar todo, aceptar solo los tokens que ya tienes o rechazarlo todo. Por encima de ella, cada token puede estar siempre permitido o siempre bloqueado, y una insignia autorizada deja depositar cualquier cosa a quien la presente. Estas reglas solo afectan a lo que te envían otros: lo que depositas tú mismo siempre entra. Un airdrop a una cuenta que lo rechaza no se pierde: espera en el locker.",
+          "guideSteps": [
+            "1. Cuenta: la que quieres configurar; firma ella misma.",
+            "2. Regla general: aceptar todo, solo lo que ya tienes o rechazar todo.",
+            "3. Excepciones: añade tokens y marca si se permiten o se bloquean siempre.",
+            "4. Depositantes autorizados: añade la insignia (y su ID si es un NFT concreto).",
+            "5. Revisa, simula y firma: solo se envía lo que has cambiado."
+          ],
+          "fields": [
+            {
+              "label": "Regla general",
+              "description": "Lo que pasa con un depósito de otra cuenta cuando no hay excepción para ese token.",
+              "example": "Solo lo que ya tengo"
+            },
+            {
+              "label": "Excepción por token",
+              "description": "Permitido: entra aunque la regla general lo rechace. Bloqueado: no entra aunque la regla general lo acepte.",
+              "example": "TPA · Bloquear"
+            },
+            {
+              "label": "Depositante autorizado",
+              "description": "Una insignia: quien la presente puede depositar cualquier cosa en tu cuenta, sean cuales sean las reglas.",
+              "example": "resource_rdx1… (Insignia de mi dApp)"
+            },
+            {
+              "label": "ID del NFT",
+              "description": "Si la insignia es un NFT concreto de una colección, su ID. Vacío: vale cualquier NFT o cantidad de ese recurso.",
+              "example": "#1#"
+            }
+          ],
+          "example": [
+            {
+              "field": "Regla general",
+              "type": "button-group",
+              "options": [
+                "Aceptar todo",
+                "Solo lo que ya tengo",
+                "Rechazar todo"
+              ],
+              "selected": "Solo lo que ya tengo"
+            },
+            {
+              "field": "Excepción",
+              "type": "input",
+              "value": "resource_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Depósito de terceros",
+              "definition": "Un try_deposit hecho por otra cuenta o un componente. Es lo único que estas reglas deciden."
+            },
+            {
+              "term": "AllowExisting",
+              "definition": "Acepta solo los recursos que la cuenta ya tiene o ha tenido, y XRD."
+            },
+            {
+              "term": "Depositante autorizado",
+              "definition": "Una insignia que salta las reglas: su portador puede depositar siempre."
             }
           ]
         }
@@ -1138,7 +1212,7 @@
             {
               "label": "Cuenta que firma y paga",
               "description": "Presenta la insignia de propietario y paga la comisión de red. Si no tiene la insignia del validador elegido, el ledger rechaza todas las llamadas de este formulario.",
-              "example": "account_tdx_2_12xned60hq…"
+              "example": "account_tdx_2_12yg4284tj…"
             },
             {
               "label": "Dirección del validador",
@@ -1417,7 +1491,7 @@
             {
               "label": "Cuenta que firma y paga",
               "description": "Paga la tasa de creación y recibe el NFT de insignia de propietario. Todos los cambios posteriores que exijan propietario los firma quien tenga esa insignia, así que usa una cuenta que controles a largo plazo.",
-              "example": "account_tdx_2_12xned60hq…"
+              "example": "account_tdx_2_12yg4284tj…"
             },
             {
               "label": "Clave pública de consenso del nodo",
@@ -1475,6 +1549,946 @@
             {
               "term": "Transacción propia",
               "definition": "Crear un validador no puede compartir transacción con nada: su dirección y su insignia no existen hasta que esta transacción se confirma, así que ninguna instrucción posterior podría nombrarlas."
+            }
+          ]
+        }
+      },
+      "validator-info": {
+        "title": "Información del validador",
+        "description": "Ficha de un validador: stake, comisión, disponibilidad, rentabilidad y tu posición en él.",
+        "guide": {
+          "guideTitle": "Guía: información del validador",
+          "guideDescription": "Una vista de solo lectura de un validador para decidir dónde hacer stake o revisar el tuyo: su perfil, si está registrado y en el conjunto activo, su comisión y si va a cambiar, su disponibilidad, su rentabilidad estimada y lo que tiene tu cuenta en él. No se firma nada.",
+          "guideSteps": [
+            "1. Cuenta: elige la cuenta cuya posición quieres ver.",
+            "2. Validadores: marca los tuyos, pega direcciones o elige varios con el botón +. Cada uno sale en su propia ficha.",
+            "3. Revisa la ficha: estado, avisos, datos y tu posición.",
+            "4. Usa los accesos de abajo para hacer stake o, si es tuyo, gestionarlo."
+          ],
+          "fields": [
+            {
+              "label": "Validador",
+              "description": "Los validadores cuya insignia de propietario tiene la cuenta salen arriba. Para cualquier otro, pega su dirección o búscalo con el botón +.",
+              "example": "validator_rdx1…"
+            },
+            {
+              "label": "Comisión",
+              "description": "Parte de las recompensas que se queda el operador. Si hay un cambio pendiente, se indica el nuevo valor y se avisa si sube.",
+              "example": "2 % · cambiará al 5 %"
+            },
+            {
+              "label": "Disponibilidad",
+              "description": "Propuestas hechas frente a las que le tocaban en los últimos 14 días, y desde el inicio de Babylon.",
+              "example": "99,8 %"
+            },
+            {
+              "label": "Tu posición",
+              "description": "Las LSU de la cuenta y los XRD que valen, más las retiradas que ya puedes reclamar o que aún esperan su época.",
+              "example": "1.000 LSU ≈ 1.050 XRD"
+            }
+          ],
+          "example": [
+            {
+              "field": "Validador",
+              "type": "input",
+              "value": "validator_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "LSU",
+              "definition": "Unidad de stake líquido: el token que recibes al hacer stake y que vale cada vez más XRD."
+            },
+            {
+              "term": "Conjunto activo",
+              "definition": "Los validadores con más stake que validan en la época actual y generan recompensas."
+            },
+            {
+              "term": "Época",
+              "definition": "Periodo de unos cinco minutos en el que la red mantiene el mismo conjunto de validadores."
+            }
+          ]
+        }
+      },
+      "pool-info": {
+        "title": "Información del pool",
+        "description": "Ficha de un pool: qué es, cuánto vale cada unidad, tu posición y si es seguro.",
+        "guide": {
+          "guideTitle": "Guía: información del pool",
+          "guideDescription": "Una vista de solo lectura de un pool nativo: su nombre y enlace, el valor de cada unidad según las reservas actuales, cuántas unidades tienes y qué recibirías al canjearlas, y si su rol de gestor lo protege. No se firma nada.",
+          "guideSteps": [
+            "1. Cuenta: elige la cuenta cuya posición quieres ver.",
+            "2. Pools: marca los tuyos de la lista, pega direcciones o elige varios con el botón +. Cada uno sale en su propia ficha.",
+            "3. Revisa la ficha: identidad, seguridad, valor por unidad y tu posición.",
+            "4. Usa los accesos de abajo para aportar, canjear o editar ese mismo pool."
+          ],
+          "fields": [
+            {
+              "label": "Pool",
+              "description": "Los pools de los que la cuenta tiene unidades salen en la lista. Si no aparece, pega su dirección o búscalo con el botón +.",
+              "example": "pool_rdx1…"
+            },
+            {
+              "label": "Seguridad",
+              "description": "Indica si el rol de gestor es una insignia o AllowAll. Con AllowAll cualquiera puede retirar las reservas.",
+              "example": "Solo quien tenga la insignia de gestor…"
+            },
+            {
+              "label": "Valor de una unidad",
+              "description": "Reservas divididas entre las unidades en circulación. Cambia con cada aporte, canje o ajuste de reservas.",
+              "example": "1 unidad ≈ 0,141 XRD"
+            },
+            {
+              "label": "Tu posición",
+              "description": "Unidades de la cuenta, su parte del total y lo que devolvería el pool si las canjeas ahora.",
+              "example": "2,5 % · ≈ 70 XRD y 3.500 HUG"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Unidad de pool",
+              "definition": "Token que representa una parte de las reservas del pool."
+            },
+            {
+              "term": "Rol de gestor",
+              "definition": "Regla que decide quién puede aportar y mover reservas."
+            },
+            {
+              "term": "info_url",
+              "definition": "Metadato con la web del proyecto que gestiona el pool."
+            }
+          ]
+        }
+      },
+      "pool-create": {
+        "title": "Crear pool",
+        "description": "Crea un pool nativo de uno, dos o varios recursos, protegido por una insignia de gestor que se acuña en la misma transacción.",
+        "guide": {
+          "guideTitle": "Guía: crear pool",
+          "guideDescription": "Un pool nativo guarda reservas de uno o varios recursos y emite unidades de pool que representan una parte de ellas. El motor de Radix decide quién puede hacer qué: aportar, meter y sacar reservas exige el rol de gestor; canjear unidades es público. Por eso el gestor es toda la seguridad del pool: si queda abierto a todos, cualquiera puede vaciarlo. Esta herramienta nunca deja esa puerta abierta.",
+          "guideSteps": [
+            "1. Cuenta: la que firma y recibe la insignia de gestor.",
+            "2. Tipo de pool: uno, dos o varios recursos.",
+            "3. Recursos: las direcciones de los tokens que guardará el pool.",
+            "4. Insignia: acuña una nueva o elige una que ya tengas. Quien la tenga controla las reservas.",
+            "5. Revisa el manifiesto, simula y firma. Luego aporta la primera liquidez desde Aportar liquidez."
+          ],
+          "fields": [
+            {
+              "label": "Tipo de pool",
+              "description": "De un recurso (una bóveda que reparte rendimiento), de dos (un par como en un DEX) o de varios (tres o más recursos con reparto libre).",
+              "example": "Dos recursos"
+            },
+            {
+              "label": "Recursos",
+              "description": "Direcciones resource_… de los tokens que guardará el pool. No se pueden cambiar después: el pool queda atado a ellos para siempre.",
+              "example": "resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd"
+            },
+            {
+              "label": "Insignia de gestor",
+              "description": "La llave de las reservas. Si la acuñas aquí se crea con suministro 1 y no se puede acuñar más, así que nadie puede fabricar otra copia.",
+              "example": "Acuñar una nueva"
+            },
+            {
+              "label": "Nombre de la insignia",
+              "description": "Cómo verás la insignia en tu cartera. Conviene que diga de qué pool es, para no confundirla con otras.",
+              "example": "Gestor del pool XRD/HUG"
+            }
+          ],
+          "example": [
+            {
+              "field": "Tipo de pool",
+              "type": "button-group",
+              "options": [
+                "Un recurso",
+                "Dos recursos",
+                "Varios recursos"
+              ],
+              "selected": "Dos recursos"
+            },
+            {
+              "field": "Recurso 1",
+              "type": "input",
+              "value": "resource_rdx1tknx…radxrd"
+            },
+            {
+              "field": "Insignia de gestor",
+              "type": "button-group",
+              "options": [
+                "Acuñar una nueva",
+                "Usar una que ya tengo"
+              ],
+              "selected": "Acuñar una nueva"
+            },
+            {
+              "field": "Nombre de la insignia",
+              "type": "input",
+              "value": "Gestor del pool XRD/HUG"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Rol de gestor",
+              "definition": "pool_manager_role. Protege contribute, protected_deposit y protected_withdraw. Quien lo cumple mueve las reservas."
+            },
+            {
+              "term": "Unidad de pool",
+              "definition": "Token fungible que emite el pool al aportar. Representa una parte proporcional de las reservas y se canjea por ellas."
+            },
+            {
+              "term": "AllowAll",
+              "definition": "Regla que cualquiera cumple. En el gestor de un pool significa que cualquiera puede vaciarlo."
+            },
+            {
+              "term": "Reserva de dirección",
+              "definition": "El manifiesto reserva la dirección de la insignia antes de crearla, para que el pool nazca ya protegido en la misma transacción."
+            }
+          ]
+        }
+      },
+      "pool-contribute": {
+        "title": "Aportar liquidez",
+        "description": "Deposita los recursos de un pool y recibe sus unidades. Exige la insignia de gestor.",
+        "guide": {
+          "guideTitle": "Guía: aportar liquidez",
+          "guideDescription": "Aportar mete recursos en las reservas y acuña unidades de pool para quien aporta. El motor toma las cantidades en la proporción que el pool ya tiene y devuelve lo que sobra, así que nunca descuadras un pool aportando de más. En un pool vacío la primera aportación fija la proporción, y por eso conviene pensarla bien. Aportar exige la insignia de gestor.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene la insignia de gestor y los tokens.",
+            "2. Pool: elígelo de la lista o pega su dirección. Verás sus reservas y si tienes la insignia.",
+            "3. Cantidades: una por cada recurso del pool.",
+            "4. Revisa, simula y firma. Las unidades y lo que sobre vuelven a tu cuenta."
+          ],
+          "fields": [
+            {
+              "label": "Pool",
+              "description": "El pool donde aportas. El panel muestra sus reservas, la unidad de pool y quién lo gestiona.",
+              "example": "pool_rdx1…"
+            },
+            {
+              "label": "Cantidad de cada recurso",
+              "description": "Lo que sale de tu cuenta hacia las reservas. Si no encaja en la proporción del pool, la parte sobrante vuelve a tu cuenta en la misma transacción.",
+              "example": "100 XRD y 5000 HUG"
+            },
+            {
+              "label": "Insignia de gestor",
+              "description": "Se presenta sola si la cuenta la tiene. Sin ella el motor rechaza la aportación.",
+              "example": "Gestor del pool XRD/HUG"
+            },
+            {
+              "label": "Unidades recibidas",
+              "description": "El pool acuña unidades en proporción a lo que aportas frente a lo que ya había. La simulación muestra la cifra exacta antes de firmar.",
+              "example": "≈ 707,1 unidades"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            },
+            {
+              "field": "Cantidad · XRD",
+              "type": "input",
+              "value": "100"
+            },
+            {
+              "field": "Cantidad · HUG",
+              "type": "input",
+              "value": "5000"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Proporción",
+              "definition": "La relación entre las reservas. El pool la mantiene al aportar y devuelve el excedente."
+            },
+            {
+              "term": "contribute",
+              "definition": "Método del pool que recibe los recursos y devuelve unidades de pool, más el cambio si lo hay."
+            },
+            {
+              "term": "Simulación",
+              "definition": "Ejecuta la transacción contra el estado actual sin firmarla, para ver comisiones y cambios de saldo."
+            }
+          ]
+        }
+      },
+      "pool-reserves": {
+        "title": "Ajustar reservas",
+        "description": "Mete o saca recursos de las reservas sin acuñar ni quemar unidades de pool. Exige la insignia de gestor.",
+        "guide": {
+          "guideTitle": "Guía: ajustar reservas",
+          "guideDescription": "protected_deposit y protected_withdraw cambian las reservas sin tocar el número de unidades. Meter hace que cada unidad valga más: así se reparten comisiones o recompensas entre los poseedores. Sacar hace que cada unidad valga menos: los poseedores pierden esa parte. Precisamente por eso estas llamadas exigen la insignia de gestor, y un pool con gestor AllowAll se puede vaciar.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene la insignia de gestor.",
+            "2. Pool: elígelo o pega su dirección.",
+            "3. Dirección: meter o sacar.",
+            "4. Recurso y cantidad. Al sacar, el límite son las reservas del pool.",
+            "5. Revisa, simula y firma."
+          ],
+          "fields": [
+            {
+              "label": "Dirección",
+              "description": "Meter suma a las reservas desde tu cuenta; sacar resta de las reservas hacia tu cuenta. Ninguna de las dos cambia el número de unidades.",
+              "example": "Meter en reservas"
+            },
+            {
+              "label": "Recurso",
+              "description": "Uno de los recursos del pool. Solo se puede mover lo que el pool ya guarda: no admite recursos nuevos.",
+              "example": "XRD"
+            },
+            {
+              "label": "Cantidad",
+              "description": "Al meter, sale de tu cuenta. Al sacar, se retira exactamente esa cantidad de las reservas.",
+              "example": "25"
+            },
+            {
+              "label": "Insignia de gestor",
+              "description": "Se presenta sola si la cuenta la tiene. Sin ella el motor rechaza ambas operaciones.",
+              "example": "Gestor del pool XRD/HUG"
+            }
+          ],
+          "example": [
+            {
+              "field": "Dirección",
+              "type": "button-group",
+              "options": [
+                "Meter en reservas",
+                "Sacar de reservas"
+              ],
+              "selected": "Meter en reservas"
+            },
+            {
+              "field": "Recurso",
+              "type": "button-group",
+              "options": [
+                "XRD",
+                "HUG"
+              ],
+              "selected": "XRD"
+            },
+            {
+              "field": "Cantidad",
+              "type": "input",
+              "value": "25"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "protected_deposit",
+              "definition": "Mete un bucket en las reservas sin acuñar unidades."
+            },
+            {
+              "term": "protected_withdraw",
+              "definition": "Saca una cantidad de las reservas sin quemar unidades. Con gestor AllowAll, cualquiera puede llamarlo."
+            },
+            {
+              "term": "Valor de la unidad",
+              "definition": "Reservas divididas entre el suministro de unidades. Estas operaciones lo suben o lo bajan."
+            }
+          ]
+        }
+      },
+      "pool-redeem": {
+        "title": "Canjear unidades",
+        "description": "Quema unidades de pool y recibe tu parte de cada reserva. Público, sin insignia.",
+        "guide": {
+          "guideTitle": "Guía: canjear unidades",
+          "guideDescription": "Canjear quema unidades de pool y entrega la parte proporcional de cada reserva. Es una operación pública: cualquiera que tenga unidades puede hacerlo, sin insignia. También es lo primero que debe hacer el dueño de un pool vulnerable para sacar su liquidez antes de que otro vacíe las reservas.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene las unidades.",
+            "2. Pool: aparece en la lista si la cuenta tiene sus unidades.",
+            "3. Unidades a canjear: escribe la cantidad o pulsa Máx.",
+            "4. Revisa la estimación, simula y firma."
+          ],
+          "fields": [
+            {
+              "label": "Pool",
+              "description": "Los pools de los que la cuenta tiene unidades salen en la lista. Si no aparece, pega su dirección.",
+              "example": "pool_rdx1…"
+            },
+            {
+              "label": "Unidades a canjear",
+              "description": "Se queman en la transacción. No puedes canjear más de las que tiene la cuenta.",
+              "example": "50"
+            },
+            {
+              "label": "Estimación",
+              "description": "Calculada con las reservas y el suministro actuales. La cifra exacta sale en la simulación, porque las reservas pueden cambiar hasta que firmas.",
+              "example": "≈ 7,07 XRD y 353,5 HUG"
+            },
+            {
+              "label": "Destino",
+              "description": "Todo lo que devuelve el pool entra en la misma cuenta que firma.",
+              "example": "Tu cuenta"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            },
+            {
+              "field": "Unidades a canjear",
+              "type": "input",
+              "value": "50"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "redeem",
+              "definition": "Método público del pool que recibe unidades y devuelve la parte proporcional de las reservas."
+            },
+            {
+              "term": "Parte proporcional",
+              "definition": "Unidades canjeadas divididas entre el suministro total, aplicado a cada reserva."
+            },
+            {
+              "term": "Suministro",
+              "definition": "Total de unidades de pool en circulación."
+            }
+          ]
+        }
+      },
+      "pool-profile": {
+        "title": "Perfil del pool",
+        "description": "Nombre, descripción e icono del pool y de su unidad de pool. Exige la insignia de propietario.",
+        "guide": {
+          "guideTitle": "Guía: perfil del pool",
+          "guideDescription": "El pool y su unidad de pool tienen metadatos propios: nombre, descripción, icono y web. Las carteras muestran los de la unidad a quien la tiene, así que una unidad sin perfil aparece como un token sin nombre. El motor crea la unidad de pool con el mismo propietario que el pool, así que una sola insignia de propietario escribe los dos, en una sola transacción.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene la insignia de propietario.",
+            "2. Pool: elígelo o pega su dirección.",
+            "3. Rellena solo lo que quieras cambiar, del pool y de la unidad. Un campo vacío no se escribe.",
+            "4. Revisa, simula y firma."
+          ],
+          "fields": [
+            {
+              "label": "Nombre",
+              "description": "El titular que muestran carteras y exploradores. Para la unidad de pool, conviene que diga qué par representa.",
+              "example": "XRD/HUG LP"
+            },
+            {
+              "label": "Símbolo",
+              "description": "Solo para la unidad de pool: la abreviatura que sale junto al saldo.",
+              "example": "XRDHUG"
+            },
+            {
+              "label": "URL del icono",
+              "description": "Imagen cuadrada. Se guarda como Url tipada, así que necesita el esquema completo.",
+              "example": "https://example.com/lp.png"
+            },
+            {
+              "label": "Web",
+              "description": "Página con más información sobre el pool. También se guarda como Url.",
+              "example": "https://example.com"
+            }
+          ],
+          "example": [
+            {
+              "field": "Nombre",
+              "type": "input",
+              "value": "XRD/HUG"
+            },
+            {
+              "field": "Símbolo",
+              "type": "input",
+              "value": "XRDHUG"
+            },
+            {
+              "field": "URL del icono",
+              "type": "input",
+              "value": "https://example.com/lp.png"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Metadatos",
+              "definition": "Entradas clave/valor de una entidad del ledger. Las del pool y su unidad las escribe el propietario."
+            },
+            {
+              "term": "Propietario",
+              "definition": "El owner role del pool. El motor se lo copia a la unidad de pool al crearla."
+            },
+            {
+              "term": "Actualización parcial",
+              "definition": "Solo los campos rellenos emiten instrucción: cambiar el icono no borra el nombre."
+            }
+          ]
+        }
+      },
+      "pool-manage": {
+        "title": "Gestionar pool",
+        "description": "Retira un pool en una sola transacción: vacía sus reservas, márcalo como retirado y congela su perfil.",
+        "guide": {
+          "guideTitle": "Guía: gestionar pool",
+          "guideDescription": "Un pool nativo no se puede borrar del ledger, pero sí dejarlo fuera de uso. Esta sección junta en una transacción los tres pasos para retirarlo. Vaciar saca las reservas con la insignia de gestor. Marcar añade la etiqueta retired al pool y a su unidad, para que carteras y exploradores lo sepan. Congelar fija para siempre su perfil y su rol de propietario. El rol de gestor de un pool nativo no se puede cambiar ni bloquear, así que la insignia de gestor sigue sirviendo para aportar o mover reservas.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene las insignias del pool.",
+            "2. Pool: elígelo o pega su dirección.",
+            "3. Activa los pasos que quieras. Los que no puedes dar, o que el pool ya dio, aparecen bloqueados con el motivo.",
+            "4. Para congelar, confirma que entiendes que no tiene vuelta atrás.",
+            "5. Revisa, simula y firma."
+          ],
+          "fields": [
+            {
+              "label": "Vaciar las reservas",
+              "description": "Saca todo lo que hay en cada reserva con protected_withdraw y lo deposita en tu cuenta. Necesita la insignia de gestor. No quema unidades: quien tenga unidades se queda sin nada que canjear.",
+              "example": "100 XRD y 2.000 HUG a tu cuenta"
+            },
+            {
+              "label": "Marcar como retirado",
+              "description": "Añade la etiqueta retired a los metadatos tags del pool y de su unidad, conservando las que ya tengan. Necesita la insignia de propietario.",
+              "example": "tags: defi, retired"
+            },
+            {
+              "label": "Congelar el perfil",
+              "description": "Bloquea las claves del perfil (nombre, símbolo, descripción, icono, web y etiquetas) y el rol de propietario del pool y de su unidad. Nadie podrá volver a cambiarlos, ni siquiera con la insignia.",
+              "example": "LOCK_METADATA y LOCK_OWNER_ROLE"
+            },
+            {
+              "label": "Confirmación",
+              "description": "Congelar no se puede deshacer, así que el botón de enviar espera a que lo confirmes expresamente.",
+              "example": "Entiendo que es irreversible"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pasos",
+              "type": "button-group",
+              "options": [
+                "Vaciar",
+                "Marcar retirado",
+                "Congelar"
+              ],
+              "selected": "Vaciar"
+            },
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "protected_withdraw",
+              "definition": "Saca recursos de las reservas sin quemar unidades. Lo autoriza el rol de gestor."
+            },
+            {
+              "term": "LOCK_METADATA",
+              "definition": "Fija una clave de metadatos para siempre, tenga valor o no."
+            },
+            {
+              "term": "LOCK_OWNER_ROLE",
+              "definition": "Impide cambiar la regla del propietario. Por sí solo no congela los metadatos: el propietario podría seguir escribiéndolos."
+            }
+          ]
+        }
+      },
+      "resource-holders": {
+        "title": "Poseedores",
+        "description": "Todos los poseedores de un token o colección, con su concentración y exportación a CSV.",
+        "guide": {
+          "guideTitle": "Guía: poseedores",
+          "guideDescription": "Lee todos los poseedores de un token o de una colección de NFT, página a página desde la Gateway, y muestra cuánto tiene cada uno y qué parte del total. Sirve para estudiar la distribución de un token o exportarla. Para repartir entre ellos, usa Airdrop con Locker o Envío masivo.",
+          "guideSteps": [
+            "1. Token: pega su dirección o elígelo con el botón +.",
+            "2. Pulsa Ver poseedores y espera a que se lean todas las páginas.",
+            "3. Revisa el resumen y la tabla.",
+            "4. Exporta el CSV si quieres trabajar con la lista fuera."
+          ],
+          "fields": [
+            {
+              "label": "Token",
+              "description": "Dirección resource_… del token o de la colección de NFT. El botón + ofrece los recursos de tu cuenta.",
+              "example": "resource_rdx1…"
+            },
+            {
+              "label": "Resumen",
+              "description": "Número de poseedores, total en sus manos y cuánto concentran el mayor poseedor y los diez mayores.",
+              "example": "2.340 poseedores · el mayor 12 %"
+            },
+            {
+              "label": "Parte",
+              "description": "Lo que tiene cada poseedor dividido entre lo que tienen todos. Incluye pools, lockers y componentes, no solo cuentas.",
+              "example": "4,2 %"
+            },
+            {
+              "label": "Exportar CSV",
+              "description": "Descarga dirección y cantidad de todos los poseedores, no solo de los cien que muestra la tabla.",
+              "example": "holders-xxxx.csv"
+            }
+          ],
+          "example": [
+            {
+              "field": "Token",
+              "type": "input",
+              "value": "resource_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Poseedor",
+              "definition": "Cualquier entidad con saldo del token: cuentas, pools, lockers, validadores o componentes."
+            },
+            {
+              "term": "Concentración",
+              "definition": "Qué parte del total está en manos de los mayores poseedores."
+            },
+            {
+              "term": "Gateway",
+              "definition": "Servicio que lee el ledger de Radix y lo ofrece por HTTP."
+            }
+          ]
+        }
+      },
+      "locker-info": {
+        "title": "Información del locker",
+        "description": "Ficha de uno o varios Account Lockers: si pueden recuperar lo que guardan, qué guardan, su componente y lo que te espera.",
+        "guide": {
+          "guideTitle": "Guía: información del locker",
+          "guideDescription": "Una vista de solo lectura de uno o varios Account Lockers, útil para quien recibe un airdrop y para quien lo envía. Para cada locker dice quién puede cargarlo y, sobre todo, si alguien puede llevarse lo que guarda antes de que lo reclames; cuánto guarda ahora y para cuántas cuentas; de qué paquete y blueprint sale su código; y qué hay pendiente para tu cuenta. No se firma nada.",
+          "guideSteps": [
+            "1. Cuenta: elige la cuenta cuyos tokens pendientes quieres ver. Los accesos de abajo abren las otras herramientas con esta misma cuenta.",
+            "2. Lockers: pega una dirección (se añade sola al estar completa) o elige varios con el botón +. Cada uno sale debajo como etiqueta y en su propia ficha; quítalo con la X.",
+            "3. Lee primero el aviso de colores: dice si lo guardado se puede recuperar antes de que lo reclames, y quién podría hacerlo.",
+            "4. Revisa quién puede hacer qué, qué guarda ahora, su actividad y el componente (dirección, paquete y blueprint).",
+            "5. Si hay algo para ti, pulsa Reclamar del Locker. Si tienes su insignia de carga, también verás Airdrop con Locker."
+          ],
+          "fields": [
+            {
+              "label": "Locker",
+              "description": "La dirección del Account Locker. Viene en el enlace de reclamo que comparte quien hace el airdrop, y el botón + muestra los lockers que tus cuentas han usado.",
+              "example": "locker_rdx1…"
+            },
+            {
+              "label": "Recuperar tokens",
+              "description": "La regla más importante para quien recibe. Con Nadie, lo que te guardan solo lo puedes retirar tú; con una insignia o un contrato, pueden llevárselo si no lo reclamas.",
+              "example": "Nadie"
+            },
+            {
+              "label": "Cargar tokens",
+              "description": "Quién puede guardar tokens a nombre de otras cuentas: una insignia del que organiza el airdrop, o el contrato de una dApp.",
+              "example": "Un componente (contrato inteligente)"
+            },
+            {
+              "label": "Qué guarda",
+              "description": "Lo que el locker tiene ahora en total, por token y por colección de NFT, y su actividad: para cuántas cuentas ha guardado, cuántos depósitos, reclamos y recuperaciones. Se calcula con su historial.",
+              "example": "350 OTER · 1 cuenta"
+            },
+            {
+              "label": "Componente",
+              "description": "Su dirección, el paquete de su código y el blueprint. Un paquete nativo de Radix significa que el código es el del propio motor, no de un tercero.",
+              "example": "AccountLocker 1.0.0"
+            },
+            {
+              "label": "Te espera",
+              "description": "Lo que el locker guarda ahora para la cuenta elegida. Se reclama todo junto desde Reclamar del Locker.",
+              "example": "250 XRD"
+            }
+          ],
+          "example": [
+            {
+              "field": "Locker",
+              "type": "input",
+              "value": "locker_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "Componente nativo que guarda tokens a nombre de cada cuenta hasta que esta los reclama. Se usa para airdrops a cuentas que no aceptan depósitos directos."
+            },
+            {
+              "term": "Cargador",
+              "definition": "Rol que puede guardar tokens en el locker para otras cuentas."
+            },
+            {
+              "term": "Recuperador",
+              "definition": "Rol que puede retirar lo que sigue guardado para una cuenta, por ejemplo tras un plazo."
+            },
+            {
+              "term": "Paquete nativo",
+              "definition": "Código que viene con la propia red Radix. Un locker nativo se comporta igual en todas partes."
+            },
+            {
+              "term": "Enlace de reclamo",
+              "definition": "La página que abren los destinatarios para ver y reclamar lo suyo. Solo cada cuenta puede reclamar lo que es suyo."
+            }
+          ]
+        }
+      },
+      "bulk-send": {
+        "title": "Envío masivo",
+        "description": "Paga a muchas cuentas en lotes, desde un CSV o repartiendo entre los poseedores de un token. Quien rechace el depósito no bloquea al resto: su parte vuelve a tu cuenta.",
+        "guide": {
+          "guideTitle": "Guía: envío masivo",
+          "guideDescription": "Paga a muchas cuentas desde una lista, en lotes de transacciones. Cada destinatario recibe con try_deposit_or_refund: si una cuenta rechaza el depósito, su parte vuelve a tu cuenta y el resto del lote sigue adelante. Para airdrops a gente que no conoces, Airdrop con Locker suele ser mejor.",
+          "guideSteps": [
+            "1. Cuenta: la que paga.",
+            "2. Destinatarios: pega o sube un CSV, o reparte entre los poseedores de un token.",
+            "3. Revisa el resumen: destinatarios, totales y número de lotes.",
+            "4. Simula y firma cada lote en orden."
+          ],
+          "fields": [
+            {
+              "label": "Lista CSV",
+              "description": "Una línea por destinatario: cuenta, recurso y cantidad. Vale coma, punto y coma o tabulador, y la coma decimal si separas con punto y coma.",
+              "example": "account_rdx1…;resource_rdx1…;2,5"
+            },
+            {
+              "label": "Recurso por defecto",
+              "description": "Para las líneas que solo traen cuenta y cantidad. Ahorra repetir la misma dirección del token en cada línea.",
+              "example": "resource_rdx1…"
+            },
+            {
+              "label": "Poseedores de un token",
+              "description": "Carga los poseedores de un token, filtra y reparte una cantidad a partes iguales o en proporción. El resultado pasa a la lista para que lo revises.",
+              "example": "1.000 XRD proporcional"
+            },
+            {
+              "label": "Lotes",
+              "description": "Cada lote es una transacción de hasta 40 destinatarios, el máximo seguro para el límite de eventos del motor.",
+              "example": "3 lotes de hasta 40"
+            }
+          ],
+          "example": [
+            {
+              "field": "Destinatarios",
+              "type": "button-group",
+              "options": [
+                "Lista CSV",
+                "Poseedores de un token"
+              ],
+              "selected": "Lista CSV"
+            },
+            {
+              "field": "Lista",
+              "type": "textarea",
+              "value": "account_rdx1…,resource_rdx1…,25"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "try_deposit_or_refund",
+              "definition": "Depósito que, si la cuenta lo rechaza, devuelve los recursos en lugar de hacer fallar la transacción."
+            },
+            {
+              "term": "Reglas de depósito",
+              "definition": "Ajuste de cada cuenta que decide si acepta recursos de terceros."
+            },
+            {
+              "term": "Lote",
+              "definition": "Grupo de destinatarios que va en una misma transacción."
+            }
+          ]
+        }
+      },
+      "locker-airdrop": {
+        "title": "Airdrop con Locker",
+        "description": "Crea un Account Locker y reparte en lotes, desde un CSV o entre los poseedores de un token. Lo guardado espera a que lo reclamen y puedes recuperar lo que nadie reclame.",
+        "guide": {
+          "guideTitle": "Guía: airdrop con Account Locker",
+          "guideDescription": "Reparte tokens a muchas cuentas a través de un Account Locker, el componente nativo de Radix para airdrops. Lo que no se entrega directamente queda guardado a nombre de cada destinatario hasta que lo reclama, y con la recuperación activada puedes retirar lo que nadie reclame o lo que enviaste a una dirección equivocada.",
+          "guideSteps": [
+            "1. Cuenta: la que paga el airdrop y recibe la insignia del locker.",
+            "2. Locker: crea uno nuevo (una transacción) o pega la dirección de uno tuyo.",
+            "3. Destinatarios: pega o sube un CSV, o reparte entre los poseedores de un token y revisa la lista.",
+            "4. Entrega: deja \"Guardarlo todo\" (lo más seguro) o entrega directo a quien acepte depósitos.",
+            "5. Firma cada lote y comparte el enlace de reclamo con los destinatarios.",
+            "6. Recuperar: más tarde, retira lo que nadie haya reclamado desde \"Recuperar del locker\"."
+          ],
+          "fields": [
+            {
+              "label": "Crear un locker",
+              "description": "Crea el componente y te envía su insignia, que es la que permite guardar y recuperar. Hazlo una sola vez y reutiliza el locker.",
+              "example": "Crear un locker"
+            },
+            {
+              "label": "Permitir recuperar",
+              "description": "Si está activo, la insignia puede retirar lo guardado para cualquier destinatario. Te protege de errores; desactivarlo da más garantías a quien recibe.",
+              "example": "Permitir recuperar"
+            },
+            {
+              "label": "Destinatarios",
+              "description": "Una línea por destinatario: cuenta, recurso y cantidad, o cuenta y cantidad usando el recurso por defecto. Para NFT, cuenta, recurso e id.",
+              "example": "account_rdx1…,resource_rdx1…,25"
+            },
+            {
+              "label": "Guardarlo todo",
+              "description": "Todo queda en el locker hasta que cada destinatario lo reclama. Si una dirección estaba mal, lo puedes recuperar.",
+              "example": "Guardarlo todo"
+            },
+            {
+              "label": "Entregar directo",
+              "description": "Quien acepte depósitos lo recibe ya en su cuenta y solo se guarda lo de quien los rechaza. Una entrega directa no se puede deshacer.",
+              "example": "Entregar directo"
+            },
+            {
+              "label": "Enlace de reclamo",
+              "description": "Abre la página Reclamar del Locker con este locker cargado. Solo cada cuenta puede reclamar lo suyo, así que se puede compartir sin riesgo.",
+              "example": "…/console/locker-claim?locker=locker_rdx1…"
+            }
+          ],
+          "example": [
+            {
+              "field": "Locker",
+              "type": "button-group",
+              "options": [
+                "Crear un locker",
+                "Usar uno que ya tengo"
+              ],
+              "selected": "Crear un locker"
+            },
+            {
+              "field": "Destinatarios",
+              "type": "textarea",
+              "value": "account_rdx1…,resource_rdx1…,25"
+            },
+            {
+              "field": "Entrega",
+              "type": "button-group",
+              "options": [
+                "Guardarlo todo",
+                "Entregar directo"
+              ],
+              "selected": "Guardarlo todo"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "Componente nativo que guarda recursos a nombre de cuentas concretas hasta que las propias cuentas los reclaman."
+            },
+            {
+              "term": "Insignia del locker",
+              "definition": "Recurso que da los roles de guardar (storer) y recuperar (recoverer) en el locker."
+            },
+            {
+              "term": "Lote",
+              "definition": "Una transacción del airdrop. Se divide en lotes porque cada transacción admite un número limitado de eventos."
+            },
+            {
+              "term": "Reclamar",
+              "definition": "Retirar lo guardado en el locker. Solo puede hacerlo la cuenta destinataria."
+            }
+          ]
+        }
+      },
+      "locker-claim": {
+        "title": "Reclamar del Locker",
+        "description": "Para quien recibió un airdrop: retira a tu cuenta lo que un Account Locker guarda para ella.",
+        "guide": {
+          "guideTitle": "Guía: reclamar del locker",
+          "guideDescription": "Esta página es para quien RECIBIÓ un airdrop. Cuando un airdrop no puede entregarse directamente (por ejemplo, porque tu cuenta no acepta tokens desconocidos), lo que te enviaron queda guardado en un locker a tu nombre. Aquí ves lo que te espera y lo retiras a tu cuenta en una transacción. Solo tu cuenta puede retirar lo suyo, así que el enlace es seguro de compartir. Si eres quien hizo el airdrop y quieres que te devuelvan lo que nadie reclamó, usa Recuperar del Locker.",
+          "guideSteps": [
+            "1. Cuenta: la que recibió el airdrop. La consola elige sola la que tiene algo pendiente.",
+            "2. Lockers: vienen en el enlace que te pasaron; si no, pega su dirección o pulsa uno de tus lockers.",
+            "3. Revisa lo que te espera en cada locker.",
+            "4. Pulsa Reclamar todo y firma en la billetera."
+          ],
+          "fields": [
+            {
+              "label": "Cuenta",
+              "description": "La cuenta a la que iba el airdrop. Con otra cuenta el locker no mostrará nada pendiente.",
+              "example": "Mi cuenta principal"
+            },
+            {
+              "label": "Lockers",
+              "description": "Una o varias direcciones locker_… de la red en la que estás conectado.",
+              "example": "locker_rdx1…"
+            },
+            {
+              "label": "Te espera",
+              "description": "Cada recurso guardado para tu cuenta, con su cantidad o su número de NFT. Si ya lo reclamaste o te lo recuperaron, no aparece.",
+              "example": "25 HUG · 2 NFT"
+            },
+            {
+              "label": "Reclamar todo",
+              "description": "Una sola transacción que retira todo lo pendiente y lo deposita en tu cuenta.",
+              "example": "Reclamar todo"
+            }
+          ],
+          "example": [
+            {
+              "field": "Lockers",
+              "type": "input",
+              "value": "locker_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "Componente nativo que guarda recursos a nombre de cuentas concretas hasta que las reclaman."
+            },
+            {
+              "term": "Reclamar",
+              "definition": "El destinatario retira lo que el locker guarda para él; el locker comprueba que firma su dueño."
+            },
+            {
+              "term": "Recuperar",
+              "definition": "Lo contrario: quien hizo el airdrop retira lo que otro no reclamó. Se hace en Recuperar del Locker."
+            }
+          ]
+        }
+      },
+      "locker-recover": {
+        "title": "Recuperar del Locker",
+        "description": "Para quien hizo un airdrop: recupera lo que tus destinatarios no han reclamado, de uno, de varios o de todos.",
+        "guide": {
+          "guideTitle": "Guía: recuperar del locker",
+          "guideDescription": "Esta página es para quien HIZO un airdrop con un locker. Lo que tus destinatarios no han reclamado sigue guardado a su nombre. Si el locker se creó permitiendo recuperar, la insignia de recuperación (al crear el locker en la consola es la misma insignia del locker) te deja retirarlo a tu cuenta, por ejemplo al acabar el plazo de reclamo o si enviaste a una dirección equivocada. Si eres destinatario y quieres retirar lo tuyo, usa Reclamar del Locker.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene la insignia de recuperación del locker.",
+            "2. Locker: pégalo o pulsa uno de tus lockers.",
+            "3. Revisa la tabla: cada destinatario con lo que le espera. Todos salen marcados.",
+            "4. Desmarca a quien no quieras recuperar. Dejar marcado uno solo recupera solo de ese destinatario.",
+            "5. Simula y firma. Si son muchos destinatarios, se envía en varios lotes."
+          ],
+          "fields": [
+            {
+              "label": "Cuenta",
+              "description": "Debe tener la insignia de recuperación del locker; la prueba de la insignia se añade sola.",
+              "example": "Mi cuenta de airdrops"
+            },
+            {
+              "label": "Locker",
+              "description": "El locker del que recuperar. Solo se puede si se creó permitiendo recuperar.",
+              "example": "locker_rdx1…"
+            },
+            {
+              "label": "Destinatarios",
+              "description": "Cada cuenta con algo pendiente y lo que le espera. Lo marcado vuelve entero a tu cuenta; lo desmarcado sigue esperando a su destinatario.",
+              "example": "account_rdx1… · 25 XRD · 2 NFT"
+            }
+          ],
+          "example": [
+            {
+              "field": "Locker",
+              "type": "input",
+              "value": "locker_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Recuperar",
+              "definition": "Retirar del locker lo guardado para un destinatario que no lo ha reclamado."
+            },
+            {
+              "term": "Insignia de recuperación",
+              "definition": "El recurso que el locker exige para recuperar."
+            },
+            {
+              "term": "Lote",
+              "definition": "Una transacción con hasta 40 recuperaciones, por el límite de eventos del motor."
             }
           ]
         }
@@ -1948,22 +2962,29 @@
         },
         "create-pool": {
           "name": "Crear pool",
-          "description": "Instancia un pool de liquidez nativo (de uno, dos o varios recursos) desde el paquete de pools de la red.",
+          "description": "Instancia un pool nativo (de uno, dos o varios recursos) protegido por una insignia de gestor. Si no indicas una insignia, se acuña una nueva en la misma transacción y llega a tu cuenta: sin ella nadie puede aportar ni mover las reservas.",
           "fields": {
             "poolType": "Tipo de pool",
-            "resources": "Direcciones de recursos (separadas por comas)"
+            "resources": "Direcciones de recursos (separadas por comas)",
+            "account": "Cuenta que recibe la insignia",
+            "managerBadge": "Insignia de gestor existente (vacío: acuñar una nueva)"
           }
         },
         "contribute-pool": {
           "name": "Aportar al pool",
-          "description": "Deposita recursos en un pool nativo y recibe sus unidades de pool.",
+          "description": "Deposita recursos en un pool nativo y recibe sus unidades de pool. Aportar exige la insignia de gestor del pool.",
           "fields": {
             "account": "Cuenta",
             "pool": "Dirección del componente del pool",
             "resource1": "Recurso 1",
             "amount1": "Cantidad 1",
             "resource2": "Recurso 2",
-            "amount2": "Cantidad 2"
+            "amount2": "Cantidad 2",
+            "poolType": "Tipo de pool",
+            "managerBadge": "Insignia de gestor (dirección del recurso)",
+            "managerBadgeId": "ID de la insignia (solo si no es fungible)",
+            "resource3": "Recurso 3",
+            "amount3": "Cantidad 3"
           }
         },
         "redeem-pool": {
@@ -2236,6 +3257,58 @@
             "description": "Descripción",
             "iconUrl": "URL del icono",
             "infoUrl": "Web"
+          }
+        },
+        "deposit-rule": {
+          "name": "Regla general de depósitos",
+          "description": "Decide qué aceptan tus cuentas de terceros: todo, solo lo que ya tienes, o nada.",
+          "fields": {
+            "account": "Cuenta",
+            "rule": "Regla (Accept, AllowExisting o Reject)"
+          }
+        },
+        "resource-preference": {
+          "name": "Excepción de depósito por token",
+          "description": "Un token que siempre entra (Allowed), que nunca entra (Disallowed) o que vuelve a seguir la regla general (Remove).",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token (dirección del recurso)",
+            "preference": "Excepción"
+          }
+        },
+        "authorized-depositor": {
+          "name": "Depositante autorizado",
+          "description": "Añade o quita una insignia cuyo portador puede depositar siempre en tu cuenta.",
+          "fields": {
+            "account": "Cuenta",
+            "action": "Acción (add o remove)",
+            "badge": "Insignia (dirección del recurso)",
+            "badgeId": "ID del NFT (vacío: cualquiera de la colección)"
+          }
+        },
+        "locker-claim": {
+          "name": "Reclamar de un locker",
+          "description": "Reclama a tu cuenta lo que un locker guarda para ella. Pon la cantidad, o los ID si son NFT.",
+          "fields": {
+            "account": "Tu cuenta (la destinataria)",
+            "locker": "Dirección del locker",
+            "resource": "Recurso guardado",
+            "amount": "Cantidad",
+            "nftIds": "ID de los NFT"
+          }
+        },
+        "locker-recover": {
+          "name": "Recuperar de un locker",
+          "description": "Con la insignia de recuperación, retira lo que el locker guarda para una cuenta y lo devuelve a la tuya.",
+          "fields": {
+            "account": "Cuenta con la insignia",
+            "locker": "Dirección del locker",
+            "recovererBadge": "Insignia de recuperación (recurso)",
+            "recovererBadgeId": "ID de la insignia",
+            "claimant": "Cuenta destinataria",
+            "resource": "Recurso guardado",
+            "amount": "Cantidad",
+            "nftIds": "ID de los NFT"
           }
         }
       },
@@ -2629,10 +3702,95 @@
           "fields": {
             "validator": "Dirección del validador"
           }
+        },
+        "setDefaultDepositRule": {
+          "name": "Regla general de depósitos",
+          "description": "set_default_deposit_rule: qué depósitos de terceros acepta la cuenta. Firma la propia cuenta.",
+          "fields": {
+            "account": "Cuenta",
+            "rule": "Regla"
+          }
+        },
+        "setResourcePreference": {
+          "name": "Excepción por token",
+          "description": "set_resource_preference: un token que siempre entra (Allowed) o nunca entra (Disallowed).",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token",
+            "preference": "Excepción"
+          }
+        },
+        "removeResourcePreference": {
+          "name": "Quitar excepción",
+          "description": "remove_resource_preference: el token vuelve a seguir la regla general.",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token"
+          }
+        },
+        "addAuthorizedDepositor": {
+          "name": "Autorizar depositante",
+          "description": "add_authorized_depositor: quien presente esta insignia puede depositar siempre.",
+          "fields": {
+            "account": "Cuenta",
+            "badge": "Insignia (recurso)",
+            "badgeId": "ID del NFT"
+          }
+        },
+        "removeAuthorizedDepositor": {
+          "name": "Quitar depositante",
+          "description": "remove_authorized_depositor: la insignia deja de saltarse las reglas.",
+          "fields": {
+            "account": "Cuenta",
+            "badge": "Insignia (recurso)",
+            "badgeId": "ID del NFT"
+          }
+        },
+        "lockerClaim": {
+          "name": "Reclamar del locker",
+          "description": "claim: la cuenta destinataria toma una cantidad guardada. Queda en el worktop: añade después un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "account": "Cuenta destinataria",
+            "resource": "Recurso",
+            "amount": "Cantidad"
+          }
+        },
+        "lockerClaimNfts": {
+          "name": "Reclamar NFT del locker",
+          "description": "claim_non_fungibles: la cuenta destinataria toma NFT guardados por ID. Añade después un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "account": "Cuenta destinataria",
+            "resource": "Colección",
+            "nftIds": "ID de los NFT"
+          }
+        },
+        "lockerRecover": {
+          "name": "Recuperar del locker",
+          "description": "recover: retira lo guardado para una cuenta. Antes, un bloque \"prueba\" con la insignia de recuperación; después, un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "claimant": "Cuenta destinataria",
+            "resource": "Recurso",
+            "amount": "Cantidad"
+          }
+        },
+        "lockerRecoverNfts": {
+          "name": "Recuperar NFT del locker",
+          "description": "recover_non_fungibles: retira NFT guardados por ID. Antes, la prueba de la insignia de recuperación; después, un depósito.",
+          "fields": {
+            "locker": "Locker",
+            "claimant": "Cuenta destinataria",
+            "resource": "Colección",
+            "nftIds": "ID de los NFT"
+          }
         }
       },
       "blockCategories": {
         "account": "Cuenta",
+        "deposits": "Reglas de depósito",
+        "locker": "Locker",
         "annotation": "Anotación",
         "invoke": "Invocación",
         "bucket": "Buckets",
@@ -3027,7 +4185,36 @@
         "nobody": "Nadie",
         "unreadable": "Regla ilegible",
         "recoveryInProgress": "Hay una propuesta de recuperación en marcha en este controller ahora mismo.",
-        "withdrawAttempt": "Alguien está intentando sacar la insignia de dueño de este controller."
+        "withdrawAttempt": "Alguien está intentando sacar la insignia de dueño de este controller.",
+        "factorsVerdict": {
+          "multi": {
+            "title": "Firma con varios factores: {need} de {total}",
+            "detail": "Para mover esta cuenta hacen falta {need} de sus {total} factores a la vez. Si te roban o pierdes uno solo, nadie puede usarla con él."
+          },
+          "single": {
+            "title": "Basta un factor para firmar ({need} de {total})",
+            "detail": "Cualquiera de sus {total} factores puede mover la cuenta por sí solo. Si quieres que un teléfono robado no baste, edita el escudo en la billetera para que la firma exija dos factores, por ejemplo el teléfono y una tarjeta Arculus."
+          },
+          "anyone": {
+            "title": "Cualquiera puede firmar",
+            "detail": "El rol principal del controlador es AllowAll: cualquiera puede actuar como dueño de esta cuenta. Mueve los fondos a una cuenta segura cuanto antes."
+          },
+          "nobody": {
+            "title": "Nadie puede firmar ahora mismo",
+            "detail": "El rol principal está bloqueado (DenyAll). La cuenta solo se puede usar a través de la recuperación."
+          },
+          "unknown": {
+            "title": "No se pudo leer cuántos factores pide",
+            "detail": "La regla del rol principal no tiene una forma que la consola sepa interpretar. Revísala en la billetera."
+          },
+          "recoveryMulti": "Para recuperar la cuenta hacen falta {need} de {total} factores.",
+          "recoverySingle": "Para recuperar la cuenta basta cualquiera de sus {total} factores.",
+          "recoveryOne": "Para recuperar la cuenta basta un único factor.",
+          "singleOne": {
+            "title": "Un solo factor firma por esta cuenta",
+            "detail": "El escudo protege la cuenta con un único factor para firmar. Si quieres que un teléfono robado no baste, edítalo en la billetera para que la firma exija dos factores, por ejemplo el teléfono y una tarjeta Arculus."
+          }
+        }
       },
       "levelTitle": "Nivel de seguridad",
       "levelHint": "Dónde queda la cuenta en una escala de cuatro niveles, según quién la controla en el ledger.",
@@ -3107,6 +4294,28 @@
           "title": "Guarda los factores por separado",
           "detail": "Un escudo vale lo que la distancia entre sus factores: no guardes la tarjeta, el Ledger y la contraseña en el mismo sitio, y comprueba de vez en cuando que siguen funcionando."
         }
+      },
+      "multiSigner": {
+        "title": "¿Y una cuenta con varias firmas?",
+        "hint": "Lo que se puede hacer hoy con la Radix Wallet, y por qué esta consola no crea cuentas multifirma.",
+        "points": [
+          {
+            "title": "La billetera solo firma con sus propias claves",
+            "detail": "Para que dos personas aprueben la misma transacción, alguien tiene que juntar sus firmas y enviarla. Eso exige un servicio aparte que coordine a los firmantes; no es algo que una página pueda montar sin custodiar nada."
+          },
+          {
+            "title": "Montarlo a mano puede dejarte sin la cuenta",
+            "detail": "Los escudos de la Radix Wallet usan el mismo mecanismo (un Access Controller con la insignia de dueño). Si una web lo configura por su cuenta, la billetera puede dejar de saber firmar por esa cuenta, y eso no tiene vuelta atrás."
+          },
+          {
+            "title": "Lo que sí funciona: un escudo con varios factores",
+            "detail": "Crea un escudo en la billetera que exija dos factores para firmar, por ejemplo este teléfono y una tarjeta Arculus. Si la tarjeta la guarda otra persona, ninguna transacción sale sin las dos. Hace falta estar juntos para firmar, pero el control es compartido de verdad."
+          },
+          {
+            "title": "Para tesorerías de grupo",
+            "detail": "Un DAO o un equipo que necesite votar cada pago necesita un componente propio (un blueprint de multifirma) o una herramienta de gobernanza. Revisa su código o su auditoría antes de meter fondos."
+          }
+        ]
       }
     },
     "walletPlayground": {
@@ -3512,6 +4721,50 @@
           "paymentLabel": "XRD a retirar para la tasa de creación",
           "paymentHint": "No es el precio: el ledger coge de aquí la tasa exacta (unos 100 USD en XRD) y te devuelve el resto a la cuenta. Deja el valor por defecto salvo que la creación falle por fondos."
         }
+      },
+      "info": {
+        "contextTitle": "Cuenta y validador",
+        "validatorLabel": "Validador",
+        "yours": "Tienes su insignia de propietario",
+        "notAValidator": "Esa dirección no es un validador.",
+        "title": "Ficha del validador",
+        "unnamed": "Validador sin nombre",
+        "registered": "Registrado",
+        "unregistered": "No registrado",
+        "active": "En el conjunto activo",
+        "inactive": "Fuera del conjunto activo",
+        "acceptsStake": "Acepta stake delegado",
+        "closedStake": "No acepta stake delegado",
+        "online": "En línea",
+        "offline": "Caído",
+        "noteUnregistered": "No está registrado: no entra en el conjunto activo y no genera recompensas mientras siga así.",
+        "noteClosed": "No acepta stake nuevo de otras cuentas; solo su propietario puede añadir stake.",
+        "noteFeeUp": "La comisión va a subir al {fee} % al cambiar de época. Tenlo en cuenta antes de hacer stake.",
+        "noteOffline": "El nodo no está validando ahora mismo: mientras siga caído pierde propuestas y recompensas.",
+        "figuresTitle": "Datos",
+        "stake": "Stake total",
+        "stakeShare": "{percent} % de la red · puesto {rank}",
+        "fee": "Comisión",
+        "feeChange": "Cambiará al {fee} % en la próxima época",
+        "apy": "Rentabilidad estimada (APY)",
+        "uptime": "Disponibilidad (14 días)",
+        "uptimeSub": "{total} % desde Babylon",
+        "ownerStake": "Stake del operador",
+        "delegators": "Delegadores",
+        "lsuValue": "Valor de 1 LSU",
+        "positionTitle": "Tu posición",
+        "pickAccount": "Elige una cuenta para ver tu stake en este validador.",
+        "yourLsu": "Tus LSU",
+        "worth": "≈ {amount} XRD",
+        "claimReady": "Listo para reclamar",
+        "claimWaiting": "Retiradas en espera",
+        "claimAt": "{amount} XRD en la época {epoch}",
+        "noPosition": "La cuenta elegida no tiene stake en este validador.",
+        "youOwn": "Esta cuenta tiene la insignia de propietario de este validador.",
+        "goDashboard": "Ver ficha completa",
+        "noteFeeAll": "Su comisión es del 100 %: se queda con todas las recompensas y quien haga stake aquí no gana nada.",
+        "remove": "Quitar este validador",
+        "topStakersTitle": "Principales stakers ({count})"
       }
     },
     "toolGuide": {
@@ -3520,6 +4773,501 @@
       "example": "Ejemplo práctico",
       "glossary": "Glosario",
       "exampleTag": "Ej."
+    },
+    "pool": {
+      "contextTitle": "Cuenta y pool",
+      "accountLabel": "Cuenta",
+      "poolLabel": "Pool",
+      "poolPlaceholder": "pool_rdx1…",
+      "unitsHeld": "Tienes {amount} unidades",
+      "noneDetected": "Esta cuenta no tiene unidades de ningún pool. Pega la dirección del pool o búscalo con el botón +.",
+      "notAPool": "Esa dirección no es un pool nativo de Radix.",
+      "pickAccountFirst": "Elige primero la cuenta que firma.",
+      "pickPoolFirst": "Elige o pega el pool sobre el que quieres actuar.",
+      "drainableWarning": "Este pool tiene el gestor abierto a todos (AllowAll): cualquier cuenta puede retirar sus reservas con protected_withdraw. Si tienes liquidez dentro, canjea tus unidades cuanto antes y crea un pool nuevo protegido por una insignia.",
+      "kindLabel": "Tipo",
+      "kinds": {
+        "one": "Un recurso",
+        "two": "Dos recursos",
+        "multi": "Varios recursos"
+      },
+      "reservesLabel": "Reservas",
+      "poolUnitLabel": "Unidad de pool",
+      "supply": "{amount} en circulación",
+      "yourUnitsLabel": "Tus unidades",
+      "managerLabel": "Gestor",
+      "ownerLabel": "Propietario",
+      "ownerFixed": "Fijo: no se puede cambiar",
+      "rule": {
+        "allowAll": "Cualquiera (AllowAll)",
+        "denyAll": "Nadie",
+        "badge": "Insignia {badge}",
+        "nonFungible": "NFT {id}",
+        "other": "Regla compuesta (otro componente o varias insignias)",
+        "component": "Un componente (contrato inteligente)",
+        "componentHint": "Solo ese componente puede hacerlo, no una persona con insignia. Es lo normal en los pools de un DEX.",
+        "package": "El código de un paquete",
+        "packageHint": "Solo los componentes de ese paquete pueden hacerlo."
+      },
+      "youHold": "La tienes",
+      "youDontHold": "No la tienes",
+      "balance": "Saldo: {amount}",
+      "max": "Máx.",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "forms": {
+        "create": {
+          "title": "Nuevo pool",
+          "hint": "El pool queda protegido por una insignia desde el primer instante: sin ella nadie puede aportar ni mover las reservas. El propietario (metadatos del pool y de su unidad) es la misma insignia.",
+          "kindLabel": "Tipo de pool",
+          "kindHints": {
+            "one": "Un solo recurso",
+            "two": "Par de recursos, como un DEX",
+            "multi": "Tres o más recursos"
+          },
+          "resourcesLabel": "Recursos del pool",
+          "resourceN": "Recurso {n}",
+          "addResource": "Añadir recurso",
+          "removeResource": "Quitar recurso",
+          "managerLabel": "Insignia de gestor",
+          "managerHint": "Quien tenga esta insignia puede aportar liquidez y sacar o meter reservas a su antojo. Guárdala como guardarías las propias reservas.",
+          "managerNew": "Acuñar una nueva",
+          "managerNewHint": "Suministro 1, llega a esta cuenta",
+          "managerExisting": "Usar una que ya tengo",
+          "managerExistingHint": "Una que ya está en tu cuenta",
+          "badgeNameLabel": "Nombre de la insignia",
+          "badgeNameDefault": "Gestor del pool",
+          "badgeResourceLabel": "Recurso de la insignia",
+          "countError": "Un pool de un recurso lleva exactamente uno; de dos, exactamente dos; y de varios, al menos dos.",
+          "duplicateError": "Hay un recurso repetido.",
+          "resourceError": "Cada recurso debe ser una dirección resource_….",
+          "badgeError": "Indica el recurso de la insignia.",
+          "badgeNameError": "Ponle nombre a la insignia.",
+          "created": "Pool creado",
+          "badgeSearch": "Buscar insignia…",
+          "sendButton": "Crear pool",
+          "profileSection": "Perfil del pool",
+          "profileHint": "Opcional: se escribe en la misma transacción que crea el pool. El nombre y el símbolo de la unidad de pool se ponen después, desde Perfil del pool: su dirección no existe hasta que el pool se crea.",
+          "badgeSymbolLabel": "Símbolo de la insignia",
+          "badgeDescriptionLabel": "Descripción de la insignia",
+          "badgeIconLabel": "URL del icono de la insignia",
+          "exampleButton": "Rellenar con datos de ejemplo",
+          "unitNext": "Poner nombre a la unidad de pool",
+          "example": {
+            "poolName": "Pool de prueba {n}",
+            "poolDescription": "Pool de ejemplo creado desde la Consola Radix.",
+            "badgeName": "Gestor del pool de prueba {n}",
+            "badgeDescription": "Insignia de gestor y propietario del pool de prueba."
+          }
+        },
+        "contribute": {
+          "title": "Aportar liquidez",
+          "hint": "Depositas los recursos del pool y recibes unidades de pool. Aportar exige la insignia de gestor.",
+          "amountLabel": "Cantidad",
+          "ratioNote": "El pool toma las cantidades en la proporción que ya tiene y te devuelve lo que sobra junto con las unidades. En un pool vacío, tu primera aportación fija esa proporción.",
+          "amountError": "Cantidad no válida.",
+          "balanceError": "No tienes tanto.",
+          "needsManager": "Esta cuenta no tiene la insignia de gestor del pool.",
+          "sendButton": "Aportar liquidez"
+        },
+        "reserves": {
+          "title": "Ajustar reservas",
+          "hint": "Mete o saca recursos de las reservas sin acuñar ni quemar unidades. Exige la insignia de gestor.",
+          "deposit": "Meter en reservas",
+          "depositHint": "Cada unidad pasa a valer más",
+          "withdraw": "Sacar de reservas",
+          "withdrawHint": "Cada unidad pasa a valer menos",
+          "amountLabel": "Cantidad",
+          "reserveBalance": "En reservas: {amount}",
+          "amountError": "Cantidad no válida.",
+          "balanceError": "No tienes tanto.",
+          "reserveError": "El pool no tiene tanto en reservas.",
+          "needsManager": "Esta cuenta no tiene la insignia de gestor del pool.",
+          "remainingLabel": "Quedará: {amount}"
+        },
+        "redeem": {
+          "title": "Canjear unidades",
+          "hint": "Quemas unidades de pool y recibes tu parte de cada reserva. Es público: no hace falta ninguna insignia.",
+          "amountLabel": "Unidades a canjear",
+          "estimateLabel": "Recibirás aproximadamente",
+          "estimateNote": "Calculado con las reservas actuales. Simula la transacción para ver la cifra exacta.",
+          "amountError": "Cantidad no válida.",
+          "balanceError": "No tienes tantas unidades.",
+          "noUnits": "Esta cuenta no tiene unidades de este pool.",
+          "sendButton": "Canjear unidades",
+          "totalLabel": "Total",
+          "redeemingLabel": "Canjeas",
+          "remainingLabel": "Te quedarán"
+        },
+        "profile": {
+          "title": "Perfil del pool",
+          "hint": "Nombre, descripción e icono del pool y de su unidad de pool, que es lo que ven las carteras de quien la tiene. Los campos muestran lo que ya tiene; solo se escribe lo que cambies.",
+          "poolSection": "Pool",
+          "unitSection": "Unidad de pool",
+          "fields": {
+            "name": {
+              "label": "Nombre",
+              "hint": "Lo que muestran carteras y exploradores.",
+              "placeholder": "XRD/HUG"
+            },
+            "symbol": {
+              "label": "Símbolo",
+              "hint": "Abreviatura de la unidad de pool.",
+              "placeholder": "XRDHUG-LP"
+            },
+            "description": {
+              "label": "Descripción",
+              "hint": "Un párrafo corto.",
+              "placeholder": "Pool de liquidez XRD/HUG"
+            },
+            "iconUrl": {
+              "label": "URL del icono",
+              "hint": "Dirección completa de una imagen cuadrada.",
+              "placeholder": "https://…/icono.png"
+            },
+            "infoUrl": {
+              "label": "Web",
+              "hint": "Página con más información.",
+              "placeholder": "https://…"
+            }
+          },
+          "needsOwner": "Esta cuenta no tiene la insignia de propietario del pool.",
+          "urlError": "Las URL tienen que empezar por https:// o http://.",
+          "sendButton": "Guardar perfil"
+        },
+        "manage": {
+          "title": "Retirar el pool",
+          "hint": "Activa los pasos que quieras: todos van en una sola transacción. Primero se vacía, luego se etiqueta y por último se congela.",
+          "empty": {
+            "title": "Vaciar las reservas",
+            "description": "Saca todo lo que hay en el pool y lo manda a tu cuenta.",
+            "othersWarning": "Otras cuentas tienen {units} unidades de este pool. Después de vaciarlo no podrán canjearlas por nada."
+          },
+          "retire": {
+            "title": "Marcar como retirado",
+            "description": "Añade la etiqueta retired al pool y a su unidad.",
+            "note": "Las etiquetas que ya tengan se conservan. Carteras y exploradores pueden mostrar la etiqueta para avisar de que el pool ya no se usa."
+          },
+          "lock": {
+            "title": "Congelar el perfil",
+            "description": "Fija para siempre el perfil y el propietario del pool y de su unidad.",
+            "warning": "No tiene vuelta atrás: nadie podrá volver a cambiar el nombre, el icono, la descripción ni las etiquetas, ni siquiera con la insignia. La insignia de gestor seguirá pudiendo aportar y mover reservas, porque el motor no deja bloquear ese rol.",
+            "confirm": "Entiendo que congelar el perfil es irreversible."
+          },
+          "needsManager": "Esta cuenta no tiene la insignia de gestor del pool.",
+          "needsOwner": "Esta cuenta no tiene la insignia de propietario del pool.",
+          "alreadyEmpty": "El pool ya está vacío.",
+          "alreadyRetired": "El pool ya está marcado como retirado.",
+          "alreadyFrozen": "El propietario de este pool ya está bloqueado.",
+          "nothingAvailable": "Esta cuenta no puede dar ningún paso en este pool: no tiene sus insignias o el pool ya está retirado.",
+          "nothingChosen": "Activa al menos un paso.",
+          "loadingTags": "Cargando las etiquetas de la unidad de pool…",
+          "confirmNeeded": "Confirma que entiendes que congelar es irreversible.",
+          "sendButton": "Retirar pool"
+        }
+      },
+      "info": {
+        "title": "Ficha del pool",
+        "unnamed": "Pool sin nombre",
+        "unit": "unidad",
+        "safetyDrainable": "Cualquiera puede vaciar este pool: su rol de gestor es AllowAll. Si tienes unidades, canjéalas cuanto antes.",
+        "safetyBadge": "Solo quien tenga la insignia de gestor puede aportar y mover reservas.",
+        "safetyOther": "El rol de gestor no es una insignia simple; revisa la regla de arriba.",
+        "ownerUpdatable": "El propietario puede cambiar los metadatos y sus propias reglas.",
+        "ownerFixed": "La regla del propietario es fija.",
+        "unitValueTitle": "Valor de una unidad",
+        "emptyPool": "El pool aún no tiene unidades en circulación.",
+        "positionTitle": "Tu posición",
+        "yourUnits": "Tus unidades",
+        "yourShare": "Tu parte del pool",
+        "yourValue": "Lo que recibirías al canjear",
+        "noPosition": "La cuenta elegida no tiene unidades de este pool.",
+        "goContribute": "Aportar liquidez",
+        "goRedeem": "Canjear unidades",
+        "goReserves": "Ajustar reservas",
+        "goProfile": "Editar perfil",
+        "safetyContract": "Lo gestiona un contrato inteligente (por ejemplo, un DEX): nadie puede mover sus reservas por su cuenta.",
+        "remove": "Quitar este pool",
+        "pickAccount": "Elige una cuenta para ver tu posición en este pool.",
+        "goManage": "Gestionar",
+        "retired": "Retirado",
+        "participantsTitle": "Participantes ({count})",
+        "participantsAll": "Ver todos en el explorador",
+        "putIn": "Aportado",
+        "takenOut": "Retirado",
+        "result": "Resultado"
+      },
+      "ownerUpdatable": "Se puede cambiar",
+      "badgesTitle": "Insignias del pool",
+      "managerRole": "Gestor",
+      "ownerRole": "Propietario"
+    },
+    "holders": {
+      "resourceTitle": "Token",
+      "resourceHint": "Pega la dirección del token o de la colección de NFT. Se leen todos los poseedores de la red, página a página.",
+      "load": "Ver poseedores",
+      "loading": "Leyendo poseedores: {loaded} de {total}…",
+      "error": "No se pudieron leer los poseedores: {message}",
+      "summaryTitle": "Poseedores de {resource}",
+      "exportCsv": "Exportar CSV",
+      "truncated": "Se han leído los {loaded} mayores poseedores de {total}. El resto tiene cantidades menores.",
+      "statHolders": "Poseedores",
+      "statTotal": "Total en sus manos",
+      "statTop1": "El mayor",
+      "statTop10": "Los 10 mayores",
+      "filtersTitle": "Filtros",
+      "kinds": {
+        "account": "Cuentas",
+        "pool": "Pools",
+        "locker": "Lockers",
+        "component": "Componentes",
+        "validator": "Validadores",
+        "other": "Otros"
+      },
+      "minAmount": "Cantidad mínima",
+      "exclude": "Excluir direcciones",
+      "excludeHint": "Una por línea o separadas por comas: tu tesorería, un exchange, tu propia cuenta…",
+      "colHolder": "Poseedor",
+      "colAmount": "Cantidad",
+      "colShare": "Parte",
+      "showing": "Mostrando los {shown} primeros de {total}. El CSV los incluye todos.",
+      "sendResource": "Token que vas a repartir",
+      "pot": "Cantidad total a repartir {symbol}",
+      "potError": "Cantidad no válida.",
+      "modeProportional": "Proporcional",
+      "modeProportionalHint": "Según lo que tiene cada uno",
+      "modeEqual": "A partes iguales",
+      "modeEqualHint": "Todos reciben lo mismo",
+      "distributionSummary": "{count} destinatarios. Al primero le tocan {first}. Las cantidades se truncan a {decimals} decimales para no pasarte nunca del total.",
+      "downloadDistribution": "Descargar CSV",
+      "sourceCsv": "Lista CSV",
+      "sourceCsvHint": "Pega o sube tu lista",
+      "sourceHolders": "Poseedores de un token",
+      "sourceHoldersHint": "Reparte entre quienes lo tienen",
+      "holdersOf": "Token cuyos poseedores recibirán",
+      "holdersMatching": "{count} de {total} poseedores pasan los filtros.",
+      "useDistribution": "Usar este reparto",
+      "colReceives": "Recibe"
+    },
+    "bulkSend": {
+      "listTitle": "Destinatarios",
+      "listHint": "Una línea por destinatario. Se paga en lotes de transacciones y quien rechace el depósito no bloquea a los demás: su parte vuelve a tu cuenta.",
+      "file": "Archivo CSV",
+      "filePrompt": "Arrastra un CSV o pulsa para elegirlo",
+      "csvLabel": "Destinatarios",
+      "csvHint": "cuenta,recurso,cantidad · cuenta,recurso,#id# para NFT · cuenta,cantidad usando el recurso por defecto. Vale coma, punto y coma o tabulador.",
+      "csvPlaceholder": "account_rdx1…,resource_rdx1…,10\naccount_rdx1…,resource_rdx1…,#1#",
+      "defaultResource": "Recurso por defecto",
+      "defaultResourceHint": "El token que reciben las líneas de solo cuenta y cantidad. Las líneas de tres columnas indican su propio recurso.",
+      "reviewTitle": "Revisión",
+      "recipients": "{count} destinatarios",
+      "total": "{amount} {resource}",
+      "nfts": "{count} NFT",
+      "batchesInfo": "{batches} transacciones de hasta {size} destinatarios",
+      "moreIssues": "…y {count} problemas más.",
+      "pickAccount": "Elige la cuenta que paga.",
+      "refundNote": "Cada lote es una transacción que firmas en la billetera. Si una cuenta rechaza el depósito, su parte vuelve a la tuya en esa misma transacción.",
+      "issues": {
+        "columns": "Fila {row}: faltan columnas. Cada fila lleva cuenta, recurso (o el recurso por defecto) y cantidad.",
+        "account": "Fila {row}: la dirección de la cuenta no es válida.",
+        "network": "Fila {row}: la cuenta es de otra red.",
+        "resource": "Fila {row}: la dirección del recurso no es válida.",
+        "resourceNetwork": "Fila {row}: el recurso es de otra red.",
+        "noResource": "Fila {row}: falta el recurso. Ponlo en la fila o elige un recurso por defecto.",
+        "amount": "Fila {row}: escribe una cantidad mayor que cero de {resource}.",
+        "nftAmount": "Fila {row}: {resource} es un NFT: escribe su ID, por ejemplo #1#.",
+        "fungibleId": "Fila {row}: {resource} es un token, no un NFT: escribe una cantidad en lugar de {detail}.",
+        "nftId": "Fila {row}: el ID de NFT no es válido.",
+        "duplicateNft": "Fila {row}: el NFT {detail} de {resource} está repetido.",
+        "nftNotHeld": "Fila {row}: no tienes el NFT {detail} de {resource}.",
+        "balance": "Fila {row}: no tienes suficiente {resource} para todo el reparto (hacen falta {detail}).",
+        "locked": "Fila {row}: {resource} no se puede transferir: su regla de retirada (withdrawer) es DenyAll, así que nunca sale de la cuenta."
+      },
+      "sendButton": "Enviar a los destinatarios",
+      "batchesInfoOne": "1 transacción de hasta {size} destinatarios",
+      "textMode": "Editar como texto",
+      "fieldsMode": "Editar con campos",
+      "rowsHint": "Una fila por destinatario. Deja el recurso vacío para usar el de por defecto; para un NFT, pon su #id# en la cantidad. Al subir un CSV las filas se rellenan solas."
+    },
+    "batches": {
+      "progress": "{sent} de {total} lotes enviados",
+      "batch": "Lote {n} · {count} destinatarios",
+      "simulate": "Simular",
+      "send": "Enviar a la billetera",
+      "sent": "Enviado",
+      "failed": "No se completó",
+      "lastError": "Último error: {error}",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "noRecipients": "Añade destinatarios a la lista para preparar los lotes.",
+      "fixIssues": "Corrige los errores de la lista para continuar.",
+      "pickAccount": "Elige la cuenta que envía.",
+      "needsLocker": "Crea un locker o elige uno que ya tengas."
+    },
+    "locker": {
+      "lockerTitle": "Locker",
+      "lockerHint": "Un Account Locker guarda tokens a nombre de cada destinatario hasta que los reclama. Solo quien tiene su insignia puede cargarlo.",
+      "modeNew": "Crear un locker",
+      "modeNewHint": "Su insignia llega a esta cuenta",
+      "modeExisting": "Usar uno que ya tengo",
+      "modeExistingHint": "Pega su dirección locker_…",
+      "recoverOn": "Permitir recuperar",
+      "recoverOnHint": "Puedes retirar lo no reclamado",
+      "recoverOff": "Sin recuperación",
+      "recoverOffHint": "Solo el destinatario lo retira",
+      "createButton": "Crear locker",
+      "created": "Locker creado",
+      "notALocker": "Esa dirección no es un Account Locker.",
+      "storerLabel": "Cargar el locker",
+      "recovererLabel": "Recuperar",
+      "ruleAnyone": "cualquiera",
+      "ruleNobody": "nadie",
+      "youHold": "tienes la insignia",
+      "youDontHold": "no tienes la insignia",
+      "claimLink": "Enlace de reclamo:",
+      "claimLinkHint": "Compártelo con los destinatarios: al abrirlo con su billetera ven lo que les espera y lo reclaman en una transacción. Solo cada cuenta puede reclamar lo suyo.",
+      "airdropTitle": "Airdrop",
+      "airdropHint": "Se envía en lotes; cada recurso va en sus propias transacciones.",
+      "directOn": "Entregar directo",
+      "directOnHint": "Se guarda solo si rechazan depósitos",
+      "directOff": "Guardarlo todo",
+      "directOffHint": "Todos reclaman; recuperable",
+      "needsStorer": "Esta cuenta no tiene la insignia del locker.",
+      "needsRecoverer": "Esta cuenta no tiene la insignia de recuperación.",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "info": {
+        "contextTitle": "Cuenta y locker",
+        "lockerLabel": "Locker",
+        "title": "Ficha del locker",
+        "unnamed": "Locker sin nombre",
+        "recoverNobody": "Nadie puede recuperar lo que guarda: lo que te dejen aquí solo lo puedes retirar tú.",
+        "recoverBadge": "Quien tenga la insignia de recuperación puede retirar lo que no reclames. Si te han dejado algo, reclámalo pronto.",
+        "recoverAnyone": "Cualquiera puede retirar lo que guarda este locker. No dejes nada en él y reclama lo tuyo cuanto antes.",
+        "recoverOther": "La regla de recuperación no es una insignia simple; revisa abajo quién puede recuperar.",
+        "storeAnyone": "Cualquiera puede cargarlo: lo que veas en él no prueba quién lo envía.",
+        "rolesTitle": "Quién puede hacer qué",
+        "storerLabel": "Cargar tokens",
+        "recovererLabel": "Recuperar tokens",
+        "ownerLabel": "Propietario",
+        "ownerUpdatable": "El propietario puede cambiar estas reglas y los metadatos.",
+        "ownerFixed": "La regla del propietario es fija.",
+        "pickAccount": "Elige una cuenta para ver lo que te espera en este locker.",
+        "claimLinkTitle": "Enlace de reclamo",
+        "componentHint": "Solo ese componente puede hacerlo, no una persona con insignia. Es lo habitual cuando una dApp reparte con su propio contrato.",
+        "packageHint": "Solo los componentes de ese paquete pueden hacerlo.",
+        "remove": "Quitar este locker",
+        "contentTitle": "Qué guarda",
+        "acceptsLabel": "Acepta",
+        "acceptsAny": "Cualquier token o NFT: un Account Locker no limita recursos. Quién puede cargarlo lo decide la regla de arriba.",
+        "heldLabel": "Guardado ahora",
+        "nothingHeld": "Ahora no guarda nada.",
+        "activityLabel": "Actividad",
+        "activity": "Ha guardado tokens para {claimants} {accounts} · {stores} depósitos · {claims} reclamados · {recoveries} recuperados",
+        "truncated": "Tiene más de {count} transacciones: no se suma todo su historial, así que no se muestran los totales ni la actividad completa.",
+        "componentTitle": "Componente",
+        "componentLabel": "Dirección",
+        "packageLabel": "Paquete",
+        "nativePackage": "Paquete nativo de Radix: el código del locker es el del propio motor, no de un tercero.",
+        "blueprintLabel": "Blueprint",
+        "recoverContract": "Un contrato (el componente que gestiona este locker) puede retirar lo que no reclames, según sus propias reglas. Si te han dejado algo, reclámalo pronto.",
+        "accountOne": "cuenta",
+        "accountMany": "cuentas",
+        "badgeTitle": "Insignia del locker",
+        "recipientsTitle": "Destinatarios ({count})",
+        "thisAccount": "Esta cuenta",
+        "allClaimed": "Todo reclamado",
+        "recipientsMore": "Y {count} destinatarios más."
+      },
+      "createAndSend": "Crear locker y hacer el airdrop",
+      "restAfterCreate": "Esta transacción crea el locker y envía el primer lote. Los {count} lotes restantes se preparan en cuanto el locker exista.",
+      "createEmpty": "Crear locker vacío",
+      "createEmptyHint": "Crea el locker sin repartir nada: para compartir su enlace o ponerle nombre antes del airdrop.",
+      "airdropButton": "Hacer el airdrop",
+      "allSent": "Airdrop completado: todos los destinatarios de la lista ya recibieron su parte con la creación del locker."
+    },
+    "lockerClaim": {
+      "roleWho": "Para quien recibió un airdrop",
+      "roleWhat": "Retira a tu cuenta lo que el locker guarda para ella. Solo tu cuenta puede hacerlo.",
+      "otherQuestion": "¿Hiciste tú el airdrop y quieres lo que nadie reclamó?",
+      "accountTitle": "Tu cuenta",
+      "lockerTitle": "Lockers",
+      "lockerHint": "Elige uno o varios lockers: todo lo que guarden para tu cuenta se reclama en una sola transacción.",
+      "waitingTitle": "Te espera",
+      "waitingHint": "Lo que cada locker guarda para tu cuenta.",
+      "nothing": "No hay nada pendiente para esta cuenta en este locker.",
+      "claimAll": "Reclamar todo",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "pickAccount": "Elige la cuenta que recibió el airdrop.",
+      "error": "No se pudo leer lo que te espera: {message}",
+      "resourcesCount": "{count} recursos",
+      "unnamed": "Recurso sin nombre",
+      "unnamedLocker": "Locker sin nombre"
+    },
+    "lockerRecover": {
+      "roleWho": "Para quien hizo el airdrop",
+      "roleWhat": "Recupera a tu cuenta lo que tus destinatarios no han reclamado. Necesitas la insignia de recuperación del locker.",
+      "otherQuestion": "¿Recibiste un airdrop y quieres retirar lo tuyo?",
+      "accountTitle": "Cuenta",
+      "accountHint": "La que tiene la insignia de recuperación del locker.",
+      "lockerTitle": "Locker",
+      "lockerHint": "Pégalo o pulsa uno de tus lockers.",
+      "pickLocker": "Elige un locker.",
+      "waitingTitle": "Sin reclamar",
+      "waitingHint": "Cada destinatario con lo que el locker aún le guarda. Lo marcado vuelve a tu cuenta; lo desmarcado sigue esperando a su destinatario.",
+      "recipientColumn": "Destinatarios ({count})",
+      "waitingColumn": "Pendiente",
+      "noRecovery": "Este locker se creó sin recuperación: solo sus destinatarios pueden retirar lo guardado.",
+      "needsRecoverer": "Esta cuenta no tiene la insignia de recuperación de este locker.",
+      "loading": "Leyendo lo que queda en el locker…",
+      "nothing": "No queda nada sin reclamar en este locker.",
+      "noneTicked": "Marca al menos un destinatario.",
+      "truncated": "Historial largo: los destinatarios salen de las últimas {count} transacciones del locker.",
+      "button": "Recuperar ({count})"
+    },
+    "badges": {
+      "unnamed": "Insignia sin nombre",
+      "grants": "Da permiso para",
+      "issuedLabel": "Emitidas",
+      "yourAccount": "Tu cuenta"
+    },
+    "accountDeposits": {
+      "ruleTitle": "Regla general",
+      "ruleHint": "Lo que pasa con lo que te envían otros cuando no hay una excepción para ese token. Lo que depositas tú siempre entra.",
+      "rules": {
+        "Accept": {
+          "label": "Aceptar todo",
+          "hint": "Cualquiera puede enviarte cualquier token"
+        },
+        "AllowExisting": {
+          "label": "Solo lo que ya tengo",
+          "hint": "Solo tokens que ya tienes, y XRD"
+        },
+        "Reject": {
+          "label": "Rechazar todo",
+          "hint": "Nadie puede enviarte nada"
+        }
+      },
+      "exceptionsTitle": "Excepciones por recurso",
+      "exceptionsHint": "Tokens o NFT que siempre entran o que nunca entran, digan lo que digan las reglas generales.",
+      "depositorsTitle": "Depositantes autorizados",
+      "depositorsHint": "Quien presente una de estas insignias puede depositar cualquier cosa en tu cuenta.",
+      "allow": "Permitir",
+      "block": "Bloquear",
+      "remove": "Quitar",
+      "add": "Añadir",
+      "badgeIdPlaceholder": "ID de NFT (opcional)",
+      "noChanges": "No has cambiado nada.",
+      "readError": "No se pudieron leer los depósitos de la cuenta: {message}",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "sendButton": "Guardar reglas de depósito",
+      "noExceptions": "Sin excepciones: todos los recursos siguen la regla general.",
+      "addException": "Pega o elige un token o NFT para añadirlo como excepción",
+      "noDepositors": "Ninguna insignia autorizada.",
+      "addDepositor": "Pega o elige la insignia que podrá depositar siempre",
+      "accountTitle": "Cuenta"
     }
   }
 }

@@ -95,12 +95,8 @@ export interface DashboardCardGridProps {
     network: Network;
     timezone: string;
     locale: string;
-    accountsToShow?: string[];
-    packagesToShow?: string[];
-    componentsToShow?: string[];
-    resourcesToShow?: string[];
-    systemEntitiesToShow?: string[];
-    validatorsToShow?: string[];
+    /** Entity cards above the transactions, in order; each address picks its own card. */
+    entitiesToShow?: string[];
     t?: Partial<TranslationsT>;
     dt?: Partial<TranslationsT['dashboard']>;
     onExpand: (id: string) => void;

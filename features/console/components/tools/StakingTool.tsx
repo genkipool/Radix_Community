@@ -16,6 +16,8 @@ import dashboardStakingEn from '@/features/dashboard/staking/locales/en.json';
 import dashboardStakingEs from '@/features/dashboard/staking/locales/es.json';
 
 import type { ConsoleToolProps } from '../ConsoleToolView';
+import { accountFromQuery, consoleQueryParam } from '../../lib/console-query';
+import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
@@ -47,8 +49,13 @@ export default function StakingTool({ t }: ConsoleToolProps) {
   const { activeNetwork } = useRadixWallet();
   const { copiedText, copy } = useCopyToClipboard();
 
-  const [account, setAccount] = useState<string | null>(null);
+  const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
   const [tab, setTab] = useState<StakingTab>('distributed');
+  // `?validator=a,b` (from a validator's profile) starts with those selected.
+  const [initialValidators] = useConsoleQueryState(
+    () => (consoleQueryParam('validator') ?? '').split(',').map((v) => v.trim()).filter((v) => v.startsWith('validator_')),
+    [],
+  );
 
   const { data: entityData } = useQuery({
     queryKey: entityKeys.detail(account ?? '', activeNetwork),
@@ -96,6 +103,7 @@ export default function StakingTool({ t }: ConsoleToolProps) {
           />
 
           <AccountStakingSection
+            initialValidators={initialValidators.length ? initialValidators : undefined}
             address={account}
             entityData={entityData ?? null}
             network={activeNetwork}

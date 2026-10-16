@@ -2,20 +2,13 @@
  * radixAddress.ts
  *
  * Helpers for identifying and working with Radix entity addresses.
- * Centralises the prefix list so it's not duplicated across the codebase.
+ * The entity prefixes come from `lib/entityKinds.ts`, the one list the
+ * explorer keeps; transaction hashes are added here.
  */
 
-const RADIX_ADDRESS_PREFIXES = [
-    'account_',
-    'component_',
-    'resource_',
-    'package_',
-    'txid_',
-    'validator_',
-    'identity_',
-    'consensusmanager_',
-    'transactiontracker_',
-] as const;
+import { ENTITY_ADDRESS_PREFIXES } from '../lib/entityKinds';
+
+const RADIX_ADDRESS_PREFIXES = [...ENTITY_ADDRESS_PREFIXES, 'txid_'];
 
 /**
  * Returns true if the given string looks like a Radix entity address

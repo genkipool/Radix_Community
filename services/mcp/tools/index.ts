@@ -9,6 +9,9 @@ import { searchRadixDocsTool, readRadixDocTool } from './docs';
 import { ledgerTools } from './ledger';
 import { consoleTools } from './console';
 import { validatorTools } from './validator';
+import { poolTools } from './pool';
+import { distributionTools } from './distribution';
+import { depositTools } from './deposits';
 import { signTools } from './sign';
 import { connectorTools } from './connector';
 import { walletTools } from './wallet';
@@ -26,6 +29,9 @@ export function getMcpRegistry(): McpToolRegistry {
     ...ledgerTools,
     ...consoleTools,
     ...validatorTools,
+    ...poolTools,
+    ...distributionTools,
+    ...depositTools,
     ...signTools,
     ...connectorTools,
     ...walletTools,

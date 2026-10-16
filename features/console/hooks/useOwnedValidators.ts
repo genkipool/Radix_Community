@@ -25,6 +25,53 @@ export interface OwnedValidator {
 }
 
 /**
+ * Validators whose owner badge the account holds. Resolves to an empty list,
+ * never an error, when it holds none.
+ */
+export async function fetchOwnedValidators(
+  account: string,
+  network: 'mainnet' | 'stokenet',
+  badgeResource: string,
+): Promise<OwnedValidator[]> {
+  if (!account) return [];
+
+  const details = await apiFetchEntityDetails(account, network);
+  const badges = nonFungibleHoldingsOf(details).find(
+    (holding) => holding.resourceAddress === badgeResource,
+  );
+  if (!badges?.ids.length) return [];
+
+  const badgeData = (await apiFetchNonFungibleData(
+    badgeResource,
+    badges.ids,
+    network,
+  )) as unknown as NonFungibleDataItem[];
+
+  const owned = badgeData.flatMap((item) => {
+    const address = validatorOfOwnerBadge(item);
+    return address ? [{ address, badgeLocalId: item.non_fungible_id }] : [];
+  });
+  if (owned.length === 0) return [];
+
+  // Names are cosmetic: a validator that has not set one still resolves.
+  const named = await Promise.all(
+    owned.map(async (validator) => {
+      try {
+        const entity = await apiFetchEntityDetails(validator.address, network);
+        return {
+          ...validator,
+          name: getMetadataString(metadataItemsOf(entity), 'name') || undefined,
+        };
+      } catch {
+        return validator;
+      }
+    }),
+  );
+
+  return named;
+}
+
+/**
  * Validators owned by the given account, for prefilling the owner-gated
  * manifest templates. Resolves to an empty list — never an error — when the
  * account holds no badge, so callers can render the plain form unchanged.
@@ -38,43 +85,6 @@ export function useOwnedValidators(accountAddress: string | null) {
     queryKey: ['console-owned-validators', activeNetwork, accountAddress],
     enabled: !!accountAddress,
     staleTime: 60_000,
-    queryFn: async (): Promise<OwnedValidator[]> => {
-      if (!accountAddress) return [];
-
-      const details = await apiFetchEntityDetails(accountAddress, activeNetwork);
-      const badges = nonFungibleHoldingsOf(details).find(
-        (holding) => holding.resourceAddress === badgeResource,
-      );
-      if (!badges?.ids.length) return [];
-
-      const badgeData = (await apiFetchNonFungibleData(
-        badgeResource,
-        badges.ids,
-        activeNetwork,
-      )) as unknown as NonFungibleDataItem[];
-
-      const owned = badgeData.flatMap((item) => {
-        const address = validatorOfOwnerBadge(item);
-        return address ? [{ address, badgeLocalId: item.non_fungible_id }] : [];
-      });
-      if (owned.length === 0) return [];
-
-      // Names are cosmetic: a validator that has not set one still resolves.
-      const named = await Promise.all(
-        owned.map(async (validator) => {
-          try {
-            const entity = await apiFetchEntityDetails(validator.address, activeNetwork);
-            return {
-              ...validator,
-              name: getMetadataString(metadataItemsOf(entity), 'name') || undefined,
-            };
-          } catch {
-            return validator;
-          }
-        }),
-      );
-
-      return named;
-    },
+    queryFn: () => (accountAddress ? fetchOwnedValidators(accountAddress, activeNetwork, badgeResource) : []),
   });
 }

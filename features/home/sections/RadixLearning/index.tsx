@@ -1,4 +1,4 @@
-import { GraduationCap, Coins, Droplets, Gamepad2, Sparkles, ExternalLink } from 'lucide-react';
+import { GraduationCap, Coins, Droplets, Gamepad2, ExternalLink } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { GlowBlob } from '@/components/ui/GlowBlob';
@@ -36,14 +36,6 @@ export default function RadixLearning({ t, language }: LanguageSectionProps) {
             link: 'https://gumball-club.radixdlt.com/',
             linkText: t.aprendizaje?.cards?.playground?.linkText,
         },
-        {
-            icon: <Sparkles className="size-6 text-[var(--color-primary)]" />,
-            badge: t.aprendizaje?.cards?.onboarding?.badge,
-            title: t.aprendizaje?.cards?.onboarding?.title,
-            desc: t.aprendizaje?.cards?.onboarding?.desc,
-            link: 'https://radquest.io/home/basic',
-            linkText: t.aprendizaje?.cards?.onboarding?.linkText,
-        },
     ];
 
     return (
@@ -58,7 +50,7 @@ export default function RadixLearning({ t, language }: LanguageSectionProps) {
                     subtitle={t.aprendizaje?.sub}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
                     {items.map((item, i) => (
                         <FadeIn key={item.title} delay={i * 0.05} className={card}>
                             <div className="flex items-center gap-3 mb-4">

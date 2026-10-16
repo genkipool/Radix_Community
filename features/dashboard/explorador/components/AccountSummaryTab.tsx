@@ -5,6 +5,8 @@
 import React, { useState } from 'react';
 import { Copy, Check, Info, Download } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
+import { AccountDepositsSummary } from './AccountDepositsTab';
+import { AccountLockersSummary } from './AccountLockersTab';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { AccountStakingSection } from '@/features/dashboard/staking/components/AccountStakingSection';
@@ -353,6 +355,8 @@ export function AccountSummaryTab({
                 />
             )}
             <AssetSection title={`${accT?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
+            <AccountLockersSummary address={address} network={network} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} tt={tt} />
+            <AccountDepositsSummary address={address} network={network} tt={tt} />
 
             {/* Account Rewards CSV Modal */}
             {csvModalAddress && (

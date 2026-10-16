@@ -105,7 +105,7 @@ function TerminalWindow({
           {title}
         </div>
         {copyValue && (
-          <CopyButton value={copyValue} size="xs" variant="minimal" label={copyLabel} />
+          <CopyButton value={copyValue} size="xs" variant="minimal" title={copyLabel} />
         )}
       </div>
       <div className="bg-[var(--code-bg)] border border-[var(--color-card-border)] rounded-b-xl p-4 font-mono text-xs leading-relaxed overflow-x-auto text-[var(--code-punct)]">
@@ -209,7 +209,7 @@ export default function McpTool({ t }: ConsoleToolProps) {
           <code className="flex-1 min-w-0 truncate text-sm font-mono" style={{ color: 'var(--color-text-main)' }}>
             {endpoint}
           </code>
-          <CopyButton value={endpoint} size="sm" label={t.common.copy} />
+          <CopyButton value={endpoint} size="sm" title={t.common.copy} />
         </div>
       </ToolSection>
 

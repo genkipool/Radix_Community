@@ -10,7 +10,9 @@ import { translations } from '@/i18n';
 const en = translations.en;
 
 // Mock Lucide icons
-vi.mock('lucide-react', () => ({
+// Partial: the icons below are stubbed, any other comes from the real module.
+vi.mock('lucide-react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('lucide-react')>()),
     ArrowRight: () => <div data-testid="arrow-right" />,
     ChevronDown: () => <div data-testid="chevron-down" />,
     Clock: () => <div data-testid="clock" />,

@@ -26,6 +26,12 @@ interface AccountValidatorStakeActionProps {
     xrdBalance: number;
     stakedXrd: number;
     claimableXrd: number;
+    /**
+     * The claim NFTs that have matured. When given, a claim carries only
+     * these (one still unbonding aborts the whole claim); without it every
+     * claim NFT of the validator is sent, as before.
+     */
+    claimableNftIds?: string[];
     lsuBalance: number;
     ghostAmount?: string;
     selections?: ValidatorSelections;
@@ -44,6 +50,7 @@ export const AccountValidatorStakeAction = ({
     xrdBalance,
     stakedXrd,
     claimableXrd,
+    claimableNftIds,
     lsuBalance,
     ghostAmount,
     selections = EMPTY_SELECTIONS,
@@ -122,8 +129,8 @@ export const AccountValidatorStakeAction = ({
     const xrdPerLsu = validator?.lsu2xrdFactor || 1;
 
     // Extract claimNftIds for this validator from the account's entity data
-    const claimNftIds: string[] = [];
-    if (validator && entityData?.non_fungible_resources?.items) {
+    const claimNftIds: string[] = claimableNftIds ? [...claimableNftIds] : [];
+    if (!claimableNftIds && validator && entityData?.non_fungible_resources?.items) {
         const claimResource = entityData.non_fungible_resources.items.find(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (nft: any) => nft.resource_address === validator.claimTokenResourceAddress

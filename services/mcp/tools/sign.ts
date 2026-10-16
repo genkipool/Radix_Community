@@ -14,11 +14,7 @@ import { defineMcpTool } from '../registry';
 import { cliBanner, cliKeyValues, cliRender, cliSection, cliTable } from '../cli';
 import type { McpToolContext } from '../types';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
-
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
+import { networkSchema } from './schemas';
 
 function toNetworkId(network: 'mainnet' | 'stokenet'): number {
   return network === 'mainnet' ? RadixNetworkId.Mainnet : RadixNetworkId.Stokenet;

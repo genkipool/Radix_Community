@@ -19,6 +19,7 @@
  * nothing else in the app needs to know.
  */
 import type { DashboardView, Network } from '../types';
+import { entityKindOf, type ExplorerEntityKind } from './entityKinds';
 
 /* ── Views ────────────────────────────────────────────────────────────────── */
 
@@ -61,27 +62,22 @@ const ENTITY_SEGMENT: Partial<Record<EntityKind, string>> = {
   validator: 'validator',
 };
 
-/**
- * Address/hash prefix → entity kind. Radix addresses are self describing, so
- * the kind never has to be passed around alongside the value.
- */
-const ENTITY_PREFIX: ReadonlyArray<readonly [string, EntityKind]> = [
-  ['txid_', 'tx'],
-  ['transactionintent_', 'tx'],
-  ['resource_', 'resource'],
-  ['account_', 'account'],
-  ['validator_', 'validator'],
-  ['component_', 'component'],
-  ['package_', 'component'],
-  ['pool_', 'component'],
-  ['identity_', 'component'],
-];
+/** Transaction hashes; every other entity's kind comes from `entityKinds.ts`. */
+const TX_PREFIXES = ['txid_', 'transactionintent_'];
+
+/** Entities with a page of their own; the rest (pools, lockers, packages…) open in the explorer. */
+const ROUTED_KINDS: Partial<Record<ExplorerEntityKind, EntityKind>> = {
+  account: 'account',
+  resource: 'resource',
+  validator: 'validator',
+};
 
 /** The entity kind a value refers to, or null when it is not an entity. */
 export function resolveEntityKind(value: string | null | undefined): EntityKind | null {
   if (!value || typeof value !== 'string') return null;
-  const match = ENTITY_PREFIX.find(([prefix]) => value.startsWith(prefix));
-  return match ? match[1] : null;
+  if (TX_PREFIXES.some((prefix) => value.startsWith(prefix))) return 'tx';
+  const kind = entityKindOf(value);
+  return kind ? ROUTED_KINDS[kind] ?? 'component' : null;
 }
 
 /**

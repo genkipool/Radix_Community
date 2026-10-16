@@ -3,7 +3,12 @@
 import { ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { AddressPickerButton } from './AddressPickerButton';
+import { useLanguage } from '@/context/LanguageContext';
 import type { AddressCategory } from '@/features/wallet/hooks/useAddressBook';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { otherNetworkOf } from '../../lib/address-network';
+
+const NETWORK_NAME = { mainnet: 'Mainnet', stokenet: 'Stokenet' } as const;
 
 /** Every on-ledger address family — for inputs that accept any address. */
 export const ALL_ADDRESS_CATEGORIES: AddressCategory[] = [
@@ -25,9 +30,11 @@ interface FieldShellProps {
   labelEnd?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Keeps a line under the control even when empty, so an error showing up does not push the page. */
+  reserveMessage?: boolean;
 }
 
-export function FieldShell({ label, hint, error, labelEnd, children, className = '' }: FieldShellProps) {
+export function FieldShell({ label, hint, error, labelEnd, children, className = '', reserveMessage }: FieldShellProps) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       {(label || labelEnd) && (
@@ -42,8 +49,8 @@ export function FieldShell({ label, hint, error, labelEnd, children, className =
       )}
       <div className="flex flex-col">
         {children}
-        {(error || hint) && (
-          <div className="mt-1.5">
+        {(error || hint || reserveMessage) && (
+          <div className="mt-1.5 min-h-[14px]">
             {error ? (
               <p className="text-[11px] leading-tight font-medium text-red-500">{error}</p>
             ) : hint ? (
@@ -75,6 +82,10 @@ interface TextFieldProps extends Omit<FieldShellProps, 'children'> {
   disabled?: boolean;
   type?: 'text' | 'number';
   trailing?: ReactNode;
+  /** Room kept for the trailing content (Tailwind padding class); a short button by default. */
+  trailingPadding?: string;
+  /** When the field loses focus, e.g. to tidy what was typed. */
+  onBlur?: () => void;
   id?: string;
   maxLength?: number;
 }
@@ -86,6 +97,8 @@ export function TextField({
   disabled,
   type = 'text',
   trailing,
+  trailingPadding = 'pr-16',
+  onBlur,
   id,
   maxLength,
   ...shell
@@ -101,7 +114,8 @@ export function TextField({
           placeholder={placeholder}
           maxLength={maxLength}
           onChange={(e) => onChange(e.target.value)}
-          className={`${controlClass} ${trailing ? 'pr-16' : ''} ${shell.error ? '!border-red-500' : ''}`}
+          onBlur={onBlur}
+          className={`${controlClass} ${trailing ? trailingPadding : ''} ${shell.error ? '!border-red-500' : ''}`}
           style={{ ...controlStyle, ...(shell.error ? { borderColor: '#ef4444' } : {}) }}
         />
         {trailing && (
@@ -114,25 +128,48 @@ export function TextField({
 
 /* ─── Address input (text + "+" picker) ───────────────────────────────────── */
 
-interface AddressFieldProps extends Omit<TextFieldProps, 'type' | 'trailing'> {
+interface AddressFieldProps extends Omit<TextFieldProps, 'type' | 'trailing' | 'trailingPadding'> {
   /** Address families this input accepts; the picker popup shows only these. */
   categories: AddressCategory[];
+  /** Several at once: the picker ticks these, and "Add" hands back the new list instead of filling the input. */
+  pickerSelected?: string[];
+  onPickerConfirm?: (addresses: string[]) => void;
+  /** The picker leaves out resources that can never be sent (for send and airdrop inputs). */
+  pickerSendableOnly?: boolean;
 }
 
 /**
  * A `TextField` for on-ledger addresses with a "+" button that opens a picker
  * scoped to `categories` (wallet accounts + saved agenda entries of those
- * kinds), so each input only ever offers addresses it accepts.
+ * kinds), so each input only ever offers addresses it accepts. An address of
+ * the other network is flagged here, for every tool at once; the tool's own
+ * error shows when the network is right.
  */
-export function AddressField({ categories, ...props }: AddressFieldProps) {
+export function AddressField({ categories, pickerSelected, onPickerConfirm, pickerSendableOnly, ...props }: AddressFieldProps) {
+  const { language } = useLanguage();
+  const { activeNetwork } = useRadixWallet();
+  const other = otherNetworkOf(props.value, activeNetwork);
+  const networkError = other
+    ? (language === 'es'
+        ? 'Esta dirección es de {other} y estás en {active}. Cambia de red o usa una dirección de {active}.'
+        : 'This address is on {other} and you are on {active}. Switch networks or use a {active} address.'
+      )
+        .replace('{other}', NETWORK_NAME[other])
+        .replaceAll('{active}', NETWORK_NAME[activeNetwork])
+    : undefined;
   return (
     <TextField
       {...props}
+      error={networkError ?? props.error}
       trailing={
         <AddressPickerButton
           categories={categories}
           onSelect={props.onChange}
           disabled={props.disabled}
+          // What the field holds shows first and checked when the picker opens again.
+          selected={pickerSelected ?? (props.value.trim() ? [props.value.trim()] : [])}
+          onConfirm={onPickerConfirm}
+          sendableOnly={pickerSendableOnly}
         />
       }
     />

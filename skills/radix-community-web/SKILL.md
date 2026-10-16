@@ -43,6 +43,10 @@ Generic JSON client config:
    3. The node operator sets `consensus.validator_address` to the new `validator_…` address on the node and restarts it; without it the node never validates.
    4. `stake-as-owner` once the node is synced (`/system/health` reports `UP`, not `SYNCING`): an active validator whose node is still catching up misses every proposal it is given.
 
+8. **Native pools**: when the user names a pool instead of giving its address, resolve it with `find_pools` (it also finds Account Lockers); read with `get_pool_state` first; build with `build_pool_manifest`. The engine fixes who can do what: `contribute`, `protected_deposit` and `protected_withdraw` need the **pool manager role**, `redeem` is public, and the owner role writes the metadata of the pool and of its pool unit. So the manager rule is the pool's whole security: **never create a pool whose manager is AllowAll** (anyone could drain it with protected_withdraw; real mainnet pools have been created that way). `build_pool_manifest` with `operation: "create"` always guards the pool with a badge, minted in the same transaction unless you pass `managerBadge`. When `get_pool_state` reports `drainable: true`, tell the user to redeem their pool units right away and move to a new, badge-guarded pool. **One pool operation per transaction**: send each manifest `build_pool_manifest` returns on its own. Never concatenate two of them (for instance two contributions to different pools) into one transaction: the ledger accepts it and the preview passes, but the Radix Wallet for Android fails while signing it (it inserts each guarantee twice; fix proposed in radixdlt/babylon-wallet-android#1449), so the user gets an error and nothing is submitted. A native pool cannot be deleted; to retire one use `operation: "manage"` with any of `emptyReserves`, `markRetired` and `freezeProfile`, all in one transaction. `freezeProfile` is irreversible (it locks the profile metadata and the owner role), so ask the user to confirm it first; the manager role of a native pool can never be locked.
+
+9. **Distributions and airdrops**: `get_resource_holders` (`all: true` for every holder) → `plan_holder_distribution` (equal or pro rata, truncated to the token's divisibility) → **`build_locker_manifest`** (`create` once, then `airdrop` with the CSV) or `build_bulk_send_manifests`. Prefer the **AccountLocker**: accounts that accept deposits get the tokens at once and the rest stay claimable at the claim page the tool returns, instead of being lost or bounced. Both tools return **several transactions**: sign them one at a time, in order. A transaction holds at most 40 recipients because the engine caps a transaction at 256 events and each new account emits several. Recipients claim with `build_locker_manifest { operation: "claim" }`; only their own account can.
+
 7. **Transient Gateway errors**: a tool failing with `NotSyncedUpError` means the Gateway is over a minute behind the ledger. Wait about 20 seconds and call it again unchanged; nothing about the request is wrong.
 
 ## Output format
@@ -66,13 +70,20 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"Set my validator's name, description, icon or website"* → `build_validator_manifest` with a `profile` operation (only the fields you pass are written) → sign. Console: https://radix-community.genkipool.com/en/console/validator-profile.
 - *"What can I claim from my unstakes?"* → `list_claimable_stake_nfts {"account": "account_…"}` → feed the matured ids to `build_validator_manifest` as `claim-xrd` → sign. Console: https://radix-community.genkipool.com/en/console/validator-staking.
 - *"Create a validator"* → `build_validator_manifest` with a single `create-validator` operation (it cannot share a transaction with anything) → `preview_transaction` → sign → then `profile` + `register` + `accept-delegated-stake` in one transaction → set `consensus.validator_address` on the node → `stake-as-owner` once the node is synced. Console: https://radix-community.genkipool.com/en/console/validator-create.
+- *"Create a liquidity pool for XRD and my token"* → `build_pool_manifest {"operation": "create", "account": "account_…", "kind": "two", "resources": ["resource_…xrd", "resource_…"]}` → sign → `build_pool_manifest {"operation": "contribute", "pool": "pool_…", "amounts": {…}}`. Console: https://radix-community.genkipool.com/en/console/pool-create.
+- *"Is this pool safe?"* → `get_pool_state {"pool": "pool_…"}`: a manager of AllowAll means anyone can drain it.
+- *"Which of these validators should I stake with?"* → `get_validator_state {"validator": ["validator_…", "validator_…"], "account": "account_…"}`: fee and pending fee changes, uptime, APY, warnings, and what the account already has with each. Console equivalent: https://radix-community.genkipool.com/en/console/validator-info.
+- *"Is this airdrop locker safe, and what is waiting for me?"* → `get_locker_claims {"locker": "locker_…", "account": "account_…"}`: whether the recoverer can take tokens back before they are claimed, and the claim link.
+- *"Find the XRD/HUG pool"* → `find_pools {"query": "HUG"}` → `get_pool_state` on the address it returns.
+- *"Airdrop 10,000 of my token to everyone holding X"* → `plan_holder_distribution {"holdersOf": "resource_…X", "sendResource": "resource_…", "total": "10000"}` → `build_locker_manifest {"operation": "create"}` (once) → `build_locker_manifest {"operation": "airdrop", "locker": "locker_…", "recipients": <csv>}` → sign each batch → share the claim link. Console: https://radix-community.genkipool.com/en/console/locker-airdrop (list source: holders of a token).
+- *"Pay these 300 people from a spreadsheet"* → `build_bulk_send_manifests {"account": "account_…", "recipients": <csv>}` → sign each batch in order. Console: https://radix-community.genkipool.com/en/console/bulk-send.
 - *"Which validator should I stake with?"* → `list_validators` → compare fee/uptime/APY → staking page https://radix-community.genkipool.com/en/console/staking.
 - *"What is this manifest going to do?"* → `explain_manifest` (plain-language steps) + `preview_transaction` (fees, balance changes).
 - *"What's the XRD price / network status?"* → `get_xrd_price`, `get_network_status`.
 - *"Log me in / prove who I am"* → the local connector's `request_login {network, dapp_definition, origin}` (the persona signs; add `accounts: {quantity: 1, with_proof: true}` to prove an account in the same approval) → then `request_ownership_proof {identity_address, accounts}` whenever exact accounts must be proven again.
 - *"A request never showed on my phone / nothing gets through"* → `pending_requests` → `check_wallet_connection` → `connector_log`; answer or force-close the wallet, then `await_response` or `cancel_request`. Never resend a request whose failure says `retry_safe: NO` If the log shows it never got a turn or a channel, look for other connector processes on the machine (an older version, or a session started before an update) and update/restart them.
 - *"What are my accounts / show my balances"* (this server is stateless — it has no "connected wallet") → the local connector's `request_accounts` (no signature) to get the address(es) → `get_account_balances` for the chosen one.
-- *"Who holds token X? What NFTs exist in collection Y?"* → `get_resource_holders`, `get_nft_data`.
+- *"Who holds token X? What NFTs exist in collection Y?"* → `get_resource_holders` (`all: true` for every holder), `get_nft_data`.
 - *"What methods does component_rdx1… expose? What's in its state?"* → `get_component_blueprint`, `get_component_state`, `get_key_value_store`.
 
 # Tool reference
@@ -168,11 +179,15 @@ Explores a non-fungible resource (NFT collection): without "ids" it lists the lo
 - `ids` (array; optional) — NFT local ids, e.g. ["#1#", "#2#"] or ["<member_1>"]. Omit to list the collection ids.
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 
-### `get_resource_holders` — Get top holders of a resource
+### `get_resource_holders` — Get holders of a resource
 
-Lists the top holders of any token or NFT collection ordered by amount held, with the total holder count.
+Lists the holders of any token or NFT collection, largest first, with concentration (top holder, top 10) and holder kinds (accounts, pools, lockers, components). By default the first page (100); with "all": true every page (up to 20,000 holders). Filters: kinds, minAmount, exclude. For an airdrop to these holders use plan_holder_distribution.
 
 - `resourceAddress` (string; required) — Resource address (resource_rdx1…)
+- `all` (boolean; required, default: false) — Read every page instead of only the largest 100 holders
+- `kinds` (array; optional) — Keep only these holder kinds (default: all)
+- `minAmount` (number; optional) — Drop holders below this amount
+- `exclude` (array; optional) — Addresses to leave out
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 
 ### `get_component_state` — Get decoded component state
@@ -322,7 +337,7 @@ Offline analysis of any Radix bech32m address: entity type (account, resource, c
 
 ### `verify_account_security` — Verify how an account is protected
 
-Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge. When it is a badge, it also says whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller's roles, its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.
+Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge. When it is a badge, it also says whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller's roles, how many factors signing and recovery need (multi-factor or one factor enough), its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.
 
 - `address` (string; required) — Account address (account_rdx1… / account_tdx_2_1…)
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
@@ -339,11 +354,12 @@ Lists every operation a validator supports (register, unregister, change fee, ch
 
 _No parameters._
 
-### `get_validator_state` — Read validator state
+### `get_validator_state` — Read validator info
 
-Reads a validator from the ledger: whether it is registered, whether it accepts delegated stake, its fee factor, consensus public key, and the stake unit (LSU) and claim NFT resources it mints. Use it to know the current state before proposing a change.
+Reads one or several validators, the same profile the console's "Validator info" section shows: name, website, whether it is registered, in the active set, accepting delegated stake and online, its fee and any pending fee change, total stake with share and rank, uptime, estimated APY, operator stake, delegators, the value of one LSU, its largest stakers (LSU holders with share and XRD value), the stake unit and claim NFT resources, plus warnings (not registered, fee at 100 %, fee going up, node down). With an account, also its position: LSUs and their XRD value, withdrawals ready to claim and those still waiting for their epoch, and whether it owns the validator.
 
-- `validator` (string; required) — Validator component address (validator_…)
+- `validator` (any; required) — Validator component address (validator_…), or a list of up to 10
+- `account` (string; optional) — Optional account: its stake, pending withdrawals and ownership
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 
 ### `list_claimable_stake_nfts` — List stake claim NFTs
@@ -360,6 +376,119 @@ Builds one transaction manifest out of one or more validator operations, resolvi
 - `account` (string; required) — Account that signs, pays the fee and presents the owner badges
 - `operations` (array; required) — Operations to combine in one transaction
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `get_pool_state` — Read native pool info
+
+Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console's "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool's history). Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.
+
+- `pool` (any; required) — Pool component (pool_…) address, or a list of up to 10 to read them all at once
+- `account` (string; optional) — Optional account: its position and badge ownership
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `build_pool_manifest` — Build native pool manifest
+
+Builds one native pool transaction. Operations: "create" (new pool, ALWAYS guarded by a manager badge: a fresh badge minted in the same transaction, or managerBadge; poolProfile and the badge fields are written in the same transaction), "contribute" (add liquidity, needs the manager badge), "deposit" / "withdraw" (move reserves without minting/burning units, need the manager badge), "redeem" (burn pool units, public), "profile" (metadata of the pool and its pool unit, needs the owner badge), "manage" (retire a pool in one transaction with any of emptyReserves / markRetired / freezeProfile; freezing is IRREVERSIBLE: confirm with the user first). Badges are resolved from the account automatically. Returns the manifest for the user to sign.
+
+- `operation` ("create" | "contribute" | "deposit" | "withdraw" | "redeem" | "profile" | "manage"; required) — What to do
+- `account` (string; required) — Account that signs, pays and presents the badges
+- `pool` (string; optional) — Pool address (every operation except create)
+- `kind` ("one" | "two" | "multi"; optional) — create only: "one", "two" or "multi" resources
+- `resources` (array; optional) — create only: resource addresses the pool holds
+- `managerBadge` (string; optional) — create only: guard the pool with this badge resource instead of minting a new one
+- `badgeName` (string; optional) — create only: name of the new manager badge
+- `badgeSymbol` (string; optional) — create only: symbol of the new manager badge
+- `badgeDescription` (string; optional) — create only: description of the new manager badge
+- `badgeIconUrl` (string; optional) — create only: icon URL of the new manager badge
+- `amounts` (object; optional) — contribute: { resource: amount } for EVERY pool resource. deposit/withdraw: one or more entries, all moved in one transaction.
+- `units` (string; optional) — redeem only: pool units to burn
+- `poolProfile` (object; optional) — profile, or create (written in the same transaction): pool metadata (blank fields are not written). The pool unit cannot be named at creation: its address does not exist until then; use "profile" afterwards.
+- `unitProfile` (object; optional) — profile only: pool unit metadata to write
+- `emptyReserves` (boolean; optional) — manage: take every reserve out to the account (manager badge). Burns no units: other holders are left with nothing to redeem.
+- `markRetired` (boolean; optional) — manage: add the "retired" tag to the pool and its pool unit, keeping their current tags (owner badge)
+- `freezeProfile` (boolean; optional) — manage: lock the profile metadata keys and the owner role of the pool and its unit FOR GOOD (owner badge). Irreversible. The manager role of a native pool cannot be locked.
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+- `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
+
+### `find_pools` — Find native pools and lockers
+
+Finds native pools (pool_…) and Account Lockers (locker_…) by name or address, from the same sources as the console pickers: the ones the given accounts have touched, the native pools Ociswap and DefiPlaza publish (mainnet only, largest first) and pools with recent network activity. No API lists every pool or locker on Radix, so a missing one can still be used by address. Use it to resolve "the XRD/HUG pool" into an address before get_pool_state.
+
+- `query` (string; optional) — Text to match against the name or the address (case insensitive)
+- `kind` ("pool" | "locker" | "both"; required, default: "pool") — What to look for
+- `accounts` (array; optional) — Accounts whose recent transactions are searched too
+- `limit` (integer; required, default: 25) — Maximum results
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `plan_holder_distribution` — Plan a distribution to holders
+
+Reads every holder of a token (filters: kinds, minAmount, exclude) and splits an amount of another token among them, equally or pro rata, truncated to its divisibility so the total is never exceeded. Returns the recipients CSV ready for build_locker_manifest (operation "airdrop", recommended) or build_bulk_send_manifests.
+
+- `holdersOf` (string; required) — Resource whose holders receive the distribution
+- `sendResource` (string; required) — Resource to distribute
+- `total` (string; required) — Total amount to distribute, decimal string
+- `mode` ("proportional" | "equal"; required, default: "proportional") —
+- `kinds` (array; required, default: ["account"]) — Holder kinds to include (default: accounts only; pools and components usually cannot receive airdrops)
+- `minAmount` (number; optional) —
+- `exclude` (array; optional) — Addresses to leave out (treasury, exchanges, the sender)
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `build_bulk_send_manifests` — Build bulk transfer manifests
+
+Pays many accounts from a CSV list. Checks every line (addresses, network, amounts, NFTs held, total balance per resource) against the live ledger, then splits into transactions of 40 recipients (the engine caps a transaction at 256 events; new accounts emit several each). Every recipient is paid with try_deposit_or_refund, so an account that refuses the deposit is refunded instead of aborting the batch.
+
+- `account` (string; required) — Paying account
+- `recipients` (string; required) — Recipients, one per line: "account,resource,amount", "account,resource,#nft_id#", or "account,amount" with defaultResource. Comma, semicolon or tab separated; a header line is ignored.
+- `defaultResource` (string; optional) — Resource for two-column lines (account,amount)
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+- `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
+
+### `get_locker_claims` — Read AccountLocker info
+
+Reads one or several AccountLockers, the same profile the console's "Locker info" section shows: name, description and link, who owns it, who can store and recover (badge rules, with whether the account holds each badge), whether what it keeps can be taken back before the recipient claims it, the claim link, what it holds and has done, each recipient with what still waits for them, and, with an account, everything waiting in it for that account. Use before building a claim or a recovery, or to tell a recipient whether a locker is safe to leave tokens in.
+
+- `locker` (any; required) — Locker address (locker_…), or a list of up to 10
+- `account` (string; optional) — Account whose stored tokens to list
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `build_locker_manifest` — Build AccountLocker manifests
+
+The right way to airdrop on Radix. Operations: "create" (new AccountLocker; its badge, owner + storer + recoverer, goes to the account; allowRecover decides whether unclaimed tokens can come back; with recipients it also sends the first batch in the same transaction, one signature, and the rest is an "airdrop" on the new locker once it exists), "airdrop" (recipients CSV, one transaction per resource per 40 recipients; with tryDirectSend accounts that accept deposits get the tokens at once and only refusals stay claimable), "recover" (badge holder takes back what is stored for a claimant), "recoverAll" (badge holder takes back everything still unclaimed by any recipient, in as few transactions as the event limit allows), "claim" (the claimant takes everything waiting for them; only that account can). Badges are resolved from the account. Share the claim page (/{locale}/console/locker-claim?locker=…) with the recipients.
+
+- `operation` ("create" | "airdrop" | "recover" | "recoverAll" | "claim"; required) —
+- `account` (string; required) — Signing account: the badge holder, or the claimant for "claim"
+- `locker` (string; optional) — Locker address (every operation except create)
+- `lockers` (array; optional) — claim only: several lockers, everything waiting in all of them claimed in one transaction (instead of "locker")
+- `allowRecover` (boolean; required, default: true) — create only
+- `recipients` (string; optional) — airdrop, or create to send the first batch with the creation: the recipients CSV
+- `defaultResource` (string; optional) — airdrop / create with recipients: resource for two-column lines
+- `tryDirectSend` (boolean; required, default: true) — airdrop / create with recipients: deliver directly when the account accepts
+- `claimant` (string; optional) — recover only: the account the tokens were stored for
+- `resource` (string; optional) — recover only: resource to take back
+- `amount` (string; optional) — recover only: fungible amount
+- `nftIds` (array; optional) — recover only: NFT ids
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+- `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
+
+### `get_deposit_rules` — Read account deposit rules
+
+Reads who may deposit into one or several accounts, the same view the console's "Account deposits" section shows: the default rule (Accept, AllowExisting or Reject), the per-resource exceptions (always allowed / always refused) and the authorised depositor badges. These rules only decide third-party deposits (try_deposit_*); the owner's own deposits always land. Use it to explain why an airdrop or a payment did not arrive, or before build_deposit_rules_manifest.
+
+- `account` (any; required) — Account address, or a list of up to 10
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `build_deposit_rules_manifest` — Build account deposit rules manifest
+
+Builds one transaction that changes who may deposit into an account, starting from what the ledger has now and writing only what changes: the default rule, resources always allowed or always refused, exceptions removed, and authorised depositor badges added or removed. The account itself signs. Refusing deposits does not lose airdrops: a locker keeps what an account refuses until it is claimed.
+
+- `account` (string; required) — Account whose rules change; it signs the transaction
+- `defaultRule` ("Accept" | "AllowExisting" | "Reject"; optional) — New default rule: "Accept", "AllowExisting" or "Reject"
+- `allow` (array; optional) — Resources always allowed, whatever the default rule
+- `refuse` (array; optional) — Resources always refused, whatever the default rule
+- `removeExceptions` (array; optional) — Resources whose exception is removed (they follow the default rule again)
+- `addDepositors` (array; optional) — Badges to authorise: "resource_…", or "resource_…:#id#" for one NFT
+- `removeDepositors` (array; optional) — Authorised badges to remove, written the same way
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+- `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
 
 ### `verify_document_signature` — Verify a document-signature certificate
 

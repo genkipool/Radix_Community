@@ -13,26 +13,13 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import type { GatewayEntityDetails, TranslationsT, MetadataItem } from '@/features/dashboard/types';
 import { useAccountStats } from '../hooks/useAccountStats';
+import type { ParsedResource as SharedParsedResource } from '../types/models.types';
 
-interface ParsedResource {
-    address: string;
-    name: string;
-    symbol: string;
-    iconUrl: string;
-    amount: string;
-    isPoolUnit: boolean;
-    isLsu: boolean;
-    validatorAddress?: string;
-    validatorName?: string;
-    poolAddress?: string;
-    isClaim: boolean;
-    ids?: string[];
-    isNft: boolean;
+/** A holding as the account tabs draw it: the shared parse plus its raw Gateway data. */
+type ParsedResource = SharedParsedResource & {
     rawResourceData?: unknown;
     metadataItems?: MetadataItem[];
-    isOwnerBadge?: boolean;
-    claimXrdTotal?: number;
-}
+};
 export function AccountTokensTab({
     address: _address,
     entityData,
@@ -83,9 +70,9 @@ export function AccountPoolUnitsTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} holder={_address} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
             {poolUnits.length === 0 && (
-                <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No pool units found.</p>
+                <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">{tt?.account_summary?.no_pool_units || 'No pool units in this account.'}</p>
             )}
         </div>
     );
@@ -121,9 +108,11 @@ export function AccountNftsTab({
     );
 }
 
-function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tt, network = 'mainnet', locale }: {
+function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = false, tt, network = 'mainnet', locale }: {
     title: string;
     items: ParsedResource[];
+    /** The account holding them, for what depends on who holds them (a pool position). */
+    holder?: string;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
@@ -139,7 +128,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tt,
             </h4>
             <div className="flex flex-col gap-2">
                 {items.map((item) => (
-                    <ExpandableResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} />
+                    <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} />
                 ))}
             </div>
         </div>
@@ -148,6 +137,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tt,
 
 function ExpandableResourceCard({
     item,
+    holder,
     onCopy,
     copiedAddress,
     burned = false,
@@ -156,6 +146,7 @@ function ExpandableResourceCard({
     locale
 }: {
     item: ParsedResource;
+    holder?: string;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
@@ -293,6 +284,8 @@ function ExpandableResourceCard({
                                 copiedAddress={copiedAddress}
                                 tt={tt}
                                 locale={locale || 'en-US'}
+                                network={network}
+                                holder={holder}
                                 isPoolUnit={item.isPoolUnit}
                                 userBalance={parseFloat(item.amount) || 0}
                                 poolAddress={item.poolAddress}

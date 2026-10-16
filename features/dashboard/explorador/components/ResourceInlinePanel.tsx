@@ -17,8 +17,8 @@ import { ResourceInlinePanelProps } from '../types/components.types';
 import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 import dynamic from 'next/dynamic';
 const UnderlyingTokensTab = dynamic(() => import('./UnderlyingTokensTab').then(m => m.UnderlyingTokensTab));
-import { useEntityBadge } from './EntityBadgeContext';
 import type { GatewayEntityDetails, MetadataItem } from '@/features/dashboard/types';
+import { networkOfAddress } from '@/features/dashboard/lib/routes';
 
 function resolvePoolAddressFromEntity(entity: GatewayEntityDetails | null): string | undefined {
     if (!entity) return undefined;
@@ -86,16 +86,17 @@ function resolvePoolAddressFromEntity(entity: GatewayEntityDetails | null): stri
 }
 
 const BASE_RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
-type ResourceTab = 'summary' | 'contributed_tokens' | 'pool' | 'metadata' | 'configuration' | 'raw';
+type ResourceTab = 'summary' | 'contributed_tokens' | 'metadata' | 'configuration' | 'raw';
 
-export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, network, locale, isPoolUnit, userBalance, poolAddress }: ResourceInlinePanelProps) {
-    const badgeComp = useEntityBadge();
+export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, network, locale, isPoolUnit, userBalance, poolAddress, holder }: ResourceInlinePanelProps) {
     const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
 
     const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
     const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
 
-    const wellKnownKey = getWellKnownKey(address, network || 'mainnet');
+    // The ledger the resource lives on: the one passed in, else the one its address names.
+    const ledger = network ?? networkOfAddress(address) ?? 'mainnet';
+    const wellKnownKey = getWellKnownKey(address, ledger);
     const genericKey = getGenericTooltipKey(address);
     const wellKnownTip = wellKnownKey && well_known?.[wellKnownKey]
         ? well_known[wellKnownKey]
@@ -123,22 +124,20 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
 
     const resolvedPoolAddress = poolAddress || resolvePoolAddressFromEntity(details);
 
+    // The pool itself opens in its own card (linked from "Contributed tokens"),
+    // so the unit's panel does not repeat it in a tab.
     const RESOURCE_TABS: ResourceTab[] = isPoolUnit && resolvedPoolAddress
-        ? ['summary', 'contributed_tokens', 'pool', 'metadata', 'configuration', 'raw']
+        ? ['summary', 'contributed_tokens', 'metadata', 'configuration', 'raw']
         : [...BASE_RESOURCE_TABS];
 
     const tabs = RESOURCE_TABS.map(key => ({
         key,
         label: key === 'contributed_tokens'
             ? (accT?.contributed_tokens || 'Contributed Tokens')
-            : key === 'pool'
-                ? (accT?.pool_tab || 'Pool')
-                : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
+            : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
         tooltip: key === 'contributed_tokens'
             ? tt?.tab_tokens_tooltip
-            : key === 'pool'
-                ? tt?.tab_pool_units_tooltip
-                : (tt as Record<string, string | undefined>)?.[`tab_${key}_tooltip`],
+            : (tt as Record<string, string | undefined>)?.[`tab_${key}_tooltip`],
     }));
 
     return (
@@ -225,28 +224,17 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                             <UnderlyingTokensTab
                                 poolAddress={resolvedPoolAddress}
                                 lpResourceAddress={address}
+                                holder={holder}
                                 lpName={name}
                                 userBalance={userBalance ?? 0}
                                 lpTotalSupply={parseFloat(String(totalSupply)) || 0}
                                 tt={tt}
                                 onCopy={onCopy}
                                 copiedAddress={copiedAddress}
-                                network={address?.startsWith('tdx') ? 'stokenet' : 'mainnet'}
+                                network={ledger}
                                 locale={locale}
                                 
                             />
-                        )}
-                        {activeTab === 'pool' && isPoolUnit && resolvedPoolAddress && (
-                            <div className="space-y-4">
-                                {React.createElement(badgeComp, {
-                                    address: resolvedPoolAddress,
-                                    tt: tt,
-                                    onCopy: onCopy,
-                                    copiedAddress: copiedAddress,
-                                    network: network || 'mainnet',
-                                    locale: locale
-                                })}
-                            </div>
                         )}
                         {activeTab === 'configuration' && <PanelConfigurationTab configEntries={configEntries} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />}
                         {activeTab === 'raw' && (

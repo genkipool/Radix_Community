@@ -15,6 +15,9 @@ import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountDepositsTab } from './AccountDepositsTab';
+import { AccountLockersTab } from './AccountLockersTab';
+import { getTabsForEntity, type EntityTab } from './ExpandableEntityBadge';
 import { AccountStakingTab } from './AccountStakingTab';
 import { AccountTransactionsTab } from './AccountTransactionsTab';
 import { apiFetchEntityDetails, apiFetchTransactions } from '@/features/dashboard/services/apiClient';
@@ -48,7 +51,6 @@ function FiatValueDisplay({ amount, marketData, statsLoading, locale }: { amount
     );
 }
 
-type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 export function AccountCard({
     address,
     columns,
@@ -140,18 +142,7 @@ export function AccountCard({
     const entityName = getMeta('name');
     const iconUrl = getMeta('icon_url');
 
-    // Construct Tabs
-    const tabsData: { key: EntityTab; label: string; tooltip?: string }[] = [
-        { key: 'summary', label: tt?.resource_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
-        { key: 'staking', label: accT?.staking_tab || 'Staking', tooltip: tt?.tab_staking_tooltip },
-        { key: 'tokens', label: accT?.tokens_tab || 'Tokens', tooltip: tt?.tab_tokens_tooltip },
-        { key: 'nfts', label: accT?.nfts_tab || 'NFTs', tooltip: tt?.tab_nfts_tooltip },
-        { key: 'pool_units', label: accT?.pool_units || 'Pool Units', tooltip: tt?.tab_pool_units_tooltip },
-        { key: 'transactions', label: accT?.transactions_tab || 'Transactions', tooltip: tt?.tab_transactions_tooltip },
-        { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata', tooltip: tt?.tab_metadata_tooltip },
-        { key: 'configuration', label: tt?.resource_panel_configuration || 'Configuration', tooltip: tt?.tab_configuration_tooltip },
-        { key: 'raw', label: tt?.resource_panel_raw || 'Raw', tooltip: tt?.tab_raw_tooltip }
-    ];
+    const tabsData = getTabsForEntity(address, tt);
 
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
     const configEntries = getConfigEntries(ra, tt);
@@ -391,6 +382,28 @@ export function AccountCard({
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 locale={locale}
+                                            />
+                                        )}
+
+                                        {activeTab === 'lockers' && (
+                                            <AccountLockersTab
+                                                address={address}
+                                                tt={tt}
+                                                network={network}
+                                                locale={locale}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
+                                        {activeTab === 'deposits' && (
+                                            <AccountDepositsTab
+                                                address={address}
+                                                tt={tt}
+                                                network={network}
+                                                locale={locale}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
                                             />
                                         )}
 

@@ -54,6 +54,21 @@ import AddressUtilsTool from './tools/AddressUtilsTool';
 import AccountSecurityTool from './tools/AccountSecurityTool';
 import FaucetTool from './tools/FaucetTool';
 import WalletPlaygroundTool from './tools/WalletPlaygroundTool';
+import PoolCreateTool from './tools/PoolCreateTool';
+import PoolContributeTool from './tools/PoolContributeTool';
+import PoolReservesTool from './tools/PoolReservesTool';
+import PoolRedeemTool from './tools/PoolRedeemTool';
+import PoolInfoTool from './tools/PoolInfoTool';
+import ValidatorInfoTool from './tools/ValidatorInfoTool';
+import LockerInfoTool from './tools/LockerInfoTool';
+import PoolProfileTool from './tools/PoolProfileTool';
+import AccountDepositsTool from './tools/AccountDepositsTool';
+import LockerRecoverTool from './tools/LockerRecoverTool';
+import PoolManageTool from './tools/PoolManageTool';
+import ResourceHoldersTool from './tools/ResourceHoldersTool';
+import BulkSendTool from './tools/BulkSendTool';
+import LockerAirdropTool from './tools/LockerAirdropTool';
+import LockerClaimTool from './tools/LockerClaimTool';
 import DeployPackageTool from './tools/DeployPackageTool';
 import TransactionManifestTool from './tools/TransactionManifestTool';
 import ConfigureMetadataTool from './tools/ConfigureMetadataTool';
@@ -69,10 +84,25 @@ import AddressBookTool from './tools/AddressBookTool';
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
   staking: StakingTool,
+  'validator-info': ValidatorInfoTool,
   'validator-registration': ValidatorRegistrationTool,
   'validator-profile': ValidatorProfileTool,
   'validator-staking': ValidatorStakingTool,
   'validator-create': ValidatorCreateTool,
+  'pool-info': PoolInfoTool,
+  'pool-create': PoolCreateTool,
+  'pool-contribute': PoolContributeTool,
+  'pool-reserves': PoolReservesTool,
+  'pool-redeem': PoolRedeemTool,
+  'pool-profile': PoolProfileTool,
+  'account-deposits': AccountDepositsTool,
+  'locker-recover': LockerRecoverTool,
+  'pool-manage': PoolManageTool,
+  'resource-holders': ResourceHoldersTool,
+  'bulk-send': BulkSendTool,
+  'locker-info': LockerInfoTool,
+  'locker-airdrop': LockerAirdropTool,
+  'locker-claim': LockerClaimTool,
   'create-token': CreateTokenTool,
   'build-manifest': BuildManifestTool,
   'component-panel': ComponentPanelTool,

@@ -9,6 +9,16 @@
  * console.buildManifest.
  */
 
+import {
+  addAuthorizedDepositorInstruction,
+  DEFAULT_DEPOSIT_RULES,
+  removeAuthorizedDepositorInstruction,
+  removeResourcePreferenceInstruction,
+  setDefaultDepositRuleInstruction,
+  setResourcePreferenceInstruction,
+  type DefaultDepositRule,
+} from './account-deposits';
+import { lockerClaimInstruction, lockerRecoverInstruction, type LockerClaimItem } from './locker-manifests';
 import { escapeManifestString as escape } from './manifest-escape';
 import { defaultFieldValues } from './field-defaults';
 import {
@@ -34,6 +44,17 @@ export type BlockType =
   | 'depositBucket'
   | 'depositAll'
   | 'proof'
+  // Deposit rules
+  | 'setDefaultDepositRule'
+  | 'setResourcePreference'
+  | 'removeResourcePreference'
+  | 'addAuthorizedDepositor'
+  | 'removeAuthorizedDepositor'
+  // Account locker
+  | 'lockerClaim'
+  | 'lockerClaimNfts'
+  | 'lockerRecover'
+  | 'lockerRecoverNfts'
   // Annotation
   | 'comment'
   // Invoke
@@ -126,7 +147,9 @@ export type BlockIcon =
   | 'coins'
   | 'key'
   | 'globe'
-  | 'sparkles';
+  | 'sparkles'
+  | 'inbox'
+  | 'gift';
 
 export interface BlockDef {
   type: BlockType;
@@ -147,6 +170,8 @@ const GRADIENT = 'from-[var(--color-gradient-start)] to-[var(--color-gradient-en
 /** Accent per palette category (kept as raw rgb for translucent backgrounds). */
 const ACCENTS = {
   account: '59,130,246',
+  deposits: '16,185,129',
+  locker: '236,72,153',
   annotation: '100,116,139',
   invoke: '139,92,246',
   validator: '168,85,247',
@@ -210,6 +235,116 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
       { key: 'account', kind: 'account' },
       { key: 'resource', kind: 'resource' },
       { key: 'nftId', kind: 'text', optional: true },
+    ],
+  },
+
+  /* ── Deposit rules ─────────────────────────────────────────────────────
+   * Who else may deposit into the account; the account itself signs.
+   */
+  setDefaultDepositRule: {
+    type: 'setDefaultDepositRule',
+    icon: 'inbox',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.deposits,
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'rule', kind: 'choice', options: [...DEFAULT_DEPOSIT_RULES] },
+    ],
+  },
+  setResourcePreference: {
+    type: 'setResourcePreference',
+    icon: 'inbox',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.deposits,
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'preference', kind: 'choice', options: ['Allowed', 'Disallowed'] },
+    ],
+  },
+  removeResourcePreference: {
+    type: 'removeResourcePreference',
+    icon: 'inbox',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.deposits,
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'resource', kind: 'resource' },
+    ],
+  },
+  addAuthorizedDepositor: {
+    type: 'addAuthorizedDepositor',
+    icon: 'badge',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.deposits,
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'badge', kind: 'resource' },
+      { key: 'badgeId', kind: 'text', optional: true },
+    ],
+  },
+  removeAuthorizedDepositor: {
+    type: 'removeAuthorizedDepositor',
+    icon: 'badge',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.deposits,
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'badge', kind: 'resource' },
+      { key: 'badgeId', kind: 'text', optional: true },
+    ],
+  },
+
+  /* ── Account locker ────────────────────────────────────────────────────
+   * What the call returns stays on the worktop: follow with a deposit block.
+   * Recovering needs a "proof" block with the recoverer badge before it.
+   */
+  lockerClaim: {
+    type: 'lockerClaim',
+    icon: 'gift',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.locker,
+    fields: [
+      { key: 'locker', kind: 'address' },
+      { key: 'account', kind: 'account' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+  },
+  lockerClaimNfts: {
+    type: 'lockerClaimNfts',
+    icon: 'gift',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.locker,
+    fields: [
+      { key: 'locker', kind: 'address' },
+      { key: 'account', kind: 'account' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'nftIds', kind: 'text' },
+    ],
+  },
+  lockerRecover: {
+    type: 'lockerRecover',
+    icon: 'gift',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.locker,
+    fields: [
+      { key: 'locker', kind: 'address' },
+      { key: 'claimant', kind: 'address' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+  },
+  lockerRecoverNfts: {
+    type: 'lockerRecoverNfts',
+    icon: 'gift',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.locker,
+    fields: [
+      { key: 'locker', kind: 'address' },
+      { key: 'claimant', kind: 'address' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'nftIds', kind: 'text' },
     ],
   },
 
@@ -673,6 +808,17 @@ export const BLOCK_CATEGORIES: BlockCategory[] = [
     id: 'account',
     blocks: ['withdraw', 'withdrawNfts', 'depositBucket', 'depositAll', 'proof'],
   },
+  {
+    id: 'deposits',
+    blocks: [
+      'setDefaultDepositRule',
+      'setResourcePreference',
+      'removeResourcePreference',
+      'addAuthorizedDepositor',
+      'removeAuthorizedDepositor',
+    ],
+  },
+  { id: 'locker', blocks: ['lockerClaim', 'lockerClaimNfts', 'lockerRecover', 'lockerRecoverNfts'] },
   { id: 'annotation', blocks: ['comment'] },
   { id: 'invoke', blocks: ['callMethod'] },
   {
@@ -831,6 +977,16 @@ const nftIdList = (raw: string) =>
     .map((id) => `NonFungibleLocalId("${escape(id)}")`)
     .join(', ');
 
+const depositorOf = (block: BlockInstance) => {
+  const badgeId = value(block, 'badgeId');
+  return { resource: value(block, 'badge'), ...(badgeId ? { nftId: badgeId } : {}) };
+};
+
+const lockerItemOf = (block: BlockInstance): LockerClaimItem => {
+  const ids = value(block, 'nftIds').split(',').map((id) => id.trim()).filter(Boolean);
+  return ids.length ? { resource: value(block, 'resource'), nftIds: ids } : { resource: value(block, 'resource'), amount: value(block, 'amount') };
+};
+
 function blockToManifest(block: BlockInstance, names: BlockNames): string {
   const bucketName = names.buckets.get(block.id);
   const proofName = names.proofs.get(block.id);
@@ -892,6 +1048,24 @@ CALL_METHOD
 ;
 `;
     }
+
+    /* ── Deposit rules and locker: the same instructions the console tools write ── */
+    case 'setDefaultDepositRule':
+      return `\n${setDefaultDepositRuleInstruction(value(block, 'account'), (value(block, 'rule') || 'Accept') as DefaultDepositRule)}`;
+    case 'setResourcePreference':
+      return `\n${setResourcePreferenceInstruction(value(block, 'account'), value(block, 'resource'), value(block, 'preference') === 'Disallowed' ? 'Disallowed' : 'Allowed')}`;
+    case 'removeResourcePreference':
+      return `\n${removeResourcePreferenceInstruction(value(block, 'account'), value(block, 'resource'))}`;
+    case 'addAuthorizedDepositor':
+      return `\n${addAuthorizedDepositorInstruction(value(block, 'account'), depositorOf(block))}`;
+    case 'removeAuthorizedDepositor':
+      return `\n${removeAuthorizedDepositorInstruction(value(block, 'account'), depositorOf(block))}`;
+    case 'lockerClaim':
+    case 'lockerClaimNfts':
+      return `\n${lockerClaimInstruction(value(block, 'locker'), value(block, 'account'), lockerItemOf(block))}\n`;
+    case 'lockerRecover':
+    case 'lockerRecoverNfts':
+      return `\n${lockerRecoverInstruction(value(block, 'locker'), value(block, 'claimant'), lockerItemOf(block))}\n`;
 
     case 'comment': {
       const lines = value(block, 'text').split('\n');

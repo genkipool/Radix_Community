@@ -34,6 +34,9 @@ import {
   validatorOfResource,
   type NonFungibleDataItem,
 } from '@/features/console/lib/validator-lookup';
+import { mapHoldings } from '@/features/console/lib/account-holdings';
+import { fetchAllHolders, type GatewayPost } from '@/features/console/lib/resource-holders';
+import { gatewayPost } from '@/services/gateway/bases';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import {
@@ -42,15 +45,16 @@ import {
   fetchNonFungibleDataCached,
 } from '@/services/gateway/entities';
 import type { Network } from '@/services/gateway/client';
+import { getValidatorsCached } from '@/services/gateway/validators';
+import type { Validator } from '@/types/radix';
 import { defineMcpTool } from '../registry';
 import { staticallyValidateManifest } from '@/services/ret';
 import { signingSteps } from '../dapp';
 import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection, cliTable } from '../cli';
+import { networkSchema } from './schemas';
 
-const networkSchema = z
-  .enum(['mainnet', 'stokenet'])
-  .default('mainnet')
-  .describe('Radix network: "mainnet" (production) or "stokenet" (testnet)');
+/** Largest stakers listed per validator. */
+const MAX_STAKERS = 10;
 
 const networkIdOf = (network: Network) =>
   network === 'stokenet' ? RadixNetworkId.Stokenet : RadixNetworkId.Mainnet;
@@ -118,37 +122,190 @@ export const listValidatorOperationsTool = defineMcpTool({
     ),
 });
 
+/** Every stake claim NFT the account holds, attributed to the validator that minted it. */
+async function fetchClaimNfts(account: string, network: Network) {
+  const accountDetails = await fetchEntityDetailsLive(account, network);
+  const currentEpoch = epochOf(accountDetails);
+
+  const perResource = await Promise.all(
+    nonFungibleHoldingsOf(accountDetails).map(async (holding) => {
+      const resource = await fetchEntityDetails(holding.resourceAddress, network);
+      const validatorAddress = validatorOfResource(resource);
+      if (!validatorAddress) return [];
+
+      const [validatorDetails, data] = await Promise.all([
+        fetchEntityDetailsLive(validatorAddress, network).catch(() => null),
+        fetchNonFungibleDataCached(holding.resourceAddress, holding.ids, network),
+      ]);
+
+      return (data as unknown as NonFungibleDataItem[]).map((item) =>
+        parseClaimNft(item, {
+          resourceAddress: holding.resourceAddress,
+          validatorAddress,
+          validatorDetails,
+          currentEpoch,
+        }),
+      );
+    }),
+  );
+  return { nfts: sortClaimNfts(perResource.flat()), currentEpoch, accountDetails };
+}
+
+const pct = (value: number) => `${value.toLocaleString('en-US', { maximumFractionDigits: 2 })} %`;
+const xrd = (value: number) => `${value.toLocaleString('en-US', { maximumFractionDigits: 4 })} XRD`;
+
 export const getValidatorStateTool = defineMcpTool({
   name: 'get_validator_state',
-  title: 'Read validator state',
+  title: 'Read validator info',
   description:
-    'Reads a validator from the ledger: whether it is registered, whether it accepts delegated stake, its fee factor, consensus public key, and the stake unit (LSU) and claim NFT resources it mints. Use it to know the current state before proposing a change.',
+    'Reads one or several validators, the same profile the console\'s "Validator info" section shows: name, website, whether it is registered, in the active set, accepting delegated stake and online, its fee and any pending fee change, total stake with share and rank, uptime, estimated APY, operator stake, delegators, the value of one LSU, its largest stakers (LSU holders with share and XRD value), the stake unit and claim NFT resources, plus warnings (not registered, fee at 100 %, fee going up, node down). With an account, also its position: LSUs and their XRD value, withdrawals ready to claim and those still waiting for their epoch, and whether it owns the validator.',
   category: 'console',
   inputSchema: z.object({
-    validator: z.string().describe('Validator component address (validator_…)'),
+    validator: z
+      .union([z.string(), z.array(z.string()).min(1).max(10)])
+      .describe('Validator component address (validator_…), or a list of up to 10'),
+    account: z.string().optional().describe('Optional account: its stake, pending withdrawals and ownership'),
     network: networkSchema,
   }),
-  handler: async ({ validator, network }) => {
-    const state = parseValidatorState(await fetchEntityDetailsLive(validator, network));
-    if (!state) {
-      return cliRender(
-        cliBanner('Radix validator · state'),
-        `${validator} is not a validator on ${network}.`,
-      );
-    }
+  handler: async ({ validator, account, network }, ctx) => {
+    const addresses = [validator].flat();
+    const [list, claims] = await Promise.all([
+      getValidatorsCached(network).then((r) => (r as { validators: Validator[] }).validators).catch(() => [] as Validator[]),
+      account ? fetchClaimNfts(account, network) : null,
+    ]);
+    const holdings = claims ? mapHoldings(claims.accountDetails as Record<string, unknown>) : null;
+    const ownerBadge = RADIX_TOKEN_ADDRESSES[networkIdOf(network)].OWNER_BADGE;
+    const ownedIds = holdings?.nonFungibles.find((n) => n.resourceAddress === ownerBadge)?.ids ?? [];
+    const owned =
+      ownedIds.length > 0
+        ? ((await fetchNonFungibleDataCached(ownerBadge, ownedIds, network)) as unknown as NonFungibleDataItem[])
+            .map(validatorOfOwnerBadge)
+            .filter(Boolean)
+        : [];
 
-    return cliRender(
-      cliBanner('Radix validator · state'),
-      cliKeyValues([
-        ['Address', validator],
-        ['Registered', state.isRegistered ? 'yes' : 'no'],
-        ['Accepts delegated stake', state.acceptsDelegatedStake ? 'yes' : 'no'],
-        ['Fee factor', state.feeFactor],
-        ['Consensus public key', state.publicKey],
-        ['Stake unit resource', state.stakeUnitResource],
-        ['Claim NFT resource', state.claimNftResource],
-      ]),
+    const results = await Promise.all(
+      addresses.map(async (address) => {
+        const details = await fetchEntityDetailsLive(address, network).catch(() => null);
+        const state = details ? parseValidatorState(details) : null;
+        if (!state) return { address, error: `${address} is not a validator on ${network}.` } as const;
+        const v = list.find((entry) => entry.address === address);
+        const fee = v?.nominalFee ?? Number(state.feeFactor) * 100;
+        const warnings = [
+          !state.isRegistered && 'Not registered: it is outside the active set and earns no rewards.',
+          !state.acceptsDelegatedStake && 'Closed to delegated stake: only its owner can add stake.',
+          fee >= 100 && 'Fee is 100 %: it keeps every reward, stakers earn nothing.',
+          v?.hasPendingFeeChange && v.upcomingFee !== undefined && v.upcomingFee > fee && `Fee goes UP to ${v.upcomingFee} % at the next epoch.`,
+          v?.onlineStatus === false && 'The node is down: it is missing proposals and rewards.',
+        ].filter((w): w is string => !!w);
+        const lsu = Number(holdings?.fungibles.find((f) => f.resourceAddress === state.stakeUnitResource)?.amount ?? 0);
+        const mine = (claims?.nfts ?? []).filter((n) => n.validatorAddress === address);
+        const position = claims
+          ? {
+              lsu,
+              lsuXrd: v && v.lsu2xrdFactor > 0 ? lsu * v.lsu2xrdFactor : null,
+              readyXrd: mine.filter((n) => n.isClaimable).reduce((sum, n) => sum + n.amount, 0),
+              waiting: mine.filter((n) => !n.isClaimable).map((n) => ({ xrd: n.amount, epoch: n.claimEpoch })),
+              owner: owned.includes(address),
+            }
+          : null;
+        // Who holds its LSUs: the largest stakers, with their share and XRD value.
+        const post: GatewayPost = (path, body) => gatewayPost(network, path, body);
+        const holders = await fetchAllHolders(post, state.stakeUnitResource, { max: MAX_STAKERS }).catch(() => null);
+        const lsuSupply = v && v.lsu2xrdFactor > 0 ? v.delegatedStake / v.lsu2xrdFactor : 0;
+        const topStakers = (holders?.holders ?? []).slice(0, MAX_STAKERS).map((h) => ({
+          address: h.address,
+          lsu: Number(h.amount),
+          share: lsuSupply > 0 ? Number(h.amount) / lsuSupply : null,
+          xrd: v && v.lsu2xrdFactor > 0 ? Number(h.amount) * v.lsu2xrdFactor : null,
+        }));
+        return { address, state, v, fee, warnings, position, topStakers, stakerCount: holders?.total ?? topStakers.length };
+      }),
     );
+
+    const sections = results.map((r) => {
+      if ('error' in r) return `${cliSection(r.address)}\n${r.error}`;
+      const { state, v, position } = r;
+      return cliRender(
+        cliSection(v?.name || r.address),
+        r.warnings.length > 0 && r.warnings.map((w) => `⚠ ${w}`).join('\n'),
+        cliKeyValues([
+          ['Address', r.address],
+          ...(v?.website ? ([['Website', v.website]] as Array<[string, string]>) : []),
+          ['Registered', state.isRegistered ? 'yes' : 'no'],
+          ...(v ? ([['Active set', v.status === 'active' ? 'yes' : 'no']] as Array<[string, string]>) : []),
+          ['Accepts delegated stake', state.acceptsDelegatedStake ? 'yes' : 'no'],
+          ...(v && v.onlineStatus !== null ? ([['Online', v.onlineStatus ? 'yes' : 'no']] as Array<[string, string]>) : []),
+          ['Fee', pct(r.fee)],
+          ...(v?.hasPendingFeeChange && v.upcomingFee !== undefined ? ([['Pending fee', pct(v.upcomingFee)]] as Array<[string, string]>) : []),
+          ...(v
+            ? ([
+                ['Total stake', `${xrd(v.delegatedStake)} (${pct(v.delegatedStakePercent)} of the network, rank ${v.rank})`],
+                ['Uptime', `${pct(v.recentUptime)} last 14 days, ${pct(v.totalUptime)} since Babylon`],
+                ['Estimated APY', pct(v.apy)],
+                ['Operator stake', xrd(v.ownerDelegation)],
+                ['Delegators', String(v.delegators)],
+                ['1 LSU', xrd(v.lsu2xrdFactor)],
+              ] as Array<[string, string]>)
+            : []),
+          ['Stake unit resource', state.stakeUnitResource],
+          ['Claim NFT resource', state.claimNftResource],
+          ['Consensus public key', state.publicKey],
+          ...(position
+            ? ([
+                ['Account LSUs', `${position.lsu}${position.lsuXrd !== null ? ` (≈ ${xrd(position.lsuXrd)})` : ''}`],
+                ['Ready to claim', xrd(position.readyXrd)],
+                ...position.waiting.map((w): [string, string] => [`Waiting until epoch ${w.epoch}`, xrd(w.xrd)]),
+                ['Account owns it', position.owner ? 'yes' : 'no'],
+              ] as Array<[string, string]>)
+            : []),
+        ]),
+        r.topStakers.length > 0 &&
+          cliTable(
+            ['Largest stakers', 'LSU', 'Share', 'XRD'],
+            r.topStakers.map((x) => [x.address, String(x.lsu), x.share !== null ? pct(x.share * 100) : '-', x.xrd !== null ? xrd(x.xrd) : '-']),
+          ),
+      );
+    });
+
+    const structuredOf = (r: (typeof results)[number]) =>
+      'error' in r
+        ? r
+        : {
+            validator: r.address,
+            name: r.v?.name ?? null,
+            website: r.v?.website ?? null,
+            isRegistered: r.state.isRegistered,
+            activeSet: r.v ? r.v.status === 'active' : null,
+            acceptsDelegatedStake: r.state.acceptsDelegatedStake,
+            online: r.v?.onlineStatus ?? null,
+            feePercent: r.fee,
+            pendingFeePercent: r.v?.hasPendingFeeChange ? (r.v.upcomingFee ?? null) : null,
+            totalStakeXrd: r.v?.delegatedStake ?? null,
+            stakePercent: r.v?.delegatedStakePercent ?? null,
+            rank: r.v?.rank ?? null,
+            uptime14d: r.v?.recentUptime ?? null,
+            uptimeTotal: r.v?.totalUptime ?? null,
+            apy: r.v?.apy ?? null,
+            operatorStakeXrd: r.v?.ownerDelegation ?? null,
+            delegators: r.v?.delegators ?? null,
+            lsuToXrd: r.v?.lsu2xrdFactor ?? null,
+            stakeUnitResource: r.state.stakeUnitResource,
+            claimNftResource: r.state.claimNftResource,
+            publicKey: r.state.publicKey,
+            warnings: r.warnings,
+            stakerCount: r.stakerCount,
+            topStakers: r.topStakers,
+            ...(r.position ? { position: r.position } : {}),
+          };
+
+    return {
+      text: cliRender(
+        cliBanner(addresses.length > 1 ? `Radix validators · ${addresses.length}` : 'Radix validator · info'),
+        ...sections,
+        cliNext([`Same view in the console (wallet required): ${ctx.origin}/en/console/validator-info?validator=${addresses.join(',')}`]),
+      ),
+      structured: typeof validator === 'string' ? structuredOf(results[0]) : { validators: results.map(structuredOf) },
+    };
   },
 });
 
@@ -163,32 +320,7 @@ export const listClaimableStakeNftsTool = defineMcpTool({
     network: networkSchema,
   }),
   handler: async ({ account, network }) => {
-    const accountDetails = await fetchEntityDetailsLive(account, network);
-    const currentEpoch = epochOf(accountDetails);
-
-    const perResource = await Promise.all(
-      nonFungibleHoldingsOf(accountDetails).map(async (holding) => {
-        const resource = await fetchEntityDetails(holding.resourceAddress, network);
-        const validatorAddress = validatorOfResource(resource);
-        if (!validatorAddress) return [];
-
-        const [validatorDetails, data] = await Promise.all([
-          fetchEntityDetailsLive(validatorAddress, network).catch(() => null),
-          fetchNonFungibleDataCached(holding.resourceAddress, holding.ids, network),
-        ]);
-
-        return (data as unknown as NonFungibleDataItem[]).map((item) =>
-          parseClaimNft(item, {
-            resourceAddress: holding.resourceAddress,
-            validatorAddress,
-            validatorDetails,
-            currentEpoch,
-          }),
-        );
-      }),
-    );
-
-    const nfts = sortClaimNfts(perResource.flat());
+    const { nfts, currentEpoch } = await fetchClaimNfts(account, network);
     if (nfts.length === 0) {
       return cliRender(
         cliBanner('Radix validator · stake claims'),

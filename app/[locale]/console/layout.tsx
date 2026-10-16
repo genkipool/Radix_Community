@@ -29,6 +29,8 @@ export default async function ConsoleLayout({ children, params }: ConsoleLayoutP
     ? openGroupsCookie.value
     : CONSOLE_GROUPS.map((group) => group.id).join(',');
   const initialFlatView = cookieStore.get('console_flat_view')?.value === 'true';
+  const initialFavorites = decodeURIComponent(cookieStore.get('console_favorites')?.value ?? '');
+  const initialFavoritesOnly = cookieStore.get('console_favorites_only')?.value === 'true';
 
   return (
     <Suspense fallback={<SuspenseSidebarFallback />}>
@@ -38,6 +40,8 @@ export default async function ConsoleLayout({ children, params }: ConsoleLayoutP
         initialAutoCollapse={initialAutoCollapse}
         initialExpandedGroups={initialExpandedGroups}
         initialFlatView={initialFlatView}
+        initialFavorites={initialFavorites}
+        initialFavoritesOnly={initialFavoritesOnly}
       >
         {children}
       </ConsoleShell>

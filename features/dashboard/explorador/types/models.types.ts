@@ -19,6 +19,8 @@ export interface ParsedResource {
     isLsu: boolean;
     validatorAddress?: string;
     validatorName?: string;
+    /** The pool a pool unit redeems from. */
+    poolAddress?: string;
     isClaim: boolean;
     ids?: string[];
     isNft: boolean;

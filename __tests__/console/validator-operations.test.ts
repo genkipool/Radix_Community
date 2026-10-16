@@ -266,7 +266,8 @@ describe('validator section wiring', () => {
   it('gives the validator section its own sidebar group holding exactly those forms', () => {
     const group = CONSOLE_GROUPS.find((entry) => entry.id === 'validator');
     expect(group, 'validator group').toBeDefined();
-    expect([...group!.tools].sort()).toEqual([...SLUGS].sort());
+    // The four forms plus the read-only profile that leads the section.
+    expect([...group!.tools].sort()).toEqual([...SLUGS, 'validator-info'].sort());
 
     // and it is no longer buried inside another group
     const others = CONSOLE_GROUPS.filter((entry) => entry.id !== 'validator');

@@ -114,7 +114,23 @@ export function summariseAccessRule(rule: unknown): RuleSummary {
   if (ruleType === 'AllowAll') return { kind: 'allowAll', threshold: null, badges: [] };
   if (ruleType === 'DenyAll') return { kind: 'denyAll', threshold: null, badges: [] };
 
-  const proofRule = asRecord(asRecord(root.access_rule).proof_rule);
+  const node = asRecord(root.access_rule);
+
+  // The wallet can also write factors as `AnyOf` / `AllOf` of whole rules,
+  // each a single `Require`: the same "1 of n" / "n of n", one level up.
+  if ((node.type === 'AnyOf' || node.type === 'AllOf') && Array.isArray(node.access_rules)) {
+    const terms = (node.access_rules as unknown[]).map((child) => {
+      const proof = asRecord(asRecord(child).proof_rule);
+      return asRecord(child).type === 'ProofRule' && proof.type === 'Require' ? requirementOf(proof.requirement) : null;
+    });
+    if (terms.length === 0 || terms.some((term) => !term)) return { kind: 'unknown', threshold: null, badges: [] };
+    const badges = terms as BadgeRequirement[];
+    return node.type === 'AllOf'
+      ? { kind: 'allOf', threshold: badges.length, badges }
+      : { kind: 'anyOf', threshold: 1, badges };
+  }
+
+  const proofRule = asRecord(node.proof_rule);
   const kind = PROOF_RULE_KINDS[proofRule.type as string] ?? 'unknown';
 
   const single = requirementOf(proofRule.requirement ?? root.requirement);
@@ -454,6 +470,50 @@ function explicitRoleRules(roleAssignments: unknown): Map<string, RuleSummary> {
 }
 
 const isSet = (value: unknown) => value !== null && value !== undefined;
+
+/* ─── Factors needed to sign ─────────────────────────────────────────────── */
+
+/**
+ * How many factors a shielded account needs to sign day to day (the
+ * controller's primary role) and to recover (its recovery role):
+ *
+ * - `multi`: more than one factor, so a single lost or stolen factor cannot
+ *   move the account;
+ * - `single`: any one of the listed factors is enough;
+ * - `anyone` / `nobody`: AllowAll / DenyAll;
+ * - `unknown`: the rule could not be read.
+ *
+ * The ledger only shows badges, so it can count factors but not tell a phone
+ * from an Arculus card.
+ */
+export interface FactorRequirement {
+  kind: 'multi' | 'single' | 'anyone' | 'nobody' | 'unknown';
+  need: number;
+  total: number;
+}
+
+export function factorRequirementOf(rule: RuleSummary | null): FactorRequirement {
+  if (rule?.kind === 'allowAll') return { kind: 'anyone', need: 0, total: 0 };
+  if (rule?.kind === 'denyAll') return { kind: 'nobody', need: 0, total: 0 };
+  if (!rule || rule.badges.length === 0) return { kind: 'unknown', need: 0, total: 0 };
+  const total = rule.badges.length;
+  const need = Math.min(rule.threshold ?? total, total);
+  return { kind: need >= 2 ? 'multi' : 'single', need, total };
+}
+
+export interface ShieldFactors {
+  signing: FactorRequirement;
+  recovery: FactorRequirement;
+}
+
+/** Factors for signing and for recovery; null when there is no controller. */
+export function shieldFactorsOf(controller: ControllerConfig | null): ShieldFactors | null {
+  if (!controller) return null;
+  return {
+    signing: factorRequirementOf(controller.roles.primary),
+    recovery: factorRequirementOf(controller.roles.recovery),
+  };
+}
 
 /* ─── Security level and how to raise it ─────────────────────────────────── */
 

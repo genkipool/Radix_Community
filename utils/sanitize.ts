@@ -70,7 +70,9 @@ export function buildFallbackAvatar(name: string): string {
     const svg = [
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">',
         `<rect width="256" height="256" rx="48" fill="${bg}"/>`,
-        `<text x="128" y="176" font-family="system-ui,-apple-system,sans-serif"`,
+        // Capitals of a 108px system font are ~77px tall: a baseline at 166
+        // puts them in the optical centre of the 256px square.
+        `<text x="128" y="166" font-family="system-ui,-apple-system,sans-serif"`,
         ` font-size="108" font-weight="700" fill="white"`,
         ` text-anchor="middle" dominant-baseline="auto">${initials}</text>`,
         '</svg>',

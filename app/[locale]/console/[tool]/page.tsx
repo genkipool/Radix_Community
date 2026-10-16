@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { BASE_URL, buildMetadata } from '@/lib/seo';
 import { buildToolJsonLd, jsonLdScript } from '@/lib/structured-data';
-import ConsoleToolView from '@/features/console/components/ConsoleToolView';
 import { CONSOLE_TOOL_SLUGS, isConsoleToolSlug } from '@/features/console/types/console.types';
 import type { Metadata } from 'next';
 
@@ -54,7 +53,8 @@ export default async function ConsoleToolPage({ params }: ConsoleToolPageProps) 
           ),
         }}
       />
-      <ConsoleToolView slug={tool} dictionary={t} />
+      {/* The tool itself is drawn by the console layout (ConsoleShell) from the
+          URL, so it can show on the click instead of after this route loads. */}
     </>
   );
 }
