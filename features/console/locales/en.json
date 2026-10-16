@@ -415,7 +415,7 @@
       },
       "account-deposits": {
         "title": "Account deposits",
-        "description": "Decide who may deposit into your account: the general rule, exceptions per token and the authorised badges.",
+        "description": "Decide who may deposit into your account: the general rule, exceptions per resource and the authorised badges.",
         "guide": {
           "guideTitle": "Guide: account deposits",
           "guideDescription": "Every Radix account decides which third-party deposits it takes. The general rule can accept anything, accept only tokens you already hold, or refuse everything. On top of it, each token can always be allowed or always refused, and an authorised badge lets whoever presents it deposit anything. These rules only cover what others send you: what you deposit yourself always lands. An airdrop to an account that refuses it is not lost: it waits in the locker.",
@@ -433,7 +433,7 @@
               "example": "Only what I hold"
             },
             {
-              "label": "Token exception",
+              "label": "Resource exception",
               "description": "Allowed: it lands even if the general rule refuses it. Refused: it never lands even if the general rule accepts it.",
               "example": "TPA · Refuse"
             },
@@ -2294,7 +2294,7 @@
       },
       "locker-airdrop": {
         "title": "Locker airdrop",
-        "description": "Create an Account Locker and distribute in batches, from a CSV or among the holders of a token. Stored tokens wait to be claimed and you can recover what nobody claims.",
+        "description": "Create an Account Locker and distribute in batches, from a CSV or among the holders of a token. What is not delivered waits until its recipient claims it.",
         "guide": {
           "guideTitle": "Guide: Account Locker airdrop",
           "guideDescription": "Distribute tokens to many accounts through an Account Locker, Radix's native airdrop component. Whatever is not delivered directly waits in the locker under each recipient's name until they claim it, and with recovery enabled you can withdraw what nobody claims or what went to a wrong address.",
@@ -3267,7 +3267,7 @@
           }
         },
         "resource-preference": {
-          "name": "Deposit exception per token",
+          "name": "Deposit exception per resource",
           "description": "A token that always lands (Allowed), never lands (Disallowed), or follows the general rule again (Remove).",
           "fields": {
             "account": "Account",
@@ -3711,7 +3711,7 @@
           }
         },
         "setResourcePreference": {
-          "name": "Token exception",
+          "name": "Resource exception",
           "description": "set_resource_preference: a token that always lands (Allowed) or never does (Disallowed).",
           "fields": {
             "account": "Account",
@@ -5267,6 +5267,10 @@
       "noDepositors": "No authorised badges.",
       "addDepositor": "Paste or pick the badge that may always deposit",
       "accountTitle": "Account"
+    },
+    "signRequestOg": {
+      "title": "You are invited to sign",
+      "subtitle": "A document is waiting for your signature on Radix"
     }
   }
 }

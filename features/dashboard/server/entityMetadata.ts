@@ -6,12 +6,22 @@
  * a real title, every resource, account, validator and transaction becomes its
  * own indexable page.
  *
+ * Not every one of them should be in a search index, though. Accounts and
+ * transactions are unbounded, nearly identical and about people, and anyone can
+ * mint a resource called "Free XRD airdrop": letting all of it in would put
+ * other people's text (scams included) on this domain and drown the pages that
+ * matter. So only entities someone stands behind are indexable; the rest stay
+ * fully reachable and shareable, just `noindex` (see `isEntityIndexable`).
+ *
  * The gateway lookup behind this is already cached (`use cache` +
- * `cacheLife('hours')` in `fetchEntityDetails`), so generating metadata does
- * not add a round trip per request.
+ * `cacheLife('hours')` in `fetchEntityDetailsForCard`), so generating metadata
+ * does not add a round trip per request.
  */
 import type { Metadata } from 'next';
-import { fetchEntityDetails } from '@/services/radixApi';
+import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
+import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { fetchEntityDetailsForCard } from '@/services/gateway/entities';
+import { hasBaitName } from '../lib/validatorIndexing';
 import { buildMetadata } from '@/lib/seo';
 import type { Network } from '@/features/dashboard/types';
 import type { EntityKind } from '../lib/routes';
@@ -24,6 +34,41 @@ interface MetadataItemLike {
 interface EntityDetailsLike {
   metadata?: { items?: MetadataItemLike[] };
   explicit_metadata?: { items?: MetadataItemLike[] };
+  details?: {
+    /** A resource's dApps that claim it back (both sides of the link agree). */
+    two_way_linked_dapps?: { items?: unknown[] };
+    /** A component's dApp, when that dApp claims it back. */
+    two_way_linked_dapp_address?: string;
+  };
+}
+
+const MAINNET_XRD = RADIX_TOKEN_ADDRESSES[RadixNetworkId.Mainnet]?.XRD;
+
+/**
+ * Whether an entity page belongs in a search index. Stokenet never (a test
+ * ledger would duplicate every page); on mainnet:
+ *
+ *   • validators: yes, as before (the sitemap is where they are curated);
+ *   • resources: XRD, or one whose dApp verifiably claims it (a two-way
+ *     dApp link), and never one whose name is bait;
+ *   • components: those a dApp verifiably claims;
+ *   • accounts and transactions: never. They are people's, endless and
+ *     nearly identical.
+ */
+export function isEntityIndexable(kind: EntityKind, network: Network, address: string, entity: EntityDetailsLike | null): boolean {
+  if (network !== 'mainnet') return false;
+  switch (kind) {
+    case 'validator':
+      return true;
+    case 'resource': {
+      if (hasBaitName(metadataValue(entity, 'name')) || hasBaitName(metadataValue(entity, 'symbol'))) return false;
+      return address === MAINNET_XRD || (entity?.details?.two_way_linked_dapps?.items?.length ?? 0) > 0;
+    }
+    case 'component':
+      return Boolean(entity?.details?.two_way_linked_dapp_address);
+    default:
+      return false;
+  }
 }
 
 /** Reads a string metadata entry, preferring the explicitly requested set. */
@@ -74,8 +119,7 @@ export interface EntityMetadataInput {
 /**
  * Builds the `Metadata` for an entity page.
  *
- * Only mainnet is indexable: Stokenet is a test ledger, and letting it into the
- * index would create a near-duplicate of every page and split their ranking.
+ * Whether the page may be indexed is `isEntityIndexable`'s call.
  */
 export async function buildEntityMetadata({
   locale,
@@ -90,10 +134,9 @@ export async function buildEntityMetadata({
   let description = `${label} ${address} on the Radix Network.`;
 
   // A transaction hash carries no metadata; everything else may have a name.
+  let entity: EntityDetailsLike | null = null;
   if (kind !== 'tx') {
-    const entity = (await fetchEntityDetails(address, network).catch(
-      () => null,
-    )) as EntityDetailsLike | null;
+    entity = (await fetchEntityDetailsForCard(address, network).catch(() => null)) as EntityDetailsLike | null;
     const name = metadataValue(entity, 'name');
     const symbol = metadataValue(entity, 'symbol');
     const about = metadataValue(entity, 'description');
@@ -106,7 +149,7 @@ export async function buildEntityMetadata({
     }
   }
 
-  const indexable = network === 'mainnet';
+  const indexable = isEntityIndexable(kind, network, address, entity);
 
   return buildMetadata({
     locale,

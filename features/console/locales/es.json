@@ -415,7 +415,7 @@
       },
       "account-deposits": {
         "title": "Depósitos de la cuenta",
-        "description": "Decide quién puede depositar en tu cuenta: la regla general, excepciones por token y las insignias autorizadas.",
+        "description": "Decide quién puede depositar en tu cuenta: la regla general, excepciones por recurso y las insignias autorizadas.",
         "guide": {
           "guideTitle": "Guía: depósitos de la cuenta",
           "guideDescription": "Cada cuenta de Radix decide qué depósitos de terceros acepta. La regla general puede aceptar todo, aceptar solo los tokens que ya tienes o rechazarlo todo. Por encima de ella, cada token puede estar siempre permitido o siempre bloqueado, y una insignia autorizada deja depositar cualquier cosa a quien la presente. Estas reglas solo afectan a lo que te envían otros: lo que depositas tú mismo siempre entra. Un airdrop a una cuenta que lo rechaza no se pierde: espera en el locker.",
@@ -433,7 +433,7 @@
               "example": "Solo lo que ya tengo"
             },
             {
-              "label": "Excepción por token",
+              "label": "Excepción por recurso",
               "description": "Permitido: entra aunque la regla general lo rechace. Bloqueado: no entra aunque la regla general lo acepte.",
               "example": "TPA · Bloquear"
             },
@@ -2294,7 +2294,7 @@
       },
       "locker-airdrop": {
         "title": "Airdrop con Locker",
-        "description": "Crea un Account Locker y reparte en lotes, desde un CSV o entre los poseedores de un token. Lo guardado espera a que lo reclamen y puedes recuperar lo que nadie reclame.",
+        "description": "Crea un Account Locker y reparte en lotes, desde un CSV o entre los poseedores de un token. Lo que no se entrega queda guardado hasta que su destinatario lo reclame.",
         "guide": {
           "guideTitle": "Guía: airdrop con Account Locker",
           "guideDescription": "Reparte tokens a muchas cuentas a través de un Account Locker, el componente nativo de Radix para airdrops. Lo que no se entrega directamente queda guardado a nombre de cada destinatario hasta que lo reclama, y con la recuperación activada puedes retirar lo que nadie reclame o lo que enviaste a una dirección equivocada.",
@@ -3268,7 +3268,7 @@
           }
         },
         "resource-preference": {
-          "name": "Excepción de depósito por token",
+          "name": "Excepción de depósito por recurso",
           "description": "Un token que siempre entra (Allowed), que nunca entra (Disallowed) o que vuelve a seguir la regla general (Remove).",
           "fields": {
             "account": "Cuenta",
@@ -3712,7 +3712,7 @@
           }
         },
         "setResourcePreference": {
-          "name": "Excepción por token",
+          "name": "Excepción por recurso",
           "description": "set_resource_preference: un token que siempre entra (Allowed) o nunca entra (Disallowed).",
           "fields": {
             "account": "Cuenta",
@@ -5268,6 +5268,10 @@
       "noDepositors": "Ninguna insignia autorizada.",
       "addDepositor": "Pega o elige la insignia que podrá depositar siempre",
       "accountTitle": "Cuenta"
+    },
+    "signRequestOg": {
+      "title": "Te invitan a firmar",
+      "subtitle": "Un documento espera tu firma en Radix"
     }
   }
 }
