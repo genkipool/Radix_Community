@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronsUpDown } from 'lucide-react';
+import { StarIcon } from './StarIcon';
 import { AutoCollapseToggle } from './AutoCollapseToggle';
 
 // SVG icons (no emojis)
@@ -69,6 +70,12 @@ interface SidebarControlsProps {
   gridView?: boolean;
   onGridViewToggle?: () => void;
   gridViewTitle?: string;
+  /** Expand/collapse as a square icon button, the size of the others. */
+  compactCollapse?: boolean;
+  /** Favourites filter, shown right after the view toggle. */
+  favoritesOnly?: boolean;
+  onFavoritesToggle?: () => void;
+  favoritesTitle?: string;
   theaterMode?: boolean;
   onTheaterModeToggle?: () => void;
   theaterModeTitle?: string;
@@ -88,6 +95,10 @@ export function SidebarControls({
   gridView = false,
   onGridViewToggle,
   gridViewTitle = 'Grid view',
+  compactCollapse = false,
+  favoritesOnly = false,
+  onFavoritesToggle,
+  favoritesTitle = 'Favourites only',
   theaterMode = false,
   onTheaterModeToggle,
   theaterModeTitle = 'Theater mode',
@@ -98,7 +109,7 @@ export function SidebarControls({
     background: active ? 'var(--color-primary)' : 'var(--color-surface)',
     border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-card-border)'}`,
     color: active ? 'var(--color-bg)' : 'var(--color-text-muted)',
-    cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s ease',
+    cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s ease', userSelect: 'none',
   } as React.CSSProperties);
 
   return (
@@ -109,14 +120,24 @@ export function SidebarControls({
       <button
         type="button"
         onClick={hasAnyExpanded ? onCollapseAll : onExpandAll}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex-1"
+        // A size container: the label shows only when the button is wide enough,
+        // so with many controls in the row it shrinks to its icon instead of
+        // wrapping onto two lines.
+        className={
+          compactCollapse
+            ? 'flex items-center justify-center size-8 shrink-0 rounded-lg transition-all duration-150'
+            : '@container flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs font-medium transition-all duration-150 flex-1 min-w-8'
+        }
         style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)', color: 'var(--color-text-muted)' }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-primary)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-card-border)'; }}
         title={hasAnyExpanded ? collapseAllLabel : expandAllLabel}
+        aria-label={hasAnyExpanded ? collapseAllLabel : expandAllLabel}
       >
         <ChevronsUpDown className="size-3.5 shrink-0" />
-        <span>{hasAnyExpanded ? collapseAllLabel : expandAllLabel}</span>
+        {!compactCollapse && (
+          <span className="hidden whitespace-nowrap @[7.5rem]:inline">{hasAnyExpanded ? collapseAllLabel : expandAllLabel}</span>
+        )}
       </button>
 
       <AutoCollapseToggle
@@ -135,6 +156,21 @@ export function SidebarControls({
           title={gridViewTitle}
         >
           {gridView ? <ListViewIcon /> : <GridViewIcon />}
+        </button>
+      )}
+
+      {/* Favourites filter */}
+      {onFavoritesToggle && (
+        <button
+          type="button"
+          onClick={onFavoritesToggle}
+          onMouseDown={(e) => e.preventDefault()}
+          style={iconBtnStyle(favoritesOnly)}
+          title={favoritesTitle}
+          aria-label={favoritesTitle}
+          aria-pressed={favoritesOnly}
+        >
+          <StarIcon filled={favoritesOnly} />
         </button>
       )}
 

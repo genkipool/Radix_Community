@@ -26,20 +26,6 @@ import { AnimatePresence, m } from "motion/react";
 
 const EMPTY_ACCOUNTS: string[] = [];
 
-/**
- * Address prefixes the explorer can render a dedicated card for. Listed once so
- * the search box and the reading-mode modal cannot disagree about what counts
- * as an entity.
- */
-const ENTITY_PREFIXES = [
-  'account_',
-  'package_',
-  'component_',
-  'resource_',
-  'transactiontracker_',
-  'consensusmanager_',
-  'validator_',
-] as const;
 
 /* Services & types */
 import type { NetworkStats } from '@/types/radix';
@@ -68,6 +54,7 @@ import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { useDashboardUrlSync, useDashboardUrlEffects } from './hooks/useDashboardUrlSync';
 import { useCommittedNetwork } from './hooks/useCommittedNetwork';
 import { useFocusedEntity, useReadyEntities } from './hooks/useEntityReadiness';
+import { entityKindOf, isCardEntity } from './lib/entityKinds';
 import { setLiveNetwork } from '@/services/liveDataStore';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -634,7 +621,7 @@ export default function DashboardClient({
    */
   const typedEntity = (() => {
     const value = deferredSearch.trim();
-    return value.length >= 60 && ENTITY_PREFIXES.some((p) => value.startsWith(p)) ? value : null;
+    return isCardEntity(value) ? value : null;
   })();
   const pendingEntity = isNavigating ? committedEntity : null;
   const focusedEntity = useFocusedEntity({
@@ -643,17 +630,7 @@ export default function DashboardClient({
     network: deferredNetwork,
   });
 
-  const isAccountSearch = focusedEntity.startsWith('account_');
-  const isPackageSearch = focusedEntity.startsWith('package_');
-  const isComponentSearch = focusedEntity.startsWith('component_');
-  const isResourceSearch = focusedEntity.startsWith('resource_');
-  const isSystemSearch = focusedEntity.startsWith('transactiontracker_') || focusedEntity.startsWith('consensusmanager_');
-  const isValidatorSearch = focusedEntity.startsWith('validator_');
-
-  const expandedEntity =
-    expandedPostId && ENTITY_PREFIXES.some((p) => expandedPostId.startsWith(p))
-      ? expandedPostId
-      : null;
+  const expandedEntity = expandedPostId && isCardEntity(expandedPostId) ? expandedPostId : null;
 
   // Which entity cards the explorer grid puts above the transactions.
   //
@@ -661,12 +638,13 @@ export default function DashboardClient({
   // box no longer paints the transaction list first and then pushes it down as
   // each account resolves.
   const readyWalletAccounts = useReadyEntities(txAddresses ?? EMPTY_ACCOUNTS, deferredNetwork);
-  const accountsToShow = isAccountSearch ? [focusedEntity] : readyWalletAccounts;
-  const packagesToShow = isPackageSearch ? [focusedEntity] : [];
-  const componentsToShow = isComponentSearch ? [focusedEntity] : [];
-  const resourcesToShow = isResourceSearch ? [focusedEntity] : [];
-  const systemEntitiesToShow = isSystemSearch ? [focusedEntity] : [];
-  const validatorsToShow = isValidatorSearch ? [focusedEntity] : [];
+  // A searched account takes the wallet accounts' place; any other entity is
+  // shown after them, as before.
+  const entitiesToShow = !focusedEntity
+    ? readyWalletAccounts
+    : entityKindOf(focusedEntity) === 'account'
+      ? [focusedEntity]
+      : [...readyWalletAccounts, focusedEntity];
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
@@ -837,12 +815,7 @@ export default function DashboardClient({
             copiedAddress={copiedAddress}
             searchQuery={deferredSearch}
             network={viewNetwork}
-            accountsToShow={accountsToShow}
-            packagesToShow={packagesToShow}
-            componentsToShow={componentsToShow}
-            resourcesToShow={resourcesToShow}
-            systemEntitiesToShow={systemEntitiesToShow}
-            validatorsToShow={validatorsToShow}
+            entitiesToShow={entitiesToShow}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}

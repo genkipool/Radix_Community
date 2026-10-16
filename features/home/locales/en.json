@@ -669,12 +669,6 @@
         "title": "Gumball Club",
         "desc": "An interactive playground to experience Web3 with the Radix Wallet. Acquire GC Tokens, buy Gumballs and Candy, and learn hands-on how native assets and asset-oriented programming with Scrypto work.",
         "linkText": "Gumball Club"
-      },
-      "onboarding": {
-        "badge": "Onboarding",
-        "title": "RadQuest",
-        "desc": "Gamified onboarding platform for new users. Complete quests, earn XRD and unique NFTs, and learn about Smart Accounts, Personas, native assets, and human-readable transactions — all from your phone.",
-        "linkText": "RadQuest"
       }
     }
   },

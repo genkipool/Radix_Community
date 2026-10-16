@@ -105,7 +105,7 @@ export function JsonPanel({ id, name, json, note, copyLabel }: JsonPanelProps) {
             </span>
           )}
         </div>
-        <CopyButton value={json} size="xs" variant="minimal" label={copyLabel} />
+        <CopyButton value={json} size="xs" variant="minimal" title={copyLabel} />
       </header>
       <div className="max-h-[420px] overflow-auto pt-3">
         <JsonCode code={json} />

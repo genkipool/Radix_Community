@@ -9,9 +9,12 @@ import { securityInputState, useAccountSecurity } from '../../hooks/useAccountSe
 import {
   SECURITY_LEVELS,
   securityImprovements,
+  shieldFactorsOf,
   VERDICT_LEVEL,
   VERDICT_SEVERITY,
+  type FactorRequirement,
   type RuleSummary,
+  type ShieldFactors,
   type SecurityNote,
 } from '../../lib/account-security';
 import type { AccountSecurityReport } from '../../services/accountSecurity';
@@ -241,9 +244,47 @@ function ruleText(rule: RuleSummary | null, labels: Labels): string {
   return labels.controller.factors.replace('{need}', String(need)).replace('{total}', String(rule.badges.length));
 }
 
+/**
+ * The headline of a shield: does signing take more than one factor? One
+ * stolen phone should not be able to move a shielded account.
+ */
+function ShieldFactorsBanner({ factors, labels }: { factors: ShieldFactors; labels: Labels }) {
+  const text = labels.controller.factorsVerdict;
+  const { signing, recovery } = factors;
+  const severity = signing.kind === 'multi' ? 'good' : signing.kind === 'single' ? 'warn' : signing.kind === 'anyone' ? 'bad' : 'neutral';
+  const style = SEVERITY_STYLE[severity];
+  const Icon = style.icon;
+  const fill = (template: string, f: FactorRequirement) =>
+    template.replace('{need}', String(f.need)).replace('{total}', String(f.total));
+  const recoveryText =
+    recovery.kind === 'multi' || recovery.kind === 'single'
+      ? fill(recovery.kind === 'multi' ? text.recoveryMulti : recovery.total === 1 ? text.recoveryOne : text.recoverySingle, recovery)
+      : null;
+
+  const headline = signing.kind === 'single' && signing.total === 1 ? text.singleOne : text[signing.kind];
+
+  return (
+    <div className={`rounded-lg border p-3 space-y-1.5 ${style.box}`}>
+      <p className={`text-sm font-bold flex items-center gap-2 ${style.text}`}>
+        <Icon className="size-4 shrink-0" />
+        {fill(headline.title, signing)}
+      </p>
+      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-main)' }}>
+        {fill(headline.detail, signing)}
+      </p>
+      {recoveryText && (
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          {recoveryText}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ControllerPanel({ report, labels }: { report: AccountSecurityReport; labels: Labels }) {
   const config = report.controllerConfig;
   if (!config) return null;
+  const factors = shieldFactorsOf(config);
   const alerts = [
     config.recoveryInProgress && labels.controller.recoveryInProgress,
     config.badgeWithdrawAttempt && labels.controller.withdrawAttempt,
@@ -251,6 +292,7 @@ function ControllerPanel({ report, labels }: { report: AccountSecurityReport; la
 
   return (
     <ToolSection title={labels.controllerTitle} hint={labels.controllerHint}>
+      {factors && <ShieldFactorsBanner factors={factors} labels={labels} />}
       {alerts.length > 0 && (
         <div className="rounded-lg border p-3 space-y-1 border-[var(--color-danger)]/40 bg-[var(--color-danger)]/5">
           {alerts.map((alert) => (
@@ -337,8 +379,6 @@ export default function AccountSecurityTool({ t }: ConsoleToolProps) {
 
           <LevelPanel report={report} labels={labels} />
 
-          <ImprovePanel report={report} labels={labels} />
-
           {report.notes.length > 0 && (
             <ToolSection title={labels.notesTitle}>
               <ul className="space-y-2">
@@ -356,8 +396,34 @@ export default function AccountSecurityTool({ t }: ConsoleToolProps) {
           )}
 
           <ControllerPanel report={report} labels={labels} />
+
+          {/* Advice last, once the reader has seen the facts it is based on. */}
+          <ImprovePanel report={report} labels={labels} />
         </>
       )}
+
+      <MultiSignerPanel labels={labels} />
     </div>
+  );
+}
+
+/**
+ * Why the console does not set up multi-signature accounts, and what the
+ * wallet's own security shields can do instead. Shown always: the question
+ * comes up before anyone has an address to check.
+ */
+function MultiSignerPanel({ labels }: { labels: Labels }) {
+  const panel = labels.multiSigner;
+  return (
+    <ToolSection title={panel.title} hint={panel.hint}>
+      <ul className="space-y-3">
+        {panel.points.map((point) => (
+          <li key={point.title} className="space-y-0.5">
+            <p className="text-sm font-semibold text-[var(--color-text-main)]">{point.title}</p>
+            <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">{point.detail}</p>
+          </li>
+        ))}
+      </ul>
+    </ToolSection>
   );
 }

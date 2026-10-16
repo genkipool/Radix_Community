@@ -2,7 +2,7 @@
 import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
-  Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
+  Smartphone, FileText, MessageSquare, Eye, Check, Route,
   User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp, Landmark
 } from 'lucide-react';
 import { prewarmTranslator } from '@/lib/browserTranslator';
@@ -76,10 +76,10 @@ function ThemeIcon({ theme, isLightTheme }: { theme: Theme; isLightTheme: boolea
 const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   ecosystem: [
     { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
+    { key: 'dashboard', href: '/dashboard/staking', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },
     { key: 'hyperscale', href: '/hyperscale', icon: <Zap className="size-4" />, descKey: 'popup_eco_hyperscale_desc' },
     { key: 'seal', href: '/seal', icon: <Stamp className="size-4" />, descKey: 'popup_eco_seal_desc' },
     { key: 'google_wallet', href: '/google-wallet', icon: <Nfc className="size-4" />, descKey: 'popup_eco_google_wallet_desc' },
-    { key: 'dashboard', href: '/dashboard/staking', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },
     { key: 'dapps', href: '/dapps', icon: <Layers className="size-4" />, descKey: 'popup_eco_dapps_desc' },
     { key: 'games', href: '/games', icon: <Gamepad2 className="size-4" />, descKey: 'popup_dev_games_desc' },
     { key: 'astrolescent', href: 'https://astrolescent.com/', icon: <Route className="size-4" />, descKey: 'popup_eco_astro_desc' },
@@ -95,7 +95,6 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
     { key: 'wallet_android', href: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_android_desc' },
     { key: 'wallet_chrome', href: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm', icon: <Globe className="size-4" />, descKey: 'popup_wallet_chrome_desc' },
     { key: 'wallet_buy_xrd', href: '/#comprar-xrd', icon: <CreditCard className="size-4" />, descKey: 'popup_wallet_buy_xrd_desc', isHashLink: true },
-    { key: 'radquest', href: 'https://radquest.io/home/basic', icon: <Sparkles className="size-4" />, descKey: 'popup_wallet_radquest_desc' },
     { key: 'gumball_club', href: 'https://gumball-club.radixdlt.com/', icon: <Gamepad2 className="size-4" />, descKey: 'popup_wallet_gumball_desc' },
   ],
   community: [

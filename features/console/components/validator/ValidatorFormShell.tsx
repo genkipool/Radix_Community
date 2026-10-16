@@ -11,9 +11,9 @@ import {
 } from '../../lib/validator-operations';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import { CollapsibleManifest } from '../shared/CollapsibleManifest';
-import { SendToWalletButton } from '../shared/SendToWalletButton';
-import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
+import { SimulateResultCard } from '../shared/SimulatePanel';
 import { ToolSection } from '../shared/ToolSection';
+import { TxActions } from '../shared/TxActions';
 import { TxResultBanner } from '../shared/TxResultBanner';
 import { ValidatorContextPanel } from './ValidatorContextPanel';
 
@@ -36,10 +36,10 @@ interface ValidatorFormShellProps {
  * The frame every validator form sits in: the shared account/validator
  * context, the form, and one transaction built out of it.
  *
- * Full width, one column, one box per zone — the same shape as the staking
- * tool. The manifest sits under the form as a disclosure rather than a
- * permanent side column: it is there to be read before signing, not to be
- * watched, and giving it half the page squeezed the form it describes.
+ * Full width, one column, one box per zone, the same shape as the pool tools:
+ * the manifest and the send / simulate buttons sit under the form's box, not
+ * inside it. The manifest is a disclosure rather than a permanent side
+ * column: it is there to be read before signing, not to be watched.
  *
  * Each form covers exactly one set of operations the engine lets share a
  * transaction, so the shell never has to warn about combinations: what the
@@ -77,36 +77,28 @@ export function ValidatorFormShell({
             {labels.pickAccountFirst}
           </p>
         )}
-
-        <CollapsibleManifest
-          manifest={manifest}
-          showLabel={labels.showManifest}
-          hideLabel={labels.hideManifest}
-          copyLabel={common.copy}
-        />
-
-        <div className="flex flex-wrap items-center gap-3">
-          <SendToWalletButton
-            onClick={() => sendTransaction(manifest)}
-            disabled={!ready || isSending}
-            loading={isSending}
-            label={common.sendToWallet}
-            loadingLabel={common.sending}
-          />
-          <SimulateButton
-            t={t.simulate}
-            onClick={() => preview.simulate(manifest)}
-            disabled={!manifest.trim() || isSending}
-            loading={preview.isSimulating}
-          />
-        </div>
-
-        {blockedReason && (
-          <p className="text-xs leading-relaxed" style={{ color: 'rgb(244,63,94)' }}>
-            {blockedReason}
-          </p>
-        )}
       </ToolSection>
+
+      <CollapsibleManifest
+        manifest={manifest}
+        showLabel={labels.showManifest}
+        hideLabel={labels.hideManifest}
+        copyLabel={common.copy}
+      />
+
+      <TxActions
+        t={t}
+        onSend={() => sendTransaction(manifest)}
+        onSimulate={() => preview.simulate(manifest)}
+        sendDisabled={!ready || isSending}
+        simulateDisabled={!manifest.trim() || isSending}
+        sending={isSending}
+        simulating={preview.isSimulating}
+        sendLabel={common.sendToWallet}
+        sendingLabel={common.sending}
+        blockedReason={blockedReason}
+        reasonTone="error"
+      />
 
       <SimulateResultCard
         t={t.simulate}

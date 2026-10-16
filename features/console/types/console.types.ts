@@ -4,10 +4,23 @@
 
 export const CONSOLE_TOOL_SLUGS = [
   'mcp',
+  'validator-info',
   'validator-registration',
   'validator-profile',
   'validator-staking',
   'validator-create',
+  'pool-info',
+  'pool-create',
+  'pool-contribute',
+  'pool-reserves',
+  'pool-redeem',
+  'pool-profile',
+  'pool-manage',
+  'resource-holders',
+  'bulk-send',
+  'locker-info',
+  'locker-airdrop',
+  'locker-claim',
   'send-transaction',
   'staking',
   'create-token',
@@ -56,6 +69,8 @@ export interface FungibleHolding {
   iconUrl?: string;
   amount: string;
   vaultAddress?: string;
+  /** Set when the resource is a native pool unit: the pool it redeems from. */
+  pool?: string;
 }
 
 export interface NonFungibleHolding {

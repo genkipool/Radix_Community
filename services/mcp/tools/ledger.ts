@@ -18,7 +18,6 @@ import {
   fetchKeyValueStoreEntries,
   fetchNonFungibleIds,
   fetchNonFungibleSupply,
-  fetchResourceHolders,
 } from '@/services/gateway/state';
 import { fetchBlueprintInterface } from '@/services/gateway/blueprints';
 import { getMarketDataCached } from '@/services/marketData';
@@ -30,6 +29,15 @@ import {
 } from '@/features/console/lib/metadata-manifests';
 import type { NetworkStats, TransactionInfo, Validator } from '@/types/radix';
 import { defineMcpTool } from '../registry';
+import { withRetry } from '@/services/gateway/client';
+import { gatewayPost } from '@/services/gateway/bases';
+import {
+  fetchAllHolders,
+  filterHolders,
+  holderKind,
+  holderStats,
+  type GatewayPost,
+} from '@/features/console/lib/resource-holders';
 import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSection, cliTable } from '../cli';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 
@@ -494,29 +502,52 @@ export const getNftDataTool = defineMcpTool({
 
 export const getResourceHoldersTool = defineMcpTool({
   name: 'get_resource_holders',
-  title: 'Get top holders of a resource',
+  title: 'Get holders of a resource',
   description:
-    'Lists the top holders of any token or NFT collection ordered by amount held, with the total holder count.',
+    'Lists the holders of any token or NFT collection, largest first, with concentration (top holder, top 10) and holder kinds (accounts, pools, lockers, components). By default the first page (100); with "all": true every page (up to 20,000 holders). Filters: kinds, minAmount, exclude. For an airdrop to these holders use plan_holder_distribution.',
   category: 'ledger',
   inputSchema: z.object({
     resourceAddress: addressSchema.describe('Resource address (resource_rdx1…)'),
+    all: z.boolean().default(false).describe('Read every page instead of only the largest 100 holders'),
+    kinds: z
+      .array(z.enum(['account', 'pool', 'locker', 'validator', 'component', 'other']))
+      .optional()
+      .describe('Keep only these holder kinds (default: all)'),
+    minAmount: z.number().nonnegative().optional().describe('Drop holders below this amount'),
+    exclude: z.array(z.string()).optional().describe('Addresses to leave out'),
     network: networkSchema,
   }),
-  handler: async ({ resourceAddress, network }) => {
-    const { totalCount, holders } = await fetchResourceHolders(resourceAddress, network);
-    return cliRender(
-      cliBanner('Resource holders'),
-      cliKeyValues([
-        ['Resource', resourceAddress],
-        ['Network', network],
-        ['Total holders', totalCount ?? 'unknown'],
-        ['Showing', holders.length],
-      ]),
-      cliTable(
-        ['#', 'Holder', 'Amount'],
-        holders.map((holder, index) => [index + 1, holder.holderAddress, holder.amount]),
+  handler: async ({ resourceAddress, all, kinds, minAmount, exclude, network }) => {
+    const post: GatewayPost = (path, body) => withRetry(() => gatewayPost(network, path, body));
+    const { holders, total, truncated } = all
+      ? await fetchAllHolders(post, resourceAddress)
+      : await fetchAllHolders(post, resourceAddress, { max: 100 });
+    const filtered = filterHolders(holders, { kinds, minAmount, exclude });
+    const stats = holderStats(filtered);
+    const shown = filtered.slice(0, 200);
+    const pct = (share: number) => `${(share * 100).toFixed(2)} %`;
+    return {
+      text: cliRender(
+        cliBanner('Resource holders'),
+        cliKeyValues([
+          ['Resource', resourceAddress],
+          ['Network', network],
+          ['Total holders (ledger)', total ?? 'unknown'],
+          ['Read', `${holders.length}${truncated ? ' (more exist: pass all: true)' : ''}`],
+          ['After filters', stats.count],
+          ['Total held', stats.total],
+          ['Largest holder', pct(stats.top1Share)],
+          ['Top 10', pct(stats.top10Share)],
+          ['Kinds', Object.entries(stats.byKind).filter(([, n]) => n).map(([k, n]) => `${k} ${n}`).join(', ')],
+        ]),
+        cliTable(
+          ['#', 'Holder', 'Kind', 'Amount'],
+          shown.map((h, i) => [i + 1, h.address, holderKind(h.address), h.amount]),
+        ),
+        filtered.length > shown.length && `… ${filtered.length - shown.length} more (all of them are in structuredContent.holders).`,
       ),
-    );
+      structured: { resourceAddress, network, total, truncated, stats, holders: filtered.slice(0, 5000) },
+    };
   },
 });
 

@@ -20,7 +20,11 @@
       "home_aria": "Go to the console home",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",
-      "flat_view": "List view"
+      "flat_view": "List view",
+      "favorites_only": "Show favourites only",
+      "favorite_add": "Add to favourites",
+      "favorite_remove": "Remove from favourites",
+      "no_favorites": "No favourites yet. Hover a tool and press its star."
     },
     "groups": {
       "assets": "Assets",
@@ -28,7 +32,9 @@
       "radix-seal": "Radix Seal",
       "utilities": "Utilities",
       "ai": "AI & Automation",
-      "validator": "Validator"
+      "validator": "Validator",
+      "pools": "Pools",
+      "locker": "Locker"
     },
     "tools": {
       "sign-collection": {
@@ -1138,7 +1144,7 @@
             {
               "label": "Account that signs and pays",
               "description": "Presents the owner badge and pays the network fee. If it holds no badge for the chosen validator the ledger rejects every call in this form.",
-              "example": "account_tdx_2_12xned60hq…"
+              "example": "account_tdx_2_12yg4284tj…"
             },
             {
               "label": "Validator address",
@@ -1417,7 +1423,7 @@
             {
               "label": "Account that signs and pays",
               "description": "Pays the creation fee and receives the owner badge NFT. Every later owner-gated change has to be signed by whoever holds that badge, so use an account you control long-term.",
-              "example": "account_tdx_2_12xned60hq…"
+              "example": "account_tdx_2_12yg4284tj…"
             },
             {
               "label": "Node consensus public key",
@@ -1475,6 +1481,893 @@
             {
               "term": "Own transaction",
               "definition": "Creating a validator cannot share a transaction with anything else: its address and its badge do not exist until this transaction commits, so no later instruction could name them."
+            }
+          ]
+        }
+      },
+      "validator-info": {
+        "title": "Validator info",
+        "description": "A validator's profile: stake, fee, uptime, yield and your position with it.",
+        "guide": {
+          "guideTitle": "Guide: validator info",
+          "guideDescription": "A read-only view of a validator to decide where to stake or to check on your own: its profile, whether it is registered and in the active set, its fee and whether it is about to change, its uptime, its estimated yield and what your account holds with it. Nothing is signed.",
+          "guideSteps": [
+            "1. Account: pick the account whose position you want to see.",
+            "2. Validators: tick yours, paste addresses or pick several with the + button. Each one gets its own card.",
+            "3. Read the profile: status, warnings, figures and your position.",
+            "4. Use the shortcuts below to stake or, if it is yours, to manage it."
+          ],
+          "fields": [
+            {
+              "label": "Validator",
+              "description": "Validators whose owner badge the account holds are listed on top. For any other, paste its address or find it with the + button.",
+              "example": "validator_rdx1…"
+            },
+            {
+              "label": "Fee",
+              "description": "Share of the rewards the operator keeps. When a change is pending the new value is shown, with a warning if it goes up.",
+              "example": "2 % · changes to 5 %"
+            },
+            {
+              "label": "Uptime",
+              "description": "Proposals made against those it was due over the last 14 days, and since Babylon went live.",
+              "example": "99.8 %"
+            },
+            {
+              "label": "Your position",
+              "description": "The account's LSUs and the XRD they are worth, plus withdrawals you can already claim or that are still waiting for their epoch.",
+              "example": "1,000 LSU ≈ 1,050 XRD"
+            }
+          ],
+          "example": [
+            {
+              "field": "Validator",
+              "type": "input",
+              "value": "validator_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "LSU",
+              "definition": "Liquid stake unit: the token you get when you stake, worth more XRD over time."
+            },
+            {
+              "term": "Active set",
+              "definition": "The validators with the most stake, which validate in the current epoch and earn rewards."
+            },
+            {
+              "term": "Epoch",
+              "definition": "A period of about five minutes during which the network keeps the same validator set."
+            }
+          ]
+        }
+      },
+      "pool-info": {
+        "title": "Pool information",
+        "description": "Overview of a pool: what it is, what each unit is worth, your position and whether it is safe.",
+        "guide": {
+          "guideTitle": "Guide: pool information",
+          "guideDescription": "A read-only view of a native pool: its name and link, the value of each unit from the current reserves, how many units you hold and what redeeming them would give you, and whether its manager role protects it. Nothing is signed.",
+          "guideSteps": [
+            "1. Account: pick the account whose position you want to see.",
+            "2. Pools: tick yours in the list, paste addresses or pick several with the + button. Each one gets its own card.",
+            "3. Read the overview: identity, safety, value per unit and your position.",
+            "4. Use the shortcuts below to contribute, redeem or edit that same pool."
+          ],
+          "fields": [
+            {
+              "label": "Pool",
+              "description": "Pools whose units the account holds are listed. If it is not there, paste its address or search it with the + button.",
+              "example": "pool_rdx1…"
+            },
+            {
+              "label": "Safety",
+              "description": "Whether the manager role is a badge or AllowAll. With AllowAll anyone can withdraw the reserves.",
+              "example": "Only the holder of the manager badge…"
+            },
+            {
+              "label": "Value of one unit",
+              "description": "Reserves divided by the units in circulation. It changes with every contribution, redemption or reserve change.",
+              "example": "1 unit ≈ 0.141 XRD"
+            },
+            {
+              "label": "Your position",
+              "description": "The account's units, its share of the total and what the pool would return if you redeemed them now.",
+              "example": "2.5 % · ≈ 70 XRD and 3,500 HUG"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Pool unit",
+              "definition": "Token that represents a share of the pool's reserves."
+            },
+            {
+              "term": "Manager role",
+              "definition": "Rule deciding who can contribute and move reserves."
+            },
+            {
+              "term": "info_url",
+              "definition": "Metadata with the website of the project behind the pool."
+            }
+          ]
+        }
+      },
+      "pool-create": {
+        "title": "Create pool",
+        "description": "Create a native one, two or multi-resource pool, guarded by a manager badge minted in the same transaction.",
+        "guide": {
+          "guideTitle": "Guide: create pool",
+          "guideDescription": "A native pool holds reserves of one or more resources and issues pool units that represent a share of them. The Radix engine decides who can do what: contributing and moving reserves requires the manager role; redeeming units is public. That makes the manager the pool's whole security: left open to everyone, anyone can drain the pool. This tool never leaves that door open.",
+          "guideSteps": [
+            "1. Account: the one that signs and receives the manager badge.",
+            "2. Pool type: one, two or multiple resources.",
+            "3. Resources: the addresses of the tokens the pool will hold.",
+            "4. Badge: mint a new one or pick one you already hold. Whoever holds it controls the reserves.",
+            "5. Review the manifest, simulate and sign. Then add the first liquidity from Add liquidity."
+          ],
+          "fields": [
+            {
+              "label": "Pool type",
+              "description": "One resource (a vault that shares yield), two (a pair as in a DEX) or multiple (three or more resources with free weighting).",
+              "example": "Two resources"
+            },
+            {
+              "label": "Resources",
+              "description": "resource_… addresses of the tokens the pool will hold. They cannot change later: the pool is tied to them forever.",
+              "example": "resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd"
+            },
+            {
+              "label": "Manager badge",
+              "description": "The key to the reserves. Minted here, it has a supply of 1 and can never be minted again, so nobody can make another copy.",
+              "example": "Mint a new one"
+            },
+            {
+              "label": "Badge name",
+              "description": "How the badge shows in your wallet. Say which pool it belongs to, so it is not mistaken for another.",
+              "example": "XRD/HUG pool manager"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool type",
+              "type": "button-group",
+              "options": [
+                "One resource",
+                "Two resources",
+                "Multiple resources"
+              ],
+              "selected": "Two resources"
+            },
+            {
+              "field": "Resource 1",
+              "type": "input",
+              "value": "resource_rdx1tknx…radxrd"
+            },
+            {
+              "field": "Manager badge",
+              "type": "button-group",
+              "options": [
+                "Mint a new one",
+                "Use one I already hold"
+              ],
+              "selected": "Mint a new one"
+            },
+            {
+              "field": "Badge name",
+              "type": "input",
+              "value": "XRD/HUG pool manager"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Manager role",
+              "definition": "pool_manager_role. Guards contribute, protected_deposit and protected_withdraw. Whoever satisfies it moves the reserves."
+            },
+            {
+              "term": "Pool unit",
+              "definition": "Fungible token the pool mints on contribution. It represents a proportional share of the reserves and redeems for it."
+            },
+            {
+              "term": "AllowAll",
+              "definition": "A rule anyone satisfies. On a pool's manager role it means anyone can drain it."
+            },
+            {
+              "term": "Address reservation",
+              "definition": "The manifest reserves the badge address before minting it, so the pool is born already guarded in the same transaction."
+            }
+          ]
+        }
+      },
+      "pool-contribute": {
+        "title": "Add liquidity",
+        "description": "Deposit a pool's resources and receive its units. Requires the manager badge.",
+        "guide": {
+          "guideTitle": "Guide: add liquidity",
+          "guideDescription": "Contributing puts resources into the reserves and mints pool units for the contributor. The engine takes the amounts in the ratio the pool already has and returns the surplus, so over-contributing never skews a pool. On an empty pool the first contribution sets the ratio, so think it through. Contributing requires the manager badge.",
+          "guideSteps": [
+            "1. Account: the one holding the manager badge and the tokens.",
+            "2. Pool: pick it from the list or paste its address. You will see its reserves and whether you hold the badge.",
+            "3. Amounts: one per pool resource.",
+            "4. Review, simulate and sign. The units and any surplus come back to your account."
+          ],
+          "fields": [
+            {
+              "label": "Pool",
+              "description": "The pool you contribute to. The panel shows its reserves, its pool unit and who manages it.",
+              "example": "pool_rdx1…"
+            },
+            {
+              "label": "Amount of each resource",
+              "description": "What leaves your account for the reserves. If it does not fit the pool's ratio, the surplus returns to your account in the same transaction.",
+              "example": "100 XRD and 5000 HUG"
+            },
+            {
+              "label": "Manager badge",
+              "description": "Presented automatically when the account holds it. Without it the engine rejects the contribution.",
+              "example": "XRD/HUG pool manager"
+            },
+            {
+              "label": "Units received",
+              "description": "The pool mints units in proportion to what you add against what was there. The simulation shows the exact figure before signing.",
+              "example": "≈ 707.1 units"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            },
+            {
+              "field": "Amount · XRD",
+              "type": "input",
+              "value": "100"
+            },
+            {
+              "field": "Amount · HUG",
+              "type": "input",
+              "value": "5000"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Ratio",
+              "definition": "The relation between the reserves. The pool keeps it on contribution and returns the surplus."
+            },
+            {
+              "term": "contribute",
+              "definition": "Pool method that takes the resources and returns pool units, plus change if any."
+            },
+            {
+              "term": "Simulation",
+              "definition": "Runs the transaction against current state without signing, to show fees and balance changes."
+            }
+          ]
+        }
+      },
+      "pool-reserves": {
+        "title": "Adjust reserves",
+        "description": "Put resources into or take them out of the reserves without minting or burning pool units. Requires the manager badge.",
+        "guide": {
+          "guideTitle": "Guide: adjust reserves",
+          "guideDescription": "protected_deposit and protected_withdraw change the reserves without touching the number of units. Depositing makes every unit worth more: that is how fees or rewards are shared among holders. Withdrawing makes every unit worth less: holders lose that share. That is exactly why these calls require the manager badge, and why a pool with an AllowAll manager can be drained.",
+          "guideSteps": [
+            "1. Account: the one holding the manager badge.",
+            "2. Pool: pick it or paste its address.",
+            "3. Direction: deposit or withdraw.",
+            "4. Resource and amount. When withdrawing, the limit is the pool's reserves.",
+            "5. Review, simulate and sign."
+          ],
+          "fields": [
+            {
+              "label": "Direction",
+              "description": "Deposit adds to the reserves from your account; withdraw takes from the reserves into your account. Neither changes the number of units.",
+              "example": "Deposit to reserves"
+            },
+            {
+              "label": "Resource",
+              "description": "One of the pool's resources. Only what the pool already holds can move: it accepts no new resources.",
+              "example": "XRD"
+            },
+            {
+              "label": "Amount",
+              "description": "When depositing, it leaves your account. When withdrawing, exactly that amount leaves the reserves.",
+              "example": "25"
+            },
+            {
+              "label": "Manager badge",
+              "description": "Presented automatically when the account holds it. Without it the engine rejects both operations.",
+              "example": "XRD/HUG pool manager"
+            }
+          ],
+          "example": [
+            {
+              "field": "Direction",
+              "type": "button-group",
+              "options": [
+                "Deposit to reserves",
+                "Withdraw from reserves"
+              ],
+              "selected": "Deposit to reserves"
+            },
+            {
+              "field": "Resource",
+              "type": "button-group",
+              "options": [
+                "XRD",
+                "HUG"
+              ],
+              "selected": "XRD"
+            },
+            {
+              "field": "Amount",
+              "type": "input",
+              "value": "25"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "protected_deposit",
+              "definition": "Puts a bucket into the reserves without minting units."
+            },
+            {
+              "term": "protected_withdraw",
+              "definition": "Takes an amount from the reserves without burning units. With an AllowAll manager, anyone can call it."
+            },
+            {
+              "term": "Unit value",
+              "definition": "Reserves divided by the unit supply. These operations raise or lower it."
+            }
+          ]
+        }
+      },
+      "pool-redeem": {
+        "title": "Redeem units",
+        "description": "Burn pool units and receive your share of every reserve. Public, no badge.",
+        "guide": {
+          "guideTitle": "Guide: redeem units",
+          "guideDescription": "Redeeming burns pool units and hands over the proportional share of every reserve. It is a public operation: anyone holding units can do it, no badge needed. It is also the first thing the owner of a vulnerable pool should do, to get their liquidity out before someone else drains the reserves.",
+          "guideSteps": [
+            "1. Account: the one holding the units.",
+            "2. Pool: listed when the account holds its units.",
+            "3. Units to redeem: type the amount or press Max.",
+            "4. Check the estimate, simulate and sign."
+          ],
+          "fields": [
+            {
+              "label": "Pool",
+              "description": "Pools whose units the account holds appear in the list. If it does not show, paste its address.",
+              "example": "pool_rdx1…"
+            },
+            {
+              "label": "Units to redeem",
+              "description": "Burned in the transaction. You cannot redeem more than the account holds.",
+              "example": "50"
+            },
+            {
+              "label": "Estimate",
+              "description": "Computed from the current reserves and supply. The exact figure comes from the simulation, since the reserves can change until you sign.",
+              "example": "≈ 7.07 XRD and 353.5 HUG"
+            },
+            {
+              "label": "Destination",
+              "description": "Everything the pool returns goes into the same account that signs.",
+              "example": "Your account"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            },
+            {
+              "field": "Units to redeem",
+              "type": "input",
+              "value": "50"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "redeem",
+              "definition": "Public pool method that takes units and returns the proportional share of the reserves."
+            },
+            {
+              "term": "Proportional share",
+              "definition": "Units redeemed divided by total supply, applied to each reserve."
+            },
+            {
+              "term": "Supply",
+              "definition": "Total pool units in circulation."
+            }
+          ]
+        }
+      },
+      "pool-profile": {
+        "title": "Pool profile",
+        "description": "Name, description and icon of the pool and its pool unit. Requires the owner badge.",
+        "guide": {
+          "guideTitle": "Guide: pool profile",
+          "guideDescription": "The pool and its pool unit have their own metadata: name, description, icon and website. Wallets show the unit's to whoever holds it, so a unit without a profile appears as a nameless token. The engine gives the pool unit the same owner as the pool, so one owner badge writes both, in a single transaction.",
+          "guideSteps": [
+            "1. Account: the one holding the owner badge.",
+            "2. Pool: pick it or paste its address.",
+            "3. Fill in only what you want to change, for the pool and the unit. A blank field is not written.",
+            "4. Review, simulate and sign."
+          ],
+          "fields": [
+            {
+              "label": "Name",
+              "description": "The headline wallets and explorers show. For the pool unit, say which pair it represents.",
+              "example": "XRD/HUG LP"
+            },
+            {
+              "label": "Symbol",
+              "description": "Pool unit only: the ticker shown next to the balance.",
+              "example": "XRDHUG"
+            },
+            {
+              "label": "Icon URL",
+              "description": "Square image. Stored as a typed Url, so it needs the full scheme.",
+              "example": "https://example.com/lp.png"
+            },
+            {
+              "label": "Website",
+              "description": "Page with more information about the pool. Also stored as a Url.",
+              "example": "https://example.com"
+            }
+          ],
+          "example": [
+            {
+              "field": "Name",
+              "type": "input",
+              "value": "XRD/HUG"
+            },
+            {
+              "field": "Symbol",
+              "type": "input",
+              "value": "XRDHUG"
+            },
+            {
+              "field": "Icon URL",
+              "type": "input",
+              "value": "https://example.com/lp.png"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Metadata",
+              "definition": "Key/value entries of a ledger entity. The pool's and its unit's are written by the owner."
+            },
+            {
+              "term": "Owner",
+              "definition": "The pool's owner role. The engine copies it to the pool unit on creation."
+            },
+            {
+              "term": "Partial update",
+              "definition": "Only filled fields emit an instruction: changing the icon does not erase the name."
+            }
+          ]
+        }
+      },
+      "pool-manage": {
+        "title": "Manage pool",
+        "description": "Retire a pool in one transaction: empty its reserves, mark it as retired and freeze its profile.",
+        "guide": {
+          "guideTitle": "Guide: manage pool",
+          "guideDescription": "A native pool cannot be deleted from the ledger, but it can be taken out of use. This section puts the three steps to retire it in one transaction. Emptying takes the reserves out with the manager badge. Marking adds the retired tag to the pool and its unit, so wallets and explorers can tell. Freezing locks its profile and its owner role for good. A native pool's manager role cannot be changed or locked, so the manager badge can still contribute or move reserves.",
+          "guideSteps": [
+            "1. Account: the one holding the pool's badges.",
+            "2. Pool: pick it or paste its address.",
+            "3. Turn on the steps you want. Those you cannot take, or the pool already went through, show as locked with the reason.",
+            "4. To freeze, confirm you understand there is no way back.",
+            "5. Review, simulate and sign."
+          ],
+          "fields": [
+            {
+              "label": "Empty the reserves",
+              "description": "Takes everything in each reserve out with protected_withdraw and deposits it in your account. Needs the manager badge. It burns no units: anyone holding units is left with nothing to redeem.",
+              "example": "100 XRD and 2,000 HUG to your account"
+            },
+            {
+              "label": "Mark as retired",
+              "description": "Adds the retired tag to the tags metadata of the pool and of its unit, keeping the ones they have. Needs the owner badge.",
+              "example": "tags: defi, retired"
+            },
+            {
+              "label": "Freeze the profile",
+              "description": "Locks the profile keys (name, symbol, description, icon, website and tags) and the owner role of the pool and of its unit. Nobody can change them again, not even with the badge.",
+              "example": "LOCK_METADATA and LOCK_OWNER_ROLE"
+            },
+            {
+              "label": "Confirmation",
+              "description": "Freezing cannot be undone, so the send button waits until you confirm it explicitly.",
+              "example": "I understand it is irreversible"
+            }
+          ],
+          "example": [
+            {
+              "field": "Steps",
+              "type": "button-group",
+              "options": [
+                "Empty",
+                "Mark retired",
+                "Freeze"
+              ],
+              "selected": "Empty"
+            },
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "protected_withdraw",
+              "definition": "Takes resources out of the reserves without burning units. Authorised by the manager role."
+            },
+            {
+              "term": "LOCK_METADATA",
+              "definition": "Locks a metadata key for good, whether it has a value or not."
+            },
+            {
+              "term": "LOCK_OWNER_ROLE",
+              "definition": "Stops the owner rule from changing. On its own it does not freeze the metadata: the owner could still write it."
+            }
+          ]
+        }
+      },
+      "resource-holders": {
+        "title": "Holders",
+        "description": "Every holder of a token or collection, with concentration and CSV export.",
+        "guide": {
+          "guideTitle": "Guide: holders",
+          "guideDescription": "Reads every holder of a token or NFT collection, page by page from the Gateway, and shows how much each one holds and its share of the total. Useful to study how a token is distributed or to export it. To distribute among them, use Locker airdrop or Bulk send.",
+          "guideSteps": [
+            "1. Token: paste its address or pick it with the + button.",
+            "2. Press Show holders and wait until every page is read.",
+            "3. Review the summary and the table.",
+            "4. Export the CSV if you want to work with the list elsewhere."
+          ],
+          "fields": [
+            {
+              "label": "Token",
+              "description": "The resource_… address of the token or NFT collection. The + button offers the resources in your account.",
+              "example": "resource_rdx1…"
+            },
+            {
+              "label": "Summary",
+              "description": "Number of holders, total they hold and how much the largest holder and the top ten concentrate.",
+              "example": "2,340 holders · largest 12 %"
+            },
+            {
+              "label": "Share",
+              "description": "What each holder has divided by what all of them have. Includes pools, lockers and components, not only accounts.",
+              "example": "4.2 %"
+            },
+            {
+              "label": "Export CSV",
+              "description": "Downloads address and amount of every holder, not only the hundred the table shows.",
+              "example": "holders-xxxx.csv"
+            }
+          ],
+          "example": [
+            {
+              "field": "Token",
+              "type": "input",
+              "value": "resource_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Holder",
+              "definition": "Any entity with a balance of the token: accounts, pools, lockers, validators or components."
+            },
+            {
+              "term": "Concentration",
+              "definition": "How much of the total sits with the largest holders."
+            },
+            {
+              "term": "Gateway",
+              "definition": "Service that reads the Radix ledger and serves it over HTTP."
+            }
+          ]
+        }
+      },
+      "locker-info": {
+        "title": "Locker info",
+        "description": "Profile of one or several Account Lockers: whether they can take back what they keep, what they hold, their component and what is waiting for you.",
+        "guide": {
+          "guideTitle": "Guide: locker info",
+          "guideDescription": "A read-only view of one or several Account Lockers, useful to whoever receives an airdrop and to whoever sends it. For each locker it says who can load it and, above all, whether anyone can take what it keeps before you claim it; how much it holds now and for how many accounts; which package and blueprint its code comes from; and what is waiting for your account. Nothing is signed.",
+          "guideSteps": [
+            "1. Account: pick the account whose pending tokens you want to see. The shortcuts below open the other tools with this same account.",
+            "2. Lockers: paste an address (it is added as soon as it is complete) or pick several with the + button. Each one shows below as a tag and in its own card; remove it with the X.",
+            "3. Read the coloured note first: it says whether what is kept can be recovered before you claim it, and by whom.",
+            "4. Check who can do what, what it holds now, its activity and the component (address, package and blueprint).",
+            "5. If something is waiting for you, press Claim from Locker. If you hold its loading badge, Locker airdrop shows too."
+          ],
+          "fields": [
+            {
+              "label": "Locker",
+              "description": "The Account Locker address. It comes in the claim link shared by whoever runs the airdrop, and the + button lists the lockers your accounts have used.",
+              "example": "locker_rdx1…"
+            },
+            {
+              "label": "Recover tokens",
+              "description": "The rule that matters most to a recipient. With Nobody, what is kept for you only you can take out; with a badge or a contract, it can be taken back if you do not claim it.",
+              "example": "Nobody"
+            },
+            {
+              "label": "Load tokens",
+              "description": "Who can store tokens on behalf of other accounts: a badge held by whoever runs the airdrop, or a dApp's contract.",
+              "example": "A component (smart contract)"
+            },
+            {
+              "label": "What it holds",
+              "description": "What the locker keeps now in total, per token and per NFT collection, and its activity: how many accounts it stored for, how many deposits, claims and recoveries. It is worked out from its history.",
+              "example": "350 OTER · 1 account"
+            },
+            {
+              "label": "Component",
+              "description": "Its address, the package of its code and the blueprint. A native Radix package means the code is the engine's own, not a third party's.",
+              "example": "AccountLocker 1.0.0"
+            },
+            {
+              "label": "Waiting for you",
+              "description": "What the locker keeps right now for the chosen account. It is all claimed at once from Claim from Locker.",
+              "example": "250 XRD"
+            }
+          ],
+          "example": [
+            {
+              "field": "Locker",
+              "type": "input",
+              "value": "locker_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "A native component that keeps tokens on behalf of each account until it claims them. Used for airdrops to accounts that do not accept direct deposits."
+            },
+            {
+              "term": "Storer",
+              "definition": "The role that can store tokens in the locker on behalf of other accounts."
+            },
+            {
+              "term": "Recoverer",
+              "definition": "The role that can take back what is still kept for an account, for example after a deadline."
+            },
+            {
+              "term": "Native package",
+              "definition": "Code that ships with the Radix network itself. A native locker behaves the same everywhere."
+            },
+            {
+              "term": "Claim link",
+              "definition": "The page recipients open to see and claim what is theirs. Only each account can claim what is its own."
+            }
+          ]
+        }
+      },
+      "bulk-send": {
+        "title": "Bulk send",
+        "description": "Pay many accounts in batches, from a CSV or by splitting among the holders of a token. Whoever refuses the deposit does not block the rest: their share returns to your account.",
+        "guide": {
+          "guideTitle": "Guide: bulk send",
+          "guideDescription": "Pay many accounts from a list, in batches of transactions. Each recipient is paid with try_deposit_or_refund: if an account refuses the deposit, its share returns to your account and the rest of the batch goes ahead. For airdrops to people you do not know, Locker airdrop is usually better.",
+          "guideSteps": [
+            "1. Account: the one that pays.",
+            "2. Recipients: paste or upload a CSV, or split among the holders of a token.",
+            "3. Review the summary: recipients, totals and number of batches.",
+            "4. Simulate and sign each batch in order."
+          ],
+          "fields": [
+            {
+              "label": "CSV list",
+              "description": "One line per recipient: account, resource and amount. Comma, semicolon or tab work, and decimal commas too when you separate with semicolons.",
+              "example": "account_rdx1…;resource_rdx1…;2,5"
+            },
+            {
+              "label": "Default resource",
+              "description": "For lines that only carry account and amount. Saves repeating the same token address on every line.",
+              "example": "resource_rdx1…"
+            },
+            {
+              "label": "Holders of a token",
+              "description": "Loads the holders of a token, filters them and splits an amount equally or pro rata. The result goes to the list for you to review.",
+              "example": "1,000 XRD pro rata"
+            },
+            {
+              "label": "Batches",
+              "description": "Each batch is one transaction of up to 40 recipients, the safe maximum for the engine's event limit.",
+              "example": "3 batches of up to 40"
+            }
+          ],
+          "example": [
+            {
+              "field": "Recipients",
+              "type": "button-group",
+              "options": [
+                "CSV list",
+                "Holders of a token"
+              ],
+              "selected": "CSV list"
+            },
+            {
+              "field": "List",
+              "type": "textarea",
+              "value": "account_rdx1…,resource_rdx1…,25"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "try_deposit_or_refund",
+              "definition": "A deposit that, if the account refuses it, returns the resources instead of failing the transaction."
+            },
+            {
+              "term": "Deposit rules",
+              "definition": "Per-account setting that decides whether it accepts resources from third parties."
+            },
+            {
+              "term": "Batch",
+              "definition": "Group of recipients that goes in one transaction."
+            }
+          ]
+        }
+      },
+      "locker-airdrop": {
+        "title": "Locker airdrop",
+        "description": "Create an Account Locker and distribute in batches, from a CSV or among the holders of a token. Stored tokens wait to be claimed and you can recover what nobody claims.",
+        "guide": {
+          "guideTitle": "Guide: Account Locker airdrop",
+          "guideDescription": "Distribute tokens to many accounts through an Account Locker, Radix's native airdrop component. Whatever is not delivered directly waits in the locker under each recipient's name until they claim it, and with recovery enabled you can withdraw what nobody claims or what went to a wrong address.",
+          "guideSteps": [
+            "1. Account: the one that pays the airdrop and receives the locker badge.",
+            "2. Locker: create a new one (one transaction) or paste the address of one of yours.",
+            "3. Recipients: paste or upload a CSV, or split among the holders of a token and review the list.",
+            "4. Delivery: keep \"Store everything\" (the safest) or deliver directly to whoever accepts deposits.",
+            "5. Sign each batch and share the claim link with the recipients.",
+            "6. Recover: later, withdraw whatever someone did not claim."
+          ],
+          "fields": [
+            {
+              "label": "Create a locker",
+              "description": "Creates the component and sends you its badge, which is what allows storing and recovering. Do it once and reuse the locker.",
+              "example": "Create a locker"
+            },
+            {
+              "label": "Allow recovery",
+              "description": "When on, the badge can withdraw what is stored for any recipient. It protects you from mistakes; turning it off gives recipients stronger guarantees.",
+              "example": "Allow recovery"
+            },
+            {
+              "label": "Recipients",
+              "description": "One line per recipient: account, resource and amount, or account and amount using the default resource. For NFTs, account, resource and id.",
+              "example": "account_rdx1…,resource_rdx1…,25"
+            },
+            {
+              "label": "Store everything",
+              "description": "Everything stays in the locker until each recipient claims it. If an address was wrong, you can recover it.",
+              "example": "Store everything"
+            },
+            {
+              "label": "Deliver directly",
+              "description": "Whoever accepts deposits gets it in their account right away; only refused deposits are stored. A direct delivery cannot be undone.",
+              "example": "Deliver directly"
+            },
+            {
+              "label": "Claim link",
+              "description": "Opens the Claim from Locker page with this locker loaded. Each account can only claim its own, so it is safe to share.",
+              "example": "…/console/locker-claim?locker=locker_rdx1…"
+            }
+          ],
+          "example": [
+            {
+              "field": "Locker",
+              "type": "button-group",
+              "options": [
+                "Create a locker",
+                "Use one I have"
+              ],
+              "selected": "Create a locker"
+            },
+            {
+              "field": "Recipients",
+              "type": "textarea",
+              "value": "account_rdx1…,resource_rdx1…,25"
+            },
+            {
+              "field": "Delivery",
+              "type": "button-group",
+              "options": [
+                "Store everything",
+                "Deliver directly"
+              ],
+              "selected": "Store everything"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "Native component that keeps resources under specific accounts' names until those accounts claim them."
+            },
+            {
+              "term": "Locker badge",
+              "definition": "Resource that grants the storer and recoverer roles on the locker."
+            },
+            {
+              "term": "Batch",
+              "definition": "One transaction of the airdrop. Airdrops are split because each transaction allows a limited number of events."
+            },
+            {
+              "term": "Claim",
+              "definition": "Withdraw what is stored in the locker. Only the recipient account can do it."
+            }
+          ]
+        }
+      },
+      "locker-claim": {
+        "title": "Claim from Locker",
+        "description": "See what an Account Locker keeps for your account and claim it in one transaction.",
+        "guide": {
+          "guideTitle": "Guide: claim from locker",
+          "guideDescription": "The page airdrop recipients open. It shows what the locker keeps for your account and claims all of it in one transaction. Only your account can take what is yours, so the link is safe to share.",
+          "guideSteps": [
+            "1. Account: pick the one that received the airdrop.",
+            "2. Locker: it comes in the link; otherwise paste its address or find it with the + button.",
+            "3. Review what is waiting for you in the locker.",
+            "4. Press Claim everything and sign in the wallet."
+          ],
+          "fields": [
+            {
+              "label": "Account",
+              "description": "The account the airdrop was meant for. With another account the locker will show nothing pending.",
+              "example": "My main account"
+            },
+            {
+              "label": "Locker",
+              "description": "The airdrop's locker_… address. It must be on the same network you are connected to.",
+              "example": "locker_rdx1…"
+            },
+            {
+              "label": "Waiting for you",
+              "description": "Each resource stored for your account, with its amount or number of NFTs. If you already claimed it or it was recovered, it does not appear.",
+              "example": "25 HUG · 2 NFT"
+            },
+            {
+              "label": "Claim everything",
+              "description": "One transaction that withdraws everything pending and deposits it into your account. It only enables when there is something to claim.",
+              "example": "Claim everything"
+            }
+          ],
+          "example": [
+            {
+              "field": "Locker",
+              "type": "input",
+              "value": "locker_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Account Locker",
+              "definition": "Native component that keeps resources under specific accounts' names until they claim them."
+            },
+            {
+              "term": "claim",
+              "definition": "Locker method that hands an account what it keeps for it; it checks the owner signs."
+            },
+            {
+              "term": "Recover",
+              "definition": "The locker's creator can withdraw what is unclaimed if recovery was enabled at creation."
             }
           ]
         }
@@ -1947,22 +2840,29 @@
         },
         "create-pool": {
           "name": "Create pool",
-          "description": "Instantiate a native liquidity pool (one, two or multi-resource) from the network pool package.",
+          "description": "Instantiate a native pool (one, two or multi-resource) guarded by a manager badge. Leave the badge empty and a new one is minted in the same transaction and lands in your account: without it nobody can contribute or move the reserves.",
           "fields": {
             "poolType": "Pool type",
-            "resources": "Resource addresses (comma separated)"
+            "resources": "Resource addresses (comma separated)",
+            "account": "Account that receives the badge",
+            "managerBadge": "Existing manager badge (empty: mint a new one)"
           }
         },
         "contribute-pool": {
           "name": "Contribute to pool",
-          "description": "Deposit resources into a native pool and receive its pool units.",
+          "description": "Deposit resources into a native pool and receive its pool units. Contributing requires the pool's manager badge.",
           "fields": {
             "account": "Account",
             "pool": "Pool component address",
             "resource1": "Resource 1",
             "amount1": "Amount 1",
             "resource2": "Resource 2",
-            "amount2": "Amount 2"
+            "amount2": "Amount 2",
+            "poolType": "Pool type",
+            "managerBadge": "Manager badge (resource address)",
+            "managerBadgeId": "Badge ID (only if non-fungible)",
+            "resource3": "Resource 3",
+            "amount3": "Amount 3"
           }
         },
         "redeem-pool": {
@@ -3026,7 +3926,36 @@
         "nobody": "Nobody",
         "unreadable": "Unreadable rule",
         "recoveryInProgress": "A recovery proposal is in flight on this controller right now.",
-        "withdrawAttempt": "Someone is attempting to withdraw the owner badge out of this controller."
+        "withdrawAttempt": "Someone is attempting to withdraw the owner badge out of this controller.",
+        "factorsVerdict": {
+          "multi": {
+            "title": "Multi-factor signing: {need} of {total}",
+            "detail": "Moving this account takes {need} of its {total} factors together. If one alone is stolen or lost, nobody can use the account with it."
+          },
+          "single": {
+            "title": "One factor is enough to sign ({need} of {total})",
+            "detail": "Any of its {total} factors can move the account on its own. If a stolen phone should not be enough, edit the shield in the wallet so signing needs two factors, for example the phone and an Arculus card."
+          },
+          "anyone": {
+            "title": "Anyone can sign",
+            "detail": "The controller's primary role is AllowAll: anyone can act as the owner of this account. Move the funds to a safe account right away."
+          },
+          "nobody": {
+            "title": "Nobody can sign right now",
+            "detail": "The primary role is locked (DenyAll). The account can only be used through recovery."
+          },
+          "unknown": {
+            "title": "Could not read how many factors it needs",
+            "detail": "The primary role's rule has a shape the console cannot interpret. Check it in the wallet."
+          },
+          "recoveryMulti": "Recovering the account takes {need} of {total} factors.",
+          "recoverySingle": "Any one of its {total} factors is enough to recover the account.",
+          "recoveryOne": "A single factor is enough to recover the account.",
+          "singleOne": {
+            "title": "A single factor signs for this account",
+            "detail": "The shield guards the account with one factor for signing. If a stolen phone should not be enough, edit it in the wallet so signing needs two factors, for example the phone and an Arculus card."
+          }
+        }
       },
       "levelTitle": "Security level",
       "levelHint": "Where the account sits on a four-level scale, based on who controls it on ledger.",
@@ -3106,6 +4035,28 @@
           "title": "Keep your factors apart",
           "detail": "A shield is worth the distance between its factors: do not keep the card, the Ledger and the password in the same place, and check now and then that they still work."
         }
+      },
+      "multiSigner": {
+        "title": "What about a multi-signature account?",
+        "hint": "What can be done today with the Radix Wallet, and why this console does not create multi-signature accounts.",
+        "points": [
+          {
+            "title": "The wallet only signs with its own keys",
+            "detail": "For two people to approve the same transaction, someone has to gather their signatures and submit it. That needs a separate service coordinating the signers; it is not something a web page can set up without holding anything in custody."
+          },
+          {
+            "title": "Setting it up by hand can lock you out",
+            "detail": "Radix Wallet shields use the same mechanism (an Access Controller holding the owner badge). If a website configures one on its own, the wallet may no longer know how to sign for that account, and there is no way back."
+          },
+          {
+            "title": "What does work: a shield with several factors",
+            "detail": "Create a shield in the wallet that requires two factors to sign, for example this phone and an Arculus card. If another person keeps the card, no transaction goes out without both. You have to be together to sign, but control is truly shared."
+          },
+          {
+            "title": "For group treasuries",
+            "detail": "A DAO or team that votes every payment needs its own component (a multi-signature blueprint) or a governance tool. Review its code or audit before putting funds in."
+          }
+        ]
       }
     },
     "walletPlayground": {
@@ -3511,6 +4462,50 @@
           "paymentLabel": "XRD to withdraw for the creation fee",
           "paymentHint": "Not the price — the ledger takes the exact fee (about 100 USD worth of XRD) out of this and returns the rest to your account. Leave the default unless creation fails for want of funds."
         }
+      },
+      "info": {
+        "contextTitle": "Account and validator",
+        "validatorLabel": "Validator",
+        "yours": "You hold its owner badge",
+        "notAValidator": "That address is not a validator.",
+        "title": "Validator profile",
+        "unnamed": "Unnamed validator",
+        "registered": "Registered",
+        "unregistered": "Not registered",
+        "active": "In the active set",
+        "inactive": "Outside the active set",
+        "acceptsStake": "Accepts delegated stake",
+        "closedStake": "Does not accept delegated stake",
+        "online": "Online",
+        "offline": "Down",
+        "noteUnregistered": "It is not registered: it does not enter the active set and earns no rewards while that lasts.",
+        "noteClosed": "It does not accept new stake from other accounts; only its owner can add stake.",
+        "noteFeeUp": "Its fee goes up to {fee} % at the next epoch change. Keep it in mind before staking.",
+        "noteOffline": "The node is not validating right now: while it stays down it misses proposals and rewards.",
+        "figuresTitle": "Figures",
+        "stake": "Total stake",
+        "stakeShare": "{percent} % of the network · rank {rank}",
+        "fee": "Fee",
+        "feeChange": "Changes to {fee} % at the next epoch",
+        "apy": "Estimated yield (APY)",
+        "uptime": "Uptime (14 days)",
+        "uptimeSub": "{total} % since Babylon",
+        "ownerStake": "Operator stake",
+        "delegators": "Delegators",
+        "lsuValue": "Value of 1 LSU",
+        "positionTitle": "Your position",
+        "pickAccount": "Pick an account to see your stake with this validator.",
+        "yourLsu": "Your LSUs",
+        "worth": "≈ {amount} XRD",
+        "claimReady": "Ready to claim",
+        "claimWaiting": "Pending withdrawals",
+        "claimAt": "{amount} XRD at epoch {epoch}",
+        "noPosition": "The chosen account has no stake with this validator.",
+        "youOwn": "This account holds the owner badge of this validator.",
+        "goDashboard": "See full profile",
+        "noteFeeAll": "Its fee is 100 %: it keeps every reward and whoever stakes here earns nothing.",
+        "remove": "Remove this validator",
+        "topStakersTitle": "Largest stakers ({count})"
       }
     },
     "toolGuide": {
@@ -3519,6 +4514,444 @@
       "example": "Worked example",
       "glossary": "Glossary",
       "exampleTag": "e.g."
+    },
+    "pool": {
+      "contextTitle": "Account and pool",
+      "accountLabel": "Account",
+      "poolLabel": "Pool",
+      "poolPlaceholder": "pool_rdx1…",
+      "unitsHeld": "You hold {amount} units",
+      "noneDetected": "This account holds no pool units. Paste the pool address or search it with the + button.",
+      "notAPool": "That address is not a native Radix pool.",
+      "pickAccountFirst": "Pick the signing account first.",
+      "pickPoolFirst": "Pick or paste the pool you want to act on.",
+      "drainableWarning": "This pool's manager role is open to everyone (AllowAll): any account can withdraw its reserves with protected_withdraw. If you have liquidity in it, redeem your units now and create a new pool guarded by a badge.",
+      "kindLabel": "Type",
+      "kinds": {
+        "one": "One resource",
+        "two": "Two resources",
+        "multi": "Multiple resources"
+      },
+      "reservesLabel": "Reserves",
+      "poolUnitLabel": "Pool unit",
+      "supply": "{amount} in circulation",
+      "yourUnitsLabel": "Your units",
+      "managerLabel": "Manager",
+      "ownerLabel": "Owner",
+      "ownerFixed": "Fixed: cannot be changed",
+      "rule": {
+        "allowAll": "Anyone (AllowAll)",
+        "denyAll": "Nobody",
+        "badge": "Badge {badge}",
+        "nonFungible": "NFT {id}",
+        "other": "Composite rule (another component or several badges)",
+        "component": "A component (smart contract)",
+        "componentHint": "Only that component can do it, not a person with a badge. This is normal for DEX pools.",
+        "package": "Code from a package",
+        "packageHint": "Only components of that package can do it."
+      },
+      "youHold": "You hold it",
+      "youDontHold": "You do not hold it",
+      "balance": "Balance: {amount}",
+      "max": "Max",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "forms": {
+        "create": {
+          "title": "New pool",
+          "hint": "The pool is guarded by a badge from the very first instant: without it nobody can contribute or move the reserves. The owner (metadata of the pool and its pool unit) is the same badge.",
+          "kindLabel": "Pool type",
+          "kindHints": {
+            "one": "A single resource",
+            "two": "A pair, like a DEX pair",
+            "multi": "Three or more resources"
+          },
+          "resourcesLabel": "Pool resources",
+          "resourceN": "Resource {n}",
+          "addResource": "Add resource",
+          "removeResource": "Remove resource",
+          "managerLabel": "Manager badge",
+          "managerHint": "Whoever holds this badge can contribute liquidity and move reserves in or out at will. Keep it as safe as the reserves themselves.",
+          "managerNew": "Mint a new one",
+          "managerNewHint": "Supply 1, sent to this account",
+          "managerExisting": "Use one I already hold",
+          "managerExistingHint": "One already in your account",
+          "badgeNameLabel": "Badge name",
+          "badgeNameDefault": "Pool manager",
+          "badgeResourceLabel": "Badge resource",
+          "countError": "A one-resource pool takes exactly one resource, a two-resource pool exactly two, and a multi-resource pool at least two.",
+          "duplicateError": "A resource is repeated.",
+          "resourceError": "Each resource must be a resource_… address.",
+          "badgeError": "Enter the badge resource.",
+          "badgeNameError": "Give the badge a name.",
+          "created": "Pool created",
+          "badgeSearch": "Search badge…",
+          "sendButton": "Create pool",
+          "profileSection": "Pool profile",
+          "profileHint": "Optional: written in the same transaction that creates the pool. The pool unit's name and symbol come afterwards, from Pool profile: its address does not exist until the pool is created.",
+          "badgeSymbolLabel": "Badge symbol",
+          "badgeDescriptionLabel": "Badge description",
+          "badgeIconLabel": "Badge icon URL",
+          "exampleButton": "Fill in sample data",
+          "unitNext": "Name the pool unit",
+          "example": {
+            "poolName": "Test pool {n}",
+            "poolDescription": "Sample pool created from the Radix Console.",
+            "badgeName": "Test pool {n} manager",
+            "badgeDescription": "Manager and owner badge of the test pool."
+          }
+        },
+        "contribute": {
+          "title": "Add liquidity",
+          "hint": "Deposit the pool's resources and receive pool units. Contributing requires the manager badge.",
+          "amountLabel": "Amount",
+          "ratioNote": "The pool takes the amounts in the ratio it already has and gives back what does not fit, together with the units. On an empty pool, your first contribution sets that ratio.",
+          "amountError": "Invalid amount.",
+          "balanceError": "You don't hold that much.",
+          "needsManager": "This account does not hold the pool's manager badge.",
+          "sendButton": "Add liquidity"
+        },
+        "reserves": {
+          "title": "Adjust reserves",
+          "hint": "Put resources into or take them out of the reserves without minting or burning pool units. Requires the manager badge.",
+          "deposit": "Deposit to reserves",
+          "depositHint": "Each unit becomes worth more",
+          "withdraw": "Withdraw from reserves",
+          "withdrawHint": "Each unit becomes worth less",
+          "amountLabel": "Amount",
+          "reserveBalance": "In reserves: {amount}",
+          "amountError": "Invalid amount.",
+          "balanceError": "You don't hold that much.",
+          "reserveError": "The pool does not hold that much.",
+          "needsManager": "This account does not hold the pool's manager badge.",
+          "remainingLabel": "Left: {amount}"
+        },
+        "redeem": {
+          "title": "Redeem units",
+          "hint": "Burn pool units and receive your share of every reserve. It is public: no badge needed.",
+          "amountLabel": "Units to redeem",
+          "estimateLabel": "You will receive about",
+          "estimateNote": "Computed from the current reserves. Simulate the transaction for the exact figure.",
+          "amountError": "Invalid amount.",
+          "balanceError": "You don't hold that many units.",
+          "noUnits": "This account holds no units of this pool.",
+          "sendButton": "Redeem units",
+          "totalLabel": "Total",
+          "redeemingLabel": "Redeeming",
+          "remainingLabel": "You keep"
+        },
+        "profile": {
+          "title": "Pool profile",
+          "hint": "Name, description and icon of the pool and of its pool unit, which is what wallets show to whoever holds it. The fields show what it already has; only what you change is written.",
+          "poolSection": "Pool",
+          "unitSection": "Pool unit",
+          "fields": {
+            "name": {
+              "label": "Name",
+              "hint": "What wallets and explorers show.",
+              "placeholder": "XRD/HUG"
+            },
+            "symbol": {
+              "label": "Symbol",
+              "hint": "Short ticker for the pool unit.",
+              "placeholder": "XRDHUG-LP"
+            },
+            "description": {
+              "label": "Description",
+              "hint": "A short paragraph.",
+              "placeholder": "XRD/HUG liquidity pool"
+            },
+            "iconUrl": {
+              "label": "Icon URL",
+              "hint": "Full address of a square image.",
+              "placeholder": "https://…/icon.png"
+            },
+            "infoUrl": {
+              "label": "Website",
+              "hint": "Page with more information.",
+              "placeholder": "https://…"
+            }
+          },
+          "needsOwner": "This account does not hold the pool's owner badge.",
+          "urlError": "URLs must start with https:// or http://.",
+          "sendButton": "Save profile"
+        },
+        "manage": {
+          "title": "Retire the pool",
+          "hint": "Turn on the steps you want: they all go in one transaction. The pool is emptied first, then tagged, then frozen.",
+          "empty": {
+            "title": "Empty the reserves",
+            "description": "Takes everything in the pool out to your account.",
+            "othersWarning": "Other accounts hold {units} units of this pool. Once it is empty they cannot redeem them for anything."
+          },
+          "retire": {
+            "title": "Mark as retired",
+            "description": "Adds the retired tag to the pool and its unit.",
+            "note": "The tags they already have are kept. Wallets and explorers can show the tag to warn that the pool is no longer in use."
+          },
+          "lock": {
+            "title": "Freeze the profile",
+            "description": "Locks the profile and the owner of the pool and of its unit for good.",
+            "warning": "There is no way back: nobody can change the name, icon, description or tags again, not even with the badge. The manager badge can still contribute and move reserves, because the engine does not let that role be locked.",
+            "confirm": "I understand that freezing the profile is irreversible."
+          },
+          "needsManager": "This account does not hold the pool's manager badge.",
+          "needsOwner": "This account does not hold the pool's owner badge.",
+          "alreadyEmpty": "The pool is already empty.",
+          "alreadyRetired": "The pool is already marked as retired.",
+          "alreadyFrozen": "This pool's owner is already locked.",
+          "nothingAvailable": "This account cannot take any step on this pool: it lacks the pool's badges or the pool is already retired.",
+          "nothingChosen": "Turn on at least one step.",
+          "loadingTags": "Loading the pool unit's tags…",
+          "confirmNeeded": "Confirm you understand that freezing is irreversible.",
+          "sendButton": "Retire pool"
+        }
+      },
+      "info": {
+        "title": "Pool overview",
+        "unnamed": "Unnamed pool",
+        "unit": "unit",
+        "safetyDrainable": "Anyone can drain this pool: its manager role is AllowAll. If you hold units, redeem them now.",
+        "safetyBadge": "Only the holder of the manager badge can contribute and move reserves.",
+        "safetyOther": "The manager role is not a plain badge; check the rule above.",
+        "ownerUpdatable": "The owner can change the metadata and its own rules.",
+        "ownerFixed": "The owner rule is fixed.",
+        "unitValueTitle": "Value of one unit",
+        "emptyPool": "The pool has no units in circulation yet.",
+        "positionTitle": "Your position",
+        "yourUnits": "Your units",
+        "yourShare": "Your share of the pool",
+        "yourValue": "What redeeming would give you",
+        "noPosition": "The selected account holds no units of this pool.",
+        "goContribute": "Contribute liquidity",
+        "goRedeem": "Redeem units",
+        "goReserves": "Adjust reserves",
+        "goProfile": "Edit profile",
+        "safetyContract": "A smart contract manages it (a DEX, for example): nobody can move its reserves on their own.",
+        "remove": "Remove this pool",
+        "pickAccount": "Pick an account to see your position in this pool.",
+        "goManage": "Manage",
+        "retired": "Retired",
+        "participantsTitle": "Participants ({count})",
+        "participantsAll": "See them all in the explorer",
+        "putIn": "Put in",
+        "takenOut": "Taken out",
+        "result": "Result"
+      },
+      "ownerUpdatable": "Can be changed",
+      "badgesTitle": "Pool badges",
+      "managerRole": "Manager",
+      "ownerRole": "Owner"
+    },
+    "holders": {
+      "resourceTitle": "Token",
+      "resourceHint": "Paste the token or NFT collection address. Every holder on the network is read, page by page.",
+      "load": "Show holders",
+      "loading": "Reading holders: {loaded} of {total}…",
+      "error": "Could not read the holders: {message}",
+      "summaryTitle": "Holders of {resource}",
+      "exportCsv": "Export CSV",
+      "truncated": "Read the {loaded} largest holders out of {total}. The rest hold smaller amounts.",
+      "statHolders": "Holders",
+      "statTotal": "Total held",
+      "statTop1": "Largest holder",
+      "statTop10": "Top 10",
+      "filtersTitle": "Filters",
+      "kinds": {
+        "account": "Accounts",
+        "pool": "Pools",
+        "locker": "Lockers",
+        "component": "Components",
+        "validator": "Validators",
+        "other": "Other"
+      },
+      "minAmount": "Minimum amount",
+      "exclude": "Exclude addresses",
+      "excludeHint": "One per line or comma separated: your treasury, an exchange, your own account…",
+      "colHolder": "Holder",
+      "colAmount": "Amount",
+      "colShare": "Share",
+      "showing": "Showing the first {shown} of {total}. The CSV includes them all.",
+      "sendResource": "Token to distribute",
+      "pot": "Total amount to distribute {symbol}",
+      "potError": "Invalid amount.",
+      "modeProportional": "Pro rata",
+      "modeProportionalHint": "By what each one holds",
+      "modeEqual": "Equal shares",
+      "modeEqualHint": "Everyone gets the same",
+      "distributionSummary": "{count} recipients. The first one gets {first}. Amounts are truncated to {decimals} decimals so the total is never exceeded.",
+      "downloadDistribution": "Download CSV",
+      "sourceCsv": "CSV list",
+      "sourceCsvHint": "Paste or upload your list",
+      "sourceHolders": "Holders of a token",
+      "sourceHoldersHint": "Split among those who hold it",
+      "holdersOf": "Token whose holders will receive",
+      "holdersMatching": "{count} of {total} holders pass the filters.",
+      "useDistribution": "Use this distribution",
+      "colReceives": "Receives"
+    },
+    "bulkSend": {
+      "listTitle": "Recipients",
+      "listHint": "One line per recipient. Paid in batches of transactions, and anyone refusing the deposit does not block the rest: their share returns to your account.",
+      "file": "CSV file",
+      "filePrompt": "Drop a CSV or click to choose it",
+      "csvLabel": "Recipients",
+      "csvHint": "account,resource,amount · account,resource,#id# for NFTs · account,amount using the default resource. Comma, semicolon or tab.",
+      "csvPlaceholder": "account_rdx1…,resource_rdx1…,10\naccount_rdx1…,resource_rdx1…,#1#",
+      "defaultResource": "Default resource",
+      "defaultResourceHint": "The token that lines with just an account and an amount receive. Three-column lines name their own resource.",
+      "reviewTitle": "Review",
+      "recipients": "{count} recipients",
+      "total": "{amount} {resource}",
+      "nfts": "{count} NFTs",
+      "batchesInfo": "{batches} transactions of up to {size} recipients",
+      "moreIssues": "…and {count} more problems.",
+      "pickAccount": "Pick the paying account.",
+      "refundNote": "Each batch is one transaction you sign in the wallet. If an account refuses the deposit, its share returns to yours in that same transaction.",
+      "issues": {
+        "columns": "Row {row}: columns are missing. Each row has an account, a resource (or the default one) and an amount.",
+        "account": "Row {row}: the account address is not valid.",
+        "network": "Row {row}: the account is on another network.",
+        "resource": "Row {row}: the resource address is not valid.",
+        "resourceNetwork": "Row {row}: the resource is on another network.",
+        "noResource": "Row {row}: the resource is missing. Put it in the row or pick a default resource.",
+        "amount": "Row {row}: write an amount of {resource} above zero.",
+        "nftAmount": "Row {row}: {resource} is an NFT: write its id, for example #1#.",
+        "fungibleId": "Row {row}: {resource} is a token, not an NFT: write an amount instead of {detail}.",
+        "nftId": "Row {row}: the NFT id is not valid.",
+        "duplicateNft": "Row {row}: the NFT {detail} of {resource} is repeated.",
+        "nftNotHeld": "Row {row}: you do not hold the NFT {detail} of {resource}.",
+        "balance": "Row {row}: you do not hold enough {resource} for the whole list ({detail} needed).",
+        "locked": "Row {row}: {resource} cannot be transferred: its withdrawer rule is DenyAll, so it never leaves the account."
+      },
+      "sendButton": "Send to the recipients",
+      "batchesInfoOne": "1 transaction of up to {size} recipients",
+      "textMode": "Edit as text",
+      "fieldsMode": "Edit with fields",
+      "rowsHint": "One row per recipient. Leave the resource empty to use the default one; for an NFT, put its #id# as the amount. Uploading a CSV fills the rows."
+    },
+    "batches": {
+      "progress": "{sent} of {total} batches sent",
+      "batch": "Batch {n} · {count} recipients",
+      "simulate": "Simulate",
+      "send": "Send to wallet",
+      "sent": "Sent",
+      "failed": "Not completed",
+      "lastError": "Last error: {error}",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "noRecipients": "Add recipients to the list to prepare the batches.",
+      "fixIssues": "Fix the errors in the list to continue.",
+      "pickAccount": "Pick the sending account.",
+      "needsLocker": "Create a locker or pick one you already have."
+    },
+    "locker": {
+      "lockerTitle": "Locker",
+      "lockerHint": "An Account Locker keeps tokens in each recipient's name until they claim them. Only its badge holder can load it.",
+      "modeNew": "Create a locker",
+      "modeNewHint": "Its badge comes to this account",
+      "modeExisting": "Use one I have",
+      "modeExistingHint": "Paste its locker_… address",
+      "recoverOn": "Allow recovery",
+      "recoverOnHint": "You can withdraw what is unclaimed",
+      "recoverOff": "No recovery",
+      "recoverOffHint": "Only the recipient can take it",
+      "createButton": "Create locker",
+      "created": "Locker created",
+      "notALocker": "That address is not an Account Locker.",
+      "storerLabel": "Load the locker",
+      "recovererLabel": "Recover",
+      "ruleAnyone": "anyone",
+      "ruleNobody": "nobody",
+      "youHold": "you hold the badge",
+      "youDontHold": "you don't hold the badge",
+      "claimLink": "Claim link:",
+      "claimLinkHint": "Share it with the recipients: opening it with their wallet shows what is waiting and claims it in one transaction. Only each account can claim its own.",
+      "airdropTitle": "Airdrop",
+      "airdropHint": "Sent in batches; each resource goes in its own transactions.",
+      "directOn": "Deliver directly",
+      "directOnHint": "Stored only if deposits are refused",
+      "directOff": "Store everything",
+      "directOffHint": "Everyone claims; recoverable",
+      "needsStorer": "This account does not hold the locker badge.",
+      "recoverTitle": "Recover",
+      "recoverHint": "Withdraw what is still stored for an account, for instance after a claim deadline.",
+      "needsRecoverer": "This account does not hold the recovery badge.",
+      "claimantLabel": "Recipient account",
+      "nothingStored": "Nothing is stored for that account.",
+      "recoverAmount": "Amount to recover",
+      "recoverButton": "Recover",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "info": {
+        "contextTitle": "Account and locker",
+        "lockerLabel": "Locker",
+        "title": "Locker profile",
+        "unnamed": "Unnamed locker",
+        "recoverNobody": "Nobody can recover what it keeps: whatever is left here for you only you can take out.",
+        "recoverBadge": "Whoever holds the recovery badge can take back what you do not claim. If something was left for you, claim it soon.",
+        "recoverAnyone": "Anyone can take what this locker keeps. Leave nothing in it and claim yours as soon as possible.",
+        "recoverOther": "The recovery rule is not a plain badge; check below who can recover.",
+        "storeAnyone": "Anyone can load it: what you see in it does not prove who sent it.",
+        "rolesTitle": "Who can do what",
+        "storerLabel": "Load tokens",
+        "recovererLabel": "Recover tokens",
+        "ownerLabel": "Owner",
+        "ownerUpdatable": "The owner can change these rules and the metadata.",
+        "ownerFixed": "The owner rule is fixed.",
+        "pickAccount": "Pick an account to see what is waiting for it in this locker.",
+        "claimLinkTitle": "Claim link",
+        "componentHint": "Only that component can do it, not a person holding a badge. It is the usual setup when a dApp distributes through its own contract.",
+        "packageHint": "Only components of that package can do it.",
+        "remove": "Remove this locker",
+        "contentTitle": "What it holds",
+        "acceptsLabel": "Accepts",
+        "acceptsAny": "Any token or NFT: an Account Locker does not restrict resources. Who can load it is set by the rule above.",
+        "heldLabel": "Held now",
+        "nothingHeld": "It holds nothing right now.",
+        "activityLabel": "Activity",
+        "activity": "Stored tokens for {claimants} {accounts} · {stores} deposits · {claims} claimed · {recoveries} recovered",
+        "truncated": "It has more than {count} transactions: its whole history is not added up, so totals and full activity are not shown.",
+        "componentTitle": "Component",
+        "componentLabel": "Address",
+        "packageLabel": "Package",
+        "nativePackage": "Native Radix package: the locker's code is the engine's own, not a third party's.",
+        "blueprintLabel": "Blueprint",
+        "recoverContract": "A contract (the component that runs this locker) can take back what you do not claim, by its own rules. If something was left for you, claim it soon.",
+        "accountOne": "account",
+        "accountMany": "accounts",
+        "badgeTitle": "Locker badge",
+        "recipientsTitle": "Recipients ({count})",
+        "thisAccount": "This account",
+        "allClaimed": "All claimed",
+        "recipientsMore": "And {count} more recipients."
+      },
+      "needsClaimant": "Enter the recipient account whose tokens you want to recover.",
+      "needsAmount": "Enter a valid amount, at most what is stored.",
+      "createAndSend": "Create locker and airdrop",
+      "restAfterCreate": "This transaction creates the locker and sends the first batch. The remaining {count} batches are prepared as soon as the locker exists.",
+      "createEmpty": "Create empty locker",
+      "createEmptyHint": "Creates the locker without sending anything: to share its link or name it before the airdrop.",
+      "airdropButton": "Send the airdrop",
+      "allSent": "Airdrop complete: every recipient on the list got their share with the locker's creation."
+    },
+    "lockerClaim": {
+      "accountTitle": "Your account",
+      "lockerTitle": "Lockers",
+      "lockerHint": "Pick one or several lockers: everything they keep for your account is claimed in one transaction.",
+      "waitingTitle": "Waiting for you",
+      "nothing": "Nothing is waiting for this account in this locker.",
+      "claimAll": "Claim everything",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "pickAccount": "Pick the account that received the airdrop.",
+      "error": "Could not read what is waiting for you: {message}"
+    },
+    "badges": {
+      "unnamed": "Unnamed badge",
+      "grants": "Grants",
+      "issuedLabel": "Issued",
+      "yourAccount": "Your account"
     }
   }
 }

@@ -30,6 +30,8 @@ export interface FeaturedCardProps {
   ctaLabel: string;
   /** Optional badge rendered absolutely at top-right (e.g. "Tournament") */
   topBadge?: ReactNode;
+  /** Pointer resting on the card: a chance to warm up what the click opens. */
+  onMouseEnter?: () => void;
 }
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
@@ -45,11 +47,13 @@ export function FeaturedCard({
   description,
   ctaLabel,
   topBadge,
+  onMouseEnter,
 }: FeaturedCardProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
       className="group relative flex flex-col items-start p-8 text-left rounded-3xl border overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       style={{
         borderColor: 'var(--color-card-border)',

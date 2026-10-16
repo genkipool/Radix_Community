@@ -69,7 +69,7 @@ export default function SendTransactionTool({ t }: ConsoleToolProps) {
       {showManifest && (
         <SidePanel
           title={labels.manifestTitle}
-          action={manifest ? <CopyButton value={manifest} size="xs" variant="ghost" label={t.common.copy} /> : undefined}
+          action={manifest ? <CopyButton value={manifest} size="xs" variant="ghost" title={t.common.copy} /> : undefined}
         >
           {manifest ? (
             <ManifestCode code={manifest} />

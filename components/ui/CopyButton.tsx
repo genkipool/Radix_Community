@@ -7,6 +7,8 @@ import { useLanguage } from '@/context/LanguageContext';
 interface CopyButtonProps {
     value: string;
     label?: string;
+    /** Tooltip and accessible name for an icon-only button. */
+    title?: string;
     variant?: 'ghost' | 'solid' | 'minimal' | 'card-inline';
     size?: 'xs' | 'sm' | 'md';
     className?: string;
@@ -17,6 +19,7 @@ interface CopyButtonProps {
 export function CopyButton({
     value,
     label,
+    title,
     variant = 'solid',
     size = 'sm',
     className = '',
@@ -83,7 +86,8 @@ export function CopyButton({
             type="button"
             onClick={handleCopy}
             className={`relative inline-flex items-center justify-center gap-1.5 rounded-lg border font-bold transition-all duration-300 isolate ${padding} ${fontSize} ${currentStyle} ${className}`}
-            aria-label={label ?? 'Copy'}
+            aria-label={label ?? title ?? 'Copy'}
+            title={label ? undefined : title}
         >
             <div className="flex items-center gap-1.5">
                 {isCopied ? <Check size={iconSize} /> : <Copy size={iconSize} />}

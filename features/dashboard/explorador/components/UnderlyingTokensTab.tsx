@@ -1,5 +1,4 @@
 'use client';
-import { ResourceInlinePanel } from './ResourceInlinePanel';
 
 
 /**
@@ -14,16 +13,21 @@ import { ResourceInlinePanel } from './ResourceInlinePanel';
  *    resolve the actual pool address from metadata/state/fields, then fetch
  *    the pool for reserves.
  */
-import React, { useState } from 'react';
+import Link from 'next/link';
+import { dashboardRoutes } from '@/features/dashboard/lib/routes';
+import { useResourceLabels } from '@/features/console/hooks/useResourceLabels';
+import { parsePoolState } from '@/features/console/lib/pool-lookup';
+import { usePoolContributions } from '@/features/console/hooks/usePoolContributions';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Check, Copy, Info, Loader2, BarChart3 } from 'lucide-react';
-import { m, AnimatePresence } from "motion/react";
-import { SafeImage } from '@/components/ui/SafeImage';
+import { Loader2 } from 'lucide-react';
 import { truncateAddress } from '@/utils/formatters';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
-import { getMetaValue } from '../utils/metadataUtils';
-import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
+import type { TranslationsT, GatewayEntityDetails } from '@/features/dashboard/types';
+import { SummaryInlineRow } from './EntityPanelShared';
+import { HeldResourcesList } from './HeldResourcesList';
+import { CopyButton } from './SummaryCardKit';
 import type { ResourceInlinePanelProps } from '../types/components.types';
 
 /* ─── Types ─── */
@@ -36,6 +40,8 @@ interface PoolReserve {
 interface UnderlyingTokensTabProps {
     poolAddress: string;
     lpResourceAddress: string;
+    /** The account holding the units: its contributions and a redeem link are shown. */
+    holder?: string;
     lpName: string;
     userBalance: number;
     lpTotalSupply: number;
@@ -50,17 +56,19 @@ interface UnderlyingTokensTabProps {
 /* ─── Helpers ─── */
 
 /**
- * Extracts pool reserves from the pool entity response.
- * The Gateway returns fungible_resources.items on the pool entity,
- * each with resource_address and amount at the Global aggregation level.
+ * The pool's reserves. A native pool is read by the same parser as the pool
+ * card and the console (it copes with both Gateway aggregation levels); any
+ * other entity falls back to its fungible vaults, summed per resource.
  */
 function extractPoolReserves(poolData: GatewayEntityDetails): PoolReserve[] {
-    const fungibles = poolData?.fungible_resources?.items ?? [];
+    const pool = parsePoolState(poolData);
+    if (pool) return pool.resources.map((resource) => ({ resource_address: resource, amount: pool.reserves[resource] ?? '0' }));
 
-    return fungibles.map((ft) => ({
-        resource_address: ft.resource_address,
-        amount: ft.amount ?? '0',
-    }));
+    return (poolData?.fungible_resources?.items ?? []).map((ft) => {
+        const vaults = (ft as { vaults?: { items?: { amount?: string }[] } }).vaults?.items ?? [];
+        const amount = ft.amount ?? String(vaults.reduce((sum, vault) => sum + Number(vault.amount ?? 0), 0));
+        return { resource_address: ft.resource_address, amount };
+    });
 }
 
 /**
@@ -147,6 +155,7 @@ function fmtAmount(value: number, locale: string, maxDecimals = 18): string {
 export function UnderlyingTokensTab({
     poolAddress,
     lpResourceAddress: _lpResourceAddress,
+    holder,
     lpName,
     userBalance,
     lpTotalSupply,
@@ -185,6 +194,10 @@ export function UnderlyingTokensTab({
         enabled: !!resolvedPoolAddress,
     });
 
+    const poolState = poolData ? parsePoolState(poolData) : null;
+    const { data: contributions } = usePoolContributions(holder ? poolState : null, network);
+    const names = useResourceLabels(poolState?.resources ?? [], network);
+
     const isLoading = intermediateLoading || poolLoading;
 
     if (isLoading) {
@@ -204,334 +217,89 @@ export function UnderlyingTokensTab({
         );
     }
 
-    // Extract reserves from the pool entity
     const reserves = extractPoolReserves(poolData as GatewayEntityDetails);
-
-    // Calculate user share percentage
-    const sharePercent = lpTotalSupply > 0 ? (userBalance / lpTotalSupply) * 100 : 0;
+    // What this account has put in and taken out, from the pool's history.
+    const flows = holder ? contributions?.byAccount[holder] : undefined;
+    const flowLine = (side: 'putIn' | 'takenOut') =>
+        contributions
+            ? reserves
+                  .map((r) => `${fmtAmount(Number(flows?.[side][r.resource_address] ?? 0), locale, 6)} ${names[r.resource_address] ?? '?'}`)
+                  .join(' · ')
+            : '…';
+    const share = lpTotalSupply > 0 ? userBalance / lpTotalSupply : 0;
+    const poolName = (poolData as GatewayEntityDetails).metadata?.items?.find((m) => m.key === 'name')?.value?.typed?.value;
+    const copyTitle = tt?.copy_address || 'Copy address';
 
     return (
-        <div className="space-y-5">
-            {/* ── Position Summary Table ── */}
-            <PositionSummaryTable
-                lpName={lpName}
-                userBalance={userBalance}
-                lpTotalSupply={lpTotalSupply}
-                sharePercent={sharePercent}
-                reserves={reserves}
-                accT={accT}
-                network={network}
-                locale={locale}
-                poolAddress={resolvedPoolAddress}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-            />
-
-            {/* ── Underlying token expandable cards ── */}
-            <div className="flex flex-col gap-2">
-                {reserves.map((reserve) => {
-                    const poolReserve = parseFloat(reserve.amount) || 0;
-                    const contributed = lpTotalSupply > 0 ? (userBalance / lpTotalSupply) * poolReserve : 0;
-
-                    return (
-                        <UnderlyingTokenCard
-                            key={reserve.resource_address}
-                            address={reserve.resource_address}
-                            contributed={contributed}
-                            onCopy={onCopy}
-                            copiedAddress={copiedAddress}
-                            tt={tt}
-                            network={network}
-                            locale={locale}
-                        />
-                    );
-                })}
-            </div>
-
-            {reserves.length === 0 && (
-                <p className="text-xs text-[var(--color-text-muted)] italic text-center py-4">
-                    No reserves found for this pool.
-                </p>
-            )}
-        </div>
-    );
-}
-
-/* ─── Position Summary Table ─── */
-
-interface PositionSummaryTableProps {
-    lpName: string;
-    userBalance: number;
-    lpTotalSupply: number;
-    sharePercent: number;
-    reserves: PoolReserve[];
-    accT: TranslationsT['dashboard']['transactions']['account_summary'] | undefined;
-    network: 'mainnet' | 'stokenet';
-    locale: string;
-    poolAddress?: string;
-    onCopy: (text: string) => void;
-    copiedAddress: string | null;
-}
-
-function PositionSummaryTable({
-    lpName,
-    userBalance,
-    lpTotalSupply,
-    sharePercent,
-    reserves,
-    accT,
-    network,
-    locale,
-    poolAddress,
-    onCopy,
-    copiedAddress,
-}: PositionSummaryTableProps) {
-    return (
-        <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] overflow-hidden">
-            {/* Title */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-card-border)] bg-[var(--color-primary)]/5">
-                <BarChart3 className="size-4 text-[var(--color-primary)] shrink-0" />
-                <h4 className="text-xs font-bold text-[var(--color-text-main)] truncate">
-                    {accT?.contributed_tokens_share || 'Your position in'} <span className="text-[var(--color-primary)]">{lpName}</span>
+        // Your position on the left, what it is worth on the right, both
+        // columns the same height.
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-x-10 gap-y-4">
+            <div className="flex h-full flex-col gap-1">
+                <h4 className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
+                    {accT?.contributed_tokens_position || 'Your position'}
                 </h4>
-            </div>
-
-            {/* Table Headers */}
-            <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-card-border)]/20 border-b border-[var(--color-card-border)]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                    {accT?.contributed_tokens_concept || 'Concepto'}
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] text-right">
-                    {accT?.contributed_tokens_value || 'Valor'}
-                </span>
-            </div>
-
-            {/* Table */}
-            <div className="divide-y divide-[var(--color-card-border)]">
-                {/* Pool Address */}
-                {poolAddress && (
-                    <SummaryRow
-                        label={accT?.pool_address || 'Pool Address'}
-                        value={
-                            <div className="flex items-center gap-2 justify-end w-full max-w-[280px] sm:max-w-md select-all break-all text-right ml-auto">
-                                <span className="font-mono text-[11px] leading-relaxed select-all">{poolAddress}</span>
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); onCopy(poolAddress); }}
-                                    className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === poolAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                >
-                                    {copiedAddress === poolAddress ? <Check className="size-3 text-[var(--color-accent)]" /> : <Copy className="size-3" />}
-                                </button>
-                            </div>
-                        }
-                    />
-                )}
-
-                {/* LP units owned */}
-                <SummaryRow
-                    label={accT?.contributed_tokens_lp_units || 'LP units you own'}
-                    value={fmtAmount(userBalance, locale)}
-                />
-
-                {/* Total supply LP */}
-                <SummaryRow
-                    label={accT?.contributed_tokens_total_supply || 'Total supply LP'}
-                    value={fmtAmount(lpTotalSupply, locale)}
-                />
-
-                {/* Participation percentage */}
-                <SummaryRow
-                    label={accT?.contributed_tokens_pool_share || 'Share'}
-                    value={
-                        <span className="font-black text-[var(--color-primary)]">
-                            {sharePercent < 0.000001 ? '<0.000001' : fmtAmount(sharePercent, locale)}%
+                <dl className="flex flex-1 flex-col [&>div]:flex-1">
+                    <SummaryInlineRow label={accT?.pool_tab || 'Pool'}>
+                        <Link
+                            href={dashboardRoutes.entity(locale, resolvedPoolAddress, { network })}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-semibold text-[var(--color-primary)] hover:underline truncate"
+                            title={accT?.open_pool || 'Open the pool card'}
+                        >
+                            {poolName || truncateAddress(resolvedPoolAddress, 10, 6)}
+                        </Link>
+                        <CopyButton value={resolvedPoolAddress} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
+                    </SummaryInlineRow>
+                    <SummaryInlineRow label={accT?.contributed_tokens_lp_units || 'Your units'} value={`${fmtAmount(userBalance, locale, 6)} ${lpName}`} mono />
+                    <SummaryInlineRow label={accT?.contributed_tokens_total_supply || 'Units in circulation'} value={fmtAmount(lpTotalSupply, locale, 6)} mono />
+                    <SummaryInlineRow label={accT?.contributed_tokens_pool_share || 'Share'}>
+                        <span className="flex items-center gap-2">
+                            <span className="h-1.5 w-20 rounded-full bg-[var(--color-card-border)] overflow-hidden" aria-hidden>
+                                <span className="block h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${Math.min(share * 100, 100)}%` }} />
+                            </span>
+                            <span className="text-xs font-bold text-[var(--color-primary)] tabular-nums">
+                                {share > 0 && share < 0.00000001 ? '<0.000001' : fmtAmount(share * 100, locale, 4)} %
+                            </span>
                         </span>
-                    }
-                />
-
-                {/* One row per underlying reserve token */}
-                {reserves.map((reserve) => (
-                    <ReserveRow
-                        key={reserve.resource_address}
-                        address={reserve.resource_address}
-                        poolReserve={parseFloat(reserve.amount) || 0}
-                        userBalance={userBalance}
-                        lpTotalSupply={lpTotalSupply}
-                        network={network}
-                        locale={locale}
-                        accT={accT}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
-
-/* ─── Summary Row (key/value) ─── */
-
-function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
-    return (
-        <div className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-[11px] text-[var(--color-text-muted)] font-medium">{label}</span>
-            <span className="text-xs font-mono font-bold text-[var(--color-text-main)]">{value}</span>
-        </div>
-    );
-}
-
-/* ─── Reserve Row (fetches token metadata for name/symbol) ─── */
-
-function ReserveRow({
-    address,
-    poolReserve,
-    userBalance,
-    lpTotalSupply,
-    network,
-    locale,
-    accT,
-}: {
-    address: string;
-    poolReserve: number;
-    userBalance: number;
-    lpTotalSupply: number;
-    network: 'mainnet' | 'stokenet';
-    locale: string;
-    accT: TranslationsT['dashboard']['transactions']['account_summary'] | undefined;
-}) {
-    const { data: entityData } = useQuery({
-        queryKey: entityKeys.full(address, network),
-        queryFn: () => apiFetchEntityDetails(address, network),
-        staleTime: Infinity,
-        gcTime: 10 * 60_000,
-        retry: 1,
-    });
-
-    const metaItems: MetadataItem[] = (entityData as GatewayEntityDetails | null)?.metadata?.items ?? [];
-    const symbol = getMetaValue(metaItems, 'symbol') || truncateAddress(address, 4, 4);
-
-    const contributed = lpTotalSupply > 0 ? (userBalance / lpTotalSupply) * poolReserve : 0;
-    const labelText = accT?.contributed_tokens_entitlement?.replace('{symbol}', symbol) || `${symbol} que te corresponde`;
-
-    return (
-        <div className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-[11px] text-[var(--color-text-muted)] font-medium">
-                {labelText}
-            </span>
-            <span className="text-xs font-mono font-black text-[var(--color-accent)]">
-                {fmtAmount(contributed, locale)} <span className="text-[10px] font-bold text-[var(--color-text-muted)]">{symbol}</span>
-            </span>
-        </div>
-    );
-}
-
-/* ─── Individual Underlying Token Card (Expandable) ─── */
-
-function UnderlyingTokenCard({
-    address,
-    contributed,
-    onCopy,
-    copiedAddress,
-    tt,
-    network,
-    locale,
-}: {
-    address: string;
-    contributed: number;
-    onCopy: (v: string) => void;
-    copiedAddress: string | null;
-    tt?: Partial<TranslationsT['dashboard']['transactions']>;
-    network: 'mainnet' | 'stokenet';
-    locale: string;
-}) {
-    const [expanded, setExpanded] = useState(false);
-
-    const { data: entityData, isLoading } = useQuery({
-        queryKey: entityKeys.full(address, network),
-        queryFn: () => apiFetchEntityDetails(address, network),
-        staleTime: Infinity,
-        gcTime: 10 * 60_000,
-        retry: 1,
-    });
-
-    const metaItems: MetadataItem[] = (entityData as GatewayEntityDetails | null)?.metadata?.items ?? [];
-    const name = getMetaValue(metaItems, 'name') || truncateAddress(address, 6, 6);
-    const symbol = getMetaValue(metaItems, 'symbol') || '';
-    const iconUrl = getMetaValue(metaItems, 'icon_url') || '';
-
-    const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (window.getSelection()?.toString()) return;
-        setExpanded(v => !v);
-    };
-
-    return (
-        <div className="flex flex-col bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl transition-all shadow-sm">
-            <button type="button"
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl w-full text-left"
-                onClick={handleToggle}
-            >
-                {/* Left: icon + name + address */}
-                <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
-                    <div className="size-8 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)]">
-                        {iconUrl ? (
-                            <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className="w-full h-full object-cover" />
-                        ) : (
-                            <Info className="size-4 text-[var(--color-text-muted)]" />
-                        )}
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="font-bold text-sm text-[var(--color-text-main)] truncate" title={name}>{name}</span>
-                            {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate shrink-0">{symbol}</span>}
-                        </div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate select-all">{truncateAddress(address, 6, 6)}</span>
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); onCopy(address); }}
-                                className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors shrink-0"
-                            >
-                                {copiedAddress === address ? <Check className="size-2.5 text-[var(--color-accent)]" /> : <Copy className="size-2.5" />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: contributed amount + chevron */}
-                <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-baseline gap-1.5">
-                        <span className="text-xs font-mono font-black text-[var(--color-accent)] tracking-tight">
-                            {fmtAmount(contributed, locale)}
-                        </span>
-                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right truncate max-w-[80px]" title={symbol || name}>
-                            {symbol || name}
-                        </span>
-                    </div>
-                    <ChevronDown className={`size-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
-                </div>
-            </button>
-
-            {/* Expandable content — full ResourceInlinePanel */}
-            <AnimatePresence>
-                {expanded && (
-                    <m.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="overflow-hidden"
+                    </SummaryInlineRow>
+                    {holder && (
+                        <>
+                            <SummaryInlineRow label={accT?.contributed_tokens_put_in || 'Put in'} value={flowLine('putIn')} mono />
+                            <SummaryInlineRow label={accT?.contributed_tokens_taken_out || 'Taken out'} value={flowLine('takenOut')} mono />
+                        </>
+                    )}
+                </dl>
+                {holder && (
+                    // A full page load: the console reads its query when it opens.
+                    <a
+                        href={`/${locale}/console/pool-redeem?pool=${resolvedPoolAddress}&account=${holder}`}
+                        className="self-start pt-2 text-xs font-bold text-[var(--color-primary)] hover:underline"
                     >
-                        {ResourceInlinePanel ? ResourceInlinePanel({
-                            address,
-                            details: entityData || null,
-                            loading: isLoading,
-                            onCopy,
-                            copiedAddress,
-                            tt,
-                            locale: locale || 'en-US',
-                        }) : null}
-                    </m.div>
+                        {accT?.contributed_tokens_redeem || 'Redeem in the console'} →
+                    </a>
                 )}
-            </AnimatePresence>
+            </div>
+            {reserves.length > 0 ? (
+                <HeldResourcesList
+                    fill
+                    title={accT?.contributed_tokens_yours || 'What you are entitled to'}
+                    items={reserves.map((reserve) => ({
+                        resource_address: reserve.resource_address,
+                        amount: String(share * (parseFloat(reserve.amount) || 0)),
+                    }))}
+                    network={network}
+                    locale={locale}
+                    copiedAddress={copiedAddress}
+                    onCopy={onCopy}
+                    copyTitle={copyTitle}
+                    detail={(resource, symbol) => {
+                        const inPool = parseFloat(reserves.find((r) => r.resource_address === resource)?.amount ?? '0') || 0;
+                        return (accT?.contributed_tokens_of_pool || 'of {amount} in the pool').replace('{amount}', `${fmtAmount(inPool, locale, 6)} ${symbol}`.trim());
+                    }}
+                />
+            ) : (
+                <p className="text-xs text-[var(--color-text-muted)] py-2.5">{accT?.contributed_tokens_no_reserves || 'This pool holds nothing.'}</p>
+            )}
         </div>
     );
 }

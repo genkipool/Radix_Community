@@ -37,6 +37,7 @@ export function mapHoldings(details: Record<string, unknown>): AccountHoldings {
     iconUrl: getMetadataString(item.explicit_metadata?.items, 'icon_url') || undefined,
     amount: sumVaultAmounts(item),
     vaultAddress: item.vaults?.items?.[0]?.vault_address || undefined,
+    pool: getMetadataString(item.explicit_metadata?.items, 'pool') || undefined,
   }));
 
   const nonFungibles: NonFungibleHolding[] = nonFungibleItems.map((item) => ({

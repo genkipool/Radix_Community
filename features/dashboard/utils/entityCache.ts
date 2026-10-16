@@ -6,7 +6,7 @@ import type { MetadataItem } from '@/features/dashboard/types/shared.types';
 // ─────────────────────────────────────────
 //  Internal helpers
 // ─────────────────────────────────────────
-const FETCHABLE_PREFIXES = ['resource_', 'component_', 'validator_', 'package_', 'pool_'] as const;
+const FETCHABLE_PREFIXES = ['resource_', 'component_', 'validator_', 'package_', 'pool_', 'locker_'] as const;
 
 /** 
  * Normalizes a Radix address for use in cache keys.

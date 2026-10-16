@@ -53,6 +53,7 @@ export function TemplateBuilder({ t, onManifestChange, disabled }: TemplateBuild
   const ctx = {
     xrdAddress: networkAddresses.XRD,
     poolPackage: knownAddresses?.pool_package ?? '',
+    resourcePackage: knownAddresses?.resource_package ?? '',
     validatorOwnerBadge: networkAddresses.OWNER_BADGE,
   };
   const manifest =

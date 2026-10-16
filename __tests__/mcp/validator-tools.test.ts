@@ -10,7 +10,7 @@ import {
 import { staticallyValidateManifest } from '@/services/ret';
 
 /* Real Stokenet entities, so the toolkit checks addresses as well as syntax. */
-const ACCOUNT = 'account_tdx_2_12xned60hq7pu6t83nvadgj0jx3wnjhgwlvxfsd7829v2p9fjxlqfxd';
+const ACCOUNT = 'account_tdx_2_12yg4284tjs26tdf57wvfjmqara4fjgnrxk34dg59kk4xtkh66xq74l';
 const VALIDATOR = 'validator_tdx_2_1sdtnujyn3720ymg8lakydkvc5tw4q3zecdj95akdwt9de362mvtd94';
 const LSU = 'resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t';
 const CLAIM = 'resource_tdx_2_1ng3g2nj5pfpmdphgz0nrh8z0gtqcxx5z5dn48t85ar0z0zjhefufaw';

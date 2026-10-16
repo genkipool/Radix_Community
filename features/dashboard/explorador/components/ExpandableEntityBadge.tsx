@@ -40,6 +40,8 @@ import {
 } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountLockersTab } from './AccountLockersTab';
+import { HeldResourcesList, type FungibleItem } from './HeldResourcesList';
 const AccountStakingTab = React.lazy(() =>
     import('./AccountStakingTab').then(m => ({ default: m.AccountStakingTab }))
 );
@@ -56,7 +58,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
+export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -115,6 +117,11 @@ export function getTabsForEntity(
             key: 'pool_units',
             label: accT?.pool_units || 'Pool Units',
             tooltip: tt?.tab_pool_units_tooltip
+        });
+        base.push({
+            key: 'lockers',
+            label: accT?.lockers?.label || 'Lockers',
+            tooltip: accT?.lockers?.tooltip
         });
         base.push({
             key: 'transactions',
@@ -485,6 +492,17 @@ export function ExpandableEntityBadge({
                                             />
                                         )}
 
+                                        {activeTab === 'lockers' && (
+                                            <AccountLockersTab
+                                                address={address}
+                                                tt={tt}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale ?? 'en'}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
                                         {/* ── POOL UNITS ── */}
                                         {activeTab === 'pool_units' && (
                                             <AccountPoolUnitsTab
@@ -617,9 +635,12 @@ export function EntitySummaryTab({
 
     const poolUnit = metadataItems.find((m) => m.key === 'pool_unit')?.value?.typed?.value || (entityData?.details?.state as Record<string, unknown> | undefined)?.pool_unit_resource_address as string | undefined;
     const poolVaultNumber = metadataItems.find((m) => m.key === 'pool_vault_number')?.value?.typed?.value;
-    const poolResourcesItems = entityData?.fungible_resources?.items;
+    // Its own fungible vaults; for a pool without them in the answer, the
+    // resources its metadata names (address only, amount unknown).
     const poolResourcesMeta = metadataItems.find((m) => m.key === 'pool_resources')?.value?.typed;
-    const poolResourcesBackup: string[] = poolResourcesMeta?.values || (poolResourcesMeta?.value ? [poolResourcesMeta.value] : []);
+    const heldResources: FungibleItem[] = entityData?.fungible_resources?.items?.length
+        ? entityData.fungible_resources.items
+        : (poolResourcesMeta?.values || (poolResourcesMeta?.value ? [poolResourcesMeta.value] : [])).map((resource_address: string) => ({ resource_address }));
 
     const blueprintName = entityData?.details?.blueprint_name;
     const blueprintVersion = entityData?.details?.blueprint_version;
@@ -854,65 +875,18 @@ export function EntitySummaryTab({
 
                 {/* Multi-item fields (Vertical format) */}
 
-                {/* Pool Resources */}
-                {poolResourcesItems && poolResourcesItems.length > 0 && !address.startsWith('validator_') ? (
-                    <div className="flex flex-col gap-1">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-1">
-                            Pool Resources
-                        </dt>
-                        <dd className="grid grid-cols-3 gap-x-2 gap-y-3 flex-1 pl-4 pt-1">
-                            {poolResourcesItems.map((item) => {
-                                const resName = item.explicit_metadata?.items?.find((m) => m.key === 'name')?.value?.typed?.value || 'Unknown';
-                                const resIcon = item.explicit_metadata?.items?.find((m) => m.key === 'icon_url')?.value?.typed?.value;
-                                const resAddr = item.resource_address;
-                                return (
-                                    <div key={resAddr} className="flex flex-col gap-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            {resIcon && (
-                                                <SafeImage src={resIcon} alt={resName} fallbackName={resName} className="size-5 rounded-lg object-cover bg-white/10 shrink-0" />
-                                            )}
-                                            <span className="text-[10px] text-[var(--color-text-main)] truncate" title={resName}>{resName}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 pl-4 pt-0.5 min-w-0 overflow-hidden">
-                                            <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate" title={resAddr}>
-                                                {resAddr.length > 16 ? `${resAddr.slice(0, 16)}...${resAddr.slice(-4)}` : resAddr}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
-                                                className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                            >
-                                                {copiedAddress === resAddr ? <Check className="size-2" /> : <Copy className="size-2" />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </dd>
-                    </div>
-                ) : poolResourcesBackup.length > 0 && !address.startsWith('validator_') ? (
-                    <div className="flex flex-col gap-1">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
-                            Pool Resources
-                        </dt>
-                        <dd className="grid grid-cols-3 gap-x-2 gap-y-1 flex-1 pl-4 pt-1">
-                            {poolResourcesBackup.map((resAddr) => (
-                                <div key={resAddr} className="flex items-center gap-1">
-                                    <span className="text-[10px] font-mono text-[var(--color-text-main)]" title={resAddr}>
-                                        {resAddr.length > 16 ? `${resAddr.slice(0, 8)}...${resAddr.slice(-4)}` : resAddr}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
-                                        className={`p-0.5 rounded transition-colors ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                    >
-                                        {copiedAddress === resAddr ? <Check className="size-2" /> : <Copy className="size-2" />}
-                                    </button>
-                                </div>
-                            ))}
-                        </dd>
-                    </div>
-                ) : null}
+                {/* What it holds: a pool's reserves, any other component's treasury */}
+                {heldResources.length > 0 && !address.startsWith('validator_') && !address.startsWith('resource_') && (
+                    <HeldResourcesList
+                        network={network as 'mainnet' | 'stokenet'}
+                        title={(address.startsWith('pool_') ? tt?.summary_pool_resources : tt?.summary_held_resources) || 'Resources held'}
+                        items={heldResources}
+                        locale={locale || 'en-US'}
+                        copiedAddress={copiedAddress}
+                        onCopy={onCopy}
+                        copyTitle={tt?.copy_address || 'Copy address'}
+                    />
+                )}
 
                 {/* Tags */}
                 {tags.length > 0 && !address.startsWith('validator_') && (

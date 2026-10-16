@@ -60,6 +60,16 @@ export function useDashboardUrlSync({
 
   const nav = useDashboardNavigation({ locale, view: activeView });
 
+  // The URL can name another entity without the box being typed in: a link
+  // to a pool or locker inside a card, or back / forward. The box follows it
+  // then, so the grid shows that entity's card. Typing a full address moves
+  // the URL to the same value, so this never fights the user.
+  const [urlEntity, setUrlEntity] = useState(nav.committedEntity);
+  if (nav.committedEntity !== urlEntity) {
+    setUrlEntity(nav.committedEntity);
+    if ((nav.committedEntity ?? '') !== searchQuery.trim()) _setSearchQuery(nav.committedEntity ?? '');
+  }
+
   /**
    * Typing filters on the client instantly. Only a COMPLETE address is a
    * shareable destination, so only then does the URL move (to that entity's

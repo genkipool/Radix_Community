@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { getClaimPackageRoyaltiesManifest } from '../../lib/claim-package-royalties-manifest';
@@ -13,11 +15,12 @@ import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { AddressField } from '../shared/fields';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
+import { badgeOfRule, ownerRule } from '../../lib/role-lookup';
 
 export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
   const common = t.common;
   const labels = t.claimPackageRoyalties;
-  const { accounts, isLoading: walletLoading } = useRadixWallet();
+  const { accounts, activeNetwork, isLoading: walletLoading } = useRadixWallet();
 
   const [entityAddress, setEntityAddress] = useState('');
   const [ownerBadge, setOwnerBadge] = useState<BadgeProofSelection | null>(null);
@@ -29,6 +32,18 @@ export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
   const preview = useTransactionPreview();
 
   const isValid = (entityAddress.startsWith('package_') || entityAddress.startsWith('component_')) && entityAddress.length > 30;
+
+  // Claiming royalties is an owner action: preselect the owner badge the account holds.
+  const { data: ownerBadgeRule, isLoading: rolesLoading } = useQuery({
+    queryKey: ['console-owner-badge', activeNetwork, entityAddress.trim()],
+    enabled: isValid,
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async () => badgeOfRule(ownerRule(await apiFetchEntityDetails(entityAddress.trim(), activeNetwork)).rule),
+  });
+  const requiredBadges = ownerBadgeRule
+    ? [ownerBadgeRule.localId ? `${ownerBadgeRule.resource}|${ownerBadgeRule.localId}` : ownerBadgeRule.resource]
+    : undefined;
   const canSend = isValid && !isSending && !!accountAddress && !walletLoading;
 
   const handleSend = () => {
@@ -65,6 +80,8 @@ export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
           onChange={setOwnerBadge}
           disabled={isSending}
           hint={labels.ownerBadgeAddressHint}
+          requiredBadges={requiredBadges}
+          rolesLoading={isValid && rolesLoading}
         />
       </div>
 

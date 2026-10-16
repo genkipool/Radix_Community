@@ -7,6 +7,7 @@
 
 import { sanitizeText } from '@/utils/sanitize';
 import type { TranslationsT } from '@/features/dashboard/types';
+import { ENTITY_KINDS, entityKindOf } from '@/features/dashboard/lib/entityKinds';
 
 // ─────────────────────────────────────────
 //  isConsensusManager
@@ -25,14 +26,11 @@ export function getEntityType(
   address: string,
   tt?: Partial<TranslationsT['dashboard']['transactions']>,
 ): { label: string; color: string; bg: string } {
-  const clean = sanitizeText(address);
-  if (clean.startsWith('account_')) return { label: tt?.entity_type_account || 'Account', color: 'text-blue-400', bg: 'bg-blue-500/6 border-blue-500/20' };
-  if (clean.startsWith('component_')) return { label: tt?.entity_type_component || 'Component', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/6 border-purple-500/30' };
-  if (clean.startsWith('resource_')) return { label: tt?.entity_type_resource || 'Resource', color: 'text-amber-800 dark:text-amber-400 font-black tracking-wide', bg: 'bg-amber-500/10 border-amber-500/60' };
-  if (clean.startsWith('validator_')) return { label: tt?.entity_type_validator || 'Validator', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/8 border-emerald-500/40' };
-  if (clean.startsWith('package_')) return { label: tt?.entity_type_package || 'Package', color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500/6 border-cyan-500/30' };
-  if (clean.startsWith('pool_')) return { label: tt?.entity_type_package || 'Package', color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500/6 border-cyan-500/30' };
-  if (clean.startsWith('identity_')) return { label: tt?.entity_type_identity || 'Identity', color: 'text-pink-400', bg: 'bg-pink-500/6 border-pink-500/20' };
+  const kind = entityKindOf(sanitizeText(address));
+  if (kind) {
+    const info = ENTITY_KINDS[kind];
+    return { label: tt?.[info.labelKey] || info.fallbackLabel, color: info.color, bg: info.bg };
+  }
   return { label: tt?.entity_type_unknown || 'Entity', color: 'text-[var(--color-text-muted)]', bg: 'bg-[var(--color-surface)] border-[var(--color-card-border)]' };
 }
 

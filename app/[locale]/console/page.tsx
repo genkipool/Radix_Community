@@ -1,6 +1,5 @@
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { buildMetadata } from '@/lib/seo';
-import ConsoleHome from '@/features/console/components/ConsoleHome';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -26,8 +25,8 @@ interface ConsolePageProps {
   params: Promise<{ locale: string }>;
 }
 
+/** The landing itself is rendered by the console layout (ConsoleShell), which keeps it mounted so it can fold away when a tool opens. */
 export default async function ConsolePage({ params }: ConsolePageProps) {
-  const { locale } = await params;
-  const t = await getFeatureDictionary(locale as Locale, ['console']);
-  return <ConsoleHome dictionary={t} />;
+  await params;
+  return null;
 }

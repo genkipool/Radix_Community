@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, Search, Check } from 'lucide-react';
+import { Plus, X, Check } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
+import { SelectPopup, SelectPopupRow, SelectPopupTabs } from '@/components/ui/SelectPopup';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
@@ -1210,9 +1211,9 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             }
 
             const jsx = (
-                <button
+                <SelectPopupRow
                     key={acc.address}
-                    type="button"
+                    selected={isAddrSelectedVisually}
                     disabled={isDisabled}
                     onClick={() => {
                         if (isDisabled) return;
@@ -1228,18 +1229,9 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             }
                         }
                     }}
-                    className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${
-                        isAddrSelectedVisually 
-                            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' 
-                            : 'hover:bg-[var(--color-bg)]'
-                    } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    <div className="flex flex-col min-w-0 flex-1">
-                        <span className={`text-xs transition-colors ${isAddrSelectedVisually && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{acc.label}</span>
-                        <span className={`text-[10px] truncate ${isAddrSelectedVisually && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{acc.address}</span>
-                    </div>
-                    {isAddrSelectedVisually && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
-                </button>
+                    label={acc.label}
+                    sublabel={acc.address}
+                />
             );
 
             return { initialSel, jsx };
@@ -1279,10 +1271,11 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             const isDisabled = liveAmount <= 0 && !sel;
 
             const jsx = (
-                <button
+                <SelectPopupRow
                     key={f.resource_address}
-                    type="button"
+                    selected={sel && !isDisabled}
                     disabled={isDisabled}
+                    showCheck={isAddressMode}
                     onClick={() => {
                         if (isDisabled) return;
                         if (isAddressMode) {
@@ -1303,22 +1296,19 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             }
                         }
                     }}
-                    className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel && !isDisabled ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg)]'}`}
-                >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                    icon={
+                        <span className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
                             <SafeImage src={icon} alt={name} fallbackName={name} zoomable={false} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
-                            <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                        {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
-                    </div>
-                </button>
+                        </span>
+                    }
+                    label={symbol}
+                    sublabel={name}
+                    trailing={
+                        <span className={`text-[10px] font-mono ${sel && !isDisabled ? '' : 'font-bold'}`}>
+                            {liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                        </span>
+                    }
+                />
             );
 
             return { initialSel, jsx };
@@ -1489,10 +1479,12 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                     }
 
                     const jsx = (
-                        <button
+                        <SelectPopupRow
                             key={`${nf.resource_address}-${id}`}
-                            type="button"
+                            selected={sel}
                             disabled={isDisabled}
+                            showCheck={isAddressMode}
+                            title={finalName}
                             onClick={() => {
                                 if (isDisabled) return;
                                 if (isAddressMode) {
@@ -1513,22 +1505,19 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                     }
                                 }
                             }}
-                            className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${
-                                sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
-                            } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                <SafeImage src={icon} alt={finalName} fallbackName={finalName} zoomable={false} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex flex-col min-w-0 flex-1">
-                                <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
+                            icon={
+                                <span className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                                    <SafeImage src={icon} alt={finalName} fallbackName={finalName} zoomable={false} className="w-full h-full object-cover" />
+                                </span>
+                            }
+                            label={
+                                <>
                                     {finalName}
                                     {amt && <span className="ml-1 text-[var(--color-primary)]">{amt} XRD</span>}
-                                </span>
-                                <span className={`text-[9px] font-mono truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
-                            </div>
-                            {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
-                        </button>
+                                </>
+                            }
+                            sublabel={<span className="font-mono text-[9px]">{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>}
+                        />
                     );
 
                     itemsWithState.push({ initialSel, jsx });
@@ -1563,10 +1552,11 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             const isDisabled = liveAmount <= 0 && !sel;
 
             const jsx = (
-                <button
+                <SelectPopupRow
                     key={pu.resource_address}
-                    type="button"
+                    selected={sel && !isDisabled}
                     disabled={isDisabled}
+                    showCheck={isAddressMode}
                     onClick={() => {
                         if (isDisabled) return;
                         if (isAddressMode) {
@@ -1587,24 +1577,19 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             }
                         }
                     }}
-                    className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${
-                        sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
-                    } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                    icon={
+                        <span className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
                             <SafeImage src={icon} alt={name} fallbackName={name} zoomable={false} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
-                            <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                        {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
-                    </div>
-                </button>
+                        </span>
+                    }
+                    label={symbol}
+                    sublabel={name}
+                    trailing={
+                        <span className={`text-[10px] font-mono ${sel && !isDisabled ? '' : 'font-bold'}`}>
+                            {liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                        </span>
+                    }
+                />
             );
 
             return { initialSel, jsx };
@@ -1649,103 +1634,47 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         const popup = (
             <AnimatePresence>
                 {(isMatch && popupOpen) && (
-                    <m.div
+                    <SelectPopup
                         ref={popupRef}
-                        initial={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
-                        transition={{ duration: 0.15 }}
+                        direction={popupDirection}
                         style={computePopupStyle()}
-                        className="flex flex-col rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+                        onClose={() => {
+                            setPopupOpen(false);
+                            setPopupDestTarget(null);
+                        }}
+                        closeLabel="Cerrar"
+                        header={
+                            <SelectPopupTabs
+                                tabs={tabs.map(tab => ({ value: tab.type, label: tab.label, count: tab.count }))}
+                                active={activeTab}
+                                onChange={setActiveTab}
+                                onClose={() => {
+                            setPopupOpen(false);
+                            setPopupDestTarget(null);
+                        }}
+                                closeLabel="Cerrar"
+                            />
+                        }
+                        search={{
+                            value: searchQuery,
+                            onChange: setSearchQuery,
+                            placeholder: popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...',
+                            // eslint-disable-next-line react-hooks/refs
+                            onEnter: isAddressMode ? handleConfirmSelection : undefined,
+                        }}
+                        footer={isAddressMode ? { label: navT.wallet_confirm_selection || 'Agregar', onClick: handleConfirmSelection } : undefined}
                     >
-                        {/* Tabs and Close */}
-                        <div className="shrink-0 px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1">
-                                {tabs.map(tab => (
-                                    <div
-                                        key={tab.type}
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => setActiveTab(tab.type)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveTab(tab.type); }}
-                                        className="relative py-2 px-1 cursor-pointer outline-none flex items-center justify-center group"
-                                    >
-                                        <span className={`text-[10px] font-bold tracking-wider uppercase whitespace-nowrap transition-opacity duration-200 ${activeTab === tab.type
-                                            ? 'text-[var(--color-primary)] opacity-100'
-                                            : 'text-[var(--color-text-muted)] opacity-80 group-hover:opacity-100'
-                                            }`}>
-                                            {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
-                                        </span>
-                                        {activeTab === tab.type && (
-                                            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--color-primary)] rounded-t-full" />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            <button
-                                type="button"
-                                aria-label="Cerrar popup"
-                                onClick={() => {
-                                    setPopupOpen(false);
-                                    setPopupDestTarget(null);
-
-                                }}
-                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
-                                title="Cerrar"
-                            >
-                                <X className="size-4" />
-                            </button>
-                        </div>
-
-                        {/* Search */}
-                        <div className="shrink-0 p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
-                                <input
-                                    type="text"
-                                    aria-label={popupMode === 'address' ? 'Buscar dirección' : 'Buscar activo'}
-                                    placeholder={popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...'}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && isAddressMode) {
-                                            e.preventDefault();
-                                            // eslint-disable-next-line react-hooks/refs
-                                            handleConfirmSelection();
-                                        }
-                                    }}
-                                    className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-2 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-                            {isLoadingAssets ? (
-                                <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">Cargando...</div>
-                            ) : (
-                                <div className="space-y-1">
-                                    {activeTab === 'address' && renderAddressTab()}
-                                    {activeTab === 'fungible' && renderFungibleItems()}
-                                    {activeTab === 'non_fungible' && renderNftItems()}
-                                    {activeTab === 'pool_unit' && renderPoolUnitItems()}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Confirm button */}
-                        {isAddressMode && (
-                            <div className="shrink-0 p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                                <button
-                                    type="button"
-                                    onClick={handleConfirmSelection}
-                                    className="w-full flex items-center justify-center py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 transition-colors"
-                                >
-                                    {navT.wallet_confirm_selection || 'Agregar'}
-                                </button>
-                            </div>
+                        {isLoadingAssets ? (
+                            <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">Cargando...</div>
+                        ) : (
+                            <>
+                                {activeTab === 'address' && renderAddressTab()}
+                                {activeTab === 'fungible' && renderFungibleItems()}
+                                {activeTab === 'non_fungible' && renderNftItems()}
+                                {activeTab === 'pool_unit' && renderPoolUnitItems()}
+                            </>
                         )}
-                    </m.div>
+                    </SelectPopup>
                 )}
             </AnimatePresence>
         );

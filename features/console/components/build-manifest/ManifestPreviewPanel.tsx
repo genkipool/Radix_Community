@@ -33,7 +33,7 @@ export function ManifestPreviewPanel({ t, manifest }: ManifestPreviewPanelProps)
       title={labels.panelTitle}
       action={
         tab === 'manifest' && manifest
-          ? <CopyButton value={manifest} size="xs" variant="ghost" label={t.common.copy} />
+          ? <CopyButton value={manifest} size="xs" variant="ghost" title={t.common.copy} />
           : undefined
       }
     >

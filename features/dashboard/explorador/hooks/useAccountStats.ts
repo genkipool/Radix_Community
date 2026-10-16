@@ -82,15 +82,20 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         }
 
         const meta = ft.explicit_metadata?.items || [];
+        const poolAddress = extractMetadata(meta, 'pool') || extractMetadata(meta, 'pool_address');
         const valByLsu = validatorsData?.validators.find((v: Validator) => v.lsuResource === ft.resource_address);
 
         const r: ParsedResource = {
             address: ft.resource_address,
-            name: extractMetadata(meta, 'name') || 'Unknown Token',
-            symbol: extractMetadata(meta, 'symbol') || '',
+            // An unnamed pool unit is still recognisable by the pool it belongs to.
+            name: extractMetadata(meta, 'name') || (poolAddress ? `Pool Unit · ${poolAddress.slice(0, 12)}…${poolAddress.slice(-6)}` : 'Unknown Token'),
+            symbol: extractMetadata(meta, 'symbol') || (poolAddress ? 'LP' : ''),
             iconUrl: extractMetadata(meta, 'icon_url') || '',
             amount: getFungibleAmount(ft),
-            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit') || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
+            // A native pool unit names its pool in the `pool` metadata (the pool
+            // itself carries `pool_unit`); other DEXes tag their LP tokens.
+            isPoolUnit: !!poolAddress || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
+            poolAddress: poolAddress || undefined,
             isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu || extractTags(meta).some((tag: string) => tag.toLowerCase() === 'lsu'),
             validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
             validatorName: valByLsu?.name,
@@ -210,6 +215,11 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
 
     // Staking Aggregation
     const stakingMap = new Map<string, StakingEntry>();
+    /**
+     * Claim NFTs that can be redeemed now, per validator. A claim transaction
+     * must carry only these: one NFT still unbonding aborts the whole claim.
+     */
+    const claimableNfts: Record<string, { resource: string; ids: string[] }> = {};
 
     const getStakingEntry = (vAddr: string) => {
         if (!stakingMap.has(vAddr)) {
@@ -261,6 +271,11 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
                         entry.unstakes.push({ amount: amt, epoch: claimEpoch });
                     } else if (amt > 0) {
                         entry.xrdInClaim += amt;
+                        const id = item.non_fungible_id;
+                        if (typeof id === 'string') {
+                            const ready = (claimableNfts[valAddr] ??= { resource: resAddr, ids: [] });
+                            ready.ids.push(id);
+                        }
                     }
                 });
             }
@@ -324,6 +339,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         stakedTotal,
         unstakeTotal,
         claimTotal,
+        claimableNfts,
         currentEpoch: (entityData as GatewayEntityDetails & { ledger_state?: { epoch: number } })?.ledger_state?.epoch || 0,
     };
 }

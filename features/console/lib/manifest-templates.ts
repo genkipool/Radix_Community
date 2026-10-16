@@ -7,6 +7,7 @@
 import { buildBadgeProofManifest } from './badge-proof-manifest';
 import { escapeManifestString as escapeStr } from './manifest-escape';
 import { setStringMetadata } from './metadata-manifests';
+import { contributeManifest, createPoolManifest, poolKindOfBlueprint, redeemManifest } from './pool-manifests';
 import { freezeVaultManifest, lockMetadataManifest, type FreezeFlag } from './resource-actions';
 import {
   claimXrdInstruction,
@@ -62,6 +63,8 @@ export interface TemplateContext {
   xrdAddress: string;
   /** Native pool package address of the active network (for pool templates) */
   poolPackage: string;
+  /** Native resource package (the pool template mints its manager badge there) */
+  resourcePackage: string;
   /** Validator owner badge resource of the active network (owner/vote templates) */
   validatorOwnerBadge: string;
 }
@@ -758,33 +761,29 @@ CALL_METHOD
 `,
   },
   {
+    // The manager role is the pool's whole security: whoever holds it can
+    // contribute and move the reserves at will. The pool is therefore always
+    // guarded by a badge, never by AllowAll (anyone could drain it).
     id: 'create-pool',
     icon: 'droplets',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
+      { key: 'account', kind: 'account' },
       { key: 'poolType', kind: 'choice', options: ['OneResourcePool', 'TwoResourcePool', 'MultiResourcePool'] },
       { key: 'resources', kind: 'text' },
+      { key: 'managerBadge', kind: 'resource', optional: true },
     ],
     build: (values, ctx) => {
-      const poolType = v(values, 'poolType');
-      const addresses = v(values, 'resources').split(',').map((a) => a.trim()).filter(Boolean);
-      const resourcesArg =
-        poolType === 'OneResourcePool'
-          ? `Address("${addresses[0] ?? ''}")`
-          : poolType === 'TwoResourcePool'
-            ? `Tuple(${addresses.map((a) => `Address("${a}")`).join(', ')})`
-            : `Array<Address>(${addresses.map((a) => `Address("${a}")`).join(', ')})`;
-      return `
-CALL_FUNCTION
-    Address("${ctx.poolPackage}")
-    "${poolType}"
-    "instantiate"
-    Enum<OwnerRole::Fixed>(Enum<AccessRule::AllowAll>())
-    Enum<AccessRule::AllowAll>()
-    ${resourcesArg}
-    None
-;
-`;
+      const existing = v(values, 'managerBadge');
+      return createPoolManifest({
+        account: v(values, 'account') || '{account}',
+        kind: poolKindOfBlueprint(v(values, 'poolType')) ?? 'two',
+        resources: v(values, 'resources').split(',').map((a) => a.trim()).filter(Boolean),
+        manager: existing
+          ? { mode: 'existingBadge', resource: existing }
+          : { mode: 'newBadge', badgeName: 'Pool manager badge' },
+        packages: { pool: ctx.poolPackage, resource: ctx.resourcePackage },
+      });
     },
   },
   {
@@ -794,45 +793,27 @@ CALL_FUNCTION
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'pool', kind: 'address' },
+      { key: 'poolType', kind: 'choice', options: ['OneResourcePool', 'TwoResourcePool', 'MultiResourcePool'] },
+      { key: 'managerBadge', kind: 'resource' },
+      { key: 'managerBadgeId', kind: 'nonFungibleId', optional: true },
       { key: 'resource1', kind: 'resource' },
       { key: 'amount1', kind: 'decimal' },
       { key: 'resource2', kind: 'resource', optional: true },
       { key: 'amount2', kind: 'decimal', optional: true },
+      { key: 'resource3', kind: 'resource', optional: true },
+      { key: 'amount3', kind: 'decimal', optional: true },
     ],
     build: (values) => {
       const account = v(values, 'account');
-      const contributions = [
-        { resource: v(values, 'resource1'), amount: v(values, 'amount1') },
-        { resource: v(values, 'resource2'), amount: v(values, 'amount2') },
-      ].filter((c) => c.resource && c.amount);
-
-      const buckets = contributions
-        .map(
-          (c, i) => `
-CALL_METHOD
-    Address("${account}")
-    "withdraw"
-    Address("${c.resource}")
-    Decimal("${c.amount}")
-;
-TAKE_FROM_WORKTOP
-    Address("${c.resource}")
-    Decimal("${c.amount}")
-    Bucket("bucket${i + 1}")
-;`,
-        )
-        .join('');
-      const bucketRefs = contributions.map((_, i) => `Bucket("bucket${i + 1}")`);
-      const contributionArg =
-        bucketRefs.length === 1 ? bucketRefs[0] : `Tuple(${bucketRefs.join(', ')})`;
-
-      return `${buckets}
-CALL_METHOD
-    Address("${v(values, 'pool')}")
-    "contribute"
-    ${contributionArg}
-;
-${DEPOSIT_ALL(account)}`;
+      return contributeManifest({
+        account,
+        pool: v(values, 'pool'),
+        kind: poolKindOfBlueprint(v(values, 'poolType')) ?? 'two',
+        contributions: [1, 2, 3]
+          .map((n) => ({ resource: v(values, `resource${n}`), amount: v(values, `amount${n}`) }))
+          .filter((c) => c.resource && c.amount),
+        manager: { account, resource: v(values, 'managerBadge'), nonFungibleId: v(values, 'managerBadgeId') },
+      });
     },
   },
   {
@@ -845,24 +826,13 @@ ${DEPOSIT_ALL(account)}`;
       { key: 'poolUnit', kind: 'resource' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values) => `
-CALL_METHOD
-    Address("${v(values, 'account')}")
-    "withdraw"
-    Address("${v(values, 'poolUnit')}")
-    Decimal("${v(values, 'amount')}")
-;
-TAKE_FROM_WORKTOP
-    Address("${v(values, 'poolUnit')}")
-    Decimal("${v(values, 'amount')}")
-    Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${v(values, 'pool')}")
-    "redeem"
-    Bucket("bucket1")
-;
-${DEPOSIT_ALL(v(values, 'account'))}`,
+    build: (values) =>
+      redeemManifest({
+        account: v(values, 'account'),
+        pool: v(values, 'pool'),
+        poolUnit: v(values, 'poolUnit'),
+        amount: v(values, 'amount'),
+      }),
   },
   {
     id: 'set-royalty',

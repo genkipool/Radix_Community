@@ -143,7 +143,7 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
                     ? labels.resultHex 
                     : labels.resultScrypto}
               </h3>
-              <CopyButton value={result.decoded} size="xs" variant="ghost" label={t.common.copy} />
+              <CopyButton value={result.decoded} size="xs" variant="ghost" title={t.common.copy} />
             </div>
           </header>
           {result.kind === 'manifest' ? (

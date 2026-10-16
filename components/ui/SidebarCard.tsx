@@ -280,12 +280,13 @@ function SidebarCardRow({
             </Component>
 
             {/* Optional action buttons (edit, delete, etc.) */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity select-none">
                 {/* Backward compatibility for single onAction */}
                 {onAction && actionIcon && !actions && (
                     <button
                         type="button"
                         onClick={e => { e.stopPropagation(); onAction(); }}
+                        onMouseDown={e => e.preventDefault()}
                         className="size-6 flex items-center justify-center rounded-md transition-all"
                         style={{
                             background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--color-surface)',
@@ -301,9 +302,11 @@ function SidebarCardRow({
                 {actions?.map((act, i) => (
                     <button
                         type="button"
-                        key={`action-${act.title}-${i}`}
+                        key={`action-${i}`}
                         title={act.title}
                         onClick={e => { e.stopPropagation(); act.onClick(); }}
+                        // Quick repeated clicks must not select the row's text.
+                        onMouseDown={e => e.preventDefault()}
                         className="size-6 flex items-center justify-center rounded-md transition-all"
                         style={{
                             background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--color-surface)',

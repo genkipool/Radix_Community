@@ -62,11 +62,12 @@ export function OptionButtons<T extends string>(props: OptionButtonsProps<T>) {
             disabled={isDisabled}
             onClick={() => handleToggle(opt.value)}
             aria-pressed={isActive}
-            title={opt.title}
+            title={opt.title ?? (typeof opt.description === 'string' ? `${opt.label}: ${opt.description}` : undefined)}
             className={[
               'flex flex-1 justify-center items-center gap-2 rounded-xl border font-semibold transition-all duration-150 cursor-pointer',
               layout === 'wrap' ? 'min-w-[120px]' : 'min-w-0 w-full',
-              size === 'sm' ? 'px-2 py-1.5 text-xs' : 'px-4 py-2.5 text-sm',
+              size === 'sm' ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm',
+              opt.description ? (size === 'sm' ? 'min-h-[48px]' : 'min-h-[56px]') : '',
               isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-95',
               buttonClassName,
             ].join(' ')}
@@ -77,10 +78,11 @@ export function OptionButtons<T extends string>(props: OptionButtonsProps<T>) {
             }}
           >
             {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-            <span className={layout === 'grid' ? "text-center whitespace-normal leading-tight break-words" : "text-left whitespace-nowrap overflow-hidden text-ellipsis"}>
-              {opt.label}
+            {/* One line for the label and one for the description, so every button in a group is the same height. */}
+            <span className={`min-w-0 overflow-hidden leading-tight ${layout === 'grid' ? 'text-center' : 'text-left'}`}>
+              <span className="block truncate">{opt.label}</span>
               {opt.description && (
-                <span className={`block text-[11px] font-normal opacity-80 ${layout === 'grid' ? 'whitespace-normal' : 'whitespace-nowrap overflow-hidden text-ellipsis'}`}>{opt.description}</span>
+                <span className="block truncate text-[11px] font-normal opacity-80 mt-0.5">{opt.description}</span>
               )}
             </span>
             {!hideCheck && <Check className={`shrink-0 ${size === 'sm' ? 'size-3' : 'size-3.5'} ${isActive ? 'opacity-100' : 'opacity-0 max-w-0 overflow-hidden'}`} />}

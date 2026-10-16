@@ -10,6 +10,7 @@ import { getMcpRegistry } from './tools';
 import { MCP_SERVER_INFO } from './protocol';
 import { RADIX_COMMUNITY_ORIGIN, dashboardTxUrl } from './dapp';
 import type { McpToolCategory, McpToolDefinition } from './types';
+import { DEFAULT_BATCH_SIZE } from '@/features/console/lib/bulk-send';
 
 const CATEGORY_TITLES: Record<McpToolCategory, string> = {
   site: 'Site navigation',
@@ -109,6 +110,10 @@ Generic JSON client config:
    3. The node operator sets \`consensus.validator_address\` to the new \`validator_…\` address on the node and restarts it; without it the node never validates.
    4. \`stake-as-owner\` once the node is synced (\`/system/health\` reports \`UP\`, not \`SYNCING\`): an active validator whose node is still catching up misses every proposal it is given.
 
+8. **Native pools**: when the user names a pool instead of giving its address, resolve it with \`find_pools\` (it also finds Account Lockers); read with \`get_pool_state\` first; build with \`build_pool_manifest\`. The engine fixes who can do what: \`contribute\`, \`protected_deposit\` and \`protected_withdraw\` need the **pool manager role**, \`redeem\` is public, and the owner role writes the metadata of the pool and of its pool unit. So the manager rule is the pool's whole security: **never create a pool whose manager is AllowAll** (anyone could drain it with protected_withdraw; real mainnet pools have been created that way). \`build_pool_manifest\` with \`operation: "create"\` always guards the pool with a badge, minted in the same transaction unless you pass \`managerBadge\`. When \`get_pool_state\` reports \`drainable: true\`, tell the user to redeem their pool units right away and move to a new, badge-guarded pool. **One pool operation per transaction**: send each manifest \`build_pool_manifest\` returns on its own. Never concatenate two of them (for instance two contributions to different pools) into one transaction: the ledger accepts it and the preview passes, but the Radix Wallet for Android fails while signing it (it inserts each guarantee twice; fix proposed in radixdlt/babylon-wallet-android#1449), so the user gets an error and nothing is submitted. A native pool cannot be deleted; to retire one use \`operation: "manage"\` with any of \`emptyReserves\`, \`markRetired\` and \`freezeProfile\`, all in one transaction. \`freezeProfile\` is irreversible (it locks the profile metadata and the owner role), so ask the user to confirm it first; the manager role of a native pool can never be locked.
+
+9. **Distributions and airdrops**: \`get_resource_holders\` (\`all: true\` for every holder) → \`plan_holder_distribution\` (equal or pro rata, truncated to the token's divisibility) → **\`build_locker_manifest\`** (\`create\` once, then \`airdrop\` with the CSV) or \`build_bulk_send_manifests\`. Prefer the **AccountLocker**: accounts that accept deposits get the tokens at once and the rest stay claimable at the claim page the tool returns, instead of being lost or bounced. Both tools return **several transactions**: sign them one at a time, in order. A transaction holds at most ${DEFAULT_BATCH_SIZE} recipients because the engine caps a transaction at 256 events and each new account emits several. Recipients claim with \`build_locker_manifest { operation: "claim" }\`; only their own account can.
+
 7. **Transient Gateway errors**: a tool failing with \`NotSyncedUpError\` means the Gateway is over a minute behind the ledger. Wait about 20 seconds and call it again unchanged; nothing about the request is wrong.
 
 ## Output format
@@ -132,13 +137,20 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"Set my validator's name, description, icon or website"* → \`build_validator_manifest\` with a \`profile\` operation (only the fields you pass are written) → sign. Console: ${origin}/en/console/validator-profile.
 - *"What can I claim from my unstakes?"* → \`list_claimable_stake_nfts {"account": "account_…"}\` → feed the matured ids to \`build_validator_manifest\` as \`claim-xrd\` → sign. Console: ${origin}/en/console/validator-staking.
 - *"Create a validator"* → \`build_validator_manifest\` with a single \`create-validator\` operation (it cannot share a transaction with anything) → \`preview_transaction\` → sign → then \`profile\` + \`register\` + \`accept-delegated-stake\` in one transaction → set \`consensus.validator_address\` on the node → \`stake-as-owner\` once the node is synced. Console: ${origin}/en/console/validator-create.
+- *"Create a liquidity pool for XRD and my token"* → \`build_pool_manifest {"operation": "create", "account": "account_…", "kind": "two", "resources": ["resource_…xrd", "resource_…"]}\` → sign → \`build_pool_manifest {"operation": "contribute", "pool": "pool_…", "amounts": {…}}\`. Console: ${origin}/en/console/pool-create.
+- *"Is this pool safe?"* → \`get_pool_state {"pool": "pool_…"}\`: a manager of AllowAll means anyone can drain it.
+- *"Which of these validators should I stake with?"* → \`get_validator_state {"validator": ["validator_…", "validator_…"], "account": "account_…"}\`: fee and pending fee changes, uptime, APY, warnings, and what the account already has with each. Console equivalent: ${origin}/en/console/validator-info.
+- *"Is this airdrop locker safe, and what is waiting for me?"* → \`get_locker_claims {"locker": "locker_…", "account": "account_…"}\`: whether the recoverer can take tokens back before they are claimed, and the claim link.
+- *"Find the XRD/HUG pool"* → \`find_pools {"query": "HUG"}\` → \`get_pool_state\` on the address it returns.
+- *"Airdrop 10,000 of my token to everyone holding X"* → \`plan_holder_distribution {"holdersOf": "resource_…X", "sendResource": "resource_…", "total": "10000"}\` → \`build_locker_manifest {"operation": "create"}\` (once) → \`build_locker_manifest {"operation": "airdrop", "locker": "locker_…", "recipients": <csv>}\` → sign each batch → share the claim link. Console: ${origin}/en/console/locker-airdrop (list source: holders of a token).
+- *"Pay these 300 people from a spreadsheet"* → \`build_bulk_send_manifests {"account": "account_…", "recipients": <csv>}\` → sign each batch in order. Console: ${origin}/en/console/bulk-send.
 - *"Which validator should I stake with?"* → \`list_validators\` → compare fee/uptime/APY → staking page ${origin}/en/console/staking.
 - *"What is this manifest going to do?"* → \`explain_manifest\` (plain-language steps) + \`preview_transaction\` (fees, balance changes).
 - *"What's the XRD price / network status?"* → \`get_xrd_price\`, \`get_network_status\`.
 - *"Log me in / prove who I am"* → the local connector's \`request_login {network, dapp_definition, origin}\` (the persona signs; add \`accounts: {quantity: 1, with_proof: true}\` to prove an account in the same approval) → then \`request_ownership_proof {identity_address, accounts}\` whenever exact accounts must be proven again.
 - *"A request never showed on my phone / nothing gets through"* → \`pending_requests\` → \`check_wallet_connection\` → \`connector_log\`; answer or force-close the wallet, then \`await_response\` or \`cancel_request\`. Never resend a request whose failure says \`retry_safe: NO\` If the log shows it never got a turn or a channel, look for other connector processes on the machine (an older version, or a session started before an update) and update/restart them.
 - *"What are my accounts / show my balances"* (this server is stateless — it has no "connected wallet") → the local connector's \`request_accounts\` (no signature) to get the address(es) → \`get_account_balances\` for the chosen one.
-- *"Who holds token X? What NFTs exist in collection Y?"* → \`get_resource_holders\`, \`get_nft_data\`.
+- *"Who holds token X? What NFTs exist in collection Y?"* → \`get_resource_holders\` (\`all: true\` for every holder), \`get_nft_data\`.
 - *"What methods does component_rdx1… expose? What's in its state?"* → \`get_component_blueprint\`, \`get_component_state\`, \`get_key_value_store\`.
 
 # Tool reference

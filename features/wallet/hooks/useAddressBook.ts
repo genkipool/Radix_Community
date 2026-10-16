@@ -5,6 +5,7 @@ export type AddressCategory =
     | 'account'
     | 'validator'
     | 'pool'
+    | 'locker'
     | 'component'
     | 'package'
     | 'resource'
@@ -27,6 +28,7 @@ export function addressCategory(address: string): AddressCategory {
     if (addr.startsWith('account_')) return 'account';
     if (addr.startsWith('validator_')) return 'validator';
     if (addr.startsWith('pool_')) return 'pool';
+    if (addr.startsWith('locker_')) return 'locker';
     if (addr.startsWith('component_')) return 'component';
     if (addr.startsWith('package_')) return 'package';
     if (addr.startsWith('resource_')) return 'resource';
@@ -35,7 +37,9 @@ export function addressCategory(address: string): AddressCategory {
 
 /** Adds a `category` to any entry missing one (older saves predate categories). */
 function withCategory(entry: AddressBookEntry): AddressBookEntry {
-    return { ...entry, category: entry.category ?? addressCategory(entry.address) };
+    // 'other' is re-read too: lockers were saved as 'other' before they had a category.
+    const category = entry.category && entry.category !== 'other' ? entry.category : addressCategory(entry.address);
+    return { ...entry, category };
 }
 
 export function useAddressBook() {

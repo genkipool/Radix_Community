@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, X, Check } from 'lucide-react';
-import { m, AnimatePresence } from "motion/react";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence } from "motion/react";
+import { SelectPopup, SelectPopupEmpty, SelectPopupRow, selectedFirst } from './SelectPopup';
 
 export interface CarouselFilterOption {
     value: string | null;
@@ -93,18 +94,9 @@ export function CarouselFilter({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const sortedOptions = [...options].sort((a, b) => {
-        if (a.value === null) return -1;
-        if (b.value === null) return 1;
-        
-        if (activeValues.length > 0) {
-            const aSelected = activeValues.includes(a.value);
-            const bSelected = activeValues.includes(b.value);
-            if (aSelected && !bSelected) return -1;
-            if (!aSelected && bSelected) return 1;
-        }
-        return 0;
-    });
+    // "All" stays on top, then what was applied when the popup opened.
+    const allOption = options.filter(o => o.value === null);
+    const sortedOptions = [...allOption, ...selectedFirst(options.filter(o => o.value !== null), activeValues, o => o.value)];
 
     const filteredOptions = sortedOptions.filter(opt =>
         opt.label.toLowerCase().includes(searchQuery.toLowerCase())
@@ -165,68 +157,25 @@ export function CarouselFilter({
 
             <AnimatePresence>
                 {isOpen && (
-                    <m.div
-                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-0 right-0 top-full mt-2 w-full rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+                    <SelectPopup
+                        title={title}
+                        onClose={() => setIsOpen(false)}
+                        closeLabel="Cerrar"
+                        search={{ value: searchQuery, onChange: setSearchQuery, placeholder }}
+                        footer={{ label: filterText, onClick: handleFilter }}
+                        listClassName="max-h-60"
+                        className="absolute left-0 right-0 top-full mt-2 w-full z-50"
                     >
-                        <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50 flex items-center justify-between">
-                            <span className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider">{title}</span>
-                            <button
-                                type="button"
-                                onClick={() => setIsOpen(false)}
-                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
-                                title="Cerrar"
-                            >
-                                <X className="size-4" />
-                            </button>
-                        </div>
-                        <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
-                                <input
-                                    type="text"
-                                    placeholder={placeholder}
-                                    aria-label={placeholder}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
-                                />
-                            </div>
-                        </div>
-                        <div className="max-h-60 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                            {filteredOptions.map(opt => {
-                                const isSelected = opt.value === null ? tempValues.length === 0 : tempValues.includes(opt.value);
-                                return (
-                                    <button
-                                        key={opt.value ?? 'all'}
-                                        type="button"
-                                        onClick={() => toggleOption(opt.value)}
-                                        className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg transition-colors group ${isSelected ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)]'}`}
-                                    >
-                                        <span className={`truncate ${isSelected ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{opt.label}</span>
-                                        {isSelected && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
-                                    </button>
-                                );
-                            })}
-                            {filteredOptions.length === 0 && (
-                                <div className="py-4 text-center text-xs text-[var(--color-text-muted)]">
-                                    No se encontraron resultados
-                                </div>
-                            )}
-                        </div>
-                        <div className="p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                            <button
-                                type="button"
-                                onClick={handleFilter}
-                                className="w-full flex items-center justify-center py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 transition-colors"
-                            >
-                                {filterText}
-                            </button>
-                        </div>
-                    </m.div>
+                        {filteredOptions.map(opt => (
+                            <SelectPopupRow
+                                key={opt.value ?? 'all'}
+                                selected={opt.value === null ? tempValues.length === 0 : tempValues.includes(opt.value)}
+                                onClick={() => toggleOption(opt.value)}
+                                label={opt.label}
+                            />
+                        ))}
+                        {filteredOptions.length === 0 && <SelectPopupEmpty>No se encontraron resultados</SelectPopupEmpty>}
+                    </SelectPopup>
                 )}
             </AnimatePresence>
         </div>

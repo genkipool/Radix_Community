@@ -7,6 +7,8 @@ interface BatchValidatorStakeActionProps {
     selectedValidatorsCount: number;
     xrdBalance: number;
     totalStakedXrdSelected: number;
+    /** XRD the selected validators have ready to claim; Claim stays off at 0. */
+    totalClaimableXrdSelected?: number;
     globalAmountStr: string;
     setGlobalAmountStr: (val: string) => void;
     onBatchAction: (action: StakingAction) => void;
@@ -32,6 +34,7 @@ export const BatchValidatorStakeAction = ({
     selectedValidatorsCount,
     xrdBalance,
     totalStakedXrdSelected,
+    totalClaimableXrdSelected = 0,
     globalAmountStr,
     setGlobalAmountStr,
     onBatchAction,
@@ -139,6 +142,7 @@ export const BatchValidatorStakeAction = ({
                         selectedValidatorsCount === 0 ||
                         !canDistribute ||
                         (action === 'Unstake' && totalStakedXrdSelected <= 0) ||
+                        (action === 'Claim' && totalClaimableXrdSelected <= 0) ||
                         (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0));
 
                     const label = action;

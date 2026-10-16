@@ -81,6 +81,12 @@ export interface AccountStakingSectionProps {
      * "Validators"); the delegation count is appended either way.
      */
     listTitle?: string;
+    /**
+     * Validators to start with selected (a link from a validator's profile).
+     * When given they replace the default, which selects every validator the
+     * account already stakes with.
+     */
+    initialValidators?: string[];
 }
 
 type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
@@ -106,6 +112,7 @@ export function AccountStakingSection({
     summaryPlacement = 'inline',
     sectionWrapper,
     listTitle,
+    initialValidators,
 }: AccountStakingSectionProps) {
     const queryClient = useQueryClient();
     const { activeNetworkId, accounts } = useRadixWallet();
@@ -113,9 +120,9 @@ export function AccountStakingSection({
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
 
-    const { xrdAmount, lsuTokens, activeNfts, stakingRows, isLoading } = useAccountStats(address, network, entityData);
+    const { xrdAmount, lsuTokens, activeNfts, stakingRows, isLoading, claimableNfts = {} } = useAccountStats(address, network, entityData);
 
-    const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
+    const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>(initialValidators ?? []);
     const [mountTime] = useState(() => Date.now());
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [hideStakingControls, setHideStakingControls] = useState(false);
@@ -130,7 +137,7 @@ export function AccountStakingSection({
 
     const { submitBatchTransaction, submitMixedBatchTransaction, isTransacting, error: batchError, clearError } = useStakingTransaction();
 
-    const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
+    const [hasInitializedSelections, setHasInitializedSelections] = useState(!!initialValidators?.length);
     // Initialize selections with existing delegations once data loads
     if (!hasInitializedSelections && !isLoading && stakingRows.length > 0) {
         setHasInitializedSelections(true);
@@ -262,15 +269,8 @@ export function AccountStakingSection({
                     lsuResourceAddress: valInfo.lsuResource
                 } as any);
             } else if (actionToPerform === 'Claim') {
-                const nfts: string[] = [];
-                if (entityData?.non_fungible_resources?.items) {
-                    const claimResource = entityData.non_fungible_resources.items.find(
-                        (nft: any) => nft.resource_address === valInfo.claimTokenResourceAddress
-                    );
-                    if (claimResource && claimResource.vaults?.items?.[0]?.items) {
-                        nfts.push(...claimResource.vaults.items[0].items);
-                    }
-                }
+                // Only the NFTs that have matured: one still unbonding aborts the claim.
+                const nfts = claimableNfts[vAddr]?.ids ?? [];
                 if (nfts.length > 0) {
                     items.push({
                         validatorAddress: vAddr,
@@ -342,15 +342,8 @@ export function AccountStakingSection({
 
             // Procesar Claim
             if (selections.claim) {
-                const nfts: string[] = [];
-                if (entityData?.non_fungible_resources?.items) {
-                    const claimResource = entityData.non_fungible_resources.items.find(
-                        (nft: any) => nft.resource_address === valInfo.claimTokenResourceAddress
-                    );
-                    if (claimResource && claimResource.vaults?.items?.[0]?.items) {
-                        nfts.push(...claimResource.vaults.items[0].items);
-                    }
-                }
+                // Only the NFTs that have matured: one still unbonding aborts the claim.
+                const nfts = claimableNfts[vAddr]?.ids ?? [];
                 if (nfts.length > 0) {
                     items.push({
                         action: 'Claim',
@@ -570,6 +563,7 @@ export function AccountStakingSection({
             selectedValidatorsCount={selectedValidatorAddresses.length}
             xrdBalance={Number(xrdAmount) || 0}
             totalStakedXrdSelected={selectedValidatorAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInStake || 0), 0)}
+            totalClaimableXrdSelected={selectedValidatorAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInClaim || 0), 0)}
             globalAmountStr={globalAmountStr}
             setGlobalAmountStr={(val) => {
                 setValidatorSelections({});
@@ -629,6 +623,7 @@ export function AccountStakingSection({
                     <ValidatorStakingRow
                         key={row.validatorAddress}
                         row={row}
+                        claimableNftIds={claimableNfts[row.validatorAddress]?.ids ?? []}
                         isModal={isModal}
                         tt={tt}
                         entityData={entityData}
@@ -808,8 +803,11 @@ function ValidatorStakingRow({
     onOwnerModeChange,
     hideStakingControls,
     onOpenCsvModal,
+    claimableNftIds,
 }: {
     row: StakingEntry;
+    /** Matured claim NFTs of this validator: the only ones a claim may carry. */
+    claimableNftIds: string[];
     isModal: boolean;
     tt?: StakingTranslations;
     entityData: GatewayEntityDetails | null;
@@ -945,6 +943,7 @@ function ValidatorStakingRow({
                     xrdBalance={parseFloat(xrdAmount)}
                     stakedXrd={ownerMode ? ownerLockedStakeXrd : row.xrdInStake}
                     claimableXrd={ownerMode ? ownerUnlockedXrd : row.xrdInClaim}
+                    claimableNftIds={ownerMode ? undefined : claimableNftIds}
                     lsuBalance={lsuTokens.find((t: any) => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find((t: any) => t.validatorAddress === row.validatorAddress)!.amount) : 0}
                     ghostAmount={!ownerMode && globalAmountStr && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr) / selectedValidatorAddresses.length).toString() : undefined}
                     selections={validatorSelections[row.validatorAddress] || {}}

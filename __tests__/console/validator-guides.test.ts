@@ -4,10 +4,23 @@ import enLocale from '@/features/console/locales/en.json';
 import esLocale from '@/features/console/locales/es.json';
 
 const SLUGS = [
+  'validator-info',
+  'locker-info',
   'validator-create',
   'validator-registration',
   'validator-profile',
   'validator-staking',
+  'pool-info',
+  'pool-create',
+  'pool-contribute',
+  'pool-reserves',
+  'pool-redeem',
+  'pool-profile',
+  'pool-manage',
+  'locker-airdrop',
+  'locker-claim',
+  'bulk-send',
+  'resource-holders',
 ] as const;
 
 const LOCALES = { en: enLocale, es: esLocale } as const;
@@ -26,7 +39,7 @@ type Guide = {
 const guideOf = (locale: typeof enLocale, slug: string) =>
   (locale.console.tools as unknown as Record<string, { guide?: Guide }>)[slug]?.guide;
 
-describe('validator info-modal guides', () => {
+describe('validator and pool info-modal guides', () => {
   for (const [lang, locale] of Object.entries(LOCALES)) {
     describe(lang, () => {
       it('gives every validator tool a full guide', () => {

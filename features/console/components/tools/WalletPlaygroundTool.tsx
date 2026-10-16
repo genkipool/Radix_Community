@@ -21,6 +21,7 @@ import type { RolaProofResult } from '@/services/rola/verify';
 import { truncateAddress } from '@/utils/formatters';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { OptionButtons } from '../shared/OptionButtons';
+import { ToolSection } from '../shared/ToolSection';
 import { RadixLogo } from '@/components/shared/RadixLogo';
 import { JsonFileButton, JsonPanel } from './wallet-playground/JsonFile';
 import { ResponseView } from './wallet-playground/ResponseView';
@@ -270,7 +271,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
   );
 
   const accountsGroup = (
-    <Group label={labels.accountsTitle} hint={labels.accountsHint}>
+    <ToolSection title={labels.accountsTitle} hint={labels.accountsHint}>
       <div className="space-y-6">
         {countButtons(COUNT_OPTIONS, accountCount, setAccountCount)}
         {/* Always rendered (disabled without addresses) so the page never jumps. */}
@@ -290,7 +291,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
         </Group>
         {kind === 'login' && scopeButtons(accountsScope, setAccountsScope, quantity === 0)}
       </div>
-    </Group>
+    </ToolSection>
   );
 
   const valueRow = (label: string, value: string[], onChange: (v: string[]) => void, q: Quantifier, onQuantifier: (q: Quantifier) => void) => (
@@ -304,7 +305,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
   );
 
   const personaDataGroup = (
-    <Group label={labels.personaDataTitle} hint={labels.personaDataHint}>
+    <ToolSection title={labels.personaDataTitle} hint={labels.personaDataHint}>
       <div className="space-y-5">
         <OptionButtons
           multiple
@@ -319,7 +320,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
         {valueRow(labels.phonesLabel, phones, setPhones, phoneQuantifier, setPhoneQuantifier)}
         {kind === 'login' && scopeButtons(personaScope, setPersonaScope, !(wantsName || emails.length > 0 || phones.length > 0))}
       </div>
-    </Group>
+    </ToolSection>
   );
 
   const toggleFile = (file: JsonFile) => setOpenFile(openFile === file ? null : file);
@@ -336,9 +337,8 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
           </p>
         </header>
 
-        {/* Every top-level section is closed by a bottom rule. */}
-        <div className="space-y-8 [&>*]:border-b [&>*]:border-[var(--color-card-border)] [&>*]:pb-8">
-          <Group label={labels.kindTitle}>
+        <div className="space-y-5">
+          <ToolSection title={labels.kindTitle}>
             <OptionButtons<Kind>
               layout="grid"
               className="sm:grid-cols-3"
@@ -354,10 +354,10 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
               buttonClassName={OPTION_HEIGHT}
               disabled={isWaiting}
             />
-          </Group>
+          </ToolSection>
 
           {kind === 'login' && (
-            <Group label={labels.authTitle} hint={labels.authHint}>
+            <ToolSection title={labels.authTitle} hint={labels.authHint}>
               <div className="space-y-3">
                 <OptionButtons<LoginAuth>
                   options={[
@@ -375,12 +375,12 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
                   {auth === 'loginWithChallenge' ? labels.authChallengeHint : auth === 'loginWithoutChallenge' ? labels.authNoChallengeHint : labels.authUsePersonaHint}
                 </p>
               </div>
-            </Group>
+            </ToolSection>
           )}
 
           {kind === 'proof' && (
             <>
-              <Group label={labels.sessionPersona} hint={labels.proofIdentityHint}>
+              <ToolSection title={labels.sessionPersona} hint={labels.proofIdentityHint}>
                 <div className="space-y-3">
                   <OptionButtons
                     multiple
@@ -396,8 +396,8 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
                     {labels.proofPersonaBug}
                   </p>
                 </div>
-              </Group>
-              <Group label={labels.proofAccountsTitle} hint={labels.proofAccountsHint}>
+              </ToolSection>
+              <ToolSection title={labels.proofAccountsTitle} hint={labels.proofAccountsHint}>
                 {sessionAccounts.length === 0 ? (
                   <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                     {labels.proofNoAccounts}
@@ -420,7 +420,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
                     disabled={isWaiting}
                   />
                 )}
-              </Group>
+              </ToolSection>
             </>
           )}
 
@@ -428,7 +428,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
           {kind !== 'proof' && personaDataGroup}
 
           {kind === 'login' && (
-            <Group label={labels.resetTitle} hint={labels.resetHint}>
+            <ToolSection title={labels.resetTitle} hint={labels.resetHint}>
               <OptionButtons
                 multiple
                 options={[
@@ -441,7 +441,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
                 buttonClassName={OPTION_HEIGHT}
                 disabled={isWaiting}
               />
-            </Group>
+            </ToolSection>
           )}
         </div>
 
@@ -543,10 +543,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
       </div>
 
       {outcome.status === 'ok' && (
-        <div className="space-y-4 pt-6 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
-          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
-            {labels.responseTitle}
-          </h3>
+        <ToolSection title={labels.responseTitle}>
           <ResponseView
             labels={labels}
             walletData={outcome.walletData}
@@ -555,7 +552,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
             rolaError={rolaError}
             isVerifying={isVerifying}
           />
-        </div>
+        </ToolSection>
       )}
     </div>
   );

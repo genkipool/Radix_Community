@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { HoverPrefetchLink } from '@/components/ui/HoverPrefetchLink';
 import { useLanguage } from '@/context/LanguageContext';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SidebarGraphic } from '@/components/ui/SidebarGraphic';
@@ -15,12 +15,15 @@ import { CONSOLE_GROUPS } from '../data/consoleTools';
 import { useConsoleDictionary } from '../hooks/useConsoleDictionary';
 import { NetworkSwitch } from './NetworkSwitch';
 import { Info } from 'lucide-react';
+import { StarIcon } from '@/components/ui/StarIcon';
 import { CONSOLE_TOOL_SLUGS, type ConsoleToolSlug } from '../types/console.types';
 import { ToolInfoModal } from './shared/ToolInfoModal';
 
 export const CONSOLE_COOKIE_OPEN_GROUPS = 'console_open_groups';
 export const CONSOLE_COOKIE_AUTO_COLLAPSE = 'console_auto_collapse';
 export const CONSOLE_COOKIE_FLAT_VIEW = 'console_flat_view';
+export const CONSOLE_COOKIE_FAVORITES = 'console_favorites';
+export const CONSOLE_COOKIE_FAVORITES_ONLY = 'console_favorites_only';
 
 interface ConsoleSidebarProps {
   dictionary?: Partial<Dictionary>;
@@ -30,6 +33,8 @@ interface ConsoleSidebarProps {
   initialAutoCollapse: boolean;
   initialExpandedGroups: string;
   initialFlatView: boolean;
+  initialFavorites: string;
+  initialFavoritesOnly: boolean;
 }
 
 export default function ConsoleSidebar({
@@ -40,12 +45,19 @@ export default function ConsoleSidebar({
   initialAutoCollapse,
   initialExpandedGroups,
   initialFlatView,
+  initialFavorites,
+  initialFavoritesOnly,
 }: ConsoleSidebarProps) {
   const t = useConsoleDictionary(dictionary);
   const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [flatView, setFlatView] = useState(initialFlatView);
   const [infoModalSlug, setInfoModalSlug] = useState<ConsoleToolSlug | null>(null);
+  // Only slugs that still exist: a renamed or removed tool drops out of the list.
+  const [favorites, setFavorites] = useState<ConsoleToolSlug[]>(() =>
+    CONSOLE_TOOL_SLUGS.filter((slug) => initialFavorites.split(',').includes(slug)),
+  );
+  const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly);
 
   const {
     expandedIds: expandedGroups,
@@ -76,6 +88,34 @@ export default function ConsoleSidebar({
     });
   };
 
+  const toggleFavorite = (slug: ConsoleToolSlug) => {
+    setFavorites((prev) => {
+      const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
+      setCookie(CONSOLE_COOKIE_FAVORITES, next.join(','));
+      return next;
+    });
+  };
+
+  const toggleFavoritesOnly = () => {
+    setFavoritesOnly((prev) => {
+      setCookie(CONSOLE_COOKIE_FAVORITES_ONLY, String(!prev));
+      return !prev;
+    });
+  };
+
+  const isShown = (slug: ConsoleToolSlug) => !favoritesOnly || favorites.includes(slug);
+
+  /** The star, left of the info button on every tool row. */
+  const favoriteAction = (slug: ConsoleToolSlug) => {
+    const active = favorites.includes(slug);
+    return {
+      icon: <StarIcon filled={active} />,
+      title: active ? sidebarT.favorite_remove ?? 'Remove from favourites' : sidebarT.favorite_add ?? 'Add to favourites',
+      onClick: () => toggleFavorite(slug),
+      color: active ? 'var(--color-primary)' : undefined,
+    };
+  };
+
   const matchesQuery = (slug: ConsoleToolSlug, query: string) => {
     const labels = toolLabels[slug] ?? {};
     return (
@@ -87,15 +127,18 @@ export default function ConsoleSidebar({
   /* Filter groups/tools by search query (title + description) */
   const query = searchQuery.trim().toLowerCase();
   const filteredGroups = CONSOLE_GROUPS.flatMap((group) => {
-    if (!query) return [group];
+    const shown = group.tools.filter(isShown);
+    if (shown.length === 0) return [];
+    if (!query) return [{ ...group, tools: shown }];
     const groupLabel = (groupLabels[group.id] ?? group.id).toLowerCase();
-    if (groupLabel.includes(query)) return [group];
-    const matching = group.tools.filter((slug) => matchesQuery(slug, query));
+    if (groupLabel.includes(query)) return [{ ...group, tools: shown }];
+    const matching = shown.filter((slug) => matchesQuery(slug, query));
     return matching.length > 0 ? [{ ...group, tools: matching }] : [];
   });
 
-  const flatTools = CONSOLE_TOOL_SLUGS.filter((slug) => !query || matchesQuery(slug, query));
+  const flatTools = CONSOLE_TOOL_SLUGS.filter((slug) => isShown(slug) && (!query || matchesQuery(slug, query)));
   const noResults = flatView ? flatTools.length === 0 : filteredGroups.length === 0;
+  const noFavorites = favoritesOnly && favorites.length === 0;
 
   return (
     <SidebarLayout
@@ -130,6 +173,10 @@ export default function ConsoleSidebar({
           gridView={flatView}
           onGridViewToggle={toggleFlatView}
           gridViewTitle={sidebarT.flat_view ?? 'List view'}
+          favoritesOnly={favoritesOnly}
+          onFavoritesToggle={toggleFavoritesOnly}
+          favoritesTitle={sidebarT.favorites_only ?? 'Favourites only'}
+          compactCollapse
         />
       }
       onHeaderClick={onHomeClick}
@@ -143,7 +190,7 @@ export default function ConsoleSidebar({
             const isSelected = slug === selectedSlug;
             return (
               <div key={slug} className="relative group flex items-center">
-                <Link
+                <HoverPrefetchLink
                   href={toolHref(slug)}
                   onClick={(e) => {
                     if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
@@ -171,13 +218,32 @@ export default function ConsoleSidebar({
                   }}
                 >
                   {toolLabels[slug]?.title ?? slug}
-                </Link>
+                </HoverPrefetchLink>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleFavorite(slug);
+                  }}
+                  title={favoriteAction(slug).title}
+                  aria-label={favoriteAction(slug).title}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="absolute right-9 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 select-none"
+                  style={{
+                    background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--color-surface)',
+                    color: isSelected ? 'var(--color-bg)' : favorites.includes(slug) ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    border: `1px solid ${isSelected ? 'transparent' : 'var(--color-card-border)'}`,
+                  }}
+                >
+                  <StarIcon filled={favorites.includes(slug)} />
+                </button>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     setInfoModalSlug(slug);
                   }}
+                  onMouseDown={(e) => e.preventDefault()}
                   title="Info"
                   className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all z-10"
                   style={{
@@ -207,7 +273,7 @@ export default function ConsoleSidebar({
       ) : (
         <div className="space-y-3">
           {filteredGroups.map((group) => {
-            const isExpanded = expandedGroups.has(group.id) || !!query;
+            const isExpanded = expandedGroups.has(group.id) || !!query || favoritesOnly;
             const hasSelected = selectedSlug !== null && group.tools.includes(selectedSlug);
 
             const items: SidebarCardItem[] = group.tools.map((slug) => ({
@@ -215,7 +281,9 @@ export default function ConsoleSidebar({
               label: toolLabels[slug]?.title ?? slug,
               isSelected: slug === selectedSlug,
               href: toolHref(slug),
+              prefetchOnHover: true,
               actions: [
+                favoriteAction(slug),
                 {
                   icon: <Info className="size-3.5" />,
                   title: 'Info',
@@ -255,10 +323,16 @@ export default function ConsoleSidebar({
         </div>
       )}
 
-      {noResults && (
-        <p className="text-center py-12 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          {t.noResults} &ldquo;{searchQuery}&rdquo;
+      {noFavorites ? (
+        <p className="text-center py-12 px-4 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          {sidebarT.no_favorites}
         </p>
+      ) : (
+        noResults && (
+          <p className="text-center py-12 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            {t.noResults} &ldquo;{searchQuery}&rdquo;
+          </p>
+        )
       )}
 
       <ToolInfoModal

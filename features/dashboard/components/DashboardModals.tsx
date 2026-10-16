@@ -17,10 +17,7 @@ import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { ValidatorDetailView } from '../staking/components/ValidatorDetailView';
 import { TransactionDetailModal } from '../explorador/components/TransactionDetailModal';
-import { AccountCard } from '../explorador/components/AccountCard';
-import { PackageCard } from '../explorador/components/PackageCard';
-import { ComponentCard } from '../explorador/components/ComponentCard';
-import { ResourceCard } from '../explorador/components/ResourceCard';
+import { EntityCard } from '../explorador/components/entityCards';
 
 import type { DashboardModalsProps } from '../types/components.types';
 
@@ -186,63 +183,19 @@ export const DashboardModals = ({
             onClick={closeExpanded}
           >
             <div className="w-full max-w-[1600px] mx-auto pointer-events-auto flex flex-col h-[calc(100dvh-2rem)]">
-              {expandedAccount.startsWith('package_') ? (
-                  <PackageCard
-                    address={expandedAccount}
-                    columns={1}
-                    isExpanded={true}
-                    onExpand={closeExpanded}
-                    onCopy={copyAddress}
-                    copiedAddress={copiedAddress}
-                    t={t}
-                    network={network}
-                    locale={locale}
-                    marketData={marketData}
-                    isModal={true}
-                  />
-              ) : expandedAccount.startsWith('component_') ? (
-                  <ComponentCard
-                    address={expandedAccount}
-                    columns={1}
-                    isExpanded={true}
-                    onExpand={closeExpanded}
-                    onCopy={copyAddress}
-                    copiedAddress={copiedAddress}
-                    t={t}
-                    network={network}
-                    locale={locale}
-                    marketData={marketData}
-                    isModal={true}
-                  />
-              ) : expandedAccount.startsWith('resource_') ? (
-                  <ResourceCard
-                    address={expandedAccount}
-                    columns={1}
-                    isExpanded={true}
-                    onExpand={closeExpanded}
-                    onCopy={copyAddress}
-                    copiedAddress={copiedAddress}
-                    t={t}
-                    network={network}
-                    locale={locale}
-                    marketData={marketData}
-                    isModal={true}
-                  />
-              ) : (
-                  <AccountCard
-                    address={expandedAccount}
-                    columns={1}
-                    isExpanded={true}
-                    onExpand={closeExpanded}
-                    onCopy={copyAddress}
-                    copiedAddress={copiedAddress}
-                    t={t}
-                    network={network}
-                    locale={locale}
-                    marketData={marketData}
-                    isModal={true}
-                  />
-              )}
+              <EntityCard
+                address={expandedAccount}
+                columns={1}
+                isExpanded={true}
+                onExpand={closeExpanded}
+                onCopy={copyAddress}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                isModal={true}
+              />
             </div>
           </m.div>
         </React.Fragment>
