@@ -621,7 +621,7 @@
         },
         "deposits": {
           "label": "Deposits",
-          "tooltip": "Who else may deposit into this account: the general rule, token exceptions and authorised badges.",
+          "tooltip": "Who else may deposit into this account: the general rule, resource exceptions and authorised badges.",
           "loading": "Reading the deposit rules…",
           "error": "Could not read the deposit rules.",
           "rules": {

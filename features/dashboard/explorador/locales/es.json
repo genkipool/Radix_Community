@@ -621,7 +621,7 @@
         },
         "deposits": {
           "label": "Depósitos",
-          "tooltip": "Quién más puede depositar en esta cuenta: la regla general, excepciones por token e insignias autorizadas.",
+          "tooltip": "Quién más puede depositar en esta cuenta: la regla general, excepciones por recurso e insignias autorizadas.",
           "loading": "Leyendo las reglas de depósito…",
           "error": "No se pudieron leer las reglas de depósito.",
           "rules": {

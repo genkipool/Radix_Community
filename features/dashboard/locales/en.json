@@ -676,6 +676,24 @@
       "start_date": "Start Date",
       "end_date": "End Date",
       "range_placeholder": "Select range..."
+    },
+    "og": {
+      "stokenet": "Testnet",
+      "tx_title": "Transaction",
+      "tx_success": "Committed",
+      "tx_failed": "Failed",
+      "status": "Status",
+      "fee": "Fee",
+      "date": "Date",
+      "account": "Radix account",
+      "tokens": "Tokens",
+      "nft_collections": "NFT collections",
+      "type": "Type",
+      "token": "Token",
+      "nft": "NFT",
+      "supply": "Supply",
+      "minted": "Minted",
+      "decimals": "Decimals"
     }
   },
   "stakes": {

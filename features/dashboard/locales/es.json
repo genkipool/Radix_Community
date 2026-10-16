@@ -676,6 +676,24 @@
       "start_date": "Fecha Inicio",
       "end_date": "Fecha Fin",
       "range_placeholder": "Seleccionar rango..."
+    },
+    "og": {
+      "stokenet": "Red de pruebas",
+      "tx_title": "Transacción",
+      "tx_success": "Completada",
+      "tx_failed": "Fallida",
+      "status": "Estado",
+      "fee": "Comisión",
+      "date": "Fecha",
+      "account": "Cuenta de Radix",
+      "tokens": "Tokens",
+      "nft_collections": "Colecciones NFT",
+      "type": "Tipo",
+      "token": "Token",
+      "nft": "NFT",
+      "supply": "Suministro",
+      "minted": "Acuñados",
+      "decimals": "Decimales"
     }
   },
   "stakes": {
