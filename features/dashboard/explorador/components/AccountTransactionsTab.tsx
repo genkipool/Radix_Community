@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { m } from "motion/react";
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchEntityDetails, apiFetchValidators, apiFetchHistoricalStakingBalance } from '@/features/dashboard/services/apiClient';
@@ -13,6 +14,7 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { AlertCircle } from 'lucide-react';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import { formatNumber } from '@/utils/formatters';
+import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/types/shared.types';
 
 interface AccountTransactionsTabProps {
@@ -385,9 +387,14 @@ export function AccountTransactionsTab({
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-mono text-xs text-[var(--color-primary)]">
+                                                        <Link
+                                                            href={dashboardRoutes.tx(locale, tx.intentHash, { network })}
+                                                            className="font-mono text-xs text-[var(--color-primary)] hover:underline"
+                                                            title={tx.intentHash}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
                                                             {shortHash}
-                                                        </span>
+                                                        </Link>
                                                         <CopyButton value={tx.intentHash} variant="minimal" />
                                                     </div>
                                                 </td>

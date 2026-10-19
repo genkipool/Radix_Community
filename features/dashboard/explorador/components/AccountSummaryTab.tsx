@@ -491,7 +491,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
     const { address, name, symbol, iconUrl, amount, isNft } = item;
 
     return (
-        <div className={isModal ? `flex flex-col h-full py-1 ${burned ? 'opacity-70' : ''}` : `flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full`}>
+        <div className={isModal ? `flex flex-col h-full py-1 ${burned ? 'opacity-70' : ''}` : `flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full min-w-0 overflow-hidden`}>
             <div className="flex items-center gap-2 mb-2 min-w-0">
                 <div className="size-6 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center">
                     {iconUrl ? (
@@ -503,11 +503,11 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
                 <div className="flex flex-col min-w-0 flex-1">
                     <span className="font-bold text-xs text-[var(--color-text-main)] truncate" title={name}>{name}</span>
                     <div className="flex flex-wrap items-center justify-between gap-1 mt-0.5 w-full">
-                        <div className="flex items-center gap-1 min-w-0">
-                            <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)]">
+                        <div className="flex items-baseline gap-1 min-w-0 max-w-full">
+                            <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)] whitespace-nowrap">
                                 {isNft ? formatNumber(parseInt(amount, 10), 0, locale) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2, locale) : formatNumber(parseFloat(amount), 4, locale))}
                             </span>
-                            {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate shrink-0">{symbol}</span>}
+                            {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate min-w-0" title={symbol}>{symbol}</span>}
                         </div>
                         {(item.isClaim || item.isOwnerBadge) && (
                             <div className="flex items-baseline gap-1.5 shrink-0">

@@ -40,8 +40,17 @@ export interface StakingEntry {
 
 export interface OracleUpdate {
   baseToken: string;
+  /** What the price is quoted in; '' when the manifest does not say. */
   quoteToken: string;
   price: string;
+}
+
+/** The oracle call behind a set of price updates. */
+export interface OracleCall {
+  component: string;
+  method: string;
+  /** The resource every price is quoted in (the one the call prices at exactly 1), when there is one. */
+  reference: string | null;
 }
 
 export interface AirdropData {
@@ -60,7 +69,10 @@ export interface ParsedManifest {
   badgeResource: string | null;
   badgeAmount: string | null;
   badgeOrigin: string | null;
+  /** Local ids of the badge, when the proof is of non-fungibles. */
+  badgeNftIds: string[];
   oracleUpdates: OracleUpdate[];
+  oracleCall: OracleCall | null;
   candiesMatch: RegExpMatchArray | null;
 }
 

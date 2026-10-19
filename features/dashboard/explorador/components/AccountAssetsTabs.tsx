@@ -10,7 +10,7 @@ import { ResourceInlinePanel } from '@/features/dashboard/explorador/components/
 import { NftCollectionPanel } from './NftCollectionPanel';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
+import { apiFetchAccountNftHistory, apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import type { GatewayEntityDetails, TranslationsT, MetadataItem } from '@/features/dashboard/types';
 import { useAccountStats } from '../hooks/useAccountStats';
 import type { ParsedResource as SharedParsedResource } from '../types/models.types';
@@ -100,7 +100,7 @@ export function AccountNftsTab({
     return (
         <div className="space-y-6">
             <AssetSection title={`${tt?.account_summary?.nfts_tab || 'NFTs'} (${activeNfts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
-            <AssetSection title={`${tt?.account_summary?.burned_nfts || 'Burned, sent or deposited NFTs'} (${burnedNfts.length})`} items={burnedNfts} onCopy={onCopy} copiedAddress={copiedAddress} burned tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.burned_nfts || 'Burned, sent or deposited NFTs'} (${burnedNfts.length})`} items={burnedNfts} holder={_address} onCopy={onCopy} copiedAddress={copiedAddress} burned tt={tt} network={network} locale={locale} />
             {activeNfts.length === 0 && burnedNfts.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No NFTs found.</p>
             )}
@@ -171,11 +171,23 @@ function ExpandableResourceCard({
         gcTime: 10 * 60_000,
         retry: 1 });
 
-    const idsKey = ids ? ids.toSorted().join(',') : '';
+    // A collection the account no longer holds has no ids in its vaults: the
+    // ones it held come from its history, newest movement first.
+    const formerHolder = burned && isNft && !ids?.length ? holder : undefined;
+    const { data: formerIds, isLoading: isLoadingFormer } = useQuery({
+        queryKey: ['account-nft-history', formerHolder, address, network],
+        queryFn: () => apiFetchAccountNftHistory(formerHolder!, address, network as 'mainnet' | 'stokenet'),
+        enabled: expanded && !!formerHolder,
+        staleTime: 5 * 60_000,
+        gcTime: 10 * 60_000,
+        retry: 1 });
+    const shownIds = ids?.length ? ids : formerIds ?? [];
+
+    const idsKey = shownIds.toSorted().join(',');
     const { data: nftData = [], isLoading: isLoadingNft } = useQuery({
         queryKey: ['nft-data', address, idsKey, network],
-        queryFn: () => apiFetchNonFungibleData(address, ids || [], network as 'mainnet' | 'stokenet'),
-        enabled: expanded && isNft && !!ids && ids.length > 0,
+        queryFn: () => apiFetchNonFungibleData(address, shownIds, network as 'mainnet' | 'stokenet'),
+        enabled: expanded && isNft && shownIds.length > 0,
         staleTime: Infinity,
         gcTime: 10 * 60_000,
         retry: 1 });
@@ -200,9 +212,9 @@ function ExpandableResourceCard({
                         )}
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="font-bold text-sm text-[var(--color-text-main)] truncate" title={name}>{name}</span>
-                            {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate shrink-0">{symbol}</span>}
+                        <div className="flex items-baseline gap-1.5 min-w-0">
+                            <span className="font-bold text-sm text-[var(--color-text-main)] truncate min-w-[3ch]" title={name}>{name}</span>
+                            {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate min-w-0 max-w-[40%] shrink" title={symbol}>{symbol}</span>}
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate select-all">{truncateAddress(address, 6, 6)}</span>
@@ -218,13 +230,13 @@ function ExpandableResourceCard({
                 </div>
 
                 {/* Right side: Amount + Chevron */}
-                <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex flex-col items-end gap-1">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-xs font-mono font-black text-[var(--color-text-main)] tracking-tight">
+                <div className="flex items-center gap-2 shrink-0 max-w-[50%]">
+                    <div className="flex flex-col items-end gap-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5 min-w-0 max-w-full">
+                            <span className="text-xs font-mono font-black text-[var(--color-text-main)] tracking-tight whitespace-nowrap">
                                 {parseFloat(amount).toLocaleString(locale || 'en-US')}
                             </span>
-                            <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right" title={symbol || name}>
+                            <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right truncate min-w-0 max-w-[7rem]" title={symbol || name}>
                                 {symbol || name}
                             </span>
                         </div>
@@ -259,12 +271,15 @@ function ExpandableResourceCard({
                     >
                         {isNft ? (
                             <NftCollectionPanel
+                                // Remounted once the former ids arrive, so it opens on them.
+                                key={formerHolder ? `former-${shownIds.length}` : 'held'}
                                 resourceAddress={address}
                                 meta={entityData}
                                 nftData={nftData as Record<string, unknown>[]}
-                                nftLoading={isLoadingNft || isLoadingEntity}
-                                ids={ids || []}
-                                type="neutral"
+                                nftLoading={isLoadingNft || isLoadingEntity || (!!formerHolder && isLoadingFormer)}
+                                ids={shownIds}
+                                type={formerHolder ? 'removed' : 'neutral'}
+                                itemsLabel={formerHolder ? tt?.nft_panel_items_former : undefined}
                                 onCopy={onCopy}
                                 copiedAddress={copiedAddress}
                                 tt={tt}

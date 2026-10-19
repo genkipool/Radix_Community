@@ -58,39 +58,124 @@ export async function apiFetchTransactionDetails(intentHash: string, network: 'm
     return res.json();
 }
 
-export async function apiFetchEntityDetails(address: string, network: 'mainnet' | 'stokenet' = 'mainnet', refresh = false): Promise<GatewayEntityDetails> {
+/** The entity/details request every explorer card makes, for one address or a batch. */
+const entityDetailsBody = (addresses: string[]) => JSON.stringify({
+    addresses,
+    opt_ins: {
+        explicit_metadata: [
+            'name', 'symbol', 'icon_url', 'description', 'tags',
+            'info_url', 'validator_fee_factor', 'claim_epoch_delay',
+            'dapp_definition', 'dapp_definitions', 'pool', 'pool_address',
+            'validator', 'claim_nft'
+        ],
+        ancestor_identities: false,
+        component_royalty_vault_balance: false,
+        package_royalty_vault_balance: false,
+        non_fungible_include_nfids: true,
+        dapp_two_way_links: true,
+        native_resource_details: true,
+    },
+    aggregation_level: 'Vault'
+});
+
+/** One entity/details request, its items keyed by address, each carrying the ledger state. */
+async function postEntityDetails(addresses: string[], network: 'mainnet' | 'stokenet', refresh = false): Promise<Record<string, GatewayEntityDetails>> {
     const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
     const res = await fetch(`${baseUrl}/state/entity/details`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            addresses: [address],
-            opt_ins: {
-                explicit_metadata: [
-                    'name', 'symbol', 'icon_url', 'description', 'tags',
-                    'info_url', 'validator_fee_factor', 'claim_epoch_delay',
-                    'dapp_definition', 'dapp_definitions', 'pool', 'pool_address',
-                    'validator', 'claim_nft'
-                ],
-                ancestor_identities: false,
-                component_royalty_vault_balance: false,
-                package_royalty_vault_balance: false,
-                non_fungible_include_nfids: true,
-                dapp_two_way_links: true,
-                native_resource_details: true,
-            },
-            aggregation_level: 'Vault'
-        }),
+        body: entityDetailsBody(addresses),
         cache: refresh ? 'no-store' : 'default',
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const data = await res.json();
-    if (!data.items || data.items.length === 0) throw new Error("Entity not found");
+    const data = await res.json() as { items?: GatewayEntityDetails[]; ledger_state?: unknown };
+    // Inject ledger_state into each item for epoch calculations. A request
+    // for one address takes its one item whatever address it reports.
+    const items = data.items ?? [];
+    return Object.fromEntries(items.map((item) => [
+        addresses.length === 1 && items.length === 1 ? addresses[0] : item.address,
+        Object.assign(item, { ledger_state: data.ledger_state }),
+    ]));
+}
 
-    // Inject ledger_state into the returned item for epoch calculations
-    const item = data.items[0];
-    item.ledger_state = data.ledger_state;
-    return item as GatewayEntityDetails;
+// ─── Coalescing ─────────────────────────────────────────────────────────────
+// Cards ask for their entity one by one as they mount; asked within the same
+// few milliseconds, they share one request (20 addresses each, the Gateway's
+// limit) and an address asked twice is asked once. Should a shared request
+// fail, each address is asked on its own, so one bad address cannot fail the
+// others and every caller sees what a request of its own would have given.
+
+/** How long a request waits for others to join it. Below a frame: nothing a person can see. */
+const COALESCE_MS = 10;
+const ENTITY_BATCH_LIMIT = 20;
+
+interface Waiter {
+    resolve: (details: GatewayEntityDetails) => void;
+    reject: (error: unknown) => void;
+}
+
+const queued: Record<'mainnet' | 'stokenet', Map<string, Waiter[]>> = { mainnet: new Map(), stokenet: new Map() };
+const timers: Partial<Record<'mainnet' | 'stokenet', ReturnType<typeof setTimeout>>> = {};
+
+async function settle(addresses: string[], waiters: Map<string, Waiter[]>, network: 'mainnet' | 'stokenet') {
+    const answer = (address: string, found: GatewayEntityDetails | undefined) => {
+        for (const waiter of waiters.get(address) ?? []) {
+            if (found) waiter.resolve(found);
+            else waiter.reject(new Error('Entity not found'));
+        }
+    };
+    try {
+        const found = await postEntityDetails(addresses, network);
+        for (const address of addresses) answer(address, found[address]);
+    } catch (error) {
+        if (addresses.length === 1) {
+            for (const waiter of waiters.get(addresses[0]) ?? []) waiter.reject(error);
+            return;
+        }
+        await Promise.all(addresses.map((address) => settle([address], waiters, network)));
+    }
+}
+
+function flush(network: 'mainnet' | 'stokenet') {
+    delete timers[network];
+    const waiters = queued[network];
+    queued[network] = new Map();
+    const addresses = [...waiters.keys()];
+    for (let i = 0; i < addresses.length; i += ENTITY_BATCH_LIMIT) {
+        void settle(addresses.slice(i, i + ENTITY_BATCH_LIMIT), waiters, network);
+    }
+}
+
+export async function apiFetchEntityDetails(address: string, network: 'mainnet' | 'stokenet' = 'mainnet', refresh = false): Promise<GatewayEntityDetails> {
+    // A forced refresh skips the queue: it must not be answered from a shared request.
+    if (refresh) {
+        const found = (await postEntityDetails([address], network, true))[address];
+        if (!found) throw new Error('Entity not found');
+        return found;
+    }
+    return new Promise<GatewayEntityDetails>((resolve, reject) => {
+        const waiting = queued[network].get(address);
+        if (waiting) waiting.push({ resolve, reject });
+        else queued[network].set(address, [{ resolve, reject }]);
+        timers[network] ??= setTimeout(() => flush(network), COALESCE_MS);
+    });
+}
+
+/**
+ * Several entities' details, each exactly as {@link apiFetchEntityDetails}
+ * returns it; they join the same shared requests, so a card asking for one of
+ * them at the same moment adds nothing. Addresses the Gateway does not know
+ * are left out.
+ */
+export async function apiFetchEntityDetailsBatch(addresses: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, GatewayEntityDetails>> {
+    const unique = [...new Set(addresses)];
+    const results = await Promise.allSettled(unique.map((address) => apiFetchEntityDetails(address, network)));
+    const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected' && !String(r.reason).includes('Entity not found'));
+    if (failed) throw failed.reason;
+    return Object.fromEntries(unique.flatMap((address, i) => {
+        const r = results[i];
+        return r.status === 'fulfilled' ? [[address, r.value]] : [];
+    }));
 }
 
 export async function apiFetchNonFungibleData(resourceAddress: string, localIds: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, unknown>[]> {
@@ -431,4 +516,39 @@ export async function apiFetchKeyValueEntry(
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json() as { entries?: Array<{ value?: { programmatic_json?: unknown } }> };
     return data.entries?.[0]?.value?.programmatic_json ?? null;
+}
+
+/**
+ * The local ids of a collection an account has held, newest movement first:
+ * what entered or left it, read from its transactions that moved that resource.
+ * Covers what it no longer holds (sent, deposited or burned), which no vault shows.
+ */
+export async function apiFetchAccountNftHistory(
+    account: string,
+    resourceAddress: string,
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+): Promise<string[]> {
+    const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
+    const res = await fetch(`${baseUrl}/stream/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            limit_per_page: 100,
+            affected_global_entities_filter: [account],
+            balance_change_resources_filter: [resourceAddress],
+            opt_ins: { balance_changes: true },
+        }),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json() as {
+        items?: Array<{ balance_changes?: { non_fungible_balance_changes?: Array<{ entity_address: string; resource_address: string; added?: string[]; removed?: string[] }> } }>;
+    };
+    const ids = new Set<string>();
+    for (const tx of data.items ?? []) {
+        for (const change of tx.balance_changes?.non_fungible_balance_changes ?? []) {
+            if (change.entity_address !== account || change.resource_address !== resourceAddress) continue;
+            for (const id of [...(change.removed ?? []), ...(change.added ?? [])]) ids.add(id);
+        }
+    }
+    return [...ids];
 }

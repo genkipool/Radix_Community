@@ -2,16 +2,20 @@
 
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Activity, Gift, Vote, TrendingUp, ArrowRight, Check, Copy, Settings2, Landmark, User, Hash, Clock, Database } from 'lucide-react';
-import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
+import { m, AnimatePresence } from 'motion/react';
+import { Activity, Gift, Vote, TrendingUp, ArrowRight, Check, ChevronDown, Copy, Settings2, Landmark, User, Hash, Clock, Database } from 'lucide-react';
+import { useEntityData, extractEntityMeta } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
-import type { OracleUpdate, AirdropData } from '@/features/dashboard/explorador/types';
-import type { Network, TranslationsT, GatewayEvent, GatewayField } from '@/features/dashboard/types';
+import type { OracleUpdate, OracleCall, AirdropData } from '@/features/dashboard/explorador/types';
+import type { Network, TranslationsT, GatewayEvent, GatewayField, GatewayEntityDetails } from '@/features/dashboard/types';
 import { sanitizeText } from '@/utils/sanitize';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import { resolveProposerInfo, findProposerValidator } from '@/features/dashboard/explorador/utils/proposerUtils';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { priceChange, priceRewrites, type PriceRewrite } from '@/features/dashboard/explorador/utils/oraclePrices';
+import { useEntityDetailsBatch } from '@/features/dashboard/explorador/hooks/useEntityDetailsBatch';
+import { ResourceInlinePanel } from './ResourceInlinePanel';
 
 const findEventAmount = (events: GatewayEvent[], resourceAddress: string): string | null => {
     if (!resourceAddress) return null;
@@ -66,66 +70,142 @@ const extractResourceAddress = (ev: GatewayEvent): string => {
 };
 
 
-/* OraclePriceUpdateCard */
+/* OraclePriceRow
+   One price of an oracle update in three columns (what one unit was worth,
+   what it is worth now, how much it moved), with a bar for where it sits
+   among the others (log scale: a feed mixes 1e-10 placeholders with BTC).
+   Opens into the resource's own tabs, from the details already loaded for
+   the whole update. */
 
-function OraclePriceUpdateCard({
-    update, tt, onCopy, copiedAddress, onResourceClick, network, locale = 'en',
+/** A price as people read it: the significant digits of a tiny one, a few decimals of a large one. */
+const formatOraclePrice = (price: string, locale: string) => {
+    const n = Number(price);
+    if (!Number.isFinite(n)) return price;
+    return n >= 1
+        ? n.toLocaleString(locale, { maximumFractionDigits: 4 })
+        : n.toLocaleString(locale, { maximumSignificantDigits: 4 });
+};
+
+/** A template's {placeholders} replaced by nodes. */
+const fillTemplate = (template: string, nodes: Record<string, React.ReactNode>) =>
+    template.split(/(\{\w+\})/).map((part, i) => {
+        const key = part.match(/^\{(\w+)\}$/)?.[1];
+        return <React.Fragment key={i}>{key && key in nodes ? nodes[key] : part}</React.Fragment>;
+    });
+
+/** The time between two moments, in the largest unit that keeps it readable. */
+const formatGap = (seconds: number, locale: string) => {
+    const [value, unit] = seconds < 3600 ? [seconds / 60, 'minute'] : seconds < 86_400 ? [seconds / 3600, 'hour'] : [seconds / 86_400, 'day'];
+    return new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: 'short', maximumFractionDigits: 1 }).format(value);
+};
+
+/**
+ * Columns shared by the header and every row, so they line up. Narrow
+ * screens: the asset on its own line, the three prices under it.
+ */
+const ORACLE_GRID = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-x-2 sm:gap-x-3 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_9.5rem_10.5rem_4.5rem_0.875rem] items-center gap-y-1';
+
+function OraclePriceRow({
+    update, share, rewrite, details, loading, unit, tt, onCopy, copiedAddress, network, locale = 'en',
 }: {
     update: OracleUpdate;
+    /** Where the new price sits between the lowest (0) and the highest (1) of the update, on a log scale. */
+    share: number;
+    /** What the update did to this price, read from the receipt. */
+    rewrite?: PriceRewrite;
+    /** The token's details, loaded with the rest of the update's. */
+    details: GatewayEntityDetails | null;
+    loading: boolean;
+    /** The unit prices are quoted in (its symbol), when known. */
+    unit: string;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
-    onResourceClick?: (addr: string) => void;
     network: Network;
-    locale?: string
+    locale?: string;
 }) {
-    const meta = useEntityData(update?.quoteToken, network);
-    const symbol = meta?.symbol ?? '';
+    const [open, setOpen] = React.useState(false);
+    const meta = details ? extractEntityMeta(details) : null;
+    const label = meta?.symbol || meta?.name || `${update.baseToken.slice(0, 14)}…${update.baseToken.slice(-6)}`;
+    const before = rewrite?.before?.price;
+    const change = priceChange(before, update.price);
+    const changeColor = change === null || change === 0
+        ? 'text-[var(--color-text-muted)]'
+        : change > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
+    const worth = (price: string) => `1 ${label} = ${price}${unit ? ` ${unit}` : ''}`;
+    const unitMark = unit && <span className="hidden sm:inline ml-1 font-sans text-[9px] font-bold text-[var(--color-text-muted)]">{unit}</span>;
 
     return (
-        <div className="p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-col gap-2.5 shadow-sm h-full">
-            <div className="flex flex-col gap-1.5 min-w-0">
-                <EntityBadge
-                    address={update?.baseToken}
-                    tt={tt}
-                    onCopy={onCopy}
-                    copiedAddress={copiedAddress}
-                    onResourceClick={onResourceClick}
-                    network={network}
-                    locale={locale}
-                />
-            </div>
-            <div className="flex items-center justify-between pt-2 border-t border-[var(--color-card-border)]">
-                <span className="text-[10px] uppercase font-black text-blue-500 tracking-wider">
-                    {tt?.oracle_new_price || 'New Price'}
-                </span>
-                <span className="text-sm font-mono font-black text-blue-400 flex items-center gap-1.5">
-                    {update?.price}
-                    {symbol && (
-                        <span className="text-[10px] font-bold text-[var(--color-text-main)] bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
-                            {symbol}
+        <li className={open ? 'bg-[var(--color-surface)]' : ''}>
+            <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={open}
+                onClick={(e) => { e.stopPropagation(); if (!window.getSelection()?.toString()) setOpen((v) => !v); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); } }}
+                className={`${ORACLE_GRID} px-1 py-2 cursor-pointer rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors`}
+            >
+                <span className="col-span-3 sm:col-span-1 flex items-center gap-2 min-w-0" title={meta?.name ? `${meta.name} · ${update.baseToken}` : update.baseToken}>
+                    {meta?.iconUrl ? (
+                        <SafeImage src={meta.iconUrl} alt={label} fallbackName={label} className="size-5 rounded-full object-cover shrink-0" />
+                    ) : (
+                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--color-primary)]/10 text-[8px] font-black text-[var(--color-primary)]">
+                            {label.slice(0, 2).toUpperCase()}
                         </span>
                     )}
+                    <span className="truncate text-xs font-bold text-[var(--color-text-main)]">{label}</span>
                 </span>
+                <span className="hidden sm:block h-1.5 rounded-full bg-[var(--color-primary)]/10 overflow-hidden" aria-hidden>
+                    <span className="block h-full rounded-full bg-[var(--color-primary)]/70" style={{ width: `${Math.max(2, share * 100)}%` }} />
+                </span>
+                <span className="truncate text-right font-mono text-[10px] sm:text-[11px] text-[var(--color-text-muted)] tabular-nums" title={before !== undefined ? worth(before) : undefined}>
+                    {before !== undefined ? <>{formatOraclePrice(before, locale)}{unitMark}</> : '—'}
+                </span>
+                <span className="truncate text-right font-mono text-[10px] sm:text-xs font-black text-[var(--color-text-main)] tabular-nums" title={worth(update.price)}>
+                    {formatOraclePrice(update.price, locale)}{unitMark}
+                </span>
+                <span className={`text-right font-mono text-[11px] font-bold tabular-nums whitespace-nowrap ${changeColor}`}>
+                    {change !== null ? `${change > 0 ? '+' : ''}${change.toLocaleString(locale, { maximumFractionDigits: 2 })}%` : ''}
+                </span>
+                <ChevronDown className={`hidden sm:block size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 ${open ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
             </div>
-            <div className="flex items-center justify-between pt-1">
-                <span className="text-[8px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider border border-[var(--color-card-border)] px-1.5 py-0.5 rounded-sm">
-                    {tt?.quote_token || 'Quote Token'}
-                </span>
-                <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate" title={update?.quoteToken}>
-                    {update?.quoteToken.slice(0, 16)}...{update?.quoteToken.slice(-6)}
-                </span>
-            </div>
-        </div>
+            <AnimatePresence initial={false}>
+                {open && (
+                    <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                        <div className="mb-2 rounded-xl border border-[var(--color-card-border)] overflow-hidden" role="presentation" onClick={(e) => e.stopPropagation()}>
+                            <ResourceInlinePanel
+                                address={update.baseToken}
+                                details={details}
+                                loading={loading}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                tt={tt}
+                                network={network}
+                                locale={locale}
+                            />
+                        </div>
+                    </m.div>
+                )}
+            </AnimatePresence>
+        </li>
     );
 }
 
 /* OracleUpdateSection
-   Section wrapper + grid of OraclePriceUpdateCards */
+   What the update did, as four facts across the width (the oracle, the call,
+   the unit and the time between the old prices and the new), then every
+   price before and after. Takes any number of prices: the tokens' details
+   load together, 20 per request, from the explorer's cache first. */
 export function OracleUpdateSection({
-    updates, tt, onCopy, copiedAddress, onResourceClick, network, locale,
+    updates, call, updatedSubstates, confirmedAt, tt, onCopy, copiedAddress, onResourceClick, network, locale = 'en',
 }: {
     updates: OracleUpdate[];
+    /** The call the updates come from, when the manifest names it. */
+    call?: OracleCall | null;
+    /** The receipt's rewritten substates: the prices before and after. */
+    updatedSubstates?: Parameters<typeof priceRewrites>[0];
+    /** When the transaction was committed: the new prices' date when the feed does not record one. */
+    confirmedAt?: string;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
@@ -133,37 +213,140 @@ export function OracleUpdateSection({
     network: Network;
     locale?: string
 }) {
+    const tokens = updates.map((u) => u.baseToken);
+    const { data: entities, isLoading } = useEntityDetailsBatch(
+        [...tokens, ...(call?.reference ? [call.reference] : []), ...(call ? [call.component] : [])],
+        network,
+    );
+
     if (updates.length === 0) return null;
+
+    const rewrites = priceRewrites(updatedSubstates, tokens);
+    const sorted = [...updates].sort((a, b) => Number(b.price) - Number(a.price));
+    const logs = sorted.map((u) => Math.log10(Math.max(Number(u.price), Number.MIN_VALUE)));
+    const lo = Math.min(...logs);
+    const span = Math.max(...logs) - lo;
+
+    const referenceMeta = call?.reference && entities?.[call.reference] ? extractEntityMeta(entities[call.reference]) : null;
+    const unit = referenceMeta?.symbol || referenceMeta?.name || '';
+    const oracleMeta = call && entities?.[call.component] ? extractEntityMeta(entities[call.component]) : null;
+    const firstTime = (side: 'before' | 'after') => Object.values(rewrites).map((r) => r[side]?.timestamp).find((t): t is number => typeof t === 'number');
+    const fromTime = firstTime('before');
+    const confirmed = confirmedAt ? Date.parse(confirmedAt) / 1000 : NaN;
+    const toTime = firstTime('after') ?? (Number.isFinite(confirmed) ? confirmed : undefined);
+    const day = (seconds: number) => new Date(seconds * 1000).toLocaleDateString(locale, { dateStyle: 'medium' });
+    const time = (seconds: number) => new Date(seconds * 1000).toLocaleTimeString(locale, { timeStyle: 'short' });
+    const sameDay = fromTime !== undefined && toTime !== undefined && day(fromTime) === day(toTime);
+
+    const factLabel = 'text-[9px] uppercase font-black tracking-wider text-[var(--color-text-muted)]';
+    const factValue = 'mt-0.5 truncate text-xs font-bold text-[var(--color-text-main)]';
+    const factNote = 'text-[10px] leading-snug text-[var(--color-text-muted)]';
+    const columnTitle = 'text-[9px] uppercase font-black tracking-wider text-[var(--color-text-muted)]';
+
     return (
-        <div className="bg-[var(--color-card-bg)] rounded-xl border border-blue-500/30 overflow-hidden mt-4">
-            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-blue-500/20 bg-[var(--color-surface)] flex items-center justify-between">
+        <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-primary)]/30 overflow-hidden mt-4">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-primary)]/20 bg-[var(--color-surface)] flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                    <Activity className="size-3.5 text-blue-400" />
+                    <Activity className="size-3.5 text-[var(--color-primary)]" />
                     {tt?.oracle_update_label || 'Oracle Price Update'}
                 </span>
-                <Pill color="custom" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                <Pill color="custom" className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20">
                     {updates.length}
                 </Pill>
             </h3>
-            <div className="p-3 space-y-2">
-                {tt?.oracle_update_desc && (
-                    <p className="text-[10px] text-[var(--color-text-muted)] italic mb-3">
-                        {tt?.oracle_update_desc}
-                    </p>
+            <div className="p-3 space-y-3">
+                {call ? (
+                    // Four facts sharing the width evenly, hairlines between them.
+                    <dl className="grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card-border)]">
+                        <div className="min-w-0 bg-[var(--color-card-bg)] px-3 py-2">
+                            <dt className={factLabel}>{tt?.oracle_component || 'Oracle'}</dt>
+                            <dd className={factValue}>{oracleMeta?.name || oracleMeta?.blueprintName || '…'}</dd>
+                            <dd className="flex items-center gap-1 min-w-0">
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onResourceClick?.(call.component); }}
+                                    className="truncate font-mono text-[10px] text-[var(--color-primary)] hover:underline"
+                                    title={call.component}
+                                >
+                                    {call.component.slice(0, 14)}…{call.component.slice(-6)}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onCopy(call.component); }}
+                                    className="shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                                    title={tt?.copy_address || 'Copy'}
+                                >
+                                    {copiedAddress === call.component ? <Check className="size-3 text-[var(--color-accent)]" /> : <Copy className="size-3" />}
+                                </button>
+                            </dd>
+                        </div>
+                        <div className="min-w-0 bg-[var(--color-card-bg)] px-3 py-2">
+                            <dt className={factLabel}>{tt?.oracle_call || 'Call'}</dt>
+                            <dd className={`${factValue} font-mono`}>{call.method}()</dd>
+                            <dd className={factNote}>{(tt?.oracle_prices_count || '{count} prices').replace('{count}', String(updates.length))}</dd>
+                        </div>
+                        <div className="min-w-0 bg-[var(--color-card-bg)] px-3 py-2">
+                            <dt className={factLabel}>{tt?.oracle_unit || 'Unit'}</dt>
+                            <dd className={factValue} title={call.reference ?? undefined}>
+                                {call.reference ? (unit || `${call.reference.slice(0, 14)}…`) : (tt?.oracle_quote_unknown || 'Not stated')}
+                            </dd>
+                            <dd className={factNote}>{tt?.oracle_unit_hint || 'Price of 1 unit of each token'}</dd>
+                        </div>
+                        <div className="min-w-0 bg-[var(--color-card-bg)] px-3 py-2">
+                            <dt className={factLabel}>{tt?.oracle_interval || 'Prices interval'}</dt>
+                            {fromTime !== undefined && toTime !== undefined ? (
+                                <>
+                                    <dd className={`${factValue} flex items-center gap-1`}>
+                                        {sameDay ? time(fromTime) : `${day(fromTime)} ${time(fromTime)}`}
+                                        <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" />
+                                        {sameDay ? time(toTime) : `${day(toTime)} ${time(toTime)}`}
+                                    </dd>
+                                    <dd className={factNote}>
+                                        {sameDay && `${day(toTime)} · `}
+                                        {toTime > fromTime && <span className="font-bold text-[var(--color-primary)]">{formatGap(toTime - fromTime, locale)}</span>}
+                                    </dd>
+                                </>
+                            ) : (
+                                <dd className={factValue}>{toTime !== undefined ? `${day(toTime)} ${time(toTime)}` : '—'}</dd>
+                            )}
+                        </div>
+                    </dl>
+                ) : tt?.oracle_update_desc && (
+                    <p className="text-[10px] text-[var(--color-text-muted)] italic">{tt.oracle_update_desc}</p>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
-                    {updates.map((update) => (
-                        <OraclePriceUpdateCard
-                            key={update.baseToken}
-                            update={update}
-                            tt={tt}
-                            onCopy={onCopy}
-                            copiedAddress={copiedAddress}
-                            onResourceClick={onResourceClick}
-                            network={network}
-                            locale={locale}
-                        />
-                    ))}
+
+                <div>
+                    <p className="px-1 pb-2 text-[11px] text-[var(--color-text-muted)]">
+                        {fillTemplate(unit ? (tt?.oracle_table_caption || 'What 1 unit of each token is worth, in {unit}.') : (tt?.oracle_table_caption_no_unit || 'What 1 unit of each token is worth.'), {
+                            unit: <b className="text-[var(--color-text-main)]">{unit}</b>,
+                        })}
+                    </p>
+                    <div className={`${ORACLE_GRID} px-1 pb-1.5 border-b border-[var(--color-card-border)]`}>
+                        <span className={`col-span-3 sm:col-span-1 ${columnTitle}`}>{tt?.oracle_col_asset || 'Asset'}</span>
+                        <span className={`hidden sm:block ${columnTitle} normal-case font-semibold italic`}>{tt?.oracle_log_scale || 'Bars on a logarithmic scale'}</span>
+                        <span className={`${columnTitle} text-right`}>{tt?.oracle_col_before || 'Before'}</span>
+                        <span className={`${columnTitle} text-right`}>{tt?.oracle_col_after || 'Now'}</span>
+                        <span className={`${columnTitle} text-right`}>{tt?.oracle_col_change || 'Change'}</span>
+                        <span className="hidden sm:block" aria-hidden />
+                    </div>
+                    <ul className="divide-y divide-[var(--color-card-border)]">
+                        {sorted.map((update, i) => (
+                            <OraclePriceRow
+                                key={`${update.baseToken}-${update.quoteToken}`}
+                                update={update}
+                                share={span > 0 ? (logs[i] - lo) / span : 1}
+                                rewrite={rewrites[update.baseToken]}
+                                details={entities?.[update.baseToken] ?? null}
+                                loading={isLoading}
+                                unit={update.quoteToken && update.quoteToken === call?.reference ? unit : ''}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                network={network}
+                                locale={locale}
+                            />
+                        ))}
+                    </ul>
                 </div>
             </div>
         </div>

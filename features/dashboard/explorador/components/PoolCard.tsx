@@ -68,14 +68,14 @@ export function PoolCard(props: AccountCardProps) {
                 amount: pool.reserves[resource] ?? '0',
             },
     );
-    /** A role in words, with its badge address beside it when it names one. */
+    /** A role in words, with its badge address under it when it names one. */
     const roleValue = (rule: RuleView, danger = false) => (
-        <>
-            <span className={`text-xs font-semibold ${danger ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-main)]'}`}>
+        <span className="flex min-w-0 flex-col items-end gap-0.5">
+            <span className={`max-w-full truncate text-xs font-semibold ${danger ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-main)]'}`} title={ruleText(rule, c?.rules, names)}>
                 {ruleText(rule, c?.rules, names)}
             </span>
             <RuleBadgeChip rule={rule} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
-        </>
+        </span>
     );
 
     const reservesTab = () => (

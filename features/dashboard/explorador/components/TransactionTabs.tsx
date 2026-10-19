@@ -18,6 +18,7 @@ import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { ResourceCreationCard } from './ResourceCreationCard';
 import { extractResourceCreations } from '../utils/resourceCreationUtils';
+import type { priceRewrites } from '../utils/oraclePrices';
 import { GovernanceVoteCard } from './GovernanceVoteCard';
 import { extractGovernanceVotes } from '@/features/governance/lib/governanceVotes';
 
@@ -329,13 +330,13 @@ const TransactionTabs = ({
 
                         {/* Auth Badge */}
                         {parsed.badgeResource && badgeAmountFormatted && (
-                            <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={badgeAmountFormatted} badgeOrigin={parsed.badgeOrigin} t={t as TranslationsT} readingMode={readingMode} {...shared} />
+                            <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={badgeAmountFormatted} badgeOrigin={parsed.badgeOrigin} badgeNftIds={parsed.badgeNftIds} t={t as TranslationsT} readingMode={readingMode} {...shared} />
                         )}
 
 
 
                         {parsed.oracleUpdates && parsed.oracleUpdates.length > 0 && (
-                            <OracleUpdateSection updates={parsed.oracleUpdates} {...shared} />
+                            <OracleUpdateSection updates={parsed.oracleUpdates} call={parsed.oracleCall} updatedSubstates={(receipt?.state_updates as { updated_substates?: Parameters<typeof priceRewrites>[0] } | undefined)?.updated_substates} confirmedAt={details.confirmed_at} {...shared} />
                         )}
                         <AirdropSection airdropData={airdropData} {...shared} />
 

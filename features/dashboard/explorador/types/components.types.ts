@@ -327,6 +327,8 @@ export interface NftCollectionPanelProps {
     nftLoading: boolean;
     ids: string[];
     type: 'added' | 'removed' | 'neutral';
+    /** Overrides the items tab's name (e.g. for ids an account no longer holds). */
+    itemsLabel?: string;
     onCopy?: (v: string) => void;
     copiedAddress: string | null;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
