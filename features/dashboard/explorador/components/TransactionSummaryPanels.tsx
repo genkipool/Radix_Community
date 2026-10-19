@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useValidatorsQuery } from '@/features/dashboard/staking';
 import { m, AnimatePresence } from 'motion/react';
 import { Activity, Gift, Vote, TrendingUp, ArrowRight, Check, ChevronDown, Copy, Settings2, Landmark, User, Hash, Clock, Database } from 'lucide-react';
 import { useEntityData, extractEntityMeta } from '@/features/dashboard/hooks/useEntityData';
@@ -1116,8 +1116,9 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
     copiedAddress: string | null;
     locale?: string;
 }) {
-    const qc = useQueryClient();
-    const validatorsData = qc.getQueryData<{ validators: import('@/types/radix').Validator[] }>(['validators', network ?? 'mainnet']);
+    // Subscribed, not read once: the list can land after this panel first
+    // renders. The card already holds the same query, so this asks nothing.
+    const { data: validatorsData } = useValidatorsQuery(network ?? 'mainnet');
 
     const proposerInfo = resolveProposerInfo(details ?? null);
     if (!proposerInfo) return null;
@@ -1126,9 +1127,11 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
         ? findProposerValidator(proposerInfo, validatorsData.validators)
         : null;
 
-    const valName = proposerValidator?.name || sanitizeText(tt?.proposer_box_title || 'Proposer');
-    const valAddress = proposerValidator?.address || '';
-    const valIcon = proposerValidator?.iconUrl;
+    // The server resolves the proposer with the transaction (the card's
+    // header shows it); the validators list is the fallback.
+    const valName = tx.proposerInfo?.name || proposerValidator?.name || sanitizeText(tt?.proposer_box_title || 'Proposer');
+    const valAddress = tx.proposerInfo?.address || proposerValidator?.address || '';
+    const valIcon = tx.proposerInfo?.iconUrl || proposerValidator?.iconUrl;
 
     const wellKnownKey = getWellKnownKey(sanitizeText(valAddress), network || 'mainnet');
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(valAddress)) : null;

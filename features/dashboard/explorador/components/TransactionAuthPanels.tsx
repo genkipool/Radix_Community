@@ -137,7 +137,7 @@ export function AuthBadgePanel({
                     <div className="flex flex-wrap items-center gap-1.5 mt-2 px-0.5">
                         <span className="text-[9px] uppercase font-black tracking-wider text-[var(--color-text-muted)]">{tt.auth_badge_nft_ids || 'NFT shown'}</span>
                         {badgeNftIds.map((id) => (
-                            <span key={id} className="max-w-full truncate rounded border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-primary)]" title={id}>{id}</span>
+                            <span key={id} className="max-w-full truncate font-mono text-xs font-bold text-[var(--color-primary)]" title={id}>{id}</span>
                         ))}
                     </div>
                 )}

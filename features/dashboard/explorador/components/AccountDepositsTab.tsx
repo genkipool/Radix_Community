@@ -23,7 +23,8 @@ import { AddressChip, PlainSummary } from './SummaryCardKit';
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 type DepositsText = NonNullable<NonNullable<Tt['account_summary']>['deposits']>;
 
-const RULE_ICON: Record<DefaultDepositRule, LucideIcon> = { Accept: CheckCircle2, AllowExisting: Inbox, Reject: Ban };
+/** Each general rule's icon, also used where a transaction changes it. */
+export const RULE_ICON: Record<DefaultDepositRule, LucideIcon> = { Accept: CheckCircle2, AllowExisting: Inbox, Reject: Ban };
 
 /** The last column: what applies to each row, centred under the console link. */
 const END_COLUMN = 'min-w-0 sm:w-40 sm:shrink-0 px-1 sm:px-2 text-center truncate';

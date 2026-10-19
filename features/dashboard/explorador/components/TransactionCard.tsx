@@ -355,7 +355,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 </div>
                             </div>
                             <div className={`flex items-center gap-8 sm:gap-12 min-w-0 w-full ${columns === 1 ? 'sm:col-span-2' : 'col-span-1'}`}>
-                                <div className="flex sm:flex-col justify-end sm:justify-start gap-4 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0 shrink-0">
+                                <div className="flex flex-wrap sm:flex-col justify-end sm:justify-start gap-x-4 gap-y-1 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0 min-w-0">
                                     <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
                                         <Users className="size-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
                                     </div>
@@ -365,8 +365,9 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 </div>
 
                                 {/* Proposer for Grid 1 (Collapsed context) */}
+                                {/* Phones have no room beside the counters; the open card shows it. */}
                                 {columns === 1 && proposerDisplay && (
-                                    <div className="flex flex-col gap-0.5 border-s border-[var(--color-card-border)] ps-6 min-w-0 flex-1">
+                                    <div className="hidden sm:flex flex-col gap-0.5 border-s border-[var(--color-card-border)] ps-6 min-w-0 flex-1">
                                         <div
                                             className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold cursor-help w-fit"
                                             title={tt?.proposer_tooltip}
