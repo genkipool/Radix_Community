@@ -92,8 +92,12 @@ export function AssetTransferGroup({
     const removedNftIds = new Set(nftChanges.flatMap(n => n.removed ?? []));
     // Ids that show up as added but never left another vault were minted here.
     const mintedNftCount = nftChanges.reduce((s, n) => s + (n.added ?? []).filter(id => !removedNftIds.has(id)).length, 0);
-    // A mint straight into the origin account leaves the destination column with nothing else to show.
-    const nftsKeptByOrigin = originActors.some(o => nftChanges.some(n => n.entity_address === o.entity_address && (n.added?.length ?? 0) > 0));
+    // A mint straight into the origin account (NFTs, or fungibles such as pool
+    // units) leaves the destination column with nothing else to show: say so,
+    // rather than calling it a burn.
+    const keptByOrigin = originActors.some(o =>
+        (!o.is_fee && parseFloat(o.balance_change) > 0) ||
+        nftChanges.some(n => n.entity_address === o.entity_address && (n.added?.length ?? 0) > 0));
     // actualFeePaid comes locale-formatted ("0,4058" in es), which parseFloat misreads; the footer gets the raw sum.
     const feePaidRaw = (balanceChanges.fungible_fee_balance_changes ?? [])
         .filter(f => f.type === 'FeePayment')
@@ -337,7 +341,7 @@ export function AssetTransferGroup({
                                         )}
                                     </div>
                                 )
-                                : nftsKeptByOrigin
+                                : keptByOrigin
                                     ? <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.deposited_to_origin || 'Deposited into the origin account itself'}</div>
                                     : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_burn || 'System component burn'}</div>
                         }

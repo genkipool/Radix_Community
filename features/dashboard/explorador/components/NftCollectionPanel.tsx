@@ -20,7 +20,7 @@ export type NftPanelTab = 'items' | 'summary' | 'metadata' | 'configuration' | '
 export function NftCollectionPanel({
     resourceAddress: _resourceAddress, meta, nftData, nftLoading, ids, type,
     onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, isClaimRedeemed, isClaimAuthorized, unstakeXrdExpected, network: _network,
-    locale, validatorAddress, validatorName
+    locale, validatorAddress, validatorName, itemsLabel
 }: NftCollectionPanelProps) {
     const [activeTab, setActiveTab] = useState<NftPanelTab>(ids.length > 0 ? 'items' : 'summary');
     const [expandedNfts, setExpandedNfts] = useState<Set<string>>(new Set());
@@ -94,7 +94,7 @@ export function NftCollectionPanel({
     const tabs: { key: NftPanelTab; label: string; tooltip?: string }[] = ([
         {
             key: 'items',
-            label: `${(type === 'neutral' ? tt?.nft_panel_items_account : tt?.nft_panel_items) || 'Items'} (${ids.length})`,
+            label: `${itemsLabel || (type === 'neutral' ? tt?.nft_panel_items_account : tt?.nft_panel_items) || 'Items'} (${ids.length})`,
             tooltip: tt?.tab_tokens_tooltip
         },
         { key: 'summary', label: tt?.nft_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },

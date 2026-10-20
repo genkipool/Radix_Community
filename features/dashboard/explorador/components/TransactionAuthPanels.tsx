@@ -79,12 +79,14 @@ export function LockFeePanel({
    operation (e.g. Oracle update, validator vote).
 ───────────────────────────────────────── */
 export function AuthBadgePanel({
-    badgeResource, badgeAmount, badgeOrigin,
+    badgeResource, badgeAmount, badgeOrigin, badgeNftIds = [],
     tt, t, onCopy, copiedAddress, onResourceClick, readingMode, network = 'mainnet', locale,
 }: {
     badgeResource: string;
     badgeAmount: string;
     badgeOrigin: string | null;
+    /** The badge's local ids, when the proof is of non-fungibles. */
+    badgeNftIds?: string[];
     tt: Partial<TranslationsT['dashboard']['transactions']>;
     t: Partial<TranslationsT>;
     onCopy: (v: string) => void;
@@ -131,6 +133,14 @@ export function AuthBadgePanel({
                     network={network}
                     locale={locale}
                 />
+                {badgeNftIds.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2 px-0.5">
+                        <span className="text-[9px] uppercase font-black tracking-wider text-[var(--color-text-muted)]">{tt.auth_badge_nft_ids || 'NFT shown'}</span>
+                        {badgeNftIds.map((id) => (
+                            <span key={id} className="max-w-full truncate font-mono text-xs font-bold text-[var(--color-primary)]" title={id}>{id}</span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

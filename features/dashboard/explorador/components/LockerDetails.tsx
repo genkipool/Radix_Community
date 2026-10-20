@@ -2,6 +2,7 @@
 import Link from 'next/link';
 
 import { useLanguage } from '@/context/LanguageContext';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useResourceLabels } from '@/features/console/hooks/useResourceLabels';
 import { MAX_LOCKER_RECIPIENTS, useLockerWaiting } from '@/features/console/hooks/useLockerWaiting';
 import { LOCKER_HISTORY_PAGES, useLockerActivity as useSharedLockerActivity } from '@/features/console/hooks/useLockerActivity';
@@ -12,7 +13,8 @@ import type { Network } from '@/features/dashboard/types';
 import { formatNumber } from '@/utils/formatters';
 import { RuleBadgeChip, badgeOfRule, ruleText } from '../utils/ruleText';
 import { SummaryInlineRow } from './EntityPanelShared';
-import { useExplorerEntity } from './ExplorerEntityCard';
+import { DappDefinitionCard } from './DappDefinitionCard';
+import { entityMeta, useExplorerEntity } from './ExplorerEntityCard';
 import { HeldResourcesList } from './HeldResourcesList';
 import { CopyButton, PlainSummary } from './SummaryCardKit';
 
@@ -44,19 +46,23 @@ export function LockerDetails({
     locale: string;
     copiedAddress: string | null;
     onCopy: (value: string) => void;
-    /** The account the locker is opened from: its row is marked and comes first. */
+    /** The account the locker is opened from: its row is marked and comes first, then the wallet's own. */
     account?: string;
 }) {
-    const c = useLanguage().t.dashboard?.entity_cards;
+    const words = useLanguage().t.dashboard;
+    const c = words?.entity_cards;
     const l = c?.locker;
     const { data } = useExplorerEntity(address, network);
     const locker = data ? parseLockerState(data) : null;
+    const dapp = entityMeta(data).getMeta('dapp_definition');
     const { data: activity, isLoading, isError } = useLockerActivity(address, network);
 
-    // Recipients, the account it is opened from first, and what still waits
-    // for each (the first few: one request each).
+    // Recipients, the account it is opened from first and then the connected
+    // wallet's own, and what still waits for each (the first few: one request each).
+    const own = new Set(useRadixWallet().accounts.map((a) => a.address));
     const all = activity?.claimantAccounts ?? [];
-    const recipients = (account && all.includes(account) ? [account, ...all.filter((a) => a !== account)] : all).slice(0, MAX_LOCKER_RECIPIENTS);
+    const rank = (a: string) => (a === account ? 0 : own.has(a) ? 1 : 2);
+    const recipients = [...all].sort((a, b) => rank(a) - rank(b)).slice(0, MAX_LOCKER_RECIPIENTS);
     const { data: waiting } = useLockerWaiting(address, recipients, network);
 
     const held = Object.keys(activity?.fungibles ?? {});
@@ -71,21 +77,22 @@ export function LockerDetails({
         ...held.map((resource) => ({ resource_address: resource, amount: activity?.fungibles[resource] ?? '0' })),
         ...heldNfts.map((resource) => ({ resource_address: resource, amount: String(activity?.nonFungibles[resource] ?? 0) })),
     ];
+    // Two lines: who the rule lets in, then the badge's address under it.
     const roleValue = (rule: RuleView) => (
-        <>
-            <span className="text-xs font-semibold text-[var(--color-text-main)]">{ruleText(rule, c?.rules, names)}</span>
+        <span className="flex min-w-0 flex-col items-end gap-0.5">
+            <span className="max-w-full truncate text-xs font-semibold text-[var(--color-text-main)]" title={ruleText(rule, c?.rules, names)}>{ruleText(rule, c?.rules, names)}</span>
             <RuleBadgeChip rule={rule} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
-        </>
+        </span>
     );
     const sectionTitle = 'text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]';
 
     return (
-        <div className="space-y-4">
+        <div className="@container space-y-4 min-w-0">
             {isLoading && <PlainSummary>{l?.loading}</PlainSummary>}
             {isError && <PlainSummary>{l?.error}</PlainSummary>}
             {activity?.truncated && <PlainSummary>{(l?.truncated ?? '').replace('{count}', String(LOCKER_HISTORY_PAGES * 100))}</PlainSummary>}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+            <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-x-10 gap-y-4 [&>*]:min-w-0">
                 {activity &&
                     (heldItems.length === 0 ? (
                         <div className="flex flex-col gap-1">
@@ -102,26 +109,43 @@ export function LockerDetails({
                             onCopy={onCopy}
                             copyTitle={copyTitle}
                             detail={(resource) => (heldNfts.includes(resource) ? 'NFT' : null)}
+                            fill
                         />
                     ))}
 
-                <dl>
-                    {activity && (
-                        <>
-                            <SummaryInlineRow label={l?.claimants ?? 'Recipients'} value={String(activity.claimants)} />
-                            <SummaryInlineRow label={l?.stores ?? 'Deposits'} value={String(activity.stores)} />
-                            <SummaryInlineRow label={l?.claims ?? 'Claimed'} value={String(activity.claims)} />
-                            <SummaryInlineRow label={l?.recoveries ?? 'Recovered'} value={String(activity.recoveries)} />
-                        </>
-                    )}
-                    {locker && (
-                        <>
-                            <SummaryInlineRow label={l?.storer ?? 'Can deposit'}>{roleValue(locker.storer)}</SummaryInlineRow>
-                            <SummaryInlineRow label={l?.recoverer ?? 'Can recover'}>{roleValue(locker.recoverer)}</SummaryInlineRow>
-                        </>
-                    )}
-                </dl>
+                {/* Its own title and rows that share the height, so both columns line up. */}
+                <div className="flex flex-col gap-1">
+                    <h4 className={sectionTitle}>{l?.activity ?? 'Activity and roles'}</h4>
+                    <dl className="flex flex-1 flex-col [&>div]:flex-1">
+                        {activity && (
+                            <>
+                                <SummaryInlineRow label={l?.claimants ?? 'Recipients'} value={String(activity.claimants)} />
+                                <SummaryInlineRow label={l?.stores ?? 'Deposits'} value={String(activity.stores)} />
+                                <SummaryInlineRow label={l?.claims ?? 'Claimed'} value={String(activity.claims)} />
+                                <SummaryInlineRow label={l?.recoveries ?? 'Recovered'} value={String(activity.recoveries)} />
+                            </>
+                        )}
+                        {locker && (
+                            <>
+                                <SummaryInlineRow label={l?.storer ?? 'Can deposit'}>{roleValue(locker.storer)}</SummaryInlineRow>
+                                <SummaryInlineRow label={l?.recoverer ?? 'Can recover'}>{roleValue(locker.recoverer)}</SummaryInlineRow>
+                            </>
+                        )}
+                    </dl>
+                </div>
             </div>
+
+            {dapp && (
+                <DappDefinitionCard
+                    dapp={dapp}
+                    claimant={address}
+                    network={network}
+                    locale={locale}
+                    tt={words?.transactions}
+                    copiedAddress={copiedAddress}
+                    onCopy={onCopy}
+                />
+            )}
 
             {recipients.length > 0 && (
                 <div className="overflow-x-auto">
@@ -137,8 +161,9 @@ export function LockerDetails({
                             {recipients.map((recipient) => {
                                 const pending = waiting?.[recipient];
                                 const isAccount = recipient === account;
+                                const isOwn = !isAccount && own.has(recipient);
                                 return (
-                                    <tr key={recipient} className={isAccount ? 'bg-[var(--color-primary)]/5' : ''}>
+                                    <tr key={recipient} className={isAccount || isOwn ? 'bg-[var(--color-primary)]/5' : ''}>
                                         <td className="py-2.5 pr-4 align-middle">
                                             <span className="flex items-center gap-1 whitespace-nowrap">
                                                 <Link
@@ -151,6 +176,7 @@ export function LockerDetails({
                                                 <CopyButton value={recipient} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
                                             </span>
                                             {isAccount && <span className="block text-[10px] font-bold text-[var(--color-primary)]">{l?.this_account ?? 'This account'}</span>}
+                                            {isOwn && <span className="block text-[10px] font-bold text-[var(--color-primary)]">{l?.your_account ?? 'Your account'}</span>}
                                         </td>
                                         <td className="py-2.5 pr-4 align-middle">
                                             {!pending ? (

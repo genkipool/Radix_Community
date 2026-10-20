@@ -5,6 +5,7 @@ import {
     apiFetchTransactions,
     apiFetchTransactionDetails,
     apiFetchEntityDetails,
+    apiFetchEntityDetailsBatch,
     apiFetchNonFungibleData,
     apiFetchValidators,
 } from '@/features/dashboard/services/apiClient';
@@ -183,3 +184,59 @@ describe('apiFetchValidators', () => {
     });
 });
 
+
+// ─── apiFetchEntityDetails: shared requests ─────────────────────────────────
+describe('apiFetchEntityDetails coalescing', () => {
+    const entity = (address: string) => ({ address, metadata: { items: [{ key: 'name', value: { typed: { value: address } } }] } });
+
+    it('answers calls made together with one request, asking each address once', async () => {
+        const bodies: string[][] = [];
+        server.use(
+            http.post('https://mainnet.radixdlt.com/state/entity/details', async ({ request }) => {
+                const { addresses } = await request.json() as { addresses: string[] };
+                bodies.push(addresses);
+                return HttpResponse.json({ items: addresses.map(entity), ledger_state: { epoch: 7 } });
+            }),
+        );
+        const [a, b, again] = await Promise.all([
+            apiFetchEntityDetails('resource_rdx1_a'),
+            apiFetchEntityDetails('resource_rdx1_b'),
+            apiFetchEntityDetails('resource_rdx1_a'),
+        ]);
+        expect(bodies).toEqual([['resource_rdx1_a', 'resource_rdx1_b']]);
+        expect(a.address).toBe('resource_rdx1_a');
+        expect(b.address).toBe('resource_rdx1_b');
+        expect(again).toBe(a);
+        expect((a as unknown as { ledger_state: { epoch: number } }).ledger_state.epoch).toBe(7);
+    });
+
+    it('splits more than 20 addresses into requests of 20', async () => {
+        const sizes: number[] = [];
+        server.use(
+            http.post('https://mainnet.radixdlt.com/state/entity/details', async ({ request }) => {
+                const { addresses } = await request.json() as { addresses: string[] };
+                sizes.push(addresses.length);
+                return HttpResponse.json({ items: addresses.map(entity), ledger_state: {} });
+            }),
+        );
+        const found = await apiFetchEntityDetailsBatch(Array.from({ length: 45 }, (_, i) => `resource_rdx1_${i}`));
+        expect(sizes).toEqual([20, 20, 5]);
+        expect(Object.keys(found)).toHaveLength(45);
+    });
+
+    it('asks each address alone when the shared request fails, so one bad address fails only its caller', async () => {
+        server.use(
+            http.post('https://mainnet.radixdlt.com/state/entity/details', async ({ request }) => {
+                const { addresses } = await request.json() as { addresses: string[] };
+                if (addresses.includes('resource_rdx1_bad')) return HttpResponse.json({ message: 'bad' }, { status: 400 });
+                return HttpResponse.json({ items: addresses.map(entity), ledger_state: {} });
+            }),
+        );
+        const [good, bad] = await Promise.allSettled([
+            apiFetchEntityDetails('resource_rdx1_good'),
+            apiFetchEntityDetails('resource_rdx1_bad'),
+        ]);
+        expect(good.status).toBe('fulfilled');
+        expect(bad.status).toBe('rejected');
+    });
+});

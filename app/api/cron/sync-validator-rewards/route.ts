@@ -20,6 +20,13 @@ export const maxDuration = 30;
 const MIN_EPOCH_FETCH = 3;
 
 /**
+ * Epoch changes read per run when following the cursor. Each is about 400 KB,
+ * so 25 keeps a run near 10 MB, and still catches up two hours a run after
+ * downtime while a new epoch only closes every five minutes.
+ */
+const CURSOR_PAGE = 25;
+
+/**
  * The oldest epoch the history table still needs filled in.
  *
  * The table shows the live epoch plus the 5 that closed before it, so anything
@@ -28,6 +35,35 @@ const MIN_EPOCH_FETCH = 3;
  */
 function oldestVisibleEpoch(currentEpoch: number): number {
     return currentEpoch > 0 ? currentEpoch - EPOCH_REWARDS_MIN_COVERAGE : 0;
+}
+
+/** Finished epochs the history table shows that Redis does not hold. */
+async function missingTableEpochs(): Promise<number[]> {
+    const validators = await getValidatorsCached('mainnet');
+    const currentEpoch = validators?.networkStats?.epoch ?? 0;
+    const stored = new Set(await getStoredEpochRewardEpochs());
+    const missing: number[] = [];
+    for (let epoch = oldestVisibleEpoch(currentEpoch); epoch < currentEpoch; epoch++) {
+        if (epoch > 0 && !stored.has(epoch)) missing.push(epoch);
+    }
+    return missing;
+}
+
+/**
+ * How many of the newest epoch changes to read when there is no cursor yet
+ * (the first run after it was introduced): back to the last epoch processed,
+ * the oldest hole on screen, or the last epoch the totals include.
+ */
+async function legacyWindow(lastEpoch: number, missing: number[], totalsFrom: number): Promise<number> {
+    const validators = await getValidatorsCached('mainnet');
+    const currentEpoch = validators?.networkStats?.epoch ?? 0;
+    const reachBackTo = Math.min(
+        lastEpoch > 0 ? lastEpoch : currentEpoch,
+        missing.length > 0 ? Math.min(...missing) : currentEpoch,
+        totalsFrom > 0 ? totalsFrom : currentEpoch,
+    );
+    const gap = currentEpoch > 0 && reachBackTo > 0 ? currentEpoch - reachBackTo : 0;
+    return Math.min(Math.max(gap + 1, MIN_EPOCH_FETCH), EPOCH_REWARDS_RETENTION);
 }
 
 export async function GET(request: Request) {
@@ -56,57 +92,30 @@ export async function GET(request: Request) {
             '[SyncValidatorRewards] Starting reward sync',
         );
 
-        // How far behind are we? Epochs last about five minutes, so a fixed
-        // window of three covered barely fifteen: any run that was late, failed
-        // or timed out left the epochs in between unprocessed FOREVER, because
-        // the next run only looked at the newest changes and then advanced
-        // `lastProcessedEpoch` past the hole. Those epochs then showed up in the
-        // history table with empty reward columns.
-        //
-        // The window is therefore sized to the actual gap instead of guessed.
-        // It matters that it stays small on the happy path: each epoch change
-        // carries every validator's emission events, so asking for the full
-        // retention window every run pulled megabytes and blew past the fetch
-        // cache's 2 MB ceiling, making it uncacheable.
-        //
-        // Advancing the high-water mark is not enough on its own, because a
-        // hole left BEHIND it is never revisited: the mark has already moved
-        // past it. So the window also has to cover any epoch the table still
-        // shows but Redis is missing, and the run repairs it in place.
-        const validators = await getValidatorsCached('mainnet');
-        const currentEpoch = validators?.networkStats?.epoch ?? 0;
-        const storedEpochs = await getStoredEpochRewardEpochs();
-        const stored = new Set(storedEpochs);
-
-        const missing: number[] = [];
-        for (let epoch = oldestVisibleEpoch(currentEpoch); epoch < currentEpoch; epoch++) {
-            if (epoch > 0 && !stored.has(epoch)) missing.push(epoch);
-        }
-
         // The daily totals are written every half hour rather than every
         // epoch (see DAILY_TOTALS_EVERY_MS). Until the first such write they
         // stand where every run used to leave them: at the last epoch processed.
         const totalsFrom = meta?.dailyTotalsEpoch ?? lastEpoch;
+        // Also due straight away while they are catching up after downtime.
         const totalsDue = !meta?.dailyTotalsAt
+            || !!meta.totalsBehind
             || Date.now() - Date.parse(meta.dailyTotalsAt) >= DAILY_TOTALS_EVERY_MS;
 
-        // Reach back to whichever is further: the last epoch processed, the
-        // oldest hole still on screen, or, when the totals are due, the last
-        // epoch they include.
-        const reachBackTo = Math.min(
-            lastEpoch > 0 ? lastEpoch : currentEpoch,
-            missing.length > 0 ? Math.min(...missing) : currentEpoch,
-            totalsDue && totalsFrom > 0 ? totalsFrom : currentEpoch,
-        );
-        const gap = currentEpoch > 0 && reachBackTo > 0 ? currentEpoch - reachBackTo : 0;
-        const window = Math.min(Math.max(gap + 1, MIN_EPOCH_FETCH), EPOCH_REWARDS_RETENTION);
+        // Follow the ledger: read every epoch change after the last one read,
+        // oldest first. Sizing a window from the cached validator list's epoch,
+        // which lags, lost every epoch that fell outside it whenever runs were
+        // late or rare (about 60 % of 2026's rewards), and nothing looked back.
+        // The totals keep a cursor of their own, so the runs that only feed the
+        // table never carry them past epochs they have not added.
+        const cursor = totalsDue ? meta?.dailyTotalsStateVersion : meta?.lastStateVersion;
+        const followed = cursor !== undefined;
+        const missing = followed ? [] : await missingTableEpochs();
 
-        logger.info({ currentEpoch, lastEpoch, missing, window, totalsDue, totalsFrom }, '[SyncValidatorRewards] Sync window');
+        const { events, latestStateVersion, epochs } = followed
+            ? await fetchEpochRewardEvents(cursor, CURSOR_PAGE)
+            : await fetchEpochRewardEvents(undefined, await legacyWindow(lastEpoch, missing, totalsDue ? totalsFrom : 0));
 
-        const { events, latestStateVersion, epochs } = await fetchEpochRewardEvents(
-            undefined,
-            window,
-        );
+        logger.info({ followed, cursor, epochs, missing, totalsDue }, '[SyncValidatorRewards] Sync window');
 
         if (events.length === 0) {
             await touchSyncRun();
@@ -117,16 +126,16 @@ export async function GET(request: Request) {
             });
         }
 
-        // Keep an epoch if it is genuinely new, OR if it is a hole the table is
-        // showing empty. Filtering on the high-water mark alone was what made
-        // the damage permanent.
+        // Following the cursor, everything read is new. Without it, keep an
+        // epoch if it is newer than the mark, OR a hole the table shows empty.
         const missingSet = new Set(missing);
-        const newEvents = lastEpoch > 0
-            ? events.filter((ev) => ev.epoch > lastEpoch || missingSet.has(ev.epoch))
-            : events;
+        const newEvents = followed || lastEpoch <= 0
+            ? events
+            : events.filter((ev) => ev.epoch > lastEpoch || missingSet.has(ev.epoch));
 
+        // The per-validator mark in the totals stops an epoch being added twice.
         const dailyEvents = totalsDue
-            ? events.filter((ev) => totalsFrom <= 0 || ev.epoch > totalsFrom)
+            ? (followed ? events : events.filter((ev) => totalsFrom <= 0 || ev.epoch > totalsFrom))
             : null;
 
         if (newEvents.length === 0 && !dailyEvents?.length) {
@@ -140,7 +149,10 @@ export async function GET(request: Request) {
         }
 
         // Sync to Redis
-        const result = await syncRewardsToRedis(newEvents, latestStateVersion, dailyEvents);
+        // A full page means the ledger is further ahead than this run read.
+        const result = await syncRewardsToRedis(newEvents, latestStateVersion, dailyEvents, {
+            totalsBehind: followed && epochs.length >= CURSOR_PAGE,
+        });
 
         // The read path caches for minutes, so without this the epochs just
         // written stay hidden and their reward columns read as empty.

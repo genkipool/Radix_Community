@@ -11,5 +11,6 @@ export { ValidatorExpandedBody } from './components/ValidatorExpandedBody';
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 export { useValidatorsQuery }       from './hooks/useValidatorsQuery';
+export { useValidatorList }         from './hooks/useValidatorList';
 export { useValidatorFilters }      from './hooks/useValidatorFilters';
 export { usePrefetchValidatorEntity } from './hooks/usePrefetchValidator';

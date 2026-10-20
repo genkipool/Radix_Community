@@ -16,7 +16,7 @@ import { waitingLine } from '../utils/lockerClaims';
 import { PanelMetadataTab } from './EntityPanelShared';
 import { entityMeta, useExplorerEntity } from './ExplorerEntityCard';
 import { LockerDetails } from './LockerDetails';
-import { AddressChip, PlainSummary } from './SummaryCardKit';
+import { AddressChip, CopyButton, PlainSummary } from './SummaryCardKit';
 
 
 interface AccountLocker {
@@ -125,18 +125,27 @@ function LockerRow({
     const names = useResourceLabels(locker.waiting.map((claim) => claim.resource), network);
     const { data: entity } = useExplorerEntity(locker.address, network);
     const { metadataItems } = entityMeta(entity);
+    const otherMetadata = metadataItems.filter((m) => m.key !== 'dapp_definition');
     const copyTitle = l?.copy ?? 'Copy';
 
     return (
         <div className="flex flex-col bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl">
-            <button
-                type="button"
+            {/* Not a <button>: it holds the address's copy button. */}
+            <div
+                role="button"
+                tabIndex={0}
                 aria-expanded={open}
                 onClick={(e) => {
                     e.stopPropagation();
+                    if (window.getSelection()?.toString()) return;
                     setOpen((v) => !v);
                 }}
-                className="flex items-center justify-between gap-3 p-3 hover:bg-white/5 transition-colors rounded-xl w-full text-left"
+                onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    e.preventDefault();
+                    setOpen((v) => !v);
+                }}
+                className="flex items-center justify-between gap-3 p-3 hover:bg-white/5 transition-colors rounded-xl w-full text-left cursor-pointer"
             >
                 <span className="flex items-center gap-3 min-w-0 flex-1">
                     <span className="size-8 rounded-full shrink-0 grid place-items-center bg-[var(--color-card-border)]">
@@ -144,7 +153,10 @@ function LockerRow({
                     </span>
                     <span className="flex flex-col min-w-0">
                         <span className="font-bold text-sm text-[var(--color-text-main)] truncate">{locker.name || (l?.unnamed ?? 'Account Locker')}</span>
-                        <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate">{truncateAddress(locker.address, 10, 6)}</span>
+                        <span className="flex items-center gap-0.5 min-w-0">
+                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate" title={locker.address}>{truncateAddress(locker.address, 10, 6)}</span>
+                            <CopyButton value={locker.address} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
+                        </span>
                     </span>
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
@@ -153,7 +165,7 @@ function LockerRow({
                     </span>
                     <ChevronDown className={`size-4 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
                 </span>
-            </button>
+            </div>
 
             {open && (
                 <div className="border-t border-[var(--color-card-border)] px-4 py-4 space-y-5 cursor-auto" onClick={(e) => e.stopPropagation()} role="presentation">
@@ -164,10 +176,11 @@ function LockerRow({
                         </Link>
                     </div>
                     <LockerDetails address={locker.address} account={account} network={network} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} />
-                    {metadataItems.length > 0 && (
+                    {/* The dApp definition has its own card in the details above. */}
+                    {otherMetadata.length > 0 && (
                         <div>
                             <h4 className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">{tt?.resource_panel_metadata ?? 'Metadata'}</h4>
-                            <PanelMetadataTab metadataItems={metadataItems} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
+                            <PanelMetadataTab metadataItems={otherMetadata} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
                         </div>
                     )}
                 </div>

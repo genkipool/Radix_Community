@@ -30,12 +30,13 @@ import type { EntityMeta } from '@/features/dashboard/types';
 export function useEntityData(address: string, network: string): EntityMeta | null {
   const clean = sanitizeText(address);
 
-  const { data } = useQuery<EntityMeta | null>({
+  // The entry holds the entity's full details, as every card and the server
+  // write it; the name, icon and symbol are read out of it. Storing only those
+  // here would hand a card that shares the entry an object it cannot read.
+  const { data } = useQuery<unknown, Error, EntityMeta | null>({
     queryKey: entityKeys.detail(clean, network),
-    queryFn: async () => {
-      const res = await apiFetchEntityDetails(clean, network as 'mainnet' | 'stokenet');
-      return extractEntityMeta(res);
-    },
+    queryFn: () => apiFetchEntityDetails(clean, network as 'mainnet' | 'stokenet'),
+    select: extractEntityMeta,
     enabled: needsFetch(clean),
     staleTime: Infinity,
     gcTime: 1000 * 60 * 10,

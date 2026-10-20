@@ -98,12 +98,10 @@ export async function GET(request: Request) {
                 const data = await res.json().catch(() => ({})) as Record<string, unknown>;
                 const totalCount = (data.total_count as number) || 0;
 
-                const items = data.items || [];
-                const nonAccountHoldersCount = (items as Record<string, string>[]).filter(
-                    (h) => h.address && !h.address.startsWith('account_')
-                ).length;
-
-                const finalCount = Math.max(0, totalCount - nonAccountHoldersCount);
+                // Every address holding the LSU (accounts, the validator's own
+                // stake, dApps holding it for their users): the Gateway's total,
+                // the same count the console shows next to its stakers.
+                const finalCount = totalCount;
                 updatedCounts[addr as string] = finalCount;
 
                 await new Promise(r => setTimeout(r, 1000));
