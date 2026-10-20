@@ -13,6 +13,9 @@ import { TransactionDetailsTab } from './TransactionDetailsTab';
 import { EntitiesSection } from './EntitiesSection';
 import { FeesDistributionSection } from './FeesDistributionSection';
 import { ProtocolVoteCard } from './ProtocolVoteCard';
+import { extractSelfTransfers, selfTransferCards } from '../utils/selfTransfers';
+import { componentCalls, storedChanges } from '../utils/componentCall';
+import { ComponentCallSection } from './ComponentCallSection';
 import { DepositRulesChangeSection } from './DepositRulesChangeSection';
 import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection, MetadataUpdatesSection, ProposerSection } from './TransactionSummaryPanels';
 import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
@@ -101,6 +104,17 @@ const TransactionTabs = ({
 
     /* ── NFT-only groups ── */
     const nftOnlyGroups = getNftOnlyGroups(balanceChanges, resourceGroups.length);
+
+    /* ── Assets an account sent to itself, and calls that moved no assets at all ── */
+    const selfMoves = extractSelfTransfers(receipt?.events ?? [], balanceChanges);
+    const callsExplained = hasAssetTransfers(balanceChanges) || selfMoves.length > 0 || parsed.oracleUpdates.length > 0
+        || resourceCreations.length > 0 || governanceVotes.length > 0 || !!airdropData;
+    const calls = callsExplained ? [] : componentCalls(String(manifest_instructions || ''));
+    const stateUpdates = receipt?.state_updates as { updated_substates?: Parameters<typeof storedChanges>[0]['updated']; created_substates?: Parameters<typeof storedChanges>[0]['created'] } | undefined;
+    const callChanges = calls.length === 0 ? [] : storedChanges(
+        { updated: stateUpdates?.updated_substates, created: stateUpdates?.created_substates },
+        calls.flatMap((c) => c.args.filter((a) => a.kind === 'address').map((a) => a.value)),
+    );
 
     // Shared props passed to most child panels
     const shared = { tt, dt, te, onCopy, copiedAddress, onResourceClick, network, columns, locale, marketData };
@@ -307,8 +321,25 @@ const TransactionTabs = ({
                                 return g.some(c => !realTransferAddresses.has(sanitizeText(c.entity_address)));
                             });
 
-                            // If the whole transaction is ONLY fees (no real transfers at all), hide the section as per user request
-                            if (!hasAssetTransfers(balanceChanges)) return null;
+                            // Assets an account sent to itself leave no balance change: rebuild both sides from its events
+                            if (!hasAssetTransfers(balanceChanges)) {
+                                const self = selfTransferCards(selfMoves, balanceChanges);
+                                return self.groups.map((group) => (
+                                    <AssetTransferGroup
+                                        key={'self-' + group[0].entity_address + '-' + group[0].resource_address}
+                                        group={group}
+                                        balanceChanges={self.balanceChanges}
+                                        initiators={getInitiators(self.balanceChanges)}
+                                        realTransferAddresses={new Set(group.map((c) => c.entity_address))}
+                                        actualFeePaid={actualFeePaid}
+                                        t={t as TranslationsT}
+                                        formatEntity={formatEntity}
+                                        readingMode={readingMode}
+                                        selfTransfer
+                                        {...shared}
+                                    />
+                                ));
+                            }
 
                             return filteredGroups.map((group) => (
                                 <AssetTransferGroup
@@ -333,6 +364,9 @@ const TransactionTabs = ({
                         {parsed.badgeResource && badgeAmountFormatted && (
                             <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={badgeAmountFormatted} badgeOrigin={parsed.badgeOrigin} badgeNftIds={parsed.badgeNftIds} t={t as TranslationsT} readingMode={readingMode} {...shared} />
                         )}
+
+                        {/* A call that moved no assets: what it asked the component and what that changed */}
+                        <ComponentCallSection calls={calls} changes={callChanges} caller={parsed.lockFeeAccount ?? parsed.badgeOrigin} feePaid={actualFeePaid} {...shared} />
 
 
 

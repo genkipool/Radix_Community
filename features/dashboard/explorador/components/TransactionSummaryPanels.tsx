@@ -78,7 +78,7 @@ const extractResourceAddress = (ev: GatewayEvent): string => {
    the whole update. */
 
 /** An amount or price as people read it: the significant digits of a tiny one, a few decimals of a large one. */
-const formatTokenAmount = (price: string, locale: string) => {
+export const formatTokenAmount = (price: string, locale: string) => {
     const n = Number(price);
     if (!Number.isFinite(n)) return price;
     return n >= 1
@@ -87,7 +87,7 @@ const formatTokenAmount = (price: string, locale: string) => {
 };
 
 /** A template's {placeholders} replaced by nodes. */
-const fillTemplate = (template: string, nodes: Record<string, React.ReactNode>) =>
+export const fillTemplate = (template: string, nodes: Record<string, React.ReactNode>) =>
     template.split(/(\{\w+\})/).map((part, i) => {
         const key = part.match(/^\{(\w+)\}$/)?.[1];
         return <React.Fragment key={i}>{key && key in nodes ? nodes[key] : part}</React.Fragment>;

@@ -112,6 +112,44 @@ export function decodePricePoint(hex: string | null | undefined): PricePoint | n
   return price === null ? null : { price, timestamp };
 }
 
+/** One stored field as people read it: a Decimal in plain digits, an integer, a bool. */
+export type StoredField = { kind: 'decimal' | 'integer' | 'bool'; value: string };
+
+/**
+ * Every field of a stored value made only of fixed-size fields (a bare value
+ * or a tuple of them), in order. Null for any other shape: strings, maps,
+ * nested tuples are left to the raw receipt.
+ */
+export function decodeFixedFields(hex: string | null | undefined): StoredField[] | null {
+  if (!hex || !/^(?:[0-9a-f]{2})+$/i.test(hex)) return null;
+  const bytes = Uint8Array.from(hex.match(/../g)!, (b) => parseInt(b, 16));
+  if (bytes[0] !== 0x5c) return null;
+  const read = (kind: number, at: number): StoredField | null => {
+    const size = FIXED_SIZE[kind];
+    if (size === undefined || at + size > bytes.length) return null;
+    if (kind === 0x01) return { kind: 'bool', value: bytes[at] ? 'true' : 'false' };
+    if (kind === 0xa0) return { kind: 'decimal', value: decimalString(readInt(bytes, at, 24)) };
+    if (kind === 0xa1) return null; // PreciseDecimal: not worth a reader of its own here
+    const signed = kind <= 0x06;
+    const raw = readInt(bytes, at, size);
+    const value = signed || raw >= 0n ? raw : raw + (1n << BigInt(size * 8));
+    return { kind: 'integer', value: value.toString() };
+  };
+  if (bytes[1] !== 0x21) {
+    const single = read(bytes[1], 2);
+    return single && 2 + FIXED_SIZE[bytes[1]] === bytes.length ? [single] : null;
+  }
+  const fields: StoredField[] = [];
+  let at = 3;
+  for (let i = 0; i < bytes[2]; i++) {
+    const field = read(bytes[at], at + 1);
+    if (!field) return null;
+    fields.push(field);
+    at += 1 + FIXED_SIZE[bytes[at]];
+  }
+  return at === bytes.length ? fields : null;
+}
+
 /**
  * What the update did to each resource's price, from the receipt's rewritten
  * key-value entries keyed by those resources.

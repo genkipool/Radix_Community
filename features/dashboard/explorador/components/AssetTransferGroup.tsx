@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import type { AssetTransferGroupProps } from '@/features/dashboard/explorador/types';
-import { Wallet, Info, Landmark } from 'lucide-react';
+import { Wallet, Info, Landmark, Repeat } from 'lucide-react';
 import { BalanceChangeRow } from '@/features/dashboard/explorador/components/BalanceChangeRow';
 import { NftTransferCard } from '@/features/dashboard/explorador/components/NftTransferCard';
 import { AddressDisplay } from '@/features/dashboard/explorador/components/EntityBadge';
@@ -23,13 +23,14 @@ export function AssetTransferGroup({
     actualFeePaid, tt: _tt, t,
     onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network,
     isClaim, isUnstake, isStake, validatorOps, pairedValidatorOp, pairedNftChange, columns,
-    locale,
+    locale, selfTransfer,
 }: AssetTransferGroupProps) {
     const tt = _tt;
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
     // Only account_ addresses can be origins; everything else goes to destination.
-    const originActors = group.filter(c => {
+    // A self-transfer has the same account on both sides: what it withdrew, then what it got back.
+    const originActors = selfTransfer ? group.filter(c => parseFloat(c.balance_change) <= 0) : group.filter(c => {
         if (!sanitizeText(c.entity_address).startsWith('account_')) return false;
 
         const isOrigin = initiators.has(sanitizeText(c.entity_address));
@@ -52,7 +53,7 @@ export function AssetTransferGroup({
         return true;
     });
 
-    const destActors = group.filter(c => {
+    const destActors = selfTransfer ? group.filter(c => parseFloat(c.balance_change) >= 0) : group.filter(c => {
         // Non-account addresses always go to destination
         if (!sanitizeText(c.entity_address).startsWith('account_')) {
             if (!c.is_fee) return true;
@@ -120,6 +121,13 @@ export function AssetTransferGroup({
                 </button>
             </h3>
 
+            {selfTransfer && (
+                <p className="flex items-start gap-2 px-4 py-2.5 text-xs text-[var(--color-text-main)] border-b border-[var(--color-card-border)] bg-[var(--color-primary)]/5">
+                    <Repeat className="size-3.5 mt-0.5 shrink-0 text-[var(--color-primary)]" />
+                    {tt?.self_transfer_note || 'The account sent this to itself: its balance does not change, it only paid the fee.'}
+                </p>
+            )}
+
             <div className={`flex flex-col ${columns === 2 ? '' : 'md:flex-row'} divide-y ${columns === 2 ? 'divide-y' : 'md:divide-y-0 md:divide-x'} divide-[var(--color-card-border)]`}>
 
                 {/* ── ORIGIN column ── */}
@@ -134,7 +142,7 @@ export function AssetTransferGroup({
                                 const matchingFee = balanceChanges.fungible_fee_balance_changes?.find((f) => sanitizeText(f.entity_address) === sanitizeText(change.entity_address));
                                 const nftWithdrawals = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.removed?.length ?? 0) > 0);
                                 // NFT deposits that belong to this origin address — show them here instead of destination
-                                const nftDepositsForOrigin = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0);
+                                const nftDepositsForOrigin = selfTransfer ? [] : (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0);
                                 const isCM = isConsensusManager(change.entity_address);
 
                                 const fungibleBurned = isFungibleBurned(change.resource_address) && !change.is_fee;

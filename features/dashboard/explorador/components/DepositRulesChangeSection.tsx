@@ -13,7 +13,7 @@ import { AddressChip } from './SummaryCardKit';
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 
 /** A resource as a person reads it: icon, symbol or name, and the address to copy. */
-function ResourceLine({ address, details, localId, copiedAddress, onCopy, copyTitle }: {
+export function ResourceLine({ address, details, localId, copiedAddress, onCopy, copyTitle }: {
     address: string;
     details: GatewayEntityDetails | undefined;
     localId?: string | null;
