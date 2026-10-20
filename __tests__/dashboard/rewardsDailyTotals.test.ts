@@ -2,8 +2,10 @@
  * The rewards sync writes only what changed.
  *
  * Rewriting the all-years key (5.8 MB) and every year's key on each five-minute
- * run is what exhausted the Redis monthly bandwidth. A run now touches the
- * current year's key alone, and only when the caller hands it daily events.
+ * run is what exhausted the Redis monthly bandwidth. A run now touches only the
+ * year its epochs closed in, and only when the caller hands it daily events.
+ * Each epoch is booked on the day it closed, so catching up after downtime puts
+ * every epoch on its own day instead of piling them on the day of the run.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeBlob, forgetHeldBlobs } from '@/lib/redisBlob';
@@ -53,8 +55,9 @@ const year = new Date().getFullYear().toString();
 const lastYear = (Number(year) - 1).toString();
 const today = new Date().toISOString().split('T')[0];
 
-function event(epoch: number, validatorAddress = 'validator_rdx1a') {
+function event(epoch: number, validatorAddress = 'validator_rdx1a', date = today) {
     return {
+        date,
         epoch,
         validatorAddress,
         stakePoolAddedXrd: 10,
@@ -113,5 +116,30 @@ describe('rewards daily totals', () => {
         const mine = bucket(`validator_rewards_${year}`)?.['validator_rdx1a'];
         expect(mine?.lastSyncedEpoch).toBe(101);
         expect(mine?.daily[today]).toBe(1);
+    });
+
+    it('books each epoch on the day it closed, not on the day of the run', async () => {
+        await syncRewardsToRedis([event(100, 'validator_rdx1a', `${year}-01-02`), event(101, 'validator_rdx1a', `${year}-01-03`)], 0);
+
+        const mine = bucket(`validator_rewards_${year}`)?.['validator_rdx1a'];
+        expect(mine?.daily[`${year}-01-02`]).toBe(1);
+        expect(mine?.daily[`${year}-01-03`]).toBe(1);
+    });
+
+    it('records where the table and the totals stopped reading the ledger', async () => {
+        await syncRewardsToRedis([event(100)], 5000, null);
+        let meta = store.get('validator_rewards_meta') as { lastStateVersion?: number; dailyTotalsStateVersion?: number };
+        expect(meta.lastStateVersion).toBe(5000);
+        expect(meta.dailyTotalsStateVersion).toBeUndefined();
+
+        await syncRewardsToRedis([event(101)], 6000);
+        meta = store.get('validator_rewards_meta') as typeof meta;
+        expect(meta.lastStateVersion).toBe(6000);
+        expect(meta.dailyTotalsStateVersion).toBe(6000);
+
+        // A totals run reading from further back never moves the table's cursor backwards.
+        await syncRewardsToRedis([event(102)], 5500);
+        meta = store.get('validator_rewards_meta') as typeof meta;
+        expect(meta.lastStateVersion).toBe(6000);
     });
 });

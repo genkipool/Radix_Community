@@ -15,6 +15,8 @@ export interface EpochRewardEntry {
     proposalsMissed: number;
     /** Total stake at emission time: starting_stake_pool_xrd + stake_pool_added_xrd */
     totalStakeXrd: number;
+    /** The day the epoch closed (UTC, "YYYY-MM-DD"): the day its rewards belong to. */
+    date: string;
 }
 
 export interface ValidatorRewardData {
@@ -39,6 +41,19 @@ interface RewardsSyncMeta {
     dailyTotalsEpoch?: number;
     /** When the daily and yearly totals were last written. */
     dailyTotalsAt?: string;
+    /**
+     * Ledger state version of the last epoch change the per-epoch table holds:
+     * the next run reads every epoch change after it, in order, so none is
+     * skipped however late or rare the runs are.
+     */
+    lastStateVersion?: number;
+    /** The same cursor for the daily and yearly totals. */
+    dailyTotalsStateVersion?: number;
+    /**
+     * The last totals run read a full page: the ledger is further ahead, so the
+     * next run adds totals again instead of waiting the half hour.
+     */
+    totalsBehind?: boolean;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -109,15 +124,19 @@ export async function fetchEpochRewardEvents(
     };
 
     if (afterStateVersion) {
-        body.from_state_version = afterStateVersion + 1;
+        // `from_ledger_state` is what the Gateway reads; an unknown field such
+        // as `from_state_version` is ignored, and Asc then starts at genesis.
+        body.from_ledger_state = { state_version: afterStateVersion + 1 };
         body.order = 'Asc';
     }
 
+    // Not cached: a cached page is an older view of the ledger, and the
+    // cursor would move on from it as if nothing newer existed.
     const res = await fetch(`${GATEWAY_URL}/stream/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        next: { revalidate: 300 },
+        cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -134,6 +153,7 @@ export async function fetchEpochRewardEvents(
     for (const item of items) {
         const sv = item.state_version ?? 0;
         if (sv > latestStateVersion) latestStateVersion = sv;
+        const date = String(item.round_timestamp ?? item.confirmed_at ?? new Date().toISOString()).slice(0, 10);
 
         const receiptEvents = item.receipt?.events ?? [];
         for (const ev of receiptEvents) {
@@ -164,6 +184,7 @@ export async function fetchEpochRewardEvents(
                 proposalsMade,
                 proposalsMissed,
                 totalStakeXrd: startingStakePoolXrd + stakePoolAddedXrd,
+                date,
             });
         }
     }
@@ -190,8 +211,9 @@ export async function fetchEpochRewardEvents(
  */
 export async function syncRewardsToRedis(
     events: EpochRewardEntry[],
-    _latestStateVersion: number,
+    latestStateVersion: number,
     dailyEvents: EpochRewardEntry[] | null = events,
+    { totalsBehind = false }: { totalsBehind?: boolean } = {},
 ): Promise<{ processedValidators: number; processedEpochs: number[] }> {
     const redis = getRedis();
     if (!redis) throw new Error('Redis not available');
@@ -206,13 +228,14 @@ export async function syncRewardsToRedis(
 
     const pipeline = redis.pipeline();
     const processedEpochs = new Set<number>();
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const currentYear = new Date().getFullYear().toString();
-    const previousYear = (Number(currentYear) - 1).toString();
     const cutoffYear = new Date().getFullYear() - MAX_YEARS_TO_KEEP;
 
-    if (byValidator.size > 0) {
-        const yearKey = `${REDIS_REWARDS_YEAR_PREFIX}${currentYear}`;
+    // Each epoch is booked on the day it closed, in that day's year: a run
+    // that catches up after downtime puts every epoch where it belongs.
+    const years = Array.from(new Set((dailyEvents ?? []).map((ev) => ev.date.slice(0, 4)))).sort();
+    for (const year of years) {
+        const yearKey = `${REDIS_REWARDS_YEAR_PREFIX}${year}`;
+        const previousYear = (Number(year) - 1).toString();
         // A failed read must not be mistaken for an empty year: writing back
         // only this run's figures would wipe every day already booked.
         const bucket = (await readBlob<Record<string, ValidatorRewardData>>(redis, yearKey)) ?? {};
@@ -220,7 +243,9 @@ export async function syncRewardsToRedis(
         // key does not have yet: their last synced epoch is in last year's.
         let lastYear: Record<string, ValidatorRewardData> | null | undefined;
 
-        for (const [address, validatorEvents] of byValidator) {
+        for (const [address, allEvents] of byValidator) {
+            const validatorEvents = allEvents.filter((ev) => ev.date.startsWith(year));
+            if (validatorEvents.length === 0) continue;
             let data = bucket[address];
             if (!data) {
                 if (lastYear === undefined) {
@@ -249,17 +274,18 @@ export async function syncRewardsToRedis(
                 if (ev.epoch <= data.lastSyncedEpoch) continue;
 
                 processedEpochs.add(ev.epoch);
+                const day = ev.date;
 
                 // Accumulate daily
-                data.daily[today] = (data.daily[today] ?? 0) + ev.validatorFeeXrd;
-                data.dailyDelegants[today] = (data.dailyDelegants[today] ?? 0) + ev.stakePoolAddedXrd;
+                data.daily[day] = (data.daily[day] ?? 0) + ev.validatorFeeXrd;
+                data.dailyDelegants[day] = (data.dailyDelegants[day] ?? 0) + ev.stakePoolAddedXrd;
 
                 // Accumulate yearly
-                data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.validatorFeeXrd;
-                data.yearlyDelegants[currentYear] = (data.yearlyDelegants[currentYear] ?? 0) + ev.stakePoolAddedXrd;
+                data.yearly[year] = (data.yearly[year] ?? 0) + ev.validatorFeeXrd;
+                data.yearlyDelegants[year] = (data.yearlyDelegants[year] ?? 0) + ev.stakePoolAddedXrd;
 
-                // Track total stake (use latest epoch's value for that day)
-                data.dailyStake[today] = ev.totalStakeXrd;
+                // Track total stake (events come oldest first: the day's last epoch wins)
+                data.dailyStake[day] = ev.totalStakeXrd;
 
                 // Track highest epoch
                 if (ev.epoch > data.lastSyncedEpoch) {
@@ -271,7 +297,8 @@ export async function syncRewardsToRedis(
         }
 
         queueBlobWrite(pipeline, yearKey, bucket);
-
+    }
+    if (years.length > 0) {
         // The year that just fell out of the kept window.
         const expired = `${REDIS_REWARDS_YEAR_PREFIX}${cutoffYear - 1}`;
         pipeline.del(expired, `${expired}:stamp`);
@@ -346,10 +373,18 @@ export async function syncRewardsToRedis(
         lastRunTimestamp: new Date().toISOString(),
         dailyTotalsEpoch: previousMeta?.dailyTotalsEpoch,
         dailyTotalsAt: previousMeta?.dailyTotalsAt,
+        lastStateVersion: Math.max(latestStateVersion, previousMeta?.lastStateVersion ?? 0) || undefined,
+        dailyTotalsStateVersion: previousMeta?.dailyTotalsStateVersion,
+        totalsBehind: previousMeta?.totalsBehind,
     };
-    if (dailyEvents && dailyEvents.length > 0) {
-        meta.dailyTotalsEpoch = Math.max(...dailyEvents.map((ev) => ev.epoch), previousMeta?.dailyTotalsEpoch ?? 0);
+    if (dailyEvents) {
+        // The totals have taken in everything up to the last epoch change read.
+        if (dailyEvents.length > 0) {
+            meta.dailyTotalsEpoch = Math.max(...dailyEvents.map((ev) => ev.epoch), previousMeta?.dailyTotalsEpoch ?? 0);
+        }
         meta.dailyTotalsAt = new Date().toISOString();
+        meta.dailyTotalsStateVersion = Math.max(latestStateVersion, previousMeta?.dailyTotalsStateVersion ?? 0) || undefined;
+        meta.totalsBehind = totalsBehind;
     }
     pipeline.set(REDIS_REWARDS_META, meta);
 
