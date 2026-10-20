@@ -16,9 +16,9 @@ import type { TranslationsT } from '@/features/dashboard/types';
 //  Statement helpers
 // ─────────────────────────────────────────
 /** Methods that only move fees, proofs or funds around: never "the" action of a transaction. */
-const PLUMBING_METHOD = /^(lock_fee|lock_contingent_fee|create_proof_of_\w+|withdraw\w*|deposit\w*|try_deposit\w*)$/;
+export const PLUMBING_METHOD = /^(lock_fee|lock_contingent_fee|create_proof_of_\w+|withdraw\w*|deposit\w*|try_deposit\w*)$/;
 
-interface MethodCall {
+export interface MethodCall {
   /** The entity the method is called on. */
   target: string;
   method: string;
@@ -30,7 +30,7 @@ interface MethodCall {
  * The CALL_METHOD instructions of a manifest, in order. Instructions end at a
  * `;` outside a string; address and decimal literals never contain one.
  */
-function methodCalls(manifest: string): MethodCall[] {
+export function methodCalls(manifest: string): MethodCall[] {
   return manifest
     .split(/;\s*(?=[A-Z_]+\b|$)/)
     .map((body) => body.match(/^\s*CALL_METHOD\s+Address\("([a-z0-9_]+)"\)\s+"([a-z0-9_]+)"/i) ? body : null)

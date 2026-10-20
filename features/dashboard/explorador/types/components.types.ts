@@ -83,6 +83,8 @@ export interface AssetTransferGroupProps {
     columns: number;
     locale: string;
     marketData?: MarketData | null;
+    /** The same account withdraws and deposits back the asset (balance changes show nothing). */
+    selfTransfer?: boolean;
 }
 
 export interface TransferFooterProps {
