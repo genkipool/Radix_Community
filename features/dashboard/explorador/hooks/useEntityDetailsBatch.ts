@@ -7,14 +7,13 @@
  *
  * Entities already in the explorer's cache (entityKeys.full) are taken from it;
  * the rest arrive in one request per 20 addresses, and each lands under the
- * same keys a single card would use (full details and the name/icon/symbol
- * summary), so opening any of them later, here or in another card, asks for
- * nothing.
+ * same keys a single card would use, so opening any of them later, here or
+ * in another card, asks for nothing.
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetchEntityDetailsBatch } from '@/features/dashboard/services/apiClient';
-import { entityKeys, extractEntityMeta, needsFetch } from '@/features/dashboard/hooks/useEntityData';
+import { entityKeys, needsFetch } from '@/features/dashboard/hooks/useEntityData';
 import type { GatewayEntityDetails, Network } from '@/features/dashboard/types';
 
 export function useEntityDetailsBatch(addresses: string[], network: Network) {
@@ -31,9 +30,11 @@ export function useEntityDetailsBatch(addresses: string[], network: Network) {
       const missing = unique.filter((address) => !cached[address]);
       const fetched = missing.length ? await apiFetchEntityDetailsBatch(missing, network) : {};
       for (const [address, details] of Object.entries(fetched)) {
+        // Both entries hold full details: cards read either, and the name,
+        // icon and symbol hook reads its fields out of the second.
         queryClient.setQueryData(entityKeys.full(address, network), details);
         if (queryClient.getQueryData(entityKeys.detail(address, network)) === undefined) {
-          queryClient.setQueryData(entityKeys.detail(address, network), extractEntityMeta(details));
+          queryClient.setQueryData(entityKeys.detail(address, network), details);
         }
       }
       return { ...cached, ...fetched };

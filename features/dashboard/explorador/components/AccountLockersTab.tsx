@@ -125,6 +125,7 @@ function LockerRow({
     const names = useResourceLabels(locker.waiting.map((claim) => claim.resource), network);
     const { data: entity } = useExplorerEntity(locker.address, network);
     const { metadataItems } = entityMeta(entity);
+    const otherMetadata = metadataItems.filter((m) => m.key !== 'dapp_definition');
     const copyTitle = l?.copy ?? 'Copy';
 
     return (
@@ -175,10 +176,11 @@ function LockerRow({
                         </Link>
                     </div>
                     <LockerDetails address={locker.address} account={account} network={network} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} />
-                    {metadataItems.length > 0 && (
+                    {/* The dApp definition has its own card in the details above. */}
+                    {otherMetadata.length > 0 && (
                         <div>
                             <h4 className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">{tt?.resource_panel_metadata ?? 'Metadata'}</h4>
-                            <PanelMetadataTab metadataItems={metadataItems} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
+                            <PanelMetadataTab metadataItems={otherMetadata} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
                         </div>
                     )}
                 </div>

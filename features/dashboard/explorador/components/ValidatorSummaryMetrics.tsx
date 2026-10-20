@@ -155,7 +155,26 @@ export function ValidatorAddressMetrics({
 }
 
 /**
- * User Position / Stake Metrics
+ * How long until an unstake can be claimed (epochs last about 5 minutes):
+ * "Ready to claim", or "~2d 3h left" in the reader's words.
+ */
+export function claimTimeLeft(
+    targetEpoch: number,
+    current: number | undefined,
+    as?: { claim_ready?: string; claim_in?: string },
+): string {
+    if (!current || targetEpoch <= current) return as?.claim_ready || 'Ready to claim';
+    const totalMinutes = (targetEpoch - current) * 5;
+    const left = (time: string) => (as?.claim_in || '~{time} left').replace('{time}', time);
+    if (totalMinutes < 60) return left(`${totalMinutes}m`);
+    const hours = Math.floor(totalMinutes / 60);
+    const days = Math.floor(hours / 24);
+    return days > 0 ? left(`${days}d ${hours % 24}h`) : left(`${hours}h`);
+}
+
+/**
+ * User Position / Stake Metrics: what an account has staked, what it is
+ * unstaking (each withdrawal with the time left) and what it can claim.
  */
 function ValidatorPositionMetrics({
     stakeAmount, unstakeAmount, claimAmount, unstakes, currentEpoch, locale, dt, renderRow
@@ -166,23 +185,6 @@ function ValidatorPositionMetrics({
     const Row = (renderRow || SummaryInlineRow) as React.ComponentType<MetricRowProps>;
     const labelPosition = as?.your_position || 'Tu Posición';
 
-    // Helper to format remaining time based on epochs
-    const formatRemainingTime = (targetEpoch: number, current: number) => {
-        if (!current || targetEpoch <= current) return 'Ready to claim';
-        const epochsRemaining = targetEpoch - current;
-        const totalMinutes = epochsRemaining * 5;
-
-        if (totalMinutes < 60) return `~${totalMinutes}m remaining`;
-
-        const hours = Math.floor(totalMinutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (days > 0) {
-            const remainingHours = hours % 24;
-            return `~${days}d ${remainingHours}h remaining`;
-        }
-        return `~${hours}h remaining`;
-    };
 
     return (
         <div className="flex-1 flex flex-col">
@@ -210,7 +212,7 @@ function ValidatorPositionMetrics({
                                     <div key={`${u.epoch}-${u.amount}-${i}`} className="flex justify-between items-center text-[10px]">
                                         <span className="text-[var(--color-text-muted)] font-mono">{formatXRDFull(u.amount, locale)}</span>
                                         <span className="text-[var(--color-warning)]/80 text-[9px] font-medium tracking-wide">
-                                            {formatRemainingTime(u.epoch, currentEpoch)}
+                                            {claimTimeLeft(u.epoch, currentEpoch, as)}
                                         </span>
                                     </div>
                                 ))}

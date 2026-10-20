@@ -77,8 +77,8 @@ const extractResourceAddress = (ev: GatewayEvent): string => {
    Opens into the resource's own tabs, from the details already loaded for
    the whole update. */
 
-/** A price as people read it: the significant digits of a tiny one, a few decimals of a large one. */
-const formatOraclePrice = (price: string, locale: string) => {
+/** An amount or price as people read it: the significant digits of a tiny one, a few decimals of a large one. */
+const formatTokenAmount = (price: string, locale: string) => {
     const n = Number(price);
     if (!Number.isFinite(n)) return price;
     return n >= 1
@@ -159,10 +159,10 @@ function OraclePriceRow({
                     <span className="block h-full rounded-full bg-[var(--color-primary)]/70" style={{ width: `${Math.max(2, share * 100)}%` }} />
                 </span>
                 <span className="truncate text-right font-mono text-[10px] sm:text-[11px] text-[var(--color-text-muted)] tabular-nums" title={before !== undefined ? worth(before) : undefined}>
-                    {before !== undefined ? <>{formatOraclePrice(before, locale)}{unitMark}</> : '—'}
+                    {before !== undefined ? <>{formatTokenAmount(before, locale)}{unitMark}</> : '—'}
                 </span>
                 <span className="truncate text-right font-mono text-[10px] sm:text-xs font-black text-[var(--color-text-main)] tabular-nums" title={worth(update.price)}>
-                    {formatOraclePrice(update.price, locale)}{unitMark}
+                    {formatTokenAmount(update.price, locale)}{unitMark}
                 </span>
                 <span className={`text-right font-mono text-[11px] font-bold tabular-nums whitespace-nowrap ${changeColor}`}>
                     {change !== null ? `${change > 0 ? '+' : ''}${change.toLocaleString(locale, { maximumFractionDigits: 2 })}%` : ''}
@@ -501,14 +501,15 @@ export function VaultCreationSection({
                 {te?.vault_creation || 'Vault Creation'}
             </h3>
             <div className="p-3 space-y-2">
-                {vaultEvents.map((ev) => {
+                {vaultEvents.map((ev, i) => {
                     const resourceAddress = extractResourceAddress(ev);
                     const vaultId = extractField(ev, 'vault_id');
                     const amount = findEventAmount(events, resourceAddress);
 
                     return (
                         <VaultCreationCard
-                            key={`vault-${resourceAddress}`}
+                            // One resource can get several vaults in a transaction: the vault id tells them apart.
+                            key={`vault-${vaultId || resourceAddress}-${i}`}
                             resource={resourceAddress}
                             vaultId={vaultId}
                             amount={amount}
@@ -528,7 +529,7 @@ export function VaultCreationSection({
 }
 
 function VaultCreationCard({
-    resource, vaultId, amount, tt, te, onCopy, copiedAddress, _onResourceClick, network, locale: _locale = 'en'
+    resource, vaultId, amount, tt, te, onCopy, copiedAddress, _onResourceClick, network, locale = 'en'
 }: {
     resource: string;
     vaultId: string;
@@ -609,7 +610,7 @@ function VaultCreationCard({
                             {te?.amount || 'Amount'}
                         </span>
                         <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-mono font-black text-amber-700 dark:text-amber-300">{amount}</span>
+                            <span className="text-sm font-mono font-black text-amber-700 dark:text-amber-300" title={amount}>{formatTokenAmount(amount, locale)}</span>
                             {symbol && (
                                 <span className="text-[10px] font-bold text-amber-900 dark:text-amber-100 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
                                     {symbol}
@@ -708,7 +709,7 @@ export function BetVoteSection({
 }
 
 function BetVoteCard({
-    option, emitter, entityType, amount, resourceAddress, eventName, tt, te, onCopy, copiedAddress, network, locale: _locale = 'en'
+    option, emitter, entityType, amount, resourceAddress, eventName, tt, te, onCopy, copiedAddress, network, locale = 'en'
 }: {
     option: string;
     emitter: string;
@@ -809,7 +810,7 @@ function BetVoteCard({
                             {te?.amount || 'Amount'}
                         </span>
                         <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-mono font-black text-blue-700 dark:text-blue-300">{amount}</span>
+                            <span className="text-sm font-mono font-black text-blue-700 dark:text-blue-300" title={amount}>{formatTokenAmount(amount, locale)}</span>
                             {symbol && (
                                 <span className="text-[10px] font-bold text-blue-900 dark:text-blue-100 bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
                                     {symbol}
@@ -1008,7 +1009,10 @@ function MetadataEntityBlock({
             : null;
 
     // Filter out missing or empty values
-    const validUpdates = updates.filter(u => {
+    // A key set more than once in the transaction ends with its last value:
+    // only that one is shown.
+    const lastByKey = new Map(updates.map(u => [u.key, u]));
+    const validUpdates = [...lastByKey.values()].filter(u => {
         const val = u.value?.trim() || '';
         return val && val !== '...' && val !== '[]' && val !== 'None' && val !== 'null';
     });

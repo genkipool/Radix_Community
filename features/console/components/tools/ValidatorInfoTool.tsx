@@ -4,7 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { ExternalLink, Landmark, ShieldCheck, Tags } from 'lucide-react';
 
 import { useLanguage } from '@/context/LanguageContext';
-import { apiFetchEntityDetails, apiFetchValidators } from '@/features/dashboard/services/apiClient';
+import { BalanceCard } from '@/features/dashboard/explorador/components/AccountSummaryTab';
+import { claimTimeLeft } from '@/features/dashboard/explorador/components/ValidatorSummaryMetrics';
+import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
+import { useDashboardDictionary } from '@/features/dashboard/hooks/useDashboardDictionary';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { ValidatorExpandedBody, useValidatorList } from '@/features/dashboard/staking';
+import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
@@ -16,7 +22,7 @@ import { parseValidatorState } from '../../lib/validator-lookup';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { AccountPicker } from '../shared/AccountPicker';
-import { CardSkeleton, cardError, EntityCard, EntityCardMessage, Facts, Heading, Note, Sub, fmtNumber as fmt, type NoteTone } from '../shared/InfoParts';
+import { CardSkeleton, cardError, EntityCard, EntityCardMessage, Heading, Note, fmtNumber as fmt, type NoteTone } from '../shared/InfoParts';
 import { MultiAddressSelect, addressesFromUrl } from '../shared/MultiAddressSelect';
 import { ToolSection } from '../shared/ToolSection';
 import { TopHoldersList } from '../shared/TopHoldersList';
@@ -24,9 +30,10 @@ import { accountFromQuery, toolQuery } from '../../lib/console-query';
 
 /**
  * Read-only view of one or several validators for whoever is about to stake
- * or runs them: their public profile, the figures that matter when choosing
- * (stake, fee, uptime, APY), the account's stake and pending withdrawals, and
- * shortcuts to the tools that act on them. Nothing here is signed.
+ * or runs them: the same profile, delegation, performance and history the
+ * staking list and the explorer show (their own blocks), the largest stakers,
+ * the account's stake and pending withdrawals, and shortcuts to the tools that
+ * act on them. Nothing here is signed.
  */
 export default function ValidatorInfoTool({ t }: ConsoleToolProps) {
   const info = t.validator.info;
@@ -82,24 +89,24 @@ interface CardProps {
 function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps) {
   const info = t.validator.info;
   const { language } = useLanguage();
+  // The staking and explorer blocks below speak the dashboard's words.
+  const site = useDashboardDictionary();
   const { activeNetwork } = useRadixWallet();
+  const { copiedText, copy } = useCopyToClipboard();
 
-  // The ledger is the truth for "is this a validator at all".
-  const { data: state, isLoading, error } = useQuery({
-    queryKey: ['console-validator-info-state', activeNetwork, address],
+  // The ledger is the truth for "is this a validator at all". Same cache entry
+  // as the explorer's card for this address, so either fills it for the other.
+  const { data: details, isLoading, error } = useQuery({
+    queryKey: entityKeys.full(address, activeNetwork),
     staleTime: 60_000,
     retry: false,
-    queryFn: async () => parseValidatorState(await apiFetchEntityDetails(address, activeNetwork)),
+    queryFn: () => apiFetchEntityDetails(address, activeNetwork),
   });
-  // Rank, uptime, APY and the rest come from the site's cached validator set,
-  // the same query the address picker uses, so it is usually already loaded.
-  const { data: list } = useQuery({
-    queryKey: ['console-picker-validators', activeNetwork],
-    enabled: !!state,
-    staleTime: 5 * 60_000,
-    retry: false,
-    queryFn: async () => (await apiFetchValidators(activeNetwork)).validators,
-  });
+  const state = details ? parseValidatorState(details) : null;
+  const currentEpoch = (details as { ledger_state?: { epoch?: number } } | undefined)?.ledger_state?.epoch;
+  // Rank, uptime, APY and the rest come from the site's validator set, the
+  // entry the staking list and the explorer use, so it is usually loaded.
+  const { data: list } = useValidatorList(activeNetwork, !!state);
   const { data: holdings } = useAccountResources(state ? account : null);
   const { data: claimNfts } = useClaimableNfts(state ? account : null);
   const { data: stakers } = useTopHolders(state?.stakeUnitResource, activeNetwork);
@@ -116,7 +123,13 @@ function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps
     );
   }
 
-  const v = list?.find((entry) => entry.address === address);
+  const listed = list?.validators.find((entry) => entry.address === address);
+  // Delegators: every address holding the LSU, counted live by the Gateway with
+  // the stakers read below, so the list's title and the delegation figures say
+  // the same; the list's count until then.
+  const liveDelegators = stakers ? stakers.total ?? stakers.holders.length : undefined;
+  const v = listed && { ...listed, delegators: liveDelegators ?? listed.delegators };
+  const as = site?.dashboard?.transactions?.account_summary;
   const lsuHeld = Number(holdings?.fungibles.find((f) => f.resourceAddress === state.stakeUnitResource)?.amount ?? 0);
   const claims = (claimNfts ?? []).filter((nft) => nft.validatorAddress === address);
   const ready = claims.filter((c) => c.isClaimable).reduce((sum, c) => sum + c.amount, 0);
@@ -164,8 +177,9 @@ function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps
           ))}
         </p>
       }
-      description={v?.description}
-      url={v?.website}
+      // The profile block below shows both once the dashboard's words arrive.
+      description={v && site ? undefined : v?.description}
+      url={v && site ? undefined : v?.website}
       onRemove={onRemove}
       removeLabel={info.remove}
       copyLabel={t.common.copy}
@@ -191,44 +205,24 @@ function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps
         </div>
       )}
 
-      <div className="space-y-2">
-        <Heading>{info.figuresTitle}</Heading>
-        <Facts
-          rows={[
-            v && [
-              info.stake,
-              <>
-                {fmt(v.delegatedStake, 0)} XRD
-                {v.rank > 0 && (
-                  <Sub>{info.stakeShare.replace('{percent}', fmt(v.delegatedStakePercent)).replace('{rank}', String(v.rank))}</Sub>
-                )}
-              </>,
-            ],
-            [
-              info.fee,
-              <>
-                {fmt(fee)} %
-                {v?.hasPendingFeeChange && v.upcomingFee !== undefined && <Sub>{info.feeChange.replace('{fee}', fmt(v.upcomingFee))}</Sub>}
-              </>,
-            ],
-            v && v.apy > 0 && [info.apy, `${fmt(v.apy)} %`],
-            v && [
-              info.uptime,
-              <>
-                {fmt(v.recentUptime)} %
-                <Sub>{info.uptimeSub.replace('{total}', fmt(v.totalUptime))}</Sub>
-              </>,
-            ],
-            v && [info.ownerStake, `${fmt(v.ownerDelegation, 0)} XRD`],
-            v && v.delegators > 0 && [info.delegators, fmt(v.delegators, 0)],
-            v && v.lsu2xrdFactor > 0 && [info.lsuValue, `${fmt(v.lsu2xrdFactor, 6)} XRD`],
-          ]}
+      {v && site && (
+        // The staking list's expanded card, without its Stake button: the
+        // console's own shortcuts above do that.
+        <ValidatorExpandedBody
+          validator={v}
+          t={site}
+          onCopy={copy}
+          copiedAddress={copiedText}
+          network={activeNetwork}
+          columns={2}
+          hideCta
+          locale={language}
         />
-      </div>
+      )}
 
       {stakers && stakers.holders.length > 0 && v && v.lsu2xrdFactor > 0 && (
         <div className="space-y-2">
-          <Heading>{info.topStakersTitle.replace('{count}', String(stakers.total ?? stakers.holders.length))}</Heading>
+          <Heading>{info.topStakersTitle.replace('{count}', fmt(liveDelegators ?? stakers.holders.length, 0))}</Heading>
           <TopHoldersList
             holders={stakers.holders}
             supply={v.delegatedStake / v.lsu2xrdFactor}
@@ -241,32 +235,51 @@ function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps
       )}
 
       <div className="space-y-2">
-        <Heading>{info.positionTitle}</Heading>
         {!account ? (
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{info.pickAccount}</p>
+          <>
+            <Heading>{info.positionTitle}</Heading>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{info.pickAccount}</p>
+          </>
         ) : lsuHeld > 0 || claims.length > 0 ? (
-          <Facts
-            rows={[
-              lsuHeld > 0 && [
-                info.yourLsu,
-                <>
-                  {fmt(lsuHeld, 4)} LSU
-                  {v && v.lsu2xrdFactor > 0 && <Sub>{info.worth.replace('{amount}', fmt(lsuHeld * v.lsu2xrdFactor, 4))}</Sub>}
-                </>,
-              ],
-              ready > 0 && [info.claimReady, `${fmt(ready, 4)} XRD`],
-              waiting.length > 0 && [
-                info.claimWaiting,
-                waiting.map((c) => (
-                  <span key={c.localId} className="block">
-                    {info.claimAt.replace('{amount}', fmt(c.amount, 4)).replace('{epoch}', String(c.claimEpoch))}
+          <>
+            <Heading>{info.positionTitle}</Heading>
+            {/* The explorer account card's balance tiles: staked, on its way out, ready to claim. */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
+              <BalanceCard
+                title={as?.stake_xrd || 'Stake XRD'}
+                amount={String(v && v.lsu2xrdFactor > 0 ? lsuHeld * v.lsu2xrdFactor : 0)}
+                symbol="XRD"
+                valueColor="text-[var(--color-primary)]"
+                locale={language}
+                note={lsuHeld > 0 && <span className="font-mono">{fmt(lsuHeld, 4)} LSU</span>}
+              />
+              <BalanceCard
+                title={as?.unstake_xrd || 'Unstake XRD'}
+                amount={String(waiting.reduce((sum, c) => sum + c.amount, 0))}
+                symbol="XRD"
+                valueColor="text-[var(--color-secondary)]"
+                locale={language}
+                note={waiting.map((c) => (
+                  <span key={c.localId} title={info.claimAtEpoch.replace('{epoch}', String(c.claimEpoch))}>
+                    {fmt(c.amount, 2)} XRD · {claimTimeLeft(c.claimEpoch, currentEpoch, as)}
                   </span>
-                )),
-              ],
-            ]}
-          />
+                ))}
+              />
+              <BalanceCard
+                title={as?.claim_xrd || 'Claim XRD'}
+                amount={String(ready)}
+                symbol="XRD"
+                valueColor="text-[var(--color-accent)]"
+                locale={language}
+                note={ready > 0 && (as?.claim_ready || 'Ready to claim')}
+              />
+            </div>
+          </>
         ) : (
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{info.noPosition}</p>
+          <>
+            <Heading>{info.positionTitle}</Heading>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{info.noPosition}</p>
+          </>
         )}
         {isOwner && (
           <p className="text-xs font-semibold" style={{ color: 'var(--color-success)' }}>{info.youOwn}</p>

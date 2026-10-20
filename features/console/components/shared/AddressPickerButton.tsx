@@ -5,10 +5,10 @@ import { createPortal } from 'react-dom';
 import { Activity, BookUser, CornerDownLeft, Crown, Database, Plus, ServerCog, Wallet } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
+import { useValidatorList } from '@/features/dashboard/staking';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { SelectPopup, SelectPopupEmpty, SelectPopupRow, SelectPopupTabs, selectedFirst, useSelectionDraft } from '@/components/ui/SelectPopup';
 import { useLanguage } from '@/context/LanguageContext';
-import { apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import {
   useAddressBook,
   addressCategory,
@@ -234,13 +234,9 @@ export function AddressPickerButton({
       return ((await res.json()) as { pools: KnownPoolRow[] }).pools;
     },
   });
-  const { data: validators, isFetching: validatorsLoading } = useQuery({
-    queryKey: ['console-picker-validators', activeNetwork],
-    enabled: open && accepts('validator'),
-    staleTime: 5 * 60_000,
-    retry: false,
-    queryFn: async () => (await apiFetchValidators(activeNetwork)).validators,
-  });
+  // The site's shared validator set: already loaded if the staking list or the explorer was opened.
+  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(activeNetwork, open && accepts('validator'));
+  const validators = validatorSet?.validators;
   const ownerBadge = RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet].OWNER_BADGE;
   const { data: myValidators, isFetching: myValidatorsLoading } = useQuery({
     queryKey: ['console-picker-owned-validators', activeNetwork, accountAddresses.join(',')],

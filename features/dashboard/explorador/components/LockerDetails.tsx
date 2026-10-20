@@ -13,7 +13,8 @@ import type { Network } from '@/features/dashboard/types';
 import { formatNumber } from '@/utils/formatters';
 import { RuleBadgeChip, badgeOfRule, ruleText } from '../utils/ruleText';
 import { SummaryInlineRow } from './EntityPanelShared';
-import { useExplorerEntity } from './ExplorerEntityCard';
+import { DappDefinitionCard } from './DappDefinitionCard';
+import { entityMeta, useExplorerEntity } from './ExplorerEntityCard';
 import { HeldResourcesList } from './HeldResourcesList';
 import { CopyButton, PlainSummary } from './SummaryCardKit';
 
@@ -48,10 +49,12 @@ export function LockerDetails({
     /** The account the locker is opened from: its row is marked and comes first, then the wallet's own. */
     account?: string;
 }) {
-    const c = useLanguage().t.dashboard?.entity_cards;
+    const words = useLanguage().t.dashboard;
+    const c = words?.entity_cards;
     const l = c?.locker;
     const { data } = useExplorerEntity(address, network);
     const locker = data ? parseLockerState(data) : null;
+    const dapp = entityMeta(data).getMeta('dapp_definition');
     const { data: activity, isLoading, isError } = useLockerActivity(address, network);
 
     // Recipients, the account it is opened from first and then the connected
@@ -131,6 +134,18 @@ export function LockerDetails({
                     </dl>
                 </div>
             </div>
+
+            {dapp && (
+                <DappDefinitionCard
+                    dapp={dapp}
+                    claimant={address}
+                    network={network}
+                    locale={locale}
+                    tt={words?.transactions}
+                    copiedAddress={copiedAddress}
+                    onCopy={onCopy}
+                />
+            )}
 
             {recipients.length > 0 && (
                 <div className="overflow-x-auto">

@@ -373,7 +373,8 @@ export function AccountSummaryTab({
     );
 }
 
-function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount, isModal = false, align = 'left' }: {
+/** One balance as a tile: title, amount with its symbol, and its fiat value or a note under it. Also the console's "Your position". */
+export function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount, isModal = false, align = 'left', note }: {
     title: string;
     amount: string;
     symbol: string;
@@ -383,6 +384,8 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     rawFiatAmount?: number;
     isModal?: boolean;
     align?: 'left' | 'center' | 'right';
+    /** Shown under the amount when there is no fiat value (an LSU count, the time left…). */
+    note?: React.ReactNode;
 }) {
     const currency = getCurrencyForLocale(locale);
     const price = currency === 'EUR' ? marketData?.priceEur : marketData?.priceUsd;
@@ -448,6 +451,8 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
                         {formatCurrency(fiatValue, currency, locale)}
                     </span>
                 </div>
+            ) : note ? (
+                <div className="flex flex-col items-end min-w-0 text-xs text-[var(--color-text-muted)]">{note}</div>
             ) : (
                 <div className="flex justify-end min-w-0 h-[18px]"></div>
             )}
