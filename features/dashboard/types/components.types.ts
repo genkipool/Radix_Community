@@ -12,6 +12,8 @@ export interface StatCardProps {
     fullValue?: string;
     copyText?: string;
     isLoading?: boolean;
+    /** Let the label and value wrap onto a second line instead of being cut with an ellipsis. */
+    wrap?: boolean;
 }
 
 export interface ExplorerStats {

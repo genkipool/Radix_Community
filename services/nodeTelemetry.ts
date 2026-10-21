@@ -11,7 +11,7 @@
  *      it is connected to and its address book every five minutes, probes the
  *      gossip port of every validator node it has an address for, locates the
  *      IPs and writes the result to Redis keyed by node public key. No IP ever
- *      leaves the node: only the country.
+ *      leaves the node: only the country and who hosts it (provider).
  *
  * With nothing to go on the answer is "unknown" (null), never a guess.
  *
@@ -86,6 +86,8 @@ export function parseNodeTelemetry(raw: unknown): ValidatorNodeTelemetry | null 
         version: text(entry.version),
         commit: text(entry.commit),
         lastSeen,
+        provider: text(entry.provider),
+        hosting: typeof entry.hosting === 'boolean' ? entry.hosting : null,
     };
 }
 
@@ -196,6 +198,8 @@ export function withNodeHealth(validator: Validator, telemetry: NodeTelemetryMap
         // and what search matches. The client localises from the code.
         country: node.countryCode ? countryName(node.countryCode, 'en') : validator.country,
         countryCode: node.countryCode ?? validator.countryCode,
+        // Who hosts it, as our node worked it out from the IP, over the validator's own claim.
+        ...(node.provider ? { provider: node.provider } : {}),
         // Version and commit travel together: never a new version with an old commit.
         ...(node.version ? { version: node.version, commit: node.commit ?? '' } : {}),
     };

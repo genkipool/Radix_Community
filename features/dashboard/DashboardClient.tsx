@@ -782,6 +782,31 @@ export default function DashboardClient({
             : isTxLoading && txs.length === 0}
           dt={dt}
           locale={language}
+          // The staking-flow cards unfold right under the six above, with the heroes' fold animation.
+          extra={
+            <div id={NETWORK_PANEL_ID} inert={!networkPanelOpen}>
+              <HeroCollapse collapsed={!networkPanelOpen}>
+                {networkPanelOpened && (
+                  <div className="pt-3">
+                    <NetworkInsightsPanel
+                      network={network as Network}
+                      totalStaked={stats.totalStaked}
+                      open={networkPanelOpen}
+                      dt={dt}
+                      locale={language}
+                      validators={realValidators}
+                      // How current and how spread out the validator set is belongs to staking.
+                      showHealth={activeView === 'staking'}
+                      marketData={initialMarketData}
+                      t={t}
+                      onCopy={copyAddress}
+                      copiedAddress={copiedAddress}
+                    />
+                  </div>
+                )}
+              </HeroCollapse>
+            </div>
+          }
         />
 
         {/* ── Search / Filters / Grid controls ── */}
@@ -872,21 +897,6 @@ export default function DashboardClient({
           onPrefetchNetwork={warmNetwork}
           dt={dt}
         />
-
-        {/* ── Network panel: folds out under the toolbar, as the heroes fold in Docs / Games / Console ── */}
-        <div id={NETWORK_PANEL_ID} inert={!networkPanelOpen}>
-          <HeroCollapse collapsed={!networkPanelOpen}>
-            {networkPanelOpened && (
-              <NetworkInsightsPanel
-                network={network as Network}
-                totalStaked={stats.totalStaked}
-                open={networkPanelOpen}
-                dt={dt}
-                locale={language}
-              />
-            )}
-          </HeroCollapse>
-        </div>
 
         <div className="w-full min-w-0">
           {/* ── Card grid + empty states ── */}

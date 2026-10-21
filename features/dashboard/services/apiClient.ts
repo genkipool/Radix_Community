@@ -211,17 +211,34 @@ export async function apiFetchStakeHistory(
 
 
 
+export interface AccountUnlockData {
+    address: string;
+    /** XRD of theirs still locked. */
+    xrd: number;
+    unstakes: number;
+    /** Validators they unstaked from, the biggest first. */
+    validators: string[];
+    /** When their first part unlocks, and when they last unstaked, in ms. */
+    nextUnlock: number;
+    lastUnstake: number;
+}
+
 export interface NetworkUnstakingData {
-    /** XRD in the validators' pending-withdraw vaults (unlocking, or unlocked and not claimed). */
+    /** XRD in the validators' pending-withdraw vaults (locked, or unlocked and not claimed). Exact. */
     pending: number;
-    /** Of it, the part still in the unlocking period (an estimate), or null when unknown. */
+    /** Of it, the part still locked: unstaked within the last 7 days. Null until the ledger has been read that far. */
     unbonding: number | null;
+    /** The same figure 24 h and 7 days ago; null until the ledger has been read that far back. */
+    unbonding24hAgo: number | null;
+    unbonding7dAgo: number | null;
+    /** When the locked part unlocks, by UTC day, today first; empty when unknown. */
+    schedule: { date: string; xrd: number }[];
+    /** Who has it unlocking, biggest first; empty when unknown. */
+    accounts: AccountUnlockData[];
+    /** XRD of the locked part whose account the ledger events did not name. */
+    unattributedXrd: number;
     validators: number;
     updatedAt: number | null;
-    /** [time in ms, vault XRD, still-locked XRD or null], one per hour for up to a week. */
-    samples: [number, number, number | null][];
-    /** Network-wide stake / unstake / claim per UTC day, in XRD. */
-    days: { date: string; stake: number; unstake: number; claim: number }[];
 }
 
 export async function apiFetchNetworkUnstaking(network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<NetworkUnstakingData> {

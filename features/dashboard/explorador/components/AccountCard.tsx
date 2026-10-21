@@ -63,7 +63,8 @@ export function AccountCard({
     locale,
     marketData,
     readingMode: _readingMode,
-    isModal
+    isModal,
+    headless = false,
 }: AccountCardProps) {
     const tt = t?.dashboard?.transactions;
     const accT = tt?.account_summary;
@@ -151,127 +152,129 @@ export function AccountCard({
         <>
             <Card
                 onClick={(!isModal && onExpand) ? () => onExpand(address) : undefined}
-                className={`p-0 shadow-md transition-all duration-300 group ${(!isModal && onExpand) ? 'cursor-pointer' : 'cursor-default'} overflow-hidden col-span-full border border-[var(--color-accent)]/30 ${isModal ? 'bg-[var(--color-bg)] h-full flex flex-col' : 'bg-[var(--color-surface)]'} ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
+                className={`p-0 shadow-md transition-all duration-300 group ${(!isModal && onExpand) ? 'cursor-pointer' : 'cursor-default'} overflow-hidden col-span-full border border-[var(--color-accent)]/30 ${isModal ? 'bg-[var(--color-bg)] h-full flex flex-col' : 'bg-[var(--color-surface)]'} ${isExpanded && !headless ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
                 innerClassName={isModal ? "flex flex-col h-full min-h-0 flex-1" : ""}
             >
-                <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'} shrink-0`}>
-                    {/* ── AVATAR / SIDEBAR (Matching TransactionCard) ── */}
-                    <div aria-hidden="true"
-                        className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
-                        <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
-                        <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
-                            <Landmark className="size-8" style={{ color: 'var(--color-accent)' }} />
-                        </div>
-                    </div>
-
-                    {/* ── MAIN CONTENT ── */}
-                    <div className="flex-1 flex flex-col min-w-0">
-                        <div className={`${isVertical ? 'p-3 pt-4' : 'p-5'} flex-1 min-w-0`}>
-                            {/* Header: Address + Download Button */}
-                            <div className={`flex items-start justify-between gap-4 mb-3 sm:flex-nowrap`}>
-                                <div className="flex flex-col min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 overflow-hidden shrink min-w-0 pr-2">
-                                        <h3 className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2 mr-2`}
-                                            title={address}>
-                                            <span className="truncate">{address}</span>
-                                        </h3>
-                                        <CopyButton
-                                            value={address}
-                                            variant="card-inline"
-                                            size="sm"
-                                            forceCopied={isCopied}
-                                            onClick={handleCopy}
-                                            className="shrink-0"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
-                                    {network === 'mainnet' && (
-                                        <button
-                                            type="button"
-                                            onClick={handleDownloadClick}
-                                            onMouseEnter={handleDownloadMouseEnter}
-                                            className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[22px] bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 gap-1.5"
-                                            title={accT?.download_rewards_tooltip}
-                                        >
-                                            <Download className="size-3" />
-                                            <span className="mt-[0.5px]">{accT?.csv || 'CSV'}</span>
-                                        </button>
-                                    )}
-
-                                    {isModal && onExpand && (
-                                        <CloseButton
-                                            onClose={() => onExpand(address)}
-                                            title={t?.dashboard?.reading?.close || 'Close'}
-                                            iconSize={20}
-                                            className="shrink-0 ml-1"
-                                        />
-                                    )}
-
-                                </div>
-                            </div>
-
-                            {/* Stats Rows - 5 grid items corresponding to main balance */}
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
-                                <div>
-                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {accT?.total_xrd || 'TOTAL XRD'}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
-                                            {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
-                                        </span>
-                                        <FiatValueDisplay amount={parseFloat(xrdAmount)} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {accT?.total_lsu || 'TOTAL LSU'}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
-                                            {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
-                                        </span>
-                                        <FiatValueDisplay amount={totalLsuXrdEquivalent} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {accT?.stake_xrd || 'STAKE XRD'}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-primary)] font-mono">
-                                            {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
-                                        </span>
-                                        <FiatValueDisplay amount={stakedTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {accT?.unstake_xrd || 'UNSTAKE XRD'}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
-                                            {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
-                                        </span>
-                                        <FiatValueDisplay amount={unstakeTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {accT?.claim_xrd || 'CLAIM XRD'}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
-                                            {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
-                                        </span>
-                                        <FiatValueDisplay amount={claimTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
-                                    </div>
-                                </div>
+                {!headless && (
+                    <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'} shrink-0`}>
+                        {/* ── AVATAR / SIDEBAR (Matching TransactionCard) ── */}
+                        <div aria-hidden="true"
+                            className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
+                            <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
+                            <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
+                                <Landmark className="size-8" style={{ color: 'var(--color-accent)' }} />
                             </div>
                         </div>
+
+                        {/* ── MAIN CONTENT ── */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                            <div className={`${isVertical ? 'p-3 pt-4' : 'p-5'} flex-1 min-w-0`}>
+                                {/* Header: Address + Download Button */}
+                                <div className={`flex items-start justify-between gap-4 mb-3 sm:flex-nowrap`}>
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 overflow-hidden shrink min-w-0 pr-2">
+                                            <h3 className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2 mr-2`}
+                                                title={address}>
+                                                <span className="truncate">{address}</span>
+                                            </h3>
+                                            <CopyButton
+                                                value={address}
+                                                variant="card-inline"
+                                                size="sm"
+                                                forceCopied={isCopied}
+                                                onClick={handleCopy}
+                                                className="shrink-0"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
+                                        {network === 'mainnet' && (
+                                            <button
+                                                type="button"
+                                                onClick={handleDownloadClick}
+                                                onMouseEnter={handleDownloadMouseEnter}
+                                                className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[22px] bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 gap-1.5"
+                                                title={accT?.download_rewards_tooltip}
+                                            >
+                                                <Download className="size-3" />
+                                                <span className="mt-[0.5px]">{accT?.csv || 'CSV'}</span>
+                                            </button>
+                                        )}
+
+                                        {isModal && onExpand && (
+                                            <CloseButton
+                                                onClose={() => onExpand(address)}
+                                                title={t?.dashboard?.reading?.close || 'Close'}
+                                                iconSize={20}
+                                                className="shrink-0 ml-1"
+                                            />
+                                        )}
+
+                                    </div>
+                                </div>
+
+                                {/* Stats Rows - 5 grid items corresponding to main balance */}
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
+                                    <div>
+                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                            {accT?.total_xrd || 'TOTAL XRD'}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
+                                                {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
+                                            </span>
+                                            <FiatValueDisplay amount={parseFloat(xrdAmount)} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                            {accT?.total_lsu || 'TOTAL LSU'}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
+                                                {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
+                                            </span>
+                                            <FiatValueDisplay amount={totalLsuXrdEquivalent} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                            {accT?.stake_xrd || 'STAKE XRD'}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-[var(--color-primary)] font-mono">
+                                                {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
+                                            </span>
+                                            <FiatValueDisplay amount={stakedTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                            {accT?.unstake_xrd || 'UNSTAKE XRD'}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
+                                                {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
+                                            </span>
+                                            <FiatValueDisplay amount={unstakeTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                            {accT?.claim_xrd || 'CLAIM XRD'}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
+                                                {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
+                                            </span>
+                                            <FiatValueDisplay amount={claimTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <AnimatePresence initial={false}>
                     {isExpanded && (
@@ -280,7 +283,7 @@ export function AccountCard({
                             animate={isModal ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
-                            className={`overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)] ${isModal ? 'flex-1 flex flex-col min-h-0' : ''}`}
+                            className={`overflow-hidden bg-[var(--color-bg)] w-full ${headless ? '' : 'border-t border-[var(--color-card-border)]'} ${isModal ? 'flex-1 flex flex-col min-h-0' : ''}`}
                         >
                             <div role="presentation" onClick={(e) => e.stopPropagation()} className={`cursor-auto w-full ${isModal ? 'flex-1 flex flex-col min-h-0' : ''}`}>
                                 <PanelTabBar

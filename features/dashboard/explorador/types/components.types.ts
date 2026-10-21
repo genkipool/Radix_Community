@@ -165,6 +165,8 @@ export interface AccountCardProps {
     marketData?: MarketData | null;
     readingMode?: boolean;
     isModal?: boolean;
+    /** Leave out the header (icon, address, balances, CSV) and start at the tabs: for a card shown inside another view that already names the account. */
+    headless?: boolean;
 }
 
 export interface ValidatorInlinePanelProps {

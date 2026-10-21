@@ -13,7 +13,7 @@ import { MapPin, Cpu, Server, type LucideIcon } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
-import { validatorLocation, validatorVersion } from '../lib/validatorNode';
+import { validatorLocation, validatorProvider, validatorVersion } from '../lib/validatorNode';
 
 interface NodeFact {
     key: string;
@@ -36,10 +36,10 @@ export function buildNodeFacts(
     const unknown = details?.unknown ?? 'Unknown';
     const location = validatorLocation(validator, locale);
     const version = validatorVersion(validator);
-    const provider = sanitizeText(validator.provider);
+    const provider = validatorProvider(validator);
     const commit = sanitizeText(validator.commit);
 
-    const facts: (NodeFact | null)[] = [
+    const facts: NodeFact[] = [
         {
             key: 'location',
             icon: MapPin,
@@ -55,6 +55,13 @@ export function buildNodeFacts(
             ) : <Unknown label={unknown} />,
         },
         {
+            key: 'provider',
+            icon: Server,
+            label: details?.provider ?? 'Provider',
+            title: provider ?? undefined,
+            value: provider ? <span className="truncate">{provider}</span> : <Unknown label={unknown} />,
+        },
+        {
             key: 'version',
             icon: Cpu,
             label: details?.node_version ?? 'Node version',
@@ -65,16 +72,9 @@ export function buildNodeFacts(
                 ? <span className="truncate font-mono tracking-tight">{version}</span>
                 : <Unknown label={unknown} />,
         },
-        provider ? {
-            key: 'provider',
-            icon: Server,
-            label: details?.provider ?? 'Provider',
-            title: provider,
-            value: <span className="truncate">{provider}</span>,
-        } : null,
     ];
 
-    return facts.filter((fact): fact is NodeFact => fact !== null);
+    return facts;
 }
 
 export function ValidatorNodeFacts({

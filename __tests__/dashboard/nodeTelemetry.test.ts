@@ -54,7 +54,16 @@ describe('parseNodeTelemetry', () => {
             version: 'v1.3.0.2-6a5a9c9',
             commit: '7400951e',
             lastSeen: NOW,
+            // Views written before the script reported who hosts the node carry neither.
+            provider: null,
+            hosting: null,
         });
+    });
+
+    it('reads the hosting provider the script reports, and nothing else as a provider', () => {
+        expect(parseNodeTelemetry(entry({ provider: 'Hetzner', hosting: true }))).toMatchObject({ provider: 'Hetzner', hosting: true });
+        expect(parseNodeTelemetry(entry({ provider: 42, hosting: 'yes' }))).toMatchObject({ provider: null, hosting: null });
+        expect(parseNodeTelemetry(entry({ provider: '<b>OVH</b>' }))?.provider).not.toContain('<');
     });
 
     it('drops entries with a malformed lastSeen', () => {
