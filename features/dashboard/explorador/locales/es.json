@@ -732,6 +732,12 @@
           "copy": "Copiar",
           "open_locker": "Abrir la tarjeta del locker"
         },
+        "security": {
+          "label": "Seguridad de la cuenta",
+          "tooltip": "Quién controla esta cuenta: su clave o un Access Controller, qué nivel de seguridad tiene y qué la mejoraría.",
+          "loading": "Leyendo quién controla la cuenta…",
+          "error": "No se pudo comprobar la seguridad de la cuenta."
+        },
         "deposits": {
           "label": "Depósitos",
           "tooltip": "Quién más puede depositar en esta cuenta: la regla general, excepciones por recurso e insignias autorizadas.",

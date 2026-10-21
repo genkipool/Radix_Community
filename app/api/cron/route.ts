@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { advanceVoteTail } from '@/services/gateway/protocolVotes';
 import { advanceTopLsu } from '@/services/gateway/rankings';
+import { advanceAccessControllers } from '@/services/gateway/accessControllers';
 import { refreshNetworkUnstaking } from '@/services/gateway/networkUnstaking';
 
 export async function GET(request: Request) {
@@ -54,6 +55,12 @@ export async function GET(request: Request) {
       advanceTopLsu('stokenet'),
     ]);
 
+    /* The shielded-accounts list, kept up to date the same way: a few requests when there is anything new. */
+    const accessControllers = await Promise.all([
+      advanceAccessControllers('mainnet'),
+      advanceAccessControllers('stokenet'),
+    ]);
+
     /* The network's pending-withdraw figure, kept warm for the dashboard panel. Same rules. */
     const unstaking = await Promise.all([
       refreshNetworkUnstaking('mainnet'),
@@ -65,6 +72,7 @@ export async function GET(request: Request) {
       message: 'Radix cache revalidated successfully',
       votes: { mainnet: votes[0], stokenet: votes[1] },
       lsuRanking: { mainnet: lsuRanking[0], stokenet: lsuRanking[1] },
+      accessControllers: { mainnet: accessControllers[0], stokenet: accessControllers[1] },
       networkUnstaking: { mainnet: unstaking[0], stokenet: unstaking[1] },
       timestamp: new Date().toISOString()
     });

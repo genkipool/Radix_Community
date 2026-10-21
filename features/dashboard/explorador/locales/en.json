@@ -732,6 +732,12 @@
           "copy": "Copy",
           "open_locker": "Open the locker card"
         },
+        "security": {
+          "label": "Account security",
+          "tooltip": "Who controls this account: its key or an Access Controller, how strong that is and what would improve it.",
+          "loading": "Reading who controls the account…",
+          "error": "Could not check the account security."
+        },
         "deposits": {
           "label": "Deposits",
           "tooltip": "Who else may deposit into this account: the general rule, resource exceptions and authorised badges.",

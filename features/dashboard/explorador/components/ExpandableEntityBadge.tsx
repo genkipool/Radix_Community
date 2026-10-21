@@ -41,6 +41,7 @@ import {
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import { AccountDepositsTab } from './AccountDepositsTab';
+import { AccountSecurityTab } from './AccountSecurityTab';
 import { AccountLockersTab } from './AccountLockersTab';
 import { HeldResourcesList, type FungibleItem } from './HeldResourcesList';
 const AccountStakingTab = React.lazy(() =>
@@ -59,7 +60,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'deposits' | 'metadata' | 'configuration' | 'raw';
+export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'deposits' | 'security' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -134,6 +135,12 @@ export function getTabsForEntity(
             key: 'deposits',
             label: accT?.deposits?.label || 'Deposits',
             tooltip: accT?.deposits?.tooltip
+        });
+        // Right after Deposits: who controls the account.
+        base.push({
+            key: 'security',
+            label: accT?.security?.label || 'Account security',
+            tooltip: accT?.security?.tooltip
         });
     }
 
@@ -519,6 +526,10 @@ export function ExpandableEntityBadge({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
+                                        )}
+
+                                        {activeTab === 'security' && (
+                                            <AccountSecurityTab address={address} network={network} tt={tt} />
                                         )}
 
                                         {/* ── POOL UNITS ── */}

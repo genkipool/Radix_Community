@@ -609,7 +609,7 @@ export default function DashboardClient({
    * REVEALED accounts have their details read — so what a scroll costs is one
    * cached holders request plus the (batched) details of the accounts it shows.
    */
-  const rankingType: RankingType | null = activeRanking === 'top_accounts' || activeRanking === 'top_lsu' ? activeRanking : null;
+  const rankingType: RankingType | null = activeRanking === 'top_accounts' || activeRanking === 'top_lsu' || activeRanking === 'access_controllers' ? activeRanking : null;
   const rankingActive = activeView === 'transactions' && rankingType !== null && !hasActiveSearch;
   const {
     data: rankedPages,

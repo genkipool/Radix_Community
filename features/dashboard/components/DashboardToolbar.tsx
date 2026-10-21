@@ -18,7 +18,7 @@ import { NetworkPanelButton } from './NetworkPanelButton';
 import { ReadingModeButton } from '@/components/ui/ReadingModeButton';
 
 /** Rankings that have a data source; the others are not offered. */
-const RANKING_TAGS = ['top_accounts', 'top_lsu'] as const;
+const RANKING_TAGS = ['top_accounts', 'top_lsu', 'access_controllers'] as const;
 
 /**
  * DashboardToolbar

@@ -5,8 +5,9 @@ import { GATEWAY_BASES } from '@/services/gateway/bases';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import { after } from 'next/server';
 import { readTopLsu, advanceTopLsu } from '@/services/gateway/rankings';
+import { readAccessControllers, advanceAccessControllers } from '@/services/gateway/accessControllers';
 
-/** Accounts per page of the LSU ranking, which is stored whole and paged here. */
+/** Accounts per page of the rankings that are stored whole and paged here (LSU positions, Access Controllers). */
 const LSU_PAGE = 25;
 
 /**
@@ -21,7 +22,7 @@ interface HolderItem {
 }
 
 /**
- * GET /api/rankings?type=top_accounts|top_lsu&network=mainnet[&cursor=…]
+ * GET /api/rankings?type=top_accounts|top_lsu|access_controllers&network=mainnet[&cursor=…]
  *
  * `top_accounts`: the accounts holding the most XRD, one page at a time. The Gateway's
  * resource-holders extension already returns holders ordered by balance and
@@ -29,15 +30,46 @@ interface HolderItem {
  * client asks for more only as the list is scrolled.
  *
  * `top_lsu`: the biggest stake positions (see services/gateway/rankings), served
- * from the list Redis holds and paged by offset. The other rankings have no source today.
+ * from the list Redis holds and paged by offset.
+ *
+ * `access_controllers`: the accounts shielded by an Access Controller, newest first
+ * (see services/gateway/accessControllers), served and paged the same way.
  */
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const type = searchParams.get('type');
-    if (type !== 'top_accounts' && type !== 'top_lsu') {
+    if (type !== 'top_accounts' && type !== 'top_lsu' && type !== 'access_controllers') {
         return NextResponse.json({ error: 'unsupported_ranking' }, { status: 400 });
     }
     const network = validateNetwork(searchParams.get('network'));
+
+    if (type === 'access_controllers') {
+        const rawOffset = searchParams.get('cursor');
+        const offset = rawOffset && /^\d{1,5}$/.test(rawOffset) ? Number(rawOffset) : 0;
+        try {
+            const { accounts, partial, wantsStep } = await readAccessControllers(network);
+            if (wantsStep) after(() => advanceAccessControllers(network));
+            const page = accounts.slice(offset, offset + LSU_PAGE);
+            return NextResponse.json({
+                accounts: page.map(a => ({ address: a.address, controller: a.controller })),
+                nextCursor: offset + LSU_PAGE < accounts.length ? String(offset + LSU_PAGE) : undefined,
+                partial,
+            }, {
+                headers: {
+                    'Cache-Control': wantsStep
+                        ? 'public, s-maxage=15, stale-while-revalidate=30'
+                        : 'public, s-maxage=60, stale-while-revalidate=300',
+                },
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.error({ err: error, network }, 'Access Controller ranking error: %s', message);
+            return NextResponse.json({ error: 'rankings_unavailable' }, {
+                status: 503,
+                headers: { 'Cache-Control': 'no-store', 'Retry-After': '5' },
+            });
+        }
+    }
 
     if (type === 'top_lsu') {
         // Served from what Redis holds — the Gateway is never asked on a visitor's behalf.

@@ -16,6 +16,7 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import { AccountDepositsTab } from './AccountDepositsTab';
+import { AccountSecurityTab } from './AccountSecurityTab';
 import { AccountLockersTab } from './AccountLockersTab';
 import { getTabsForEntity, type EntityTab } from './ExpandableEntityBadge';
 import { AccountStakingTab } from './AccountStakingTab';
@@ -408,6 +409,10 @@ export function AccountCard({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
+                                        )}
+
+                                        {activeTab === 'security' && (
+                                            <AccountSecurityTab address={address} network={network} tt={tt} />
                                         )}
 
                                         {/* ── POOL UNITS ── */}

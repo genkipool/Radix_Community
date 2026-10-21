@@ -1,7 +1,6 @@
 import logger from '@/lib/logger';
-import { getRedis } from '@/lib/redis';
-import { readBlob, writeBlob } from '@/lib/redisBlob';
 import { GATEWAY_BASES } from './bases';
+import { assertNotRateLimited, createScanStore, RateLimited } from './rankingStore';
 import { getValidatorsCached } from './validators';
 import type { Network } from './client';
 
@@ -72,50 +71,11 @@ export interface TopLsu {
     partial: boolean;
 }
 
-const stateKey = (network: Network) => `ranking_lsu_${network}`;
-const lockKey = (network: Network) => `ranking_lsu_lock_${network}`;
-
-/* ── Storage: Redis, or this instance's memory when there is none (local dev) ── */
-
-const memory = new Map<string, RankingState>();
-const memoryLocks = new Map<string, number>();
-
-async function readState(network: Network): Promise<RankingState | null> {
-    const redis = getRedis();
-    if (!redis) return memory.get(stateKey(network)) ?? null;
-    return readBlob<RankingState>(redis, stateKey(network));
-}
-
-async function writeState(network: Network, state: RankingState) {
-    const redis = getRedis();
-    if (!redis) {
-        memory.set(stateKey(network), state);
-        return;
-    }
-    await writeBlob(redis, stateKey(network), state);
-}
-
-/** True when this caller got the lock; it expires on its own, which is what spaces the steps out. */
-async function takeLock(network: Network, seconds: number): Promise<boolean> {
-    const redis = getRedis();
-    if (!redis) {
-        const until = memoryLocks.get(lockKey(network)) ?? 0;
-        if (until > Date.now()) return false;
-        memoryLocks.set(lockKey(network), Date.now() + seconds * 1000);
-        return true;
-    }
-    return (await redis.set(lockKey(network), '1', { nx: true, ex: seconds })) === 'OK';
-}
-
-/** Pushes the next step back, e.g. after the Gateway asked to slow down. */
-async function extendLock(network: Network, seconds: number) {
-    const redis = getRedis();
-    if (!redis) {
-        memoryLocks.set(lockKey(network), Date.now() + seconds * 1000);
-        return;
-    }
-    await redis.set(lockKey(network), '1', { ex: seconds });
-}
+const store = createScanStore<RankingState>('lsu');
+const readState = store.read;
+const writeState = store.write;
+const takeLock = store.takeLock;
+const extendLock = store.extendLock;
 
 /* ── Reading ── */
 
@@ -133,12 +93,6 @@ export async function readTopLsu(network: Network): Promise<TopLsu & { wantsStep
 
 /* ── Scanning ── */
 
-class RateLimited extends Error {
-    constructor(readonly retryAfter: number) {
-        super('rate limited');
-    }
-}
-
 interface HoldersPage {
     items?: { holder_address: string; amount: string }[];
     next_cursor?: string | null;
@@ -151,10 +105,7 @@ async function holdersPage(network: Network, resource: string, cursor?: string):
         body: JSON.stringify({ resource_address: resource, limit_per_page: HOLDERS_PAGE, cursor }),
         cache: 'no-store',
     });
-    if (res.status === 429) {
-        const retryAfter = Number(res.headers.get('retry-after'));
-        throw new RateLimited(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 30);
-    }
+    assertNotRateLimited(res);
     if (!res.ok) throw new Error(`Gateway ${res.status}`);
     return res.json() as Promise<HoldersPage>;
 }

@@ -51,6 +51,8 @@ const DASHBOARD_NAMESPACES = [
   'dashboardExplorador',
   // The explorer's governance vote card shares its strings with /governance.
   'governance',
+  // The account cards' Security tab draws the console's account-security report.
+  'consoleSecurity',
 ] as const;
 
 export function getDashboardDictionary(locale: string) {

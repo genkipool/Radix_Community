@@ -53,6 +53,7 @@
     },
     "rankings": {
       "top_lsu": "top posiciones LSU",
+      "access_controllers": "Access Controller",
       "top_accounts": "top cuentas",
       "top_tokens": "top tokens",
       "top_nfts": "top NFTs",

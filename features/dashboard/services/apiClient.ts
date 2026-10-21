@@ -249,13 +249,15 @@ export async function apiFetchNetworkUnstaking(network: 'mainnet' | 'stokenet' =
 
 export interface RankedAccount {
     address: string;
-    /** XRD balance (top_accounts) or the stake position's worth in XRD (top_lsu). */
-    amount: string;
+    /** XRD balance (top_accounts) or the stake position's worth in XRD (top_lsu); absent for access_controllers. */
+    amount?: string;
+    /** access_controllers: the Access Controller that holds the account's owner badge. */
+    controller?: string;
     /** top_lsu: the validator the position is with. */
     validator?: string;
 }
 
-export type RankingType = 'top_accounts' | 'top_lsu';
+export type RankingType = 'top_accounts' | 'top_lsu' | 'access_controllers';
 
 /** One page of a ranking of accounts, biggest first. */
 export async function apiFetchRanking(

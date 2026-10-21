@@ -30,27 +30,32 @@ const browserProbe = (network: 'mainnet' | 'stokenet'): SecurityProbe => ({
 });
 
 /**
- * Who controls `address`, checked against the ledger.
+ * Who controls `address` on `network`, checked against the ledger.
  *
- * Only runs once the input is a well-formed account address for the active
- * network, so typing does not fire a request per keystroke and a typo never
- * reaches the Gateway.
+ * Only runs once the input is a well-formed account address for that network
+ * (and `enabled`), so typing does not fire a request per keystroke and a typo
+ * never reaches the Gateway.
  */
-export function useAccountSecurity(address: string) {
-  const { activeNetwork } = useRadixWallet();
+export function useAccountSecurityOn(address: string, network: 'mainnet' | 'stokenet', enabled = true) {
   const trimmed = address.trim();
   const inspection = trimmed ? inspectAddress(trimmed) : null;
   const isAccount =
     !!inspection && inspection.checksumValid && inspection.entityType === 'account';
-  const networkMatches = inspection?.network === activeNetwork;
+  const networkMatches = inspection?.network === network;
 
   return useQuery<AccountSecurityReport>({
-    queryKey: ['console-account-security', activeNetwork, trimmed],
-    queryFn: () => probeAccountSecurity(trimmed, browserProbe(activeNetwork)),
-    enabled: isAccount && networkMatches,
+    queryKey: ['console-account-security', network, trimmed],
+    queryFn: () => probeAccountSecurity(trimmed, browserProbe(network)),
+    enabled: enabled && isAccount && networkMatches,
     staleTime: 30_000,
     retry: (failureCount, error) => !(error instanceof NotAnAccountError) && failureCount < 2,
   });
+}
+
+/** The console's version: the network is the one the wallet is on. */
+export function useAccountSecurity(address: string) {
+  const { activeNetwork } = useRadixWallet();
+  return useAccountSecurityOn(address, activeNetwork);
 }
 
 /** Why the check is not running, when it is not. */

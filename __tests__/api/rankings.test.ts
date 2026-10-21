@@ -2,6 +2,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/rankings/route';
 
+const readAccessControllers = vi.fn();
+vi.mock('@/services/gateway/accessControllers', () => ({
+    readAccessControllers: (...args: unknown[]) => readAccessControllers(...args),
+    advanceAccessControllers: vi.fn(),
+}));
+
 const request = (query: string) => new NextRequest(`http://localhost/api/rankings?${query}`);
 
 const holder = (holder_address: string, amount: string) => ({ holder_address, amount });
@@ -51,5 +57,23 @@ describe('GET /api/rankings', () => {
         const res = await GET(request('type=top_accounts'));
         expect(res.status).toBe(503);
         expect(res.headers.get('Cache-Control')).toBe('no-store');
+    });
+
+    it('serves the shielded accounts from what is stored, a page at a time', async () => {
+        const accounts = Array.from({ length: 30 }, (_, i) => ({ address: `account_rdx1acc${i}`, controller: `accesscontroller_rdx1c${i}`, stateVersion: 100 - i }));
+        readAccessControllers.mockResolvedValue({ accounts, partial: false, wantsStep: false });
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+
+        const first = await (await GET(request('type=access_controllers'))).json() as { accounts: { address: string; controller: string }[]; nextCursor?: string; partial: boolean };
+        expect(first.accounts).toHaveLength(25);
+        expect(first.accounts[0]).toEqual({ address: 'account_rdx1acc0', controller: 'accesscontroller_rdx1c0' });
+        expect(first.nextCursor).toBe('25');
+        expect(first.partial).toBe(false);
+
+        const second = await (await GET(request('type=access_controllers&cursor=25'))).json() as { accounts: unknown[]; nextCursor?: string };
+        expect(second.accounts).toHaveLength(5);
+        expect(second.nextCursor).toBeUndefined();
+        expect(fetchMock).not.toHaveBeenCalled(); // readers never reach the Gateway
     });
 });
