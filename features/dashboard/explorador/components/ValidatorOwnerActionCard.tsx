@@ -88,18 +88,11 @@ export function ValidatorOwnerActionCard({ actions, owner, confirmedAt, tt, onCo
 
         switch (action.kind) {
             case 'start_unlock': {
-                const items: Item[] = [
-                    {
-                        key: 'amount', icon: Unlock, label: t('owner_unlock_amount', 'Owner stake'),
-                        value: `${amount} LSU`,
-                        hint: <>{t('owner_locked_vault', 'Locked')}<ArrowRight className="mx-1 inline size-3 align-[-2px]" aria-hidden="true" />{t('owner_unlocking_vault', 'Unlocking')}</>,
-                    },
-                    {
-                        key: 'available', icon: Hourglass, label: t('owner_available', 'Available from'),
-                        value: unlockDate ?? t('owner_available_later', 'Once the unlock delay passes'),
-                        hint: days !== null ? fill(t('owner_available_hint', 'Epoch {epoch} · in about {days} days'), { epoch: action.unlockEpoch ?? '—', days }) : undefined,
-                    },
-                ];
+                const items: Item[] = [{
+                    key: 'amount', icon: Unlock, label: t('owner_unlock_amount', 'Owner stake'),
+                    value: `${amount} LSU`,
+                    hint: <>{t('owner_locked_vault', 'Locked')}<ArrowRight className="mx-1 inline size-3 align-[-2px]" aria-hidden="true" />{t('owner_unlocking_vault', 'Unlocking')}</>,
+                }];
                 if (action.unlockingTotal !== undefined && action.unlockingParts !== undefined) {
                     items.push({
                         key: 'now', icon: Lock, label: t('owner_unlocking_now', 'Unlocking now'),
@@ -109,6 +102,12 @@ export function ValidatorOwnerActionCard({ actions, owner, confirmedAt, tt, onCo
                             : fill(t('owner_in_parts', 'in {parts} parts'), { parts: action.unlockingParts }),
                     });
                 }
+                // Last, so on a row of three it is the third column.
+                items.push({
+                    key: 'available', icon: Hourglass, label: t('owner_available', 'Available from'),
+                    value: unlockDate ?? t('owner_available_later', 'Once the unlock delay passes'),
+                    hint: days !== null ? fill(t('owner_available_hint', 'Epoch {epoch} · in about {days} days'), { epoch: action.unlockEpoch ?? '—', days }) : undefined,
+                });
                 return {
                     items,
                     summary: unlockDate
