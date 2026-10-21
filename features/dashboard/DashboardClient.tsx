@@ -40,7 +40,8 @@ import {
 
 /* React Query hooks */
 import { useValidatorsQuery } from './staking/hooks/useValidatorsQuery';
-import { useValidatorFilters } from './staking/hooks/useValidatorFilters';
+import { useValidatorFilters, STAKE_STATE_TAGS } from './staking/hooks/useValidatorFilters';
+import { useStakeStates } from './staking/hooks/useStakeStates';
 import {
   useTransactionsQuery,
   flattenTransactionPages,
@@ -63,14 +64,13 @@ import { ProtocolVoteProvider } from './staking/context/ProtocolVoteContext';
 import { useStakesReady } from './staking/hooks/useStakesReady';
 import { walletAccountsForNetwork } from './staking/lib/walletAccounts';
 import { useSettledPins } from './staking/hooks/useSettledPins';
-import { useQueryClient } from '@tanstack/react-query';
-import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { apiFetchEntityDetails, apiFetchRanking, type RankingType } from '@/features/dashboard/services/apiClient';
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
 import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 
 /* Context */
 import { useLanguage } from '@/context/LanguageContext';
-import { useLayout } from '@/context/LayoutContext';
 
 /* Layout & UI */
 import { ContentHero } from '@/components/layout/ContentHero';
@@ -99,6 +99,7 @@ export default function DashboardClient({
   initialView = 'staking',
   initialNetwork,
   initialActiveTag = ['All'],
+  initialFilterFavorites = [],
   initialTransactionActiveTag = 'All',
   initialWalletFilter = true,
   initialNetworkStats = null,
@@ -120,7 +121,6 @@ export default function DashboardClient({
 }: DashboardInitialProps) {
 
   const { t: dict, language } = useLanguage();
-  const { setShowUnderConstruction } = useLayout();
   const t = (dictionary || dict || {}) as Dictionary;
   const dt = t.dashboard ?? {};
 
@@ -192,7 +192,7 @@ export default function DashboardClient({
     initialValColumns, initialTxColumns,
     initialValReadingMode, initialTxReadingMode,
     initialValAutoCollapse, initialTxAutoCollapse,
-    initialActiveTag, initialTransactionActiveTag,
+    initialActiveTag, initialTransactionActiveTag, initialFilterFavorites,
     initialWalletFilter,
   });
 
@@ -557,9 +557,31 @@ export default function DashboardClient({
       isStakesLoading &&
       pinnedValidatorAddresses.length === 0);
 
+  /*
+   * Staking / Unstaking / Claim describe the wallet, so without accounts they
+   * can neither be offered nor applied — a saved one must not leave the list
+   * empty behind a filter nobody can see.
+   */
+  const stakeAccounts = accountsOn(stakingNetwork);
+  const hasStakeAccounts = walletHasAccounts && stakeAccounts.length > 0;
+  const isStakeTag = (tag: string) => (STAKE_STATE_TAGS as readonly string[]).includes(tag);
+  const effectiveTags = hasStakeAccounts || !deferredActiveTag.some(isStakeTag)
+    ? deferredActiveTag
+    : (deferredActiveTag.filter(tag => !isStakeTag(tag)).length > 0
+        ? deferredActiveTag.filter(tag => !isStakeTag(tag))
+        : ['All']);
+  const needsClaims = hasStakeAccounts && effectiveTags.some(tag => tag === 'Unstaking' || tag === 'Claim');
+  const { states: stakeStates, isLoading: isStakeStatesLoading } = useStakeStates(
+    hasStakeAccounts && effectiveTags.some(isStakeTag) ? stakeAccounts : [],
+    stakingNetwork as 'mainnet' | 'stokenet',
+    realValidators,
+    needsClaims,
+  );
+
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
     validators: realValidators,
-    activeTags: deferredActiveTag,
+    stakeStates,
+    activeTags: effectiveTags,
     searchQuery: deferredSearch,
     sortMode: prefs.valSortMode,
     network: stakingNetwork,
@@ -571,9 +593,62 @@ export default function DashboardClient({
   });
 
 
+  /*
+   * A ranking stands in for the transactions while it is on, and a search wins
+   * over it, like it does over the wallet filter.
+   *
+   * It is paged the way the transactions are: scrolling first reveals accounts
+   * already in memory and only then asks for the next page, and only the
+   * REVEALED accounts have their details read — so what a scroll costs is one
+   * cached holders request plus the (batched) details of the accounts it shows.
+   */
+  const rankingType: RankingType | null = activeRanking === 'top_accounts' || activeRanking === 'top_lsu' ? activeRanking : null;
+  const rankingActive = activeView === 'transactions' && rankingType !== null && !hasActiveSearch;
+  const {
+    data: rankedPages,
+    isLoading: isRankingLoading,
+    isError: isRankingError,
+    refetch: refetchRanking,
+    hasNextPage: rankingHasNextPage,
+    isFetchingNextPage: isFetchingMoreRanking,
+    fetchNextPage: fetchMoreRanking,
+  } = useInfiniteQuery({
+    queryKey: ['rankings', rankingType, deferredNetwork],
+    queryFn: ({ pageParam }) => apiFetchRanking(rankingType!, deferredNetwork as 'mainnet' | 'stokenet', pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor,
+    enabled: rankingActive,
+    staleTime: 300_000,
+    // A ranking still being built is read again until it is complete; a finished one is not.
+    refetchInterval: (query) => (query.state.data?.pages.some(page => page.partial) ? 20_000 : false),
+  });
+  const rankedAddresses = rankingActive && rankedPages
+    ? [...new Set(rankedPages.pages.flatMap(page => page.accounts.map(a => a.address)))]
+    : EMPTY_ACCOUNTS;
+  const visibleRankCount = useInfiniteScrollTx({
+    activeView: rankingActive ? 'transactions' : 'staking',
+    hasNextPage: rankingHasNextPage,
+    isFetchingNextPage: isFetchingMoreRanking,
+    fetchNextPage: fetchMoreRanking,
+    loadedCount: rankedAddresses.length,
+  });
+  const wantedRanked = rankedAddresses.slice(0, visibleRankCount);
+  const readyRanked = useReadyEntities(wantedRanked, deferredNetwork);
+  /*
+   * Cards are shown once their details are in hand, and the hook above answers
+   * for the whole list at once — so revealing more would blank every card until
+   * the new ones arrived. This keeps the last complete list on screen meanwhile.
+   */
+  const [shownRankedAccounts, setShownRankedAccounts] = useState<string[]>(EMPTY_ACCOUNTS);
+  if (readyRanked.length > 0 && readyRanked.length !== shownRankedAccounts.length) {
+    setShownRankedAccounts(readyRanked);
+  } else if (wantedRanked.length === 0 && shownRankedAccounts.length > 0) {
+    setShownRankedAccounts(EMPTY_ACCOUNTS);
+  }
+
   /* ── Infinite scroll effects ─────────────────────────────── */
   const visibleTxCount = useInfiniteScrollTx({
-    activeView, hasNextPage, isFetchingNextPage, fetchNextPage,
+    activeView: rankingActive ? 'staking' : activeView, hasNextPage, isFetchingNextPage, fetchNextPage,
     loadedCount: txs.length,
   });
   // Loops removed: server now handles filtering via "query"
@@ -640,11 +715,13 @@ export default function DashboardClient({
   const readyWalletAccounts = useReadyEntities(txAddresses ?? EMPTY_ACCOUNTS, deferredNetwork);
   // A searched account takes the wallet accounts' place; any other entity is
   // shown after them, as before.
-  const entitiesToShow = !focusedEntity
+  const walletEntities = !focusedEntity
     ? readyWalletAccounts
     : entityKindOf(focusedEntity) === 'account'
       ? [focusedEntity]
       : [...readyWalletAccounts, focusedEntity];
+
+  const entitiesToShow = rankingActive ? shownRankedAccounts : walletEntities;
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
@@ -666,7 +743,7 @@ export default function DashboardClient({
 
       {/* ── Fixed-position loading bar (zero layout impact) ── */}
       <AnimatePresence>
-        {isFetchingNextPage && (
+        {(isFetchingNextPage || isFetchingMoreRanking) && (
           <m.div
             key="tx-loading-bar"
             initial={{ opacity: 0 }}
@@ -772,13 +849,11 @@ export default function DashboardClient({
           columns={columns}
           onColumnsChange={setColumns}
           activeRanking={activeRanking}
-          onRankingChange={(val: string | null) => {
-            if (val) {
-              setShowUnderConstruction(true);
-            } else {
-              setActiveRanking(null);
-            }
-          }}
+          onRankingChange={setActiveRanking}
+          filterFavorites={prefs.filterFavorites}
+          onFilterFavoriteToggle={key => prefs.setFilterFavorites(favs =>
+            favs.includes(key) ? favs.filter(k => k !== key) : [...favs, key],
+          )}
           isWalletFilterActive={isWalletFilterActive}
           // Toggle the RAW preference, never the derived one. The button is
           // shown as inactive while a search is on (the search wins), so
@@ -803,7 +878,7 @@ export default function DashboardClient({
             filteredTxs={visibleTxs}
             loadingTxs={loadingTxs}
             txsInitialized={txsInitialized}
-            loadingValidators={loadingValidators}
+            loadingValidators={loadingValidators || (isStakeStatesLoading && filtered.length === 0)}
             pinsPending={activeView === 'staking' && isWalletFilterActive && !walletPinsReady}
             validatorsFailed={validatorsFailed}
             onRetryValidators={() => void refetchValidators()}
@@ -816,6 +891,10 @@ export default function DashboardClient({
             searchQuery={deferredSearch}
             network={viewNetwork}
             entitiesToShow={entitiesToShow}
+            rankingActive={rankingActive}
+            loadingRanking={isRankingLoading || (wantedRanked.length > 0 && shownRankedAccounts.length === 0)}
+            rankingFailed={isRankingError}
+            onRetryRanking={() => void refetchRanking()}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}

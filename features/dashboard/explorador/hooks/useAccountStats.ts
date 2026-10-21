@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
+import { claimCollectionsOf, claimNftsQuery, parseClaimNft } from '@/features/dashboard/staking/lib/claimNfts';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import type { GatewayEntityDetails, MetadataItem } from '@/features/dashboard/types';
 import type { Validator } from '@/types/radix';
@@ -46,7 +46,6 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     const poolUnits: ParsedResource[] = [];
     const activeNfts: ParsedResource[] = [];
     const burnedNfts: ParsedResource[] = [];
-    const claimCollections: Record<string, string[]> = {};
 
     const getFungibleAmount = (res: FungibleItem & { vaults?: { items?: { amount?: string }[] } }) => {
         if (res.amount !== undefined) return String(res.amount);
@@ -183,10 +182,6 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             isOwnerBadge: isOwnerBadgeCollection
         };
 
-        if (r.isClaim && r.validatorAddress && r.ids && r.ids.length > 0) {
-            claimCollections[r.address] = r.ids;
-        }
-        
         if (nftAmount === 0) {
             burnedNfts.push(r);
         } else {
@@ -194,22 +189,9 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         }
     });
 
-    const claimCollectionAddresses = Object.keys(claimCollections).sort();
-    // Include the actual IDs in the query key so it refetches when new claim NFTs are minted
-    const claimCollectionIds = claimCollectionAddresses
-        .map(addr => `${addr}:${claimCollections[addr].toSorted().join('|')}`)
-        .join('||');
-
+    const { collections: claimCollections } = claimCollectionsOf(nonFungibles, validatorsData?.validators);
     const { data: claimsData, isLoading: isLoadingClaims } = useQuery({
-        queryKey: ['account-claim-nfts', address, network, claimCollectionIds],
-        queryFn: async () => {
-            const results: Record<string, Record<string, unknown>[]> = {};
-            await Promise.all(claimCollectionAddresses.map(async (resAddr) => {
-                results[resAddr] = await apiFetchNonFungibleData(resAddr, claimCollections[resAddr], network);
-            }));
-            return results;
-        },
-        enabled: claimCollectionAddresses.length > 0,
+        ...claimNftsQuery(address, network, claimCollections),
         staleTime: 0,
     });
 
@@ -256,14 +238,9 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             if (valAddr) {
                 const entry = getStakingEntry(valAddr);
                 items.forEach((item: Record<string, unknown>) => {
-                    const data = item.data as { programmatic_json?: { fields?: { field_name: string; value: string }[] } } | undefined;
-                    const fields = data?.programmatic_json?.fields;
-                    const amt = parseFloat(fields?.find(f => f.field_name === 'claim_amount')?.value || '0');
+                    const { amount: amt, epoch: claimEpoch } = parseClaimNft(item);
                     totalXrdForThisClaimNFT += amt;
-                    // The claim_epoch indicates when the tokens will be unlocked
-                    const claimEpochStr = fields?.find(f => f.field_name === 'claim_epoch')?.value;
-                    const claimEpoch = claimEpochStr ? parseInt(claimEpochStr, 10) : 0;
-                    
+                    // The claim epoch is when the tokens will be unlocked
                     const currentEpoch = (entityData as GatewayEntityDetails & { ledger_state?: { epoch: number } })?.ledger_state?.epoch || 0;
 
                     if (claimEpoch > currentEpoch) {
@@ -326,7 +303,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     const claimTotal = stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0);
 
     return {
-        isLoading: isLoadingValidators || (claimCollectionAddresses.length > 0 && isLoadingClaims),
+        isLoading: isLoadingValidators || (Object.keys(claimCollections).length > 0 && isLoadingClaims),
         xrdAmount,
         tokens,
         lsuTokens,

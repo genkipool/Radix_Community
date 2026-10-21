@@ -3,8 +3,9 @@
 import React from 'react';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ContentToolbar } from '@/components/ui/ContentToolbar';
-import { TagFilterBar } from '@/components/ui/TagFilterBar';
-import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
+import { DashboardFilterSelect, type FilterSelectOption } from './DashboardFilterSelect';
+import { MAX_FILTER_FAVORITES } from '@/constants/dashboard';
+import { STAKE_STATE_TAGS } from '../staking/hooks/useValidatorFilters';
 import { GridToggle } from '@/components/ui/GridToggle';
 import { RadixIcon } from '@/components/shared/RadixIcon';
 import { DASHBOARD_TAGS } from '@/constants/dashboard';
@@ -14,6 +15,9 @@ import { apiFetchTransactions, apiFetchValidators } from '@/features/dashboard/s
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { DashboardToolbarProps } from '../types';
 import { ReadingModeButton } from '@/components/ui/ReadingModeButton';
+
+/** Rankings that have a data source; the others are not offered. */
+const RANKING_TAGS = ['top_accounts', 'top_lsu'] as const;
 
 /**
  * DashboardToolbar
@@ -36,9 +40,10 @@ export const DashboardToolbar = ({
     dateRange, onSelectRange, onResetRange,
     calendarT,
     columns, onColumnsChange,
-    activeRanking, onRankingChange,
     isReadingModeManual,
     isWalletFilterActive, onWalletFilterChange,
+    activeRanking, onRankingChange,
+    filterFavorites, onFilterFavoriteToggle,
     onPrefetchNetwork,
     dt,
 }: DashboardToolbarProps) => {
@@ -115,6 +120,70 @@ export const DashboardToolbar = ({
         }
     };
 
+    // Staking / Unstaking / Claim describe the connected wallet's stakes.
+    const stakingTags = [
+        ...DASHBOARD_TAGS.filter(tag => tag !== 'All'),
+        ...(isConnected ? STAKE_STATE_TAGS : []),
+    ] as string[];
+
+    const walletOption: FilterSelectOption[] = isConnected ? [{
+        key: 'my_wallet',
+        label: (dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera',
+        active: isWalletFilterActive,
+        disabled: isSearchActive,
+        independent: true,
+        onToggle: () => onWalletFilterChange(!isWalletFilterActive),
+    }] : [];
+
+    const filterOptions: FilterSelectOption[] = activeView === 'staking'
+        ? [
+            ...walletOption,
+            ...stakingTags.map(tag => ({
+                key: tag,
+                label: dt?.tags?.[tag as keyof typeof dt.tags] || tag,
+                active: activeTags.includes(tag),
+                onToggle: () => onActiveTagChange(tag),
+            })),
+        ]
+        : [
+            ...walletOption,
+            ...RANKING_TAGS.map(ranking => ({
+                key: `rank:${ranking}`,
+                label: dt?.rankings?.[ranking] || ranking,
+                active: activeRanking === ranking,
+                onToggle: () => {
+                    if (activeRanking === ranking) return onRankingChange(null);
+                    onRankingChange(ranking);
+                    if (transactionActiveTag !== 'All') onTransactionTagChange('All');
+                },
+            })),
+            ...TRANSACTION_TAGS.filter(tag => tag !== 'All').map(tag => ({
+                // Prefixed: "Staking" means a wallet's stakes in one view and
+                // staking transactions in the other, so a star must not cross.
+                key: `tx:${tag}`,
+                label: dt?.transaction_tags?.[tag] || tag,
+                active: transactionActiveTag === tag && !activeRanking,
+                // The explorer shows one thing at a time: a tag or a ranking.
+                onToggle: () => {
+                    onRankingChange(null);
+                    onTransactionTagChange(transactionActiveTag === tag && !activeRanking ? 'All' : tag);
+                },
+            })),
+        ];
+
+    // Starred filters get a button of their own beside the select. Only those
+    // of the current view count toward the cap: keys saved for the other view
+    // must not block a star here.
+    const withFavorite = (option: FilterSelectOption): FilterSelectOption => ({
+        ...option,
+        favorite: filterFavorites.includes(option.key),
+        onFavoriteToggle: () => onFilterFavoriteToggle(option.key),
+    });
+    const starredOptions = filterOptions.filter(o => filterFavorites.includes(o.key)).slice(0, MAX_FILTER_FAVORITES);
+    const canAddFavorite = starredOptions.length < MAX_FILTER_FAVORITES;
+
+    const allLabel = (activeView === 'staking' ? dt?.tags?.['All'] : dt?.transaction_tags?.['All']) || 'All';
+
     return (
         <div className="space-y-4 mb-6">
             <SearchBar
@@ -180,161 +249,73 @@ export const DashboardToolbar = ({
                     />
                 </div>
 
-                {/* Center Controls: Tag Filters (Full width on mobile to drop to bottom) */}
-                <div className="flex-1 flex justify-center min-w-[200px] order-last 2xl:order-none w-full 2xl:w-auto">
-                    {/* Tag filter bar - Desktop */}
-                    <div className="hidden 2xl:block w-full">
-                        {activeView === 'staking' ? (
-                            <div className="flex items-center justify-center gap-3">
-                                {isConnected && (
-                                    <button
-                                        type="button"
-                                        disabled={isSearchActive}
-                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
-                                    >
-                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
-                                    </button>
-                                )}
-                                <TagFilterBar
-                                    tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                    activeTag={activeTags.includes('All') ? null : activeTags}
-                                    onSelect={tag => onActiveTagChange(tag || 'All')}
-                                    allLabel={dt?.tags?.['All'] || 'All'}
-                                    tagLabels={dt?.tags}
-                                    hideAll={true}
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center gap-3">
-                                {isConnected && (
-                                    <button
-                                        type="button"
-                                        disabled={isSearchActive}
-                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
-                                    >
-                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
-                                    </button>
-                                )}
-                                <TagFilterBar
-                                    tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                    activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
-                                    onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
-                                    tagLabels={dt?.transaction_tags}
-                                    hideAll={true}
-                                />
-                                {!isConnected && (
-                                    <SearchableTagFilter
-                                        tags={['top_accounts', 'top_tokens', 'top_nfts', 'contracts', 'blueprints']}
-                                        activeTag={activeRanking}
-                                        onSelect={onRankingChange}
-                                        allLabel={dt?.rankings?.['filter_by'] || 'Filtrar por...'}
-                                        tagLabels={dt?.rankings}
-                                        hideAll={true}
-                                        width="w-[240px]"
-                                        placeholder={dt?.rankings?.search_placeholder || 'Filtrar rankings...'}
-                                    />
-                                )}
-                            </div>
-                        )}
+                {/* Starred filters, as buttons centred between the two groups */}
+                {starredOptions.length > 0 && (
+                    <div className="flex flex-1 flex-wrap items-center justify-center gap-2 min-w-0 w-full sm:w-auto">
+                        {starredOptions.map(option => (
+                            <button
+                                key={option.key}
+                                type="button"
+                                disabled={option.disabled}
+                                onClick={option.onToggle}
+                                aria-pressed={option.active}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${option.active ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
                     </div>
+                )}
 
-                    {/* Tag filter dropdown - Mobile / Tablet */}
-                    <div className="block 2xl:hidden w-full max-w-sm">
-                        {activeView === 'staking' ? (
-                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
-                                {isConnected && (
-                                    <button
-                                        type="button"
-                                        disabled={isSearchActive}
-                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
-                                    >
-                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
-                                    </button>
-                                )}
-                                <div className="hidden sm:block w-full">
-                                    <SearchableTagFilter
-                                        tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                        activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
-                                        onSelect={tag => onActiveTagChange(tag || 'All')}
-                                        allLabel={dt?.tags?.['All'] || 'All'}
-                                        tagLabels={dt?.tags}
-                                        placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
-                                        hideAll={true}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
-                                {isConnected && (
-                                    <button
-                                        type="button"
-                                        disabled={isSearchActive}
-                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
-                                    >
-                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
-                                    </button>
-                                )}
-                                <div className="hidden sm:block w-full">
-                                    <SearchableTagFilter
-                                        tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                        activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
-                                        onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                        allLabel={dt?.transaction_tags?.['All'] || 'All'}
-                                        tagLabels={dt?.transaction_tags}
-                                        placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
-                                        hideAll={true}
-                                    />
-                                </div>
-                                <div className="hidden sm:block sm:shrink-0 w-full sm:w-auto">
-                                    {!isConnected && (
-                                        <SearchableTagFilter
-                                            tags={['top_accounts', 'top_tokens', 'top_nfts', 'contracts', 'blueprints']}
-                                            activeTag={activeRanking}
-                                            onSelect={onRankingChange}
-                                            allLabel={dt?.rankings?.['filter_by'] || 'Filtrar por...'}
-                                            tagLabels={dt?.rankings}
-                                            hideAll={true}
-                                            width="w-full sm:w-[240px]"
-                                            placeholder={dt?.rankings?.search_placeholder || 'Filtrar rankings...'}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right Controls: Toolbar & Grid Toggle */}
-                <div className="hidden xl:flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
-                    <ContentToolbar
-                        sortMode={sortMode}
-                        setSortMode={onSortModeChange}
-                        readingMode={readingMode}
-                        setReadingMode={onReadingModeChange}
-                        isReadingModeManual={isReadingModeManual}
-                        expandedCount={expandedCount}
-                        filteredCount={filteredCount}
-                        onToggleAll={onToggleAll}
-                        autoCollapse={autoCollapse}
-                        setAutoCollapse={onAutoCollapseChange}
-                        toolbarT={dt?.toolbar || {}}
-                        showSortButtons={activeView !== 'transactions'}
-                        calendarOpen={calendarOpen}
-                        setCalendarOpen={onCalendarToggle}
-                        dateRange={dateRange}
-                        onSelectRange={onSelectRange}
-                        onResetRange={onResetRange}
-                        calendarT={calendarT}
-                        columns={columns}
-                        showCalendar={activeView === 'transactions'}
-                        calendarButtonTitle={dt?.toolbar?.search_by_date}
+                {/* Right Controls: the filter select sits to the left of the sort /
+                    calendar buttons */}
+                <div className="flex items-center justify-end gap-1 sm:gap-2 shrink-0 ml-auto w-full sm:w-auto">
+                    <DashboardFilterSelect
+                        width="w-full sm:w-[220px]"
+                        allOption={{
+                            label: allLabel,
+                            onSelect: () => {
+                                if (activeView === 'staking') return onActiveTagChange('All');
+                                onRankingChange(null);
+                                onTransactionTagChange('All');
+                            },
+                        }}
+                        options={filterOptions.map(withFavorite)}
+                        canAddFavorite={canAddFavorite}
+                        favoriteLabels={{
+                            add: dt?.search?.favorite_add || 'Add to favourites',
+                            remove: dt?.search?.favorite_remove || 'Remove from favourites',
+                            limit: dt?.search?.favorite_limit || 'You can have up to 3 favourite filters',
+                        }}
+                        placeholder={dt?.search?.filters_placeholder || 'Filter...'}
+                        closeLabel={dt?.search?.filters_close || 'Close'}
                     />
-                    <GridToggle columns={columns} onChange={onColumnsChange} max={8} />
+                    <div className="hidden xl:flex items-center gap-1 sm:gap-2 shrink-0">
+                        <ContentToolbar
+                            sortMode={sortMode}
+                            setSortMode={onSortModeChange}
+                            readingMode={readingMode}
+                            setReadingMode={onReadingModeChange}
+                            isReadingModeManual={isReadingModeManual}
+                            expandedCount={expandedCount}
+                            filteredCount={filteredCount}
+                            onToggleAll={onToggleAll}
+                            autoCollapse={autoCollapse}
+                            setAutoCollapse={onAutoCollapseChange}
+                            toolbarT={dt?.toolbar || {}}
+                            showSortButtons={activeView !== 'transactions'}
+                            calendarOpen={calendarOpen}
+                            setCalendarOpen={onCalendarToggle}
+                            dateRange={dateRange}
+                            onSelectRange={onSelectRange}
+                            onResetRange={onResetRange}
+                            calendarT={calendarT}
+                            columns={columns}
+                            showCalendar={activeView === 'transactions'}
+                            calendarButtonTitle={dt?.toolbar?.search_by_date}
+                        />
+                        <GridToggle columns={columns} onChange={onColumnsChange} max={8} />
+                    </div>
                 </div>
             </div>
         </div>

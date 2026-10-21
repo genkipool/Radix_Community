@@ -12,6 +12,9 @@ export const DASHBOARD_TAGS = [
 
 export type DashboardTag = typeof DASHBOARD_TAGS[number];
 
+/** Filters that can be starred to sit outside the select; capped so the toolbar keeps its shape. */
+export const MAX_FILTER_FAVORITES = 3;
+
 /* ── Grid column → Tailwind class map ──────────────────────── */
 const GRID_CLASS_MAP: Record<number, string> = {
   1: 'grid-cols-1',
@@ -53,4 +56,5 @@ export const COOKIE_KEYS = {
   valAutoCollapse:      'db_val_auto_collapse',
   txAutoCollapse:       'db_tx_auto_collapse',
   walletFilter:         'db_wallet_filter',
+  filterFavorites:      'db_filter_favorites',
 } as const;

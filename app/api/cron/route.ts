@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { advanceVoteTail } from '@/services/gateway/protocolVotes';
+import { advanceTopLsu } from '@/services/gateway/rankings';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -41,10 +42,22 @@ export async function GET(request: Request) {
       advanceVoteTail('stokenet'),
     ]);
 
+    /*
+     * The top-LSU ranking is built a few validators at a time. It is normally
+     * advanced by whoever is looking at it; this finishes it, and rebuilds it
+     * when old, if nobody is. A fresh ranking costs one Redis read, and steps
+     * are spaced by a lock, so pinging often is safe.
+     */
+    const lsuRanking = await Promise.all([
+      advanceTopLsu('mainnet'),
+      advanceTopLsu('stokenet'),
+    ]);
+
     return NextResponse.json({
       success: true,
       message: 'Radix cache revalidated successfully',
       votes: { mainnet: votes[0], stokenet: votes[1] },
+      lsuRanking: { mainnet: lsuRanking[0], stokenet: lsuRanking[1] },
       timestamp: new Date().toISOString()
     });
   } catch (_error) {

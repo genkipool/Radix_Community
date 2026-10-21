@@ -25,6 +25,7 @@ describe('useDashboardPreferences', () => {
         initialValAutoCollapse: true,
         initialTxAutoCollapse: true,
         initialActiveTag: ['all'],
+        initialFilterFavorites: [] as string[],
         initialTransactionActiveTag: 'stake',
         initialWalletFilter: true,
     };

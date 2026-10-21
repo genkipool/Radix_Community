@@ -103,7 +103,7 @@ export function networkOfAddress(value: string | null | undefined): Network | nu
 const NETWORKS: readonly Network[] = ['mainnet', 'stokenet'];
 
 /** Transaction tags the explorer accepts; anything else falls back to `All`. */
-export const TX_TAGS = ['All', 'Success', 'Failed', 'With Message', 'With NFTs'] as const;
+export const TX_TAGS = ['All', 'Success', 'Failed', 'With Message', 'With NFTs', 'Staking', 'Unstaking', 'Claim'] as const;
 export type TxTag = (typeof TX_TAGS)[number];
 
 /** ISO `YYYY-MM-DD`, the only date shape the explorer's range accepts. */

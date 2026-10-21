@@ -353,6 +353,7 @@ export async function DashboardPageShell({
         initialActiveTag={
           c.ids(COOKIE_KEYS.activeTag).length > 0 ? c.ids(COOKIE_KEYS.activeTag) : ['All']
         }
+        initialFilterFavorites={c.ids(COOKIE_KEYS.filterFavorites)}
         initialTransactionActiveTag={activeTxTag}
         initialValSortMode={c.sort(COOKIE_KEYS.valSortMode)}
         initialTxSortMode={c.sort(COOKIE_KEYS.txSortMode)}

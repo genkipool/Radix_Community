@@ -92,6 +92,7 @@ function StatusTypeLabels({ isSuccess, color, statusLabel, labelBaseClass, immed
 /* ═══════ TRANSACTION CARD ═══════ */
 import { formatEntity } from '../../utils/entityUtils';
 
+import type { ValidatorOp } from '@/types/radix';
 import { TransactionCardProps } from '../types/components.types';
 
 const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone, locale, marketData }: TransactionCardProps) => {
@@ -166,6 +167,23 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
         if (hash.length <= 12) return hash;
         return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
     };
+
+    /*
+     * What a stake, unstake or claim moved, summed over the validators it
+     * touched. These transactions mint (LSUs, claim NFTs) and burn as part of
+     * the operation, so the generic "minting" / fee figure said nothing about
+     * the operation itself; the amount of XRD does. An unstake shows the XRD it
+     * will release, or the LSUs burned when the events did not say.
+     */
+    const sumOps = (pick: (op: ValidatorOp) => number | undefined) =>
+        (tx.validatorOps ?? []).reduce((total, op) => total + (pick(op) ?? 0), 0);
+    const unstakeXrd = sumOps(op => op.unstakeXrdExpected);
+    const unstakeLsu = sumOps(op => op.unstakeLsu);
+    const stakeAmounts = [
+        { key: 'stake', label: tt?.tx_type_stake || 'Stake', amount: sumOps(op => op.stakeXrd), unit: 'XRD' },
+        { key: 'unstake', label: tt?.tx_type_unstake || 'Unstake', amount: unstakeXrd > 0 ? unstakeXrd : unstakeLsu, unit: unstakeXrd > 0 ? 'XRD' : 'LSU' },
+        { key: 'claim', label: tt?.tx_type_claim || 'Claim', amount: sumOps(op => op.claimXrd), unit: 'XRD' },
+    ].filter(op => op.amount > 0);
 
     // Immediate type from tx list data — no expand needed
     const immediateClasses: string[] = (tx.manifestClasses as string[]) ?? [];
@@ -318,7 +336,12 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {tx.displayIsMint ? (
+                                    {stakeAmounts.length > 0 ? (
+                                        <>
+                                            <Coins className="size-3" />
+                                            {stakeAmounts.length === 1 ? stakeAmounts[0].label : (tt?.amount || 'Amount')}
+                                        </>
+                                    ) : tx.displayIsMint ? (
                                         <div className="flex items-center gap-1">
                                             <Landmark className="size-3" />
                                             {tt?.minting || 'Minting'}
@@ -333,7 +356,17 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                     )}
                                 </div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-base sm:text-lg'} font-bold text-[var(--color-text-main)] truncate`}>
-                                    {tx.displayAmount !== undefined ? (
+                                    {stakeAmounts.length > 0 ? (
+                                        stakeAmounts.length === 1 ? (
+                                            <span title={stakeAmounts[0].label}>{formatAmount(stakeAmounts[0].amount, locale)} {stakeAmounts[0].unit}</span>
+                                        ) : (
+                                            <div className="flex flex-col text-[11px] sm:text-xs leading-tight">
+                                                {stakeAmounts.map(op => (
+                                                    <span key={op.key} className="truncate">{op.label}: {formatAmount(op.amount, locale)} {op.unit}</span>
+                                                ))}
+                                            </div>
+                                        )
+                                    ) : tx.displayAmount !== undefined ? (
                                         <div className="flex items-baseline gap-1.5 min-w-0">
                                             <span className="shrink-0">{formatAmount(tx.displayAmount, locale)}</span>
                                             <span className="uppercase truncate min-w-0 flex-1">

@@ -11,6 +11,11 @@ import { useState, useEffect, useRef } from 'react';
 import type { Validator } from '@/types/radix';
 import { VALIDATOR_PAGE_SIZE } from '@/constants/dashboard';
 import type { SortMode } from '@/features/dashboard/types';
+import type { StakeState } from './useStakeStates';
+
+/** Tags answered by what the connected wallet holds, not by the validator. */
+export const STAKE_STATE_TAGS = ['Staking', 'Unstaking', 'Claim'] as const;
+const STAKE_STATE_KEY = { Staking: 'staking', Unstaking: 'unstaking', Claim: 'claim' } as const;
 
 interface UseValidatorFiltersOptions {
   validators:  Validator[];
@@ -23,6 +28,8 @@ interface UseValidatorFiltersOptions {
   pinnedValidatorAddresses?: string[];
   ownerValidatorAddresses?: string[];
   isWalletFilterActive?: boolean;
+  /** Validator address → what the wallet has with it; feeds the Staking / Unstaking / Claim tags. */
+  stakeStates?: Record<string, StakeState>;
 }
 
 interface UseValidatorFiltersReturn {
@@ -32,7 +39,7 @@ interface UseValidatorFiltersReturn {
 }
 
 export function useValidatorFilters({
-  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses, ownerValidatorAddresses, isWalletFilterActive
+  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses, ownerValidatorAddresses, isWalletFilterActive, stakeStates
 }: UseValidatorFiltersOptions): UseValidatorFiltersReturn {
 
   // React Compiler automatically memoizes this derived calculation.
@@ -53,9 +60,16 @@ export function useValidatorFilters({
         });
       }
 
+      // Wallet-state filters (OR logic between them)
+      const stakeTags = STAKE_STATE_TAGS.filter(tag => activeTags.includes(tag));
+      if (stakeTags.length > 0) {
+        result = result.filter(v => stakeTags.some(tag => stakeStates?.[v.address]?.[STAKE_STATE_KEY[tag]]));
+      }
+
       // Attribute filters (AND logic)
       activeTags.forEach(tag => {
         if (tag === 'Active' || tag === 'Inactive') return;
+        if ((STAKE_STATE_TAGS as readonly string[]).includes(tag)) return;
 
         if (tag === 'Low Fee') {
           result = result.filter(v => v.nominalFee <= 2);

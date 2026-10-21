@@ -24,10 +24,11 @@ export function useDashboardPreferences({
   initialValColumns,      initialTxColumns,
   initialValReadingMode,  initialTxReadingMode,
   initialValAutoCollapse, initialTxAutoCollapse,
-  initialActiveTag,       initialTransactionActiveTag,
+  initialActiveTag,       initialTransactionActiveTag, initialFilterFavorites,
   initialWalletFilter,
 }: UseDashboardPreferencesOptions) {
   const [activeTag,            setActiveTag]            = useState<string[]>(initialActiveTag);
+  const [filterFavorites,       setFilterFavorites]       = useState<string[]>(initialFilterFavorites);
   const [transactionActiveTag, setTransactionActiveTag] = useState(initialTransactionActiveTag);
   const [valSortMode,          setValSortMode]          = useState<SortMode>(initialValSortMode);
   const [txSortMode,           setTxSortMode]           = useState<SortMode>(initialTxSortMode);
@@ -43,6 +44,7 @@ export function useDashboardPreferences({
 
   // ── Cookie sync — each effect fires only when its own value changes ──
   useEffect(() => { setCookie(COOKIE_KEYS.activeTag,       activeTag.join(','));  }, [activeTag]);
+  useEffect(() => { setCookie(COOKIE_KEYS.filterFavorites, filterFavorites.join(',')); }, [filterFavorites]);
   useEffect(() => { setCookie(COOKIE_KEYS.txTag,           transactionActiveTag); }, [transactionActiveTag]);
   useEffect(() => { setCookie(COOKIE_KEYS.valSortMode,     valSortMode);          }, [valSortMode]);
   useEffect(() => { setCookie(COOKIE_KEYS.txSortMode,      txSortMode);           }, [txSortMode]);
@@ -56,6 +58,7 @@ export function useDashboardPreferences({
 
   return {
     activeTag,            setActiveTag,
+    filterFavorites,      setFilterFavorites,
     transactionActiveTag, setTransactionActiveTag,
     valSortMode,          setValSortMode,
     txSortMode,           setTxSortMode,

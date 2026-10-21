@@ -109,4 +109,44 @@ describe('Complex Transactions UI', () => {
         );
         expect(screen.getByText('Claim')).toBeInTheDocument();
     });
+
+    describe('amount column of stake operations', () => {
+        const renderTx = (tx: TransactionInfo) => render(
+            <QueryClientProvider client={queryClient}>
+                <LanguageProvider language="en" dictionary={en}>
+                    <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                </LanguageProvider>
+            </QueryClientProvider>
+        );
+
+        it('shows the XRD staked instead of the fee', () => {
+            const tx = { ...mockTx('tx_stake_amount', ['ValidatorStake']), feePaid: 0.1234, validatorOps: [{ validatorAddress: 'validator_rdx1a', stakeXrd: 1500 }] };
+            renderTx(tx);
+            expect(screen.getByText(/1[,.]?500 XRD/)).toBeInTheDocument();
+            expect(screen.queryByText(/Fee Paid/i)).not.toBeInTheDocument();
+        });
+
+        it('shows the XRD an unstake will release, summed over validators', () => {
+            const tx = {
+                ...mockTx('tx_unstake_amount', ['ValidatorUnstake']),
+                validatorOps: [
+                    { validatorAddress: 'validator_rdx1a', unstakeLsu: 90, unstakeXrdExpected: 100 },
+                    { validatorAddress: 'validator_rdx1b', unstakeLsu: 45, unstakeXrdExpected: 50 },
+                ],
+            };
+            renderTx(tx);
+            expect(screen.getByText(/150 XRD/)).toBeInTheDocument();
+        });
+
+        it('shows the claimed XRD', () => {
+            const tx = { ...mockTx('tx_claim_amount', ['ValidatorClaim']), validatorOps: [{ validatorAddress: 'validator_rdx1a', claimXrd: 42 }] };
+            renderTx(tx);
+            expect(screen.getByText(/42 XRD/)).toBeInTheDocument();
+        });
+
+        it('keeps the fee when the transaction has no stake operations', () => {
+            renderTx({ ...mockTx('tx_plain', ['General']), feePaid: 0.5 });
+            expect(screen.getByText(/Fee Paid/i)).toBeInTheDocument();
+        });
+    });
 });

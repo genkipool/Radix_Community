@@ -211,6 +211,30 @@ export async function apiFetchStakeHistory(
 
 
 
+export interface RankedAccount {
+    address: string;
+    /** XRD balance (top_accounts) or the stake position's worth in XRD (top_lsu). */
+    amount: string;
+    /** top_lsu: the validator the position is with. */
+    validator?: string;
+}
+
+export type RankingType = 'top_accounts' | 'top_lsu';
+
+/** One page of a ranking of accounts, biggest first. */
+export async function apiFetchRanking(
+    type: RankingType,
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+    cursor?: string,
+): Promise<{ accounts: RankedAccount[]; nextCursor: string | undefined; partial: boolean }> {
+    const params = new URLSearchParams({ type, network });
+    if (cursor) params.set('cursor', cursor);
+    const res = await fetch(`/api/rankings?${params.toString()}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json() as { accounts?: RankedAccount[]; nextCursor?: string; partial?: boolean };
+    return { accounts: data.accounts ?? [], nextCursor: data.nextCursor, partial: !!data.partial };
+}
+
 export async function apiFetchHistoricalStakingBalance(
     accountAddress: string,
     stateVersion: number,

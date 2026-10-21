@@ -36,16 +36,23 @@
       "High Uptime": "Alto Uptime",
       "Foundation": "Fundación",
       "Community": "Comunidad",
-      "Hispanic Community": "Comunidad Hispana"
+      "Hispanic Community": "Comunidad Hispana",
+      "Staking": "Staking",
+      "Unstaking": "Unstaking",
+      "Claim": "Claim"
     },
     "transaction_tags": {
       "All": "Todas",
       "Success": "Éxito",
       "Failed": "Fallida",
       "With Message": "Con Mensaje",
-      "With NFTs": "Con NFTs"
+      "With NFTs": "Con NFTs",
+      "Staking": "Staking",
+      "Unstaking": "Unstaking",
+      "Claim": "Claim"
     },
     "rankings": {
+      "top_lsu": "top posiciones LSU",
       "top_accounts": "top cuentas",
       "top_tokens": "top tokens",
       "top_nfts": "top NFTs",
@@ -522,6 +529,11 @@
       "no_results": "No se encontraron nodos de staking",
       "no_validators": "No se encontraron nodos de staking",
       "tags_placeholder": "Buscar etiquetas...",
+      "filters_placeholder": "Filtrar...",
+      "filters_close": "Cerrar",
+      "favorite_add": "Añadir a favoritos",
+      "favorite_remove": "Quitar de favoritos",
+      "favorite_limit": "Puedes tener hasta 3 filtros favoritos",
       "transactions_placeholder": "Filtrar transacciones..."
     },
     "controls": {
