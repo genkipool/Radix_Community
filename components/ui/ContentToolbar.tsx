@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, type ReactNode } from 'react';
 
 import {
     SortAsc, SortDesc,
@@ -47,6 +47,8 @@ export interface ContentToolbarProps {
     isReadingModeManual?: boolean;
     showCalendar?: boolean;
     calendarButtonTitle?: string;
+    /** Rendered between the calendar and the reading-mode button. */
+    afterCalendar?: ReactNode;
 }
 
 // Shared button styles
@@ -80,6 +82,7 @@ export function ContentToolbar({
     isReadingModeManual,
     showCalendar = true,
     calendarButtonTitle,
+    afterCalendar,
 }: ContentToolbarProps) {
     const isCollapseDisabled = columns >= 5 || readingMode;
 
@@ -175,6 +178,8 @@ export function ContentToolbar({
                     )}
                 </div>
             )}
+
+            {afterCalendar}
 
             {/* Reading mode */}
             <ReadingModeButton

@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { DashboardToolbarProps } from '../types';
+import { NetworkPanelButton } from './NetworkPanelButton';
 import { ReadingModeButton } from '@/components/ui/ReadingModeButton';
 
 /** Rankings that have a data source; the others are not offered. */
@@ -43,6 +44,7 @@ export const DashboardToolbar = ({
     isReadingModeManual,
     isWalletFilterActive, onWalletFilterChange,
     activeRanking, onRankingChange,
+    networkPanelOpen, onNetworkPanelToggle,
     filterFavorites, onFilterFavoriteToggle,
     onPrefetchNetwork,
     dt,
@@ -126,18 +128,22 @@ export const DashboardToolbar = ({
         ...(isConnected ? STAKE_STATE_TAGS : []),
     ] as string[];
 
-    const walletOption: FilterSelectOption[] = isConnected ? [{
-        key: 'my_wallet',
-        label: (dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera',
-        active: isWalletFilterActive,
-        disabled: isSearchActive,
-        independent: true,
-        onToggle: () => onWalletFilterChange(!isWalletFilterActive),
-    }] : [];
+    // Always at hand, beside the ledger switch: it is a switch of its own, not one
+    // of the choices in the select.
+    const walletButton = isConnected && (
+        <button
+            type="button"
+            disabled={isSearchActive}
+            aria-pressed={isWalletFilterActive}
+            onClick={() => onWalletFilterChange(!isWalletFilterActive)}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-sm font-bold border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
+        >
+            {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
+        </button>
+    );
 
     const filterOptions: FilterSelectOption[] = activeView === 'staking'
         ? [
-            ...walletOption,
             ...stakingTags.map(tag => ({
                 key: tag,
                 label: dt?.tags?.[tag as keyof typeof dt.tags] || tag,
@@ -146,7 +152,6 @@ export const DashboardToolbar = ({
             })),
         ]
         : [
-            ...walletOption,
             ...RANKING_TAGS.map(ranking => ({
                 key: `rank:${ranking}`,
                 label: dt?.rankings?.[ranking] || ranking,
@@ -237,9 +242,17 @@ export const DashboardToolbar = ({
                         </button>
                     </div>
 
+                    {walletButton}
+
                     {/* Reading mode, for the layouts where the full toolbar on
                         the right is hidden. Same component, so it behaves and
                         looks exactly like its desktop counterpart. */}
+                    <NetworkPanelButton
+                        className="xl:hidden shrink-0"
+                        open={networkPanelOpen}
+                        onToggle={onNetworkPanelToggle}
+                        label={dt?.toolbar?.network_panel || 'Network flow'}
+                    />
                     <ReadingModeButton
                         className="xl:hidden shrink-0"
                         readingMode={readingMode}
@@ -313,6 +326,13 @@ export const DashboardToolbar = ({
                             columns={columns}
                             showCalendar={activeView === 'transactions'}
                             calendarButtonTitle={dt?.toolbar?.search_by_date}
+                        afterCalendar={
+                            <NetworkPanelButton
+                                open={networkPanelOpen}
+                                onToggle={onNetworkPanelToggle}
+                                label={dt?.toolbar?.network_panel || 'Network flow'}
+                            />
+                        }
                         />
                         <GridToggle columns={columns} onChange={onColumnsChange} max={8} />
                     </div>

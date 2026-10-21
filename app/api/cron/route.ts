@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { advanceVoteTail } from '@/services/gateway/protocolVotes';
 import { advanceTopLsu } from '@/services/gateway/rankings';
+import { refreshNetworkUnstaking } from '@/services/gateway/networkUnstaking';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -53,11 +54,18 @@ export async function GET(request: Request) {
       advanceTopLsu('stokenet'),
     ]);
 
+    /* The network's pending-withdraw figure, kept warm for the dashboard panel. Same rules. */
+    const unstaking = await Promise.all([
+      refreshNetworkUnstaking('mainnet'),
+      refreshNetworkUnstaking('stokenet'),
+    ]);
+
     return NextResponse.json({
       success: true,
       message: 'Radix cache revalidated successfully',
       votes: { mainnet: votes[0], stokenet: votes[1] },
       lsuRanking: { mainnet: lsuRanking[0], stokenet: lsuRanking[1] },
+      networkUnstaking: { mainnet: unstaking[0], stokenet: unstaking[1] },
       timestamp: new Date().toISOString()
     });
   } catch (_error) {

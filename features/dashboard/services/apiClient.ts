@@ -211,6 +211,25 @@ export async function apiFetchStakeHistory(
 
 
 
+export interface NetworkUnstakingData {
+    /** XRD in the validators' pending-withdraw vaults (unlocking, or unlocked and not claimed). */
+    pending: number;
+    /** Of it, the part still in the unlocking period (an estimate), or null when unknown. */
+    unbonding: number | null;
+    validators: number;
+    updatedAt: number | null;
+    /** [time in ms, vault XRD, still-locked XRD or null], one per hour for up to a week. */
+    samples: [number, number, number | null][];
+    /** Network-wide stake / unstake / claim per UTC day, in XRD. */
+    days: { date: string; stake: number; unstake: number; claim: number }[];
+}
+
+export async function apiFetchNetworkUnstaking(network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<NetworkUnstakingData> {
+    const res = await fetch(`/api/network-unstaking?network=${network}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json() as Promise<NetworkUnstakingData>;
+}
+
 export interface RankedAccount {
     address: string;
     /** XRD balance (top_accounts) or the stake position's worth in XRD (top_lsu). */

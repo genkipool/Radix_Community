@@ -59,6 +59,9 @@ export interface DashboardToolbarProps {
     calendarT?: CalendarTranslations;
     columns: number;
     onColumnsChange: (cols: number) => void;
+    /** Folds the network panel in and out. */
+    networkPanelOpen: boolean;
+    onNetworkPanelToggle: () => void;
     /** The ranking shown in place of the transactions (null: none) and its setter. */
     activeRanking: string | null;
     onRankingChange: (ranking: string | null) => void;

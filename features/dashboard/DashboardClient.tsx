@@ -46,6 +46,9 @@ import {
   useTransactionsQuery,
   flattenTransactionPages,
 } from './explorador/hooks/useTransactionsQuery';
+import { HeroCollapse } from '@/components/layout/CollapsibleHeroSection';
+import { NetworkInsightsPanel } from './components/NetworkInsightsPanel';
+import { NETWORK_PANEL_ID } from './components/NetworkPanelButton';
 import { useInfiniteScrollTx } from './explorador/hooks/useDashboardTxEffects';
 
 /* Feature hooks */
@@ -142,6 +145,10 @@ export default function DashboardClient({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
+  /* The network panel starts folded and is only mounted once opened: closed, it costs nothing. */
+  const [networkPanelOpen, setNetworkPanelOpen] = useState(false);
+  const [networkPanelOpened, setNetworkPanelOpened] = useState(false);
+  if (networkPanelOpen && !networkPanelOpened) setNetworkPanelOpened(true);
   
   const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddresses, sessions } = useRadixWallet();
 
@@ -850,6 +857,8 @@ export default function DashboardClient({
           onColumnsChange={setColumns}
           activeRanking={activeRanking}
           onRankingChange={setActiveRanking}
+          networkPanelOpen={networkPanelOpen}
+          onNetworkPanelToggle={() => setNetworkPanelOpen(open => !open)}
           filterFavorites={prefs.filterFavorites}
           onFilterFavoriteToggle={key => prefs.setFilterFavorites(favs =>
             favs.includes(key) ? favs.filter(k => k !== key) : [...favs, key],
@@ -863,6 +872,21 @@ export default function DashboardClient({
           onPrefetchNetwork={warmNetwork}
           dt={dt}
         />
+
+        {/* ── Network panel: folds out under the toolbar, as the heroes fold in Docs / Games / Console ── */}
+        <div id={NETWORK_PANEL_ID} inert={!networkPanelOpen}>
+          <HeroCollapse collapsed={!networkPanelOpen}>
+            {networkPanelOpened && (
+              <NetworkInsightsPanel
+                network={network as Network}
+                totalStaked={stats.totalStaked}
+                open={networkPanelOpen}
+                dt={dt}
+                locale={language}
+              />
+            )}
+          </HeroCollapse>
+        </div>
 
         <div className="w-full min-w-0">
           {/* ── Card grid + empty states ── */}

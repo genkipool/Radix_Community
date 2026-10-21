@@ -13,8 +13,6 @@ export interface FilterSelectOption {
     onToggle: () => void;
     disabled?: boolean;
     title?: string;
-    /** A switch beside the choice (the wallet), not one of the choices: it is not counted in the summary. */
-    independent?: boolean;
     /** Starred: the toolbar also shows it as a button of its own. */
     favorite?: boolean;
     onFavoriteToggle?: () => void;
@@ -69,9 +67,7 @@ export function DashboardFilterSelect({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // The summary speaks for the choices; switches only show when nothing else is picked.
-    const choices = options.filter(o => o.active && !o.independent);
-    const active = choices.length > 0 ? choices : options.filter(o => o.active);
+    const active = options.filter(o => o.active);
     const summary = active.length === 0
         ? allOption.label
         : active.length === 1 ? active[0].label : `${active[0].label} +${active.length - 1}`;
@@ -109,7 +105,7 @@ export function DashboardFilterSelect({
                     >
                         {showAll && (
                             <SelectPopupRow
-                                selected={choices.length === 0}
+                                selected={active.length === 0}
                                 onClick={allOption.onSelect}
                                 label={allOption.label}
                             />
