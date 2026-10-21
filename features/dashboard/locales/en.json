@@ -531,6 +531,7 @@
       "countries_title": "Validators by country",
       "others": "Others",
       "unknown_label": "Unknown",
+      "known_label": "known",
       "conclusion_title": "Decentralization",
       "level_strong": "Well spread",
       "level_moderate": "Moderate",

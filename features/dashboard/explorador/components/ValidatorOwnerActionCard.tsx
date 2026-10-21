@@ -1,17 +1,19 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Landmark, Lock, ShieldCheck, Server, UserRound, Percent, KeyRound, Power, Users, Hourglass, Unlock, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check, Copy, Hourglass, Info, KeyRound, Lock, Percent, Power, ShieldCheck, Unlock, Users, type LucideIcon } from 'lucide-react';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { AddressDisplay } from './EntityBadge';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
-import { SummaryCard, SummaryHero, SummaryBody, PlainSummary, FactTile, FactGrid } from './SummaryCardKit';
+import { SummaryCard } from './SummaryCardKit';
 import { EPOCH_MS, type OwnerAction } from '../utils/validatorOwnerActions';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 
 interface ValidatorOwnerActionCardProps {
-    action: OwnerAction;
+    /** Everything the owner did to this validator in the transaction. */
+    actions: OwnerAction[];
     /** The account that presented the owner badge. */
     owner: string | null;
     /** When the transaction was confirmed, to put a date on an unlock a few epochs away. */
@@ -29,59 +31,42 @@ const fill = (template: string, values: Record<string, string | number>) =>
     template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ''));
 
 const shortKey = (hex: string | null) => (hex ? `${hex.slice(0, 10)}…${hex.slice(-8)}` : '—');
+const shortValidator = (address: string) => (address.length > 22 ? `${address.slice(0, 14)}…${address.slice(-6)}` : address);
 
-const ICONS: Record<OwnerAction['kind'], LucideIcon> = {
-    start_unlock: Unlock, finish_unlock: Unlock, lock: Lock,
-    register: Power, unregister: Power, update_key: KeyRound, update_fee: Percent, accept_delegated: Users,
-};
-
-/** Origin → destination, laid out like the delegator's unstake card: where the LSUs were, where they are now. */
-function Flow({ fromLabel, fromValue, fromHint, toLabel, toValue, toHint }: {
-    fromLabel: string; fromValue: React.ReactNode; fromHint?: React.ReactNode;
-    toLabel: string; toValue: React.ReactNode; toHint?: React.ReactNode;
-}) {
-    return (
-        <div className="grid grid-cols-1 @lg:grid-cols-[1fr_auto_1fr] items-stretch gap-3">
-            <div className="rounded-xl border border-[var(--color-card-border)] bg-blue-500/5 p-3">
-                <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-2 flex items-center gap-1.5 opacity-80">
-                    <Landmark className="size-3" />{fromLabel}
-                </h5>
-                <div className="text-xl font-black text-orange-600 dark:text-orange-400 tabular-nums">{fromValue}</div>
-                {fromHint && <div className="mt-1 text-[11px] text-[var(--color-text-muted)]">{fromHint}</div>}
-            </div>
-            <div className="grid place-items-center text-[var(--color-text-muted)]" aria-hidden="true">
-                <ArrowRight className="size-5 rotate-90 @lg:rotate-0" />
-            </div>
-            <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-accent)]/5 p-3">
-                <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-2 flex items-center gap-1.5 opacity-80">
-                    <Landmark className="size-3" />{toLabel}
-                </h5>
-                <div className="text-xl font-black text-[var(--color-accent)] tabular-nums">{toValue}</div>
-                {toHint && <div className="mt-1 text-[11px] text-[var(--color-text-muted)]">{toHint}</div>}
-            </div>
-        </div>
-    );
+/** One thing that changed: what it is, its value in large type, a line of context underneath. */
+interface Item {
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    value: React.ReactNode;
+    hint?: React.ReactNode;
 }
 
 /** A before → after pair of values. */
 function Change({ before, after, mono = false }: { before: React.ReactNode; after: React.ReactNode; mono?: boolean }) {
     return (
-        <span className={`flex flex-wrap items-center gap-2 ${mono ? 'font-mono text-xs' : ''}`}>
-            <span className="text-[var(--color-text-muted)] line-through decoration-1">{before}</span>
-            <ArrowRight className="size-3.5 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
-            <span className="font-black text-[var(--color-accent)]">{after}</span>
+        <span className={`inline-flex flex-wrap items-center gap-x-2 ${mono ? 'font-mono text-sm' : ''}`}>
+            <span className="font-semibold text-[var(--color-text-muted)] line-through decoration-1">{before}</span>
+            <ArrowRight className="size-4 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
+            <span className="text-[var(--color-accent)]">{after}</span>
         </span>
     );
 }
 
 /**
  * ValidatorOwnerActionCard
- * Explains what a validator's owner did to the validator: unlocking or locking
- * their own stake, registering, rotating the key, setting the fee. The unlock
- * flow wears the same origin → destination layout as a delegator's unstake.
+ * One card for everything a validator's owner did to a validator in a
+ * transaction: who it is, then each change laid out on a shared grid —
+ * unlocking or locking their own stake, registering, rotating the key,
+ * setting the fee — and a sentence for each.
  */
-export function ValidatorOwnerActionCard({ action, owner, confirmedAt, tt, onCopy, copiedAddress, network, locale = 'en', timezone }: ValidatorOwnerActionCardProps) {
-    const Icon = ICONS[action.kind];
+export function ValidatorOwnerActionCard({ actions, owner, confirmedAt, tt, onCopy, copiedAddress, network, locale = 'en', timezone }: ValidatorOwnerActionCardProps) {
+    const validator = actions[0].validator;
+    const entity = useEntityData(validator, network);
+    const name = entity?.name || shortValidator(validator);
+    const iconUrl = entity?.iconUrl;
+
+    const t = (key: string, fallback: string) => (tt as Record<string, string> | undefined)?.[key] ?? fallback;
     const fmt = (n: number) => parseFloat(n.toFixed(4)).toLocaleString(locale, { maximumFractionDigits: 4 });
     const percent = (fraction: number) => `${parseFloat((fraction * 100).toFixed(4)).toLocaleString(locale, { maximumFractionDigits: 4 })} %`;
     const dateAt = (epochsAway: number) => {
@@ -90,154 +75,174 @@ export function ValidatorOwnerActionCard({ action, owner, confirmedAt, tt, onCop
             ? new Date(base + epochsAway * EPOCH_MS).toLocaleString(locale, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
             : null;
     };
-    const t = (key: string, fallback: string) => (tt as Record<string, string> | undefined)?.[key] ?? fallback;
-    // The validator by its name when it is known; the summary reads better than with an address.
-    const validatorName = useEntityData(action.validator, network)?.name || shortValidator(action.validator);
-    const amount = action.amount !== undefined ? fmt(action.amount) : '—';
-    const unlockDate = action.unlockEpochsAway !== undefined ? dateAt(action.unlockEpochsAway) : null;
-    const days = action.unlockEpochsAway !== undefined ? Math.round((action.unlockEpochsAway * EPOCH_MS) / 86_400_000) : null;
+    const stateLabel = (value: boolean | null, yes: string, no: string) => (value === null ? '—' : value ? yes : no);
+    const registered = t('owner_registered', 'Registered');
+    const notRegistered = t('owner_not_registered', 'Not registered');
 
-    const summary = (() => {
+    /** The items and the sentence of one action. */
+    const describe = (action: OwnerAction): { items: Item[]; summary: string } => {
+        const amount = action.amount !== undefined ? fmt(action.amount) : '—';
+        const unlockDate = action.unlockEpochsAway !== undefined ? dateAt(action.unlockEpochsAway) : null;
+        const days = action.unlockEpochsAway !== undefined ? Math.round((action.unlockEpochsAway * EPOCH_MS) / 86_400_000) : null;
+        const sentence = (key: string, fallback: string, values: Record<string, string | number> = {}) => fill(t(key, fallback), { validator: name, ...values });
+
         switch (action.kind) {
-            case 'start_unlock':
-                return unlockDate
-                    ? fill(t('owner_summary_start_unlock', 'The owner of {validator} asked to unlock {amount} LSU of the stake locked in the validator. They wait in a vault until {date}; only then can they be taken out, sold or unstaked.'), { validator: validatorName, amount, date: unlockDate })
-                    : fill(t('owner_summary_start_unlock_nodate', 'The owner of {validator} asked to unlock {amount} LSU of the stake locked in the validator. They wait in a vault until the unlock delay passes.'), { validator: validatorName, amount });
+            case 'start_unlock': {
+                const items: Item[] = [
+                    {
+                        key: 'amount', icon: Unlock, label: t('owner_unlock_amount', 'Owner stake'),
+                        value: `${amount} LSU`,
+                        hint: <>{t('owner_locked_vault', 'Locked')}<ArrowRight className="mx-1 inline size-3 align-[-2px]" aria-hidden="true" />{t('owner_unlocking_vault', 'Unlocking')}</>,
+                    },
+                    {
+                        key: 'available', icon: Hourglass, label: t('owner_available', 'Available from'),
+                        value: unlockDate ?? t('owner_available_later', 'Once the unlock delay passes'),
+                        hint: days !== null ? fill(t('owner_available_hint', 'Epoch {epoch} · in about {days} days'), { epoch: action.unlockEpoch ?? '—', days }) : undefined,
+                    },
+                ];
+                if (action.unlockingTotal !== undefined && action.unlockingParts !== undefined) {
+                    items.push({
+                        key: 'now', icon: Lock, label: t('owner_unlocking_now', 'Unlocking now'),
+                        value: `${fmt(action.unlockingTotal)} LSU`,
+                        hint: action.unlockingParts === 1
+                            ? t('owner_in_one_part', 'in 1 part')
+                            : fill(t('owner_in_parts', 'in {parts} parts'), { parts: action.unlockingParts }),
+                    });
+                }
+                return {
+                    items,
+                    summary: unlockDate
+                        ? sentence('owner_summary_start_unlock', 'The owner of {validator} asked to unlock {amount} LSU of the stake locked in the validator. They wait in a vault until {date}; only then can they be taken out, sold or unstaked.', { amount, date: unlockDate })
+                        : sentence('owner_summary_start_unlock_nodate', 'The owner of {validator} asked to unlock {amount} LSU of the stake locked in the validator. They wait in a vault until the unlock delay passes.', { amount }),
+                };
+            }
             case 'finish_unlock':
-                return fill(t('owner_summary_finish_unlock', 'The owner of {validator} took {amount} LSU out of unlocking. They are now in the owner account, free to hold, sell or unstake.'), { validator: validatorName, amount });
+                return {
+                    items: [{ key: 'amount', icon: Unlock, label: t('owner_owner', 'Owner account'), value: `+${amount} LSU`, hint: t('owner_free', 'Free to hold, sell or unstake') }],
+                    summary: sentence('owner_summary_finish_unlock', 'The owner of {validator} took {amount} LSU out of unlocking. They are now in the owner account, free to hold, sell or unstake.', { amount }),
+                };
             case 'lock':
-                return fill(t('owner_summary_lock', 'The owner of {validator} locked {amount} LSU as stake of their own in the validator. While locked they cannot be moved.'), { validator: validatorName, amount });
+                return {
+                    items: [{ key: 'amount', icon: Lock, label: t('owner_locked_vault', 'Locked owner stake'), value: `+${amount} LSU`, hint: t('owner_locked_hint', 'Stays locked until the owner starts unlocking it') }],
+                    summary: sentence('owner_summary_lock', 'The owner of {validator} locked {amount} LSU as stake of their own in the validator. While locked they cannot be moved.', { amount }),
+                };
             case 'register':
-                return fill(t('owner_summary_register', '{validator} registered: it can now be considered for the active validator set.'), { validator: validatorName });
             case 'unregister':
-                return fill(t('owner_summary_unregister', '{validator} unregistered: it stops being a candidate for the active validator set until it registers again.'), { validator: validatorName });
+                return {
+                    items: action.registered ? [{
+                        key: 'registration', icon: Power, label: t('owner_registration', 'Registration'),
+                        value: <Change before={stateLabel(action.registered.before, registered, notRegistered)} after={stateLabel(action.registered.after, registered, notRegistered)} />,
+                    }] : [],
+                    summary: action.kind === 'register'
+                        ? sentence('owner_summary_register', '{validator} registered: it can now be considered for the active validator set.')
+                        : sentence('owner_summary_unregister', '{validator} unregistered: it stops being a candidate for the active validator set until it registers again.'),
+                };
             case 'update_key':
-                return fill(t('owner_summary_update_key', 'The consensus key of {validator} was replaced. Its node has to run with the new key.'), { validator: validatorName });
-            case 'update_fee':
-                return fill(action.fee?.appliedNow
-                    ? t('owner_summary_fee_now', 'The owner of {validator} set the fee to {fee}, applied immediately.')
-                    : t('owner_summary_fee_later', 'The owner of {validator} asked for a fee of {fee}; it takes effect at epoch {epoch}.'),
-                { validator: validatorName, fee: action.fee ? percent(action.fee.requested) : '—', epoch: action.fee?.effectiveEpoch ?? '—' });
-            case 'accept_delegated':
-                return fill(action.accepts?.after
-                    ? t('owner_summary_accept_on', '{validator} now accepts delegated stake: anyone can stake to it.')
-                    : t('owner_summary_accept_off', '{validator} no longer accepts new delegated stake; current delegators keep their stake and can still unstake.'),
-                { validator: validatorName });
+                return {
+                    items: action.key ? [{
+                        key: 'key', icon: KeyRound, label: t('owner_key', 'Consensus key'),
+                        value: <Change before={shortKey(action.key.before)} after={shortKey(action.key.after)} mono />,
+                    }] : [],
+                    summary: sentence('owner_summary_update_key', 'The consensus key of {validator} was replaced. Its node has to run with the new key.'),
+                };
+            case 'update_fee': {
+                const fee = action.fee;
+                return {
+                    items: fee ? [{
+                        key: 'fee', icon: Percent, label: t('owner_fee', 'Validator fee'),
+                        value: <Change before={fee.before === null ? '—' : percent(fee.before)} after={percent(fee.requested)} />,
+                        hint: fee.appliedNow
+                            ? t('owner_fee_immediate', 'Applied immediately')
+                            : `${t('owner_fee_effective', 'Takes effect')}: ${fill(t('owner_fee_epoch', 'Epoch {epoch}'), { epoch: fee.effectiveEpoch ?? '—' })}`,
+                    }] : [],
+                    summary: fee?.appliedNow
+                        ? sentence('owner_summary_fee_now', 'The owner of {validator} set the fee to {fee}, applied immediately.', { fee: percent(fee.requested) })
+                        : sentence('owner_summary_fee_later', 'The owner of {validator} asked for a fee of {fee}; it takes effect at epoch {epoch}.', { fee: fee ? percent(fee.requested) : '—', epoch: fee?.effectiveEpoch ?? '—' }),
+                };
+            }
+            case 'accept_delegated': {
+                const yes = t('owner_yes', 'Yes');
+                const no = t('owner_no', 'No');
+                return {
+                    items: action.accepts ? [{
+                        key: 'accepts', icon: Users, label: t('owner_accepts', 'Accepts delegated stake'),
+                        value: <Change before={stateLabel(action.accepts.before, yes, no)} after={stateLabel(action.accepts.after, yes, no)} />,
+                    }] : [],
+                    summary: action.accepts?.after
+                        ? sentence('owner_summary_accept_on', '{validator} now accepts delegated stake: anyone can stake to it.')
+                        : sentence('owner_summary_accept_off', '{validator} no longer accepts new delegated stake; current delegators keep their stake and can still unstake.'),
+                };
+            }
         }
-    })();
+    };
+
+    const described = actions.map(describe);
+    const items = described.flatMap(d => d.items);
+    const titles = actions.map(a => t(`owner_action_${a.kind}`, a.kind));
 
     return (
-        <SummaryCard
-            icon={ShieldCheck}
-            title={t('owner_title', 'Validator owner action')}
-            aside={
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                    {t(`owner_action_${action.kind}`, action.kind)}
-                </span>
-            }
-        >
-            <SummaryHero>
-                <FactGrid>
-                    <FactTile icon={Server} label={t('owner_validator', 'Validator')}>
-                        <AddressDisplay label={t('owner_validator', 'Validator')} address={action.validator} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel />
-                    </FactTile>
-                    {owner && (
-                        <FactTile icon={UserRound} label={t('owner_owner', 'Owner account')}>
-                            <AddressDisplay label={t('owner_owner', 'Owner account')} address={owner} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel />
-                        </FactTile>
-                    )}
-                    <FactTile icon={Icon} label={t('owner_action', 'Action')}>
-                        {t(`owner_action_${action.kind}`, action.kind)}
-                    </FactTile>
-                </FactGrid>
-            </SummaryHero>
+        <SummaryCard icon={ShieldCheck} title={t('owner_title', 'Validator owner action')}>
+            {/* Who: the validator with its picture, and the owner account that acted */}
+            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 p-4 @md:p-5 bg-gradient-to-br from-[var(--color-primary)]/10 via-transparent to-[var(--color-secondary)]/10">
+                <div className="flex min-w-0 items-center gap-4">
+                    <div className="size-14 shrink-0 overflow-hidden rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-sm">
+                        <SafeImage src={iconUrl ?? ''} alt={name} fallbackName={name} className="size-full object-cover" />
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                        <p className="truncate text-lg font-black leading-tight text-[var(--color-text-main)]">{name}</p>
+                        {/* The name is above, so the address is shown on its own with its copy button */}
+                        <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); onCopy(validator); }}
+                            title={validator}
+                            className="flex max-w-full items-center gap-1.5 font-mono text-xs text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
+                        >
+                            <span className="truncate">{shortValidator(validator)}</span>
+                            {copiedAddress === validator ? <Check className="size-3.5 shrink-0 text-green-500" /> : <Copy className="size-3.5 shrink-0" />}
+                        </button>
+                        <p className="text-xs font-bold text-[var(--color-primary)]">{titles.join(' · ')}</p>
+                    </div>
+                </div>
+                {owner && (
+                    <div className="min-w-0 space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{t('owner_owner', 'Owner account')}</p>
+                        <div className="text-sm font-semibold"><AddressDisplay label={t('owner_owner', 'Owner account')} address={owner} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel /></div>
+                    </div>
+                )}
+            </div>
 
-            <SummaryBody>
-                {action.kind === 'start_unlock' && (
-                    <Flow
-                        fromLabel={t('owner_locked_vault', 'Locked owner stake')}
-                        fromValue={`−${amount} LSU`}
-                        toLabel={t('owner_unlocking_vault', 'Unlocking')}
-                        toValue={`+${amount} LSU`}
-                        toHint={unlockDate && days !== null
-                            ? fill(t('owner_available_on', 'Available {date} (epoch {epoch}, in about {days} days)'), { date: unlockDate, epoch: action.unlockEpoch ?? '—', days })
-                            : t('owner_available_later', 'Available once the unlock delay passes')}
-                    />
-                )}
-                {action.kind === 'finish_unlock' && (
-                    <Flow
-                        fromLabel={t('owner_unlocking_vault', 'Unlocking')}
-                        fromValue={`−${amount} LSU`}
-                        toLabel={t('owner_owner', 'Owner account')}
-                        toValue={`+${amount} LSU`}
-                        toHint={t('owner_free', 'Free to hold, sell or unstake')}
-                    />
-                )}
-                {action.kind === 'lock' && (
-                    <Flow
-                        fromLabel={t('owner_owner', 'Owner account')}
-                        fromValue={`−${amount} LSU`}
-                        toLabel={t('owner_locked_vault', 'Locked owner stake')}
-                        toValue={`+${amount} LSU`}
-                        toHint={t('owner_locked_hint', 'Stays locked until the owner starts unlocking it')}
-                    />
+            <div className="border-t border-[var(--color-card-border)] px-4 @md:px-5">
+                {/* What changed: every change on one grid, two to a row when there is room */}
+                {items.length > 0 && (
+                    <dl className={`grid grid-cols-1 gap-x-10 ${items.length % 3 === 0 ? '@2xl:grid-cols-3' : '@2xl:grid-cols-2'}`}>
+                        {items.map(({ key, icon: Icon, label, value, hint }, i) => (
+                            <div
+                                key={`${key}-${i}`}
+                                className={`flex min-w-0 flex-col gap-1 border-b border-[var(--color-card-border)] py-3.5 ${items.length % 3 !== 0 && items.length % 2 === 1 && i === items.length - 1 ? '@2xl:col-span-2 @2xl:flex-row @2xl:items-center @2xl:justify-between' : ''}`}
+                            >
+                                <dt className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                                    <Icon className="size-3.5 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
+                                    {label}
+                                </dt>
+                                <dd className="min-w-0">
+                                    <div className="text-xl font-black leading-snug tabular-nums text-[var(--color-text-main)]">{value}</div>
+                                    {hint && <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">{hint}</div>}
+                                </dd>
+                            </div>
+                        ))}
+                    </dl>
                 )}
 
-                {action.kind === 'start_unlock' && action.unlockingTotal !== undefined && action.unlockingParts !== undefined && (
-                    <FactGrid>
-                        <FactTile icon={Hourglass} label={t('owner_unlocking_now', 'Unlocking now')}>
-                            {fill(t('owner_unlocking_total', '{amount} LSU in {parts} parts'), { amount: fmt(action.unlockingTotal), parts: action.unlockingParts })}
-                        </FactTile>
-                    </FactGrid>
-                )}
-
-                {(action.kind === 'register' || action.kind === 'unregister') && action.registered && (
-                    <FactGrid>
-                        <FactTile icon={Power} label={t('owner_registration', 'Registration')}>
-                            <Change
-                                before={action.registered.before === null ? '—' : action.registered.before ? t('owner_registered', 'Registered') : t('owner_not_registered', 'Not registered')}
-                                after={action.registered.after === null ? '—' : action.registered.after ? t('owner_registered', 'Registered') : t('owner_not_registered', 'Not registered')}
-                            />
-                        </FactTile>
-                    </FactGrid>
-                )}
-
-                {action.kind === 'update_key' && action.key && (
-                    <FactGrid>
-                        <FactTile icon={KeyRound} label={t('owner_key', 'Consensus key')}>
-                            <Change before={shortKey(action.key.before)} after={shortKey(action.key.after)} mono />
-                        </FactTile>
-                    </FactGrid>
-                )}
-
-                {action.kind === 'update_fee' && action.fee && (
-                    <FactGrid>
-                        <FactTile icon={Percent} label={t('owner_fee', 'Validator fee')}>
-                            <Change before={action.fee.before === null ? '—' : percent(action.fee.before)} after={percent(action.fee.requested)} />
-                        </FactTile>
-                        <FactTile icon={Hourglass} label={t('owner_fee_effective', 'Takes effect')}>
-                            {action.fee.appliedNow
-                                ? t('owner_fee_immediate', 'Applied immediately')
-                                : fill(t('owner_fee_epoch', 'Epoch {epoch}'), { epoch: action.fee.effectiveEpoch ?? '—' })}
-                        </FactTile>
-                    </FactGrid>
-                )}
-
-                {action.kind === 'accept_delegated' && action.accepts && (
-                    <FactGrid>
-                        <FactTile icon={Users} label={t('owner_accepts', 'Accepts delegated stake')}>
-                            <Change
-                                before={action.accepts.before === null ? '—' : action.accepts.before ? t('owner_yes', 'Yes') : t('owner_no', 'No')}
-                                after={action.accepts.after ? t('owner_yes', 'Yes') : t('owner_no', 'No')}
-                            />
-                        </FactTile>
-                    </FactGrid>
-                )}
-
-                <PlainSummary>{summary}</PlainSummary>
-            </SummaryBody>
+                {/* In words: one sentence per change */}
+                <ul className="space-y-2 py-4">
+                    {described.map(({ summary }, i) => (
+                        <li key={i} className="flex gap-2.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+                            <Info className="mt-0.5 size-4 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
+                            <span>{summary}</span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </SummaryCard>
     );
 }
-
-const shortValidator = (address: string) => (address.length > 22 ? `${address.slice(0, 14)}…${address.slice(-6)}` : address);

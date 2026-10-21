@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Where a validator's node runs and what it runs, on one left-aligned row
- * that wraps only when the space runs out.
+ * Where a validator's node runs and what it runs: three facts side by side,
+ * each an icon beside a label over its value, centred on the same line.
  *
  * Shared by the expanded staking card and the explorer, under the status
  * badges. Each line is one entry of `buildNodeFacts`: a new fact is one more
@@ -11,6 +11,7 @@
 import React from 'react';
 import { MapPin, Cpu, Server, type LucideIcon } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
+import { formatPercent } from '@/utils/formatters';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import { validatorLocation, validatorProvider, validatorVersion } from '../lib/validatorNode';
@@ -38,6 +39,10 @@ export function buildNodeFacts(
     const version = validatorVersion(validator);
     const provider = validatorProvider(validator);
     const commit = sanitizeText(validator.commit);
+    // The share of the delegated stake that sits with this provider, when the network was able to work it out.
+    const providerShare = provider && validator.providerPercent > 0
+        ? formatPercent(validator.providerPercent, validator.providerPercent < 10 ? 1 : 0, locale)
+        : null;
 
     const facts: NodeFact[] = [
         {
@@ -58,8 +63,15 @@ export function buildNodeFacts(
             key: 'provider',
             icon: Server,
             label: details?.provider ?? 'Provider',
-            title: provider ?? undefined,
-            value: provider ? <span className="truncate">{provider}</span> : <Unknown label={unknown} />,
+            title: provider ? [provider, providerShare].filter(Boolean).join(' · ') : undefined,
+            value: provider ? (
+                <>
+                    <span className="truncate">{provider}</span>
+                    {providerShare && (
+                        <span className="shrink-0 text-[11px] font-bold tabular-nums text-[var(--color-text-muted)]">{providerShare}</span>
+                    )}
+                </>
+            ) : <Unknown label={unknown} />,
         },
         {
             key: 'version',
@@ -88,16 +100,18 @@ export function ValidatorNodeFacts({
     const facts = buildNodeFacts(validator, dt, locale);
 
     return (
-        <dl className={`flex flex-wrap items-center justify-start gap-x-5 gap-y-1.5 text-left ${className}`}>
+        <dl className={`grid grid-cols-1 gap-x-6 gap-y-3 text-left sm:grid-cols-3 ${className}`}>
             {facts.map(({ key, icon: Icon, label, value, title }) => (
-                <div key={key} title={title} className="group flex min-w-0 max-w-full items-center gap-2">
-                    <Icon className="size-3.5 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
-                    <dt className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] transition-colors group-hover:text-[var(--color-primary)]">
-                        {label}
-                    </dt>
-                    <dd className="flex min-w-0 items-center gap-1.5 text-[12px] font-bold text-[var(--color-text-main)]">
-                        {value}
-                    </dd>
+                <div key={key} title={title} className="group flex min-w-0 items-center gap-3">
+                    <Icon className="size-4 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
+                    <div className="flex min-w-0 flex-col justify-center gap-0.5">
+                        <dt className="truncate text-[10px] font-black uppercase leading-none tracking-widest text-[var(--color-text-muted)] transition-colors group-hover:text-[var(--color-primary)]">
+                            {label}
+                        </dt>
+                        <dd className="flex min-w-0 items-center gap-1.5 text-[13px] font-bold leading-tight text-[var(--color-text-main)]">
+                            {value}
+                        </dd>
+                    </div>
                 </div>
             ))}
         </dl>

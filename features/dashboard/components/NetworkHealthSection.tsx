@@ -4,7 +4,7 @@ import React from 'react';
 import { Cpu, Server, ShieldAlert, ShieldCheck, ShieldQuestion, TriangleAlert, Info, type LucideIcon } from 'lucide-react';
 import { formatPercent } from '@/utils/formatters';
 import { StatCard } from './StatCard';
-import { TONES, toneStyle } from '../staking/lib/validatorHealth';
+import { TONES } from '../staking/lib/validatorHealth';
 import {
     assessDecentralization, countryDistribution, hostingShare, MIN_COVERAGE, providerDistribution, versionAdoption,
     type Level,
@@ -99,9 +99,18 @@ export function NetworkHealthSection({ validators, dt, locale }: NetworkHealthSe
                     icon={<LevelIcon className="size-5" style={{ color }} />}
                     label={t?.conclusion_title ?? 'Decentralization'}
                     value={(
-                        <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-black uppercase tracking-wide" style={toneStyle(color)}>
-                            {t?.[`level_${verdict.level}` as 'level_strong']}
-                        </span>
+                        <>
+                            <span className="font-black uppercase tracking-wide" style={{ color }}>
+                                {t?.[`level_${verdict.level}` as 'level_strong']}
+                            </span>
+                            {/* The figure the verdict rests on: the biggest provider's share, or how much is known when it is too little to judge. */}
+                            <span className="text-[var(--color-text-muted)]">
+                                {' · '}
+                                {verdict.level === 'insufficient'
+                                    ? `${pct(verdict.coverage * 100)} ${t?.known_label ?? 'known'}`
+                                    : verdict.top ? `${verdict.top.name} ${pct(verdict.top.percent)}` : ''}
+                            </span>
+                        </>
                     )}
                     description={conclusion}
                 />

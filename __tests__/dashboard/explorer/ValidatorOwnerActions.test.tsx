@@ -9,7 +9,7 @@ import { translations } from '@/i18n';
 vi.mock('@/features/dashboard/explorador/components/EntityBadge', () => ({
     AddressDisplay: ({ address }: { address: string }) => <span data-testid="address">{address}</span>,
 }));
-vi.mock('@/features/dashboard/hooks/useEntityData', () => ({ useEntityData: () => ({ name: 'Lucky Validator' }) }));
+vi.mock('@/features/dashboard/hooks/useEntityData', () => ({ useEntityData: () => ({ name: 'Lucky Validator', iconUrl: '' }) }));
 
 const V = 'validator_rdx1sw2qt9k0placmjgwku2kvk66c2v8v0f9ny2fkvzhsh7wwzey6g7zam';
 const OWNER = 'account_rdx16xmm6gzsqpdcr4hrk38mrxz7wy4a2fnlfy74xafyx6n3vjuk4wsgn3';
@@ -108,47 +108,53 @@ describe('extractValidatorOwnerActions', () => {
 });
 
 const tt = translations.en.dashboard.transactions;
-const renderCard = (action: Parameters<typeof ValidatorOwnerActionCard>[0]['action']) => render(
-    <ValidatorOwnerActionCard action={action} owner={OWNER} confirmedAt="2026-10-20T02:00:00.000Z" tt={tt} onCopy={vi.fn()} copiedAddress={null} network="mainnet" locale="en" timezone="UTC" />,
+type Action = Parameters<typeof ValidatorOwnerActionCard>[0]['actions'][number];
+const renderCard = (...actions: Action[]) => render(
+    <ValidatorOwnerActionCard actions={actions} owner={OWNER} confirmedAt="2026-10-20T02:00:00.000Z" tt={tt} onCopy={vi.fn()} copiedAddress={null} network="mainnet" locale="en" timezone="UTC" />,
 );
 
 describe('ValidatorOwnerActionCard', () => {
-    it('shows an unlock start as locked → unlocking with the date it becomes available', () => {
+    it('shows an unlock start with the date it becomes available and what is unlocking in all', () => {
         renderCard({ kind: 'start_unlock', validator: V, amount: 1538, unlockEpoch: 359054, unlockEpochsAway: 8064, unlockingParts: 28, unlockingTotal: 39700 });
-        expect(screen.getByText('−1,538 LSU')).toBeInTheDocument();
-        expect(screen.getByText('+1,538 LSU')).toBeInTheDocument();
+        expect(screen.getByText('1,538 LSU')).toBeInTheDocument();
         expect(screen.getAllByText(/Nov 17, 2026/).length).toBeGreaterThan(0); // 28 days after Oct 20
-        expect(screen.getByText(/epoch 359054, in about 28 days/)).toBeInTheDocument();
-        expect(screen.getByText('39,700 LSU in 28 parts')).toBeInTheDocument();
+        expect(screen.getByText(/Epoch 359054 · in about 28 days/)).toBeInTheDocument();
+        expect(screen.getByText('39,700 LSU')).toBeInTheDocument();
+        expect(screen.getByText('in 28 parts')).toBeInTheDocument();
         expect(screen.getByText(/The owner of Lucky Validator asked to unlock 1,538 LSU/)).toBeInTheDocument();
     });
 
-    it('shows a finished unlock as unlocking → owner account', () => {
+    it('names the validator and the owner account once', () => {
         renderCard({ kind: 'finish_unlock', validator: V, amount: 1415 });
-        expect(screen.getByText('−1,415 LSU')).toBeInTheDocument();
+        expect(screen.getByText('Lucky Validator', { selector: 'p' })).toBeInTheDocument();
+        expect(screen.getAllByTestId('address').map(a => a.textContent)).toEqual([OWNER]);
+        expect(screen.getByTitle(V)).toBeInTheDocument(); // the validator's own address, with its copy button
         expect(screen.getByText('+1,415 LSU')).toBeInTheDocument();
-        expect(screen.getAllByTestId('address').map(a => a.textContent)).toContain(OWNER);
     });
 
-    it('shows a fee change as before → after and when it takes effect', () => {
-        renderCard({ kind: 'update_fee', validator: V, fee: { before: 0.015, requested: 0.5, appliedNow: false, effectiveEpoch: 348297 } });
+    it('puts several changes to one validator on a single card', () => {
+        const before = '037c453108a8119b9a7c216b2b4e53e1ab4c955326b4f1eeab3bff3761a4562044';
+        const after = '03d9fc30198ce70f2ac4a6947f34c0b63b8a5e506b5059c1bfaccb086a04a5631e';
+        const short = (hex: string) => `${hex.slice(0, 10)}…${hex.slice(-8)}`;
+        renderCard(
+            { kind: 'update_fee', validator: V, fee: { before: 0.015, requested: 0.5, appliedNow: false, effectiveEpoch: 348297 } },
+            { kind: 'update_key', validator: V, key: { before, after } },
+        );
+        expect(screen.getAllByTestId('address')).toHaveLength(1); // the owner, once
+        expect(screen.getAllByTitle(V)).toHaveLength(1); // the validator, once
         expect(screen.getByText('1.5 %')).toBeInTheDocument();
-        expect(screen.getAllByText(/50 %/).length).toBeGreaterThan(0);
-        expect(screen.getByText('Epoch 348297')).toBeInTheDocument();
+        expect(screen.getByText('50 %')).toBeInTheDocument();
+        expect(screen.getByText(/Takes effect: Epoch 348297/)).toBeInTheDocument();
+        expect(screen.getByText(short(before))).toBeInTheDocument();
+        expect(screen.getByText(short(after))).toBeInTheDocument();
+        expect(screen.getAllByRole('listitem')).toHaveLength(2); // one sentence for each
     });
 
-    it('shows registration, key and delegated-stake changes', () => {
+    it('shows registration and delegated-stake changes', () => {
         const { unmount } = renderCard({ kind: 'unregister', validator: V, registered: { before: true, after: false } });
         expect(screen.getByText('Registered')).toBeInTheDocument();
         expect(screen.getByText('Not registered')).toBeInTheDocument();
         unmount();
-        const before = '037c453108a8119b9a7c216b2b4e53e1ab4c955326b4f1eeab3bff3761a4562044';
-        const after = '03d9fc30198ce70f2ac4a6947f34c0b63b8a5e506b5059c1bfaccb086a04a5631e';
-        const short = (hex: string) => `${hex.slice(0, 10)}…${hex.slice(-8)}`;
-        const key = renderCard({ kind: 'update_key', validator: V, key: { before, after } });
-        expect(screen.getByText(short(before))).toBeInTheDocument();
-        expect(screen.getByText(short(after))).toBeInTheDocument();
-        key.unmount();
         renderCard({ kind: 'accept_delegated', validator: V, accepts: { before: true, after: false } });
         expect(screen.getByText(/no longer accepts new delegated stake/)).toBeInTheDocument();
     });

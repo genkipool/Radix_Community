@@ -531,6 +531,7 @@
       "countries_title": "Validadores por país",
       "others": "Otros",
       "unknown_label": "Desconocido",
+      "known_label": "conocido",
       "conclusion_title": "Descentralización",
       "level_strong": "Bien repartida",
       "level_moderate": "Moderada",
