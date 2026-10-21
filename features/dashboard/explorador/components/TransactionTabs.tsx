@@ -23,6 +23,8 @@ import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { ResourceCreationCard } from './ResourceCreationCard';
 import { extractResourceCreations } from '../utils/resourceCreationUtils';
 import type { priceRewrites } from '../utils/oraclePrices';
+import { ValidatorOwnerActionCard } from './ValidatorOwnerActionCard';
+import { extractValidatorOwnerActions } from '../utils/validatorOwnerActions';
 import { GovernanceVoteCard } from './GovernanceVoteCard';
 import { extractGovernanceVotes } from '@/features/governance/lib/governanceVotes';
 
@@ -111,6 +113,14 @@ const TransactionTabs = ({
         || resourceCreations.length > 0 || governanceVotes.length > 0 || !!airdropData;
     const calls = callsExplained ? [] : componentCalls(String(manifest_instructions || ''));
     const stateUpdates = receipt?.state_updates as { updated_substates?: Parameters<typeof storedChanges>[0]['updated']; created_substates?: Parameters<typeof storedChanges>[0]['created'] } | undefined;
+    /* ── What a validator's owner did to the validator (unlock, register, key, fee…) ── */
+    const ownerActions = extractValidatorOwnerActions({
+        manifest: String(manifest_instructions || ''),
+        substates: stateUpdates?.updated_substates as unknown as Parameters<typeof extractValidatorOwnerActions>[0]['substates'],
+        events: receipt?.events as unknown as Parameters<typeof extractValidatorOwnerActions>[0]['events'],
+        epoch: tx.epoch,
+        balanceChanges: balanceChanges as unknown as Parameters<typeof extractValidatorOwnerActions>[0]['balanceChanges'],
+    });
     const callChanges = calls.length === 0 ? [] : storedChanges(
         { updated: stateUpdates?.updated_substates, created: stateUpdates?.created_substates },
         calls.flatMap((c) => c.args.filter((a) => a.kind === 'address').map((a) => a.value)),
@@ -211,6 +221,22 @@ const TransactionTabs = ({
                             <GovernanceVoteCard
                                 key={`${vote.component}-${vote.kind}-${vote.itemId}-${vote.voteId}`}
                                 vote={vote}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                network={network}
+                                locale={locale}
+                                timezone={timezone}
+                            />
+                        ))}
+
+                        {/* What the validator's owner did: unlock or lock their stake, register, key, fee… */}
+                        {ownerActions.map((action, i) => (
+                            <ValidatorOwnerActionCard
+                                key={`${action.kind}-${action.validator}-${i}`}
+                                action={action}
+                                owner={parsed.lockFeeAccount ?? parsed.badgeOrigin ?? null}
+                                confirmedAt={details.confirmed_at}
                                 tt={tt}
                                 onCopy={onCopy}
                                 copiedAddress={copiedAddress}
