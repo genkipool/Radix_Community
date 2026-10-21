@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { formatPercent, formatXRD, truncateAddress } from '@/utils/formatters';
 import { EntityCard } from '../explorador/components/entityCards';
@@ -26,6 +26,9 @@ interface UnlockAccountsTableProps {
     copiedAddress: string | null;
 }
 
+type SortKey = 'account' | 'xrd' | 'unstakes' | 'validator' | 'next';
+type SortDirection = 'asc' | 'desc';
+
 const FIRST_ROWS = 10;
 const MORE_ROWS = 25;
 
@@ -42,11 +45,56 @@ export function UnlockAccountsTable({
     const i = dt?.insights;
     const [open, setOpen] = useState<string | null>(null);
     const [shown, setShown] = useState(FIRST_ROWS);
-    const names = new Map((validators ?? []).map(v => [v.address, v.name]));
-    const validatorName = (address: string) => names.get(address) ?? truncateAddress(address, 10, 6);
+    // The biggest first, until a header is clicked.
+    const [sort, setSort] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'xrd', direction: 'desc' });
+    const validatorNames = new Map((validators ?? []).map(v => [v.address, v.name]));
+    const validatorName = (address: string) => validatorNames.get(address) ?? truncateAddress(address, 10, 6);
     const date = (ms: number) => new Date(ms).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
     if (accounts.length === 0) return null;
+
+    // The rank is the place by XRD and does not move when the table is sorted by something else.
+    const rank = new Map(accounts.toSorted((a, b) => b.xrd - a.xrd).map((a, index) => [a.address, index + 1]));
+    const valueOf = (a: AccountUnlockData): string | number => {
+        switch (sort.key) {
+            case 'account': return a.address;
+            case 'xrd': return a.xrd;
+            case 'unstakes': return a.unstakes;
+            case 'validator': return validatorName(a.validators[0] ?? '').toLowerCase();
+            case 'next': return a.nextUnlock;
+        }
+    };
+    const sorted = accounts.toSorted((a, b) => {
+        const [x, y] = [valueOf(a), valueOf(b)];
+        const order = typeof x === 'string' ? x.localeCompare(y as string, locale) : x - (y as number);
+        // Ties keep the biggest first, so the order is stable whatever is sorted.
+        return (sort.direction === 'asc' ? order : -order) || b.xrd - a.xrd;
+    });
+
+    /** A header that sorts: first click on a column sorts it (text from A, numbers biggest first), the next flips it. */
+    const header = (key: SortKey, label: string, align: 'left' | 'right' | 'center' = 'left', className = '') => {
+        const active = sort.key === key;
+        const Icon = !active ? ArrowUpDown : sort.direction === 'asc' ? ArrowUp : ArrowDown;
+        return (
+            <th
+                scope="col"
+                aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                className={`py-2 pr-4 font-bold ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} ${className}`}
+            >
+                <button
+                    type="button"
+                    onClick={() => setSort(current => ({
+                        key,
+                        direction: current.key === key ? (current.direction === 'asc' ? 'desc' : 'asc') : (key === 'account' || key === 'validator' ? 'asc' : 'desc'),
+                    }))}
+                    className={`inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-[var(--color-primary)] ${active ? 'text-[var(--color-primary)]' : ''}`}
+                >
+                    {label}
+                    <Icon className={`size-3 shrink-0 ${active ? '' : 'opacity-40'}`} aria-hidden="true" />
+                </button>
+            </th>
+        );
+    };
 
     return (
         <div className="mt-8">
@@ -57,18 +105,18 @@ export function UnlockAccountsTable({
                 <table className="w-full min-w-[720px] text-sm">
                     <thead>
                         <tr className="text-left text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
-                            <th className="w-10 py-2 pr-2 font-bold">#</th>
-                            <th className="py-2 pr-4 font-bold">{i?.accounts_account ?? 'Account'}</th>
-                            <th className="py-2 pr-4 font-bold text-right">{i?.accounts_xrd ?? 'XRD unlocking'}</th>
-                            <th className="py-2 pr-4 font-bold w-44">{i?.accounts_share ?? 'Of the wave'}</th>
-                            <th className="py-2 pr-4 font-bold text-right">{i?.accounts_unstakes ?? 'Unstakes'}</th>
-                            <th className="py-2 pr-4 font-bold">{i?.accounts_validators ?? 'Validator'}</th>
-                            <th className="hidden md:table-cell py-2 pr-4 font-bold">{i?.accounts_next ?? 'First unlock'}</th>
+                            <th scope="col" className="w-10 py-2 pr-2 font-bold">#</th>
+                            {header('account', i?.accounts_account ?? 'Account')}
+                            {header('xrd', i?.accounts_xrd ?? 'XRD unlocking', 'right')}
+                            {header('xrd', i?.accounts_share ?? 'Of the wave', 'left', 'w-44')}
+                            {header('unstakes', i?.accounts_unstakes ?? 'Unstakes', 'center')}
+                            {header('validator', i?.accounts_validators ?? 'Validator')}
+                            {header('next', i?.accounts_next ?? 'First unlock', 'left', 'hidden md:table-cell')}
                             <th className="w-8 py-2" aria-hidden="true" />
                         </tr>
                     </thead>
                     <tbody>
-                        {accounts.slice(0, shown).map((account, index) => {
+                        {sorted.slice(0, shown).map((account) => {
                             const isOpen = open === account.address;
                             const share = total > 0 ? (account.xrd / total) * 100 : 0;
                             const names = account.validators.map(validatorName);
@@ -78,7 +126,7 @@ export function UnlockAccountsTable({
                                         className={`border-t border-[var(--color-card-border)] cursor-pointer transition-colors hover:bg-[var(--color-surface-hover)] ${isOpen ? 'bg-[var(--color-surface-hover)]' : ''}`}
                                         onClick={() => setOpen(isOpen ? null : account.address)}
                                     >
-                                        <td className="py-2.5 pr-2 tabular-nums text-[var(--color-text-muted)]">{index + 1}</td>
+                                        <td className="py-2.5 pr-2 tabular-nums text-[var(--color-text-muted)]">{rank.get(account.address)}</td>
                                         <td className="py-2.5 pr-4">
                                             <span className="inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--color-text-main)]" title={account.address}>
                                                 {truncateAddress(account.address, 14, 8)}
@@ -98,7 +146,7 @@ export function UnlockAccountsTable({
                                                 <span className="w-12 text-right text-xs tabular-nums text-[var(--color-text-muted)]">{formatPercent(share, share < 10 ? 1 : 0, locale)}</span>
                                             </div>
                                         </td>
-                                        <td className="py-2.5 pr-4 text-right tabular-nums text-[var(--color-text-muted)]">{account.unstakes}</td>
+                                        <td className="py-2.5 pr-4 text-center tabular-nums text-[var(--color-text-main)]">{account.unstakes}</td>
                                         <td className="py-2.5 pr-4 max-w-[240px]" title={names.join(', ')}>
                                             <span className="block truncate font-semibold text-[var(--color-text-main)]">
                                                 {names[0]}

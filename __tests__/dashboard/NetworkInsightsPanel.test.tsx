@@ -162,6 +162,42 @@ describe('UnlockAccountsTable', () => {
         expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument();
     });
 
+    it('sorts by the header clicked, flips on a second click, and keeps each account\'s rank', async () => {
+        const accounts = [
+            { ...account(1, 300), unstakes: 1, validators: ['validator_rdx1ccccccccccccccccccc'] },
+            { ...account(2, 200), unstakes: 3, validators: ['validator_rdx1aaaaaaaaaaaaaaaaaaa'] },
+            { ...account(3, 100), unstakes: 2, validators: ['validator_rdx1bbbbbbbbbbbbbbbbbbb'] },
+        ];
+        fetchMock.mockResolvedValue(data({ unbonding: 600, accounts }));
+        renderPanel();
+        await screen.findAllByRole('row');
+        const order = () => screen.getAllByRole('row').slice(1).map(r => within(r).getAllByRole('cell')[0].textContent);
+
+        // Biggest first to begin with.
+        expect(order()).toEqual(['1', '2', '3']);
+        expect(screen.getByRole('columnheader', { name: /XRD unlocking/i })).toHaveAttribute('aria-sort', 'descending');
+
+        // Unstakes: most first, then fewest first. The rank still says where each is by XRD.
+        fireEvent.click(screen.getByRole('button', { name: /^Unstakes$/i }));
+        expect(order()).toEqual(['2', '3', '1']);
+        expect(screen.getByRole('columnheader', { name: /Unstakes/i })).toHaveAttribute('aria-sort', 'descending');
+        fireEvent.click(screen.getByRole('button', { name: /^Unstakes$/i }));
+        expect(order()).toEqual(['1', '3', '2']);
+        expect(screen.getByRole('columnheader', { name: /Unstakes/i })).toHaveAttribute('aria-sort', 'ascending');
+
+        // Text columns start from A: the validator's address here (no names in the list).
+        fireEvent.click(screen.getByRole('button', { name: /^Validator$/i }));
+        expect(order()).toEqual(['2', '3', '1']);
+    });
+
+    it('centres the unstakes column', async () => {
+        fetchMock.mockResolvedValue(data({ unbonding: 10, accounts: [account(1, 10)] }));
+        renderPanel();
+        await screen.findAllByRole('row');
+        expect(screen.getByRole('columnheader', { name: /Unstakes/i }).className).toContain('text-center');
+        expect(within(screen.getAllByRole('row')[1]).getAllByRole('cell')[4].className).toContain('text-center');
+    });
+
     it('has no table while nobody is identified', async () => {
         fetchMock.mockResolvedValue(data({ accounts: [] }));
         renderPanel();
