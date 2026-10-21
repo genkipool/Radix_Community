@@ -281,6 +281,9 @@ const TransactionTabs = ({
                         {/* Lock Fee */}
                         {!authFirst && lockFeePanel}
 
+                        {/* Auth Badge: who is allowed to do it comes before what moved */}
+                        {!authFirst && authBadgePanel}
+
                         {/* Asset transfers / Swap settlement */}
                         {(() => {
                             const classes: string[] = (tx.manifestClasses as string[]) ?? (details?.manifest_classes as string[]) ?? [];
@@ -400,9 +403,6 @@ const TransactionTabs = ({
                                 />
                             ));
                         })()}
-
-                        {/* Auth Badge */}
-                        {!authFirst && authBadgePanel}
 
                         {/* A call that moved no assets: what it asked the component and what that changed */}
                         <ComponentCallSection calls={calls} changes={callChanges} caller={parsed.lockFeeAccount ?? parsed.badgeOrigin} feePaid={actualFeePaid} {...shared} />
