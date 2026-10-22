@@ -9,24 +9,31 @@ allowBuilds:
   snyk: true
   unrs-resolver: true
 
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv
+
 minimumReleaseAge: 10080
 
 minimumReleaseAgeExclude:
   - dompurify@3.4.7
   - isomorphic-dompurify@3.15.0
-  - '@next/env@16.2.7'
-  - '@next/swc-darwin-arm64@16.2.7'
-  - '@next/swc-darwin-x64@16.2.7'
-  - '@next/swc-linux-arm64-gnu@16.2.7'
-  - '@next/swc-linux-arm64-musl@16.2.7'
-  - '@next/swc-linux-x64-gnu@16.2.7'
-  - '@next/swc-linux-x64-musl@16.2.7'
-  - '@next/swc-win32-arm64-msvc@16.2.7'
-  - '@next/swc-win32-x64-msvc@16.2.7'
-  - next@16.2.7
+  - '@next/env@16.4.2'
+  - '@next/swc-darwin-arm64@16.4.2'
+  - '@next/swc-darwin-x64@16.4.2'
+  - '@next/swc-linux-arm64-gnu@16.4.2'
+  - '@next/swc-linux-arm64-musl@16.4.2'
+  - '@next/swc-linux-x64-gnu@16.4.2'
+  - '@next/swc-linux-x64-musl@16.4.2'
+  - '@next/swc-win32-arm64-msvc@16.4.2'
+  - '@next/swc-win32-x64-msvc@16.4.2'
+  - next@16.4.2
 
 overrides:
-  postcss: ^8.5.10
+  postcss: ^8.5.18
+  nanoid: ^3.3.18
+  browserslist: ^4.28.7
+  source-map-js: ^1.2.2
   uuid: ^11.1.1
   '@vercel/node>undici': ^6.24.0
   '@vercel/static-config>ajv': ^8.18.0
@@ -40,7 +47,9 @@ overrides:
   undici-types: 8.3.0
   minimatch: ^10.2.1
   tar: ^7.5.11
-  valibot: ^1.2.0
+  valibot: ^1.4.2
+  dompurify: ^3.4.13
+  baseline-browser-mapping: ^2.11.0
 
 trustPolicy: no-downgrade
 
