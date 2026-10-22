@@ -107,4 +107,86 @@ describe('the validator logo route', () => {
         expect(res.status).toBe(404);
         expect(fetch).not.toHaveBeenCalled();
     });
+
+    describe('does not trust the host serving the logo', () => {
+        const noSharp = () => vi.doMock('sharp', () => { throw new Error('no sharp'); });
+        const get = async () => {
+            const { GET } = await loadRoute();
+            const { req, context } = request(ICON_URL);
+            return GET(req, context);
+        };
+
+        it('asks for the logo uncompressed and does not follow redirects on its own', async () => {
+            noSharp();
+            await get();
+            const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+            expect(init.redirect).toBe('manual');
+            expect(init.headers).toMatchObject({ 'Accept-Encoding': 'identity' });
+        });
+
+        it('refuses a body that arrives compressed, Brotli included', async () => {
+            noSharp();
+            vi.mocked(fetch).mockResolvedValue(new Response(PNG, { headers: { 'content-type': 'image/png', 'content-encoding': 'br' } }));
+            expect((await get()).status).toBe(404);
+        });
+
+        it('follows a redirect to another public https host', async () => {
+            noSharp();
+            vi.mocked(fetch)
+                .mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: 'https://cdn.example/logo.png' } }))
+                .mockResolvedValueOnce(new Response(PNG, { headers: { 'content-type': 'image/png' } }));
+            const res = await get();
+            expect(res.status).toBe(200);
+            expect(vi.mocked(fetch).mock.calls[1][0].toString()).toBe('https://cdn.example/logo.png');
+        });
+
+        it.each([
+            'http://cdn.example/logo.png',
+            'https://127.0.0.1/logo.png',
+            'https://169.254.169.254/latest/meta-data',
+            'https://[::1]/logo.png',
+            'https://[fd00::1]/logo.png',
+            'https://[::ffff:10.0.0.5]/logo.png',
+            'https://100.64.0.1/logo.png',
+            'https://0.0.0.0/logo.png',
+        ])('refuses a redirect to %s', async (location) => {
+            noSharp();
+            vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 302, headers: { location } }));
+            expect((await get()).status).toBe(404);
+            expect(fetch).toHaveBeenCalledTimes(1);
+        });
+
+        it('gives up on a redirect loop', async () => {
+            noSharp();
+            vi.mocked(fetch).mockImplementation(async () => new Response(null, { status: 302, headers: { location: 'https://cdn.example/again' } }));
+            expect((await get()).status).toBe(404);
+            expect(fetch).toHaveBeenCalledTimes(4);
+        });
+
+        it('stops reading a body that grows past the cap, even without a Content-Length', async () => {
+            noSharp();
+            const chunk = new Uint8Array(1024 * 1024);
+            let sent = 0;
+            const body = new ReadableStream<Uint8Array>({
+                pull(controller) { sent += 1; controller.enqueue(chunk); },
+            });
+            vi.mocked(fetch).mockResolvedValue(new Response(body, { headers: { 'content-type': 'image/png' } }));
+            expect((await get()).status).toBe(404);
+            expect(sent).toBeLessThan(10); // 3 MB cap: it was not read to the end
+        });
+
+        it('never serves an SVG from our origin when sharp cannot turn it into a bitmap', async () => {
+            noSharp();
+            vi.mocked(fetch).mockResolvedValue(new Response('<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>', { headers: { 'content-type': 'image/svg+xml' } }));
+            expect((await get()).status).toBe(404);
+        });
+
+        it('still serves a raster original untouched, with nosniff', async () => {
+            noSharp();
+            const res = await get();
+            expect(res.status).toBe(200);
+            expect(res.headers.get('content-type')).toBe('image/png');
+            expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+        });
+    });
 });

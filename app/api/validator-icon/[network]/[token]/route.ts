@@ -31,8 +31,20 @@ import { decodeIconToken } from '@/features/dashboard/staking/lib/validatorIcon'
 /** Enough for any avatar; something larger than this is not a logo. */
 const MAX_BYTES = 3 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 8_000;
+/** Redirects followed by hand, each hop checked like the first URL. */
+const MAX_REDIRECTS = 3;
+/** sharp refuses anything that would decode to more pixels than a logo ever has. */
+const MAX_INPUT_PIXELS = 24_000_000;
 /** Covers the largest card at twice the pixel density; the zoom uses the original. */
 const MAX_DIMENSION = 384;
+/**
+ * What may leave this route untouched, from our own origin. An SVG is a
+ * document that can carry script; opened on its own it would run here. The
+ * site-wide CSP in next.config.ts replaces any header set on this response, so
+ * the guarantee is made by never serving one: sharp turns SVGs into WebP, and
+ * if it cannot, the card falls back to its initials.
+ */
+const SERVABLE_AS_IS = /^image\/(png|jpe?g|gif|webp|avif|bmp|x-icon|vnd\.microsoft\.icon)\s*(;|$)/i;
 /** Encoded logos held between requests, so a cold browser cache is not a cold fetch. */
 const MEMORY_LIMIT = 200;
 
@@ -88,19 +100,95 @@ function respond({ body, type }: CachedIcon) {
             // with it this path, so this answer never becomes the wrong one.
             'Cache-Control': 'public, max-age=31536000, immutable',
             'X-Content-Type-Options': 'nosniff',
+            // Belt and braces for the original bytes (see SERVABLE_AS_IS); the
+            // site-wide CSP may well replace this one.
+            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
         },
     });
 }
 
-/** Rejects loopback, link-local and private literals: this fetch runs on our network. */
+/** Rejects loopback, link-local, private and unspecified literals: this fetch runs on our network. */
 function isPublicHost(hostname: string): boolean {
-    const host = hostname.toLowerCase();
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
     if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal')) return false;
-    if (/^\[?::1\]?$/.test(host)) return false;
-    if (/^127\./.test(host) || /^10\./.test(host) || /^169\.254\./.test(host)) return false;
+    if (host === '::' || host === '::1') return false;
+    // IPv6 unique-local (fc00::/7) and link-local (fe80::/10), and IPv4 carried inside IPv6.
+    if (/^f[cd][0-9a-f]{2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host)) return false;
+    // `new URL` writes ::ffff:10.0.0.5 as ::ffff:a00:5, so both spellings are read.
+    const dotted = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(host);
+    if (dotted) return isPublicHost(dotted[1]);
+    const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+    if (hex) {
+        const [high, low] = [parseInt(hex[1], 16), parseInt(hex[2], 16)];
+        return isPublicHost(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
+    }
+    if (/^(0|127)\./.test(host) || /^10\./.test(host) || /^169\.254\./.test(host)) return false;
     if (/^192\.168\./.test(host)) return false;
     if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+    if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return false; // carrier-grade NAT
     return true;
+}
+
+/**
+ * Downloads a logo, never trusting the host that serves it.
+ *
+ * - The response must arrive uncompressed. Asking for `identity` and refusing a
+ *   `Content-Encoding` anyway keeps a hostile host from steering the body
+ *   through the runtime's decompressors (Brotli among them).
+ * - Redirects are followed by hand, a few at most, and every hop has to be https
+ *   on a public host like the first URL did.
+ * - The body is read as a stream and dropped at the size cap, instead of being
+ *   buffered whole before anyone looks at its length.
+ */
+async function downloadLogo(first: URL): Promise<{ bytes: Buffer; type: string } | null> {
+    let url = first;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+        const upstream = await fetch(url, {
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+            headers: { Accept: 'image/*', 'Accept-Encoding': 'identity' },
+            redirect: 'manual',
+        });
+
+        if (upstream.status >= 300 && upstream.status < 400) {
+            const location = upstream.headers.get('location');
+            await upstream.body?.cancel();
+            if (!location) return null;
+            let next: URL;
+            try {
+                next = new URL(location, url);
+            } catch {
+                return null;
+            }
+            if (next.protocol !== 'https:' || !isPublicHost(next.hostname)) return null;
+            url = next;
+            continue;
+        }
+
+        const type = upstream.headers.get('content-type') ?? '';
+        const encoding = upstream.headers.get('content-encoding')?.trim().toLowerCase();
+        const declared = Number(upstream.headers.get('content-length'));
+        if (!upstream.ok || !type.startsWith('image/') || (encoding && encoding !== 'identity') || declared > MAX_BYTES) {
+            await upstream.body?.cancel();
+            return null;
+        }
+
+        const reader = upstream.body?.getReader();
+        if (!reader) return null;
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.byteLength;
+            if (size > MAX_BYTES) {
+                await reader.cancel();
+                return null;
+            }
+            chunks.push(value);
+        }
+        return { bytes: Buffer.concat(chunks), type };
+    }
+    return null;
 }
 
 /**
@@ -155,16 +243,10 @@ async function serveIcon(
     let original: Buffer;
     let originalType: string;
     try {
-        const upstream = await fetch(target, {
-            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-            headers: { Accept: 'image/*' },
-        });
-        originalType = upstream.headers.get('content-type') ?? '';
-        if (!upstream.ok || !originalType.startsWith('image/')) return notFound();
-
-        const bytes = await upstream.arrayBuffer();
-        if (bytes.byteLength > MAX_BYTES) return notFound();
-        original = Buffer.from(bytes);
+        const downloaded = await downloadLogo(target);
+        if (!downloaded) return notFound();
+        original = downloaded.bytes;
+        originalType = downloaded.type;
     } catch (error) {
         logger.error({ err: error, host: target.hostname }, '[ValidatorIcon] Upstream fetch failed');
         return notFound();
@@ -174,18 +256,21 @@ async function serveIcon(
     const sharp = await loadShrinker();
     if (sharp) {
         try {
-            const body = await sharp(original)
+            const body = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })
                 .rotate() // honour the EXIF orientation before it is stripped
                 .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
                 .webp({ quality: 80 })
                 .toBuffer();
             icon = { body, type: 'image/webp' };
         } catch (error) {
-            // Something sharp will not read — an animated format, an odd SVG. The
-            // original still works, and is still worth serving with a cache header.
+            // Something sharp will not read — an animated format, say. The original
+            // still works, and is still worth serving with a cache header, as long
+            // as it is a picture and not a document (see SERVABLE_AS_IS).
             logger.warn({ err: error, host: target.hostname }, '[ValidatorIcon] Serving the original');
         }
     }
+
+    if (!SERVABLE_AS_IS.test(icon.type)) return notFound();
 
     remember(token, icon);
     return respond(icon);
