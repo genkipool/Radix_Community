@@ -2,7 +2,7 @@ import logger from '@/lib/logger';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import {
     classifyDestination, forwardingPattern, summarizeFunds,
-    type DestinationKind, type FlowItem, type FundsFlow,
+    type DestinationHint, type FlowItem, type FundsFlow,
 } from '@/features/dashboard/explorador/utils/fundsFlow';
 import { withRetry, type Network } from './client';
 import { gatewayRestBase } from './validatorList';
@@ -42,6 +42,8 @@ async function readTransactions(address: string, network: Network, pages: number
     return { items, more: true };
 }
 
+export type { DestinationHint };
+
 export interface AccountFunds extends FundsFlow {
     /** The latest transactions were not all of them: the account has older ones. */
     more: boolean;
@@ -50,16 +52,6 @@ export interface AccountFunds extends FundsFlow {
 export async function readFundsFlow(address: string, network: Network): Promise<AccountFunds> {
     const { items, more } = await readTransactions(address, network, FLOW_PAGES);
     return { ...summarizeFunds(address, items, getXrdAddress(network)), more };
-}
-
-export interface DestinationHint {
-    kind: DestinationKind;
-    /** Where it passes the XRD on to, when it does. */
-    hub: string | null;
-    /** Share of what it received that it passed to that one place (0–1). */
-    share: number;
-    /** Distinct addresses that fed the hub in what was read of its history. */
-    hubSenders: number;
 }
 
 /**

@@ -144,3 +144,47 @@ export function classifyDestination(pattern: ForwardingPattern, hub: { senders: 
     if (!pattern.hub.startsWith('account_')) return 'onchain';
     return hub && hub.senders >= COLLECTOR.hubSenders && hub.txs >= COLLECTOR.hubTxs ? 'collector' : 'other';
 }
+
+export interface DestinationHint {
+    kind: DestinationKind;
+    /** Where it passes the XRD on to, when it does. */
+    hub: string | null;
+    /** Share of what it received that it passed to that one place (0–1). */
+    share: number;
+    /** Distinct addresses that fed the hub in what was read of its history. */
+    hubSenders: number;
+}
+
+/**
+ * The flow as a file to keep or analyse elsewhere: every counterparty, not only
+ * the ones the tab lists. The destination patterns are included when they had
+ * been worked out, and the file says whether that was the case.
+ */
+export function buildFundsFlowExport(
+    address: string,
+    network: string,
+    flow: FundsFlow & { more: boolean },
+    hints: Record<string, DestinationHint> | undefined,
+    generatedAt: Date,
+) {
+    return {
+        address,
+        network,
+        asset: 'XRD',
+        generatedAt: generatedAt.toISOString(),
+        window: { transactions: flow.txs, withXrdMovement: flow.moved, from: flow.from, to: flow.to, olderTransactionsNotIncluded: flow.more },
+        totals: { received: flow.received, sent: flow.sent },
+        destinationPatternsChecked: hints !== undefined,
+        counterparties: flow.counterparties.map(c => ({
+            address: c.address,
+            received: c.received,
+            sent: c.sent,
+            movements: c.txs,
+            lastAt: c.lastAt,
+            ...(hints?.[c.address]
+                ? { destinationPattern: { kind: hints[c.address].kind, passesOnTo: hints[c.address].hub, share: hints[c.address].share, hubDistinctSenders: hints[c.address].hubSenders } }
+                : {}),
+        })),
+        notes: 'Counterparties are worked out from each transaction\'s net balance changes; where several are on the other side the amount is shared in proportion. A destination pattern of kind "collector" only describes behaviour (it passes most of what it receives to an account many others also feed); nothing on the ledger says an address belongs to an exchange.',
+    };
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { classifyDestination, forwardingPattern, summarizeFunds, xrdLegs, type FlowItem } from '@/features/dashboard/explorador/utils/fundsFlow';
+import { buildFundsFlowExport, classifyDestination, forwardingPattern, summarizeFunds, xrdLegs, type FlowItem } from '@/features/dashboard/explorador/utils/fundsFlow';
 
 vi.mock('@/lib/logger', () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
@@ -64,6 +64,36 @@ describe('forwardingPattern and classifyDestination', () => {
         const toPool = tx('2026-02-01', ['account_rdx1dep', -120], ['pool_rdx1p', 120]);
         expect(classifyDestination(forwardingPattern('account_rdx1dep', [toPool, ...fed], XRD), null)).toBe('onchain');
         expect(classifyDestination(forwardingPattern('account_rdx1dep', fed, XRD), null)).toBe('other');
+    });
+});
+
+describe('buildFundsFlowExport', () => {
+    const flow = {
+        ...summarizeFunds(ME, [tx('2026-01-03', [ME, -40], ['account_rdx1b', 40]), tx('2026-01-01', [ME, 100], ['account_rdx1a', -100])], XRD),
+        more: true,
+    };
+    const now = new Date('2026-02-01T00:00:00.000Z');
+
+    it('lists every counterparty with the window and totals, and says the patterns were not checked yet', () => {
+        const file = buildFundsFlowExport(ME, 'mainnet', flow, undefined, now);
+        expect(file).toMatchObject({
+            address: ME, network: 'mainnet', asset: 'XRD', generatedAt: '2026-02-01T00:00:00.000Z',
+            window: { transactions: 2, from: '2026-01-01', to: '2026-01-03', olderTransactionsNotIncluded: true },
+            totals: { received: 100, sent: 40 },
+            destinationPatternsChecked: false,
+        });
+        expect(file.counterparties).toEqual([
+            { address: 'account_rdx1a', received: 100, sent: 0, movements: 1, lastAt: '2026-01-01' },
+            { address: 'account_rdx1b', received: 0, sent: 40, movements: 1, lastAt: '2026-01-03' },
+        ]);
+    });
+
+    it('adds the destination pattern of a counterparty once it was worked out', () => {
+        const hints = { account_rdx1b: { kind: 'collector' as const, hub: 'account_rdx1hub', share: 0.9, hubSenders: 14 } };
+        const file = buildFundsFlowExport(ME, 'mainnet', flow, hints, now);
+        expect(file.destinationPatternsChecked).toBe(true);
+        expect(file.counterparties[1]).toMatchObject({ destinationPattern: { kind: 'collector', passesOnTo: 'account_rdx1hub', share: 0.9, hubDistinctSenders: 14 } });
+        expect(file.counterparties[0]).not.toHaveProperty('destinationPattern');
     });
 });
 

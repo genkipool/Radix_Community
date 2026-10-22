@@ -2,8 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { Network } from '@/features/dashboard/types';
-import type { FundsFlow } from '../utils/fundsFlow';
-import type { DestinationHint } from '@/services/gateway/fundsFlow';
+import type { DestinationHint, FundsFlow } from '../utils/fundsFlow';
 
 export type AccountFunds = FundsFlow & { more: boolean };
 

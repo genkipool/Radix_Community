@@ -1,19 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Info } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import { formatPercent, formatXRD } from '@/utils/formatters';
 import { useDestinationHints, useFundsFlow } from '../hooks/useFundsFlow';
-import type { Counterparty } from '../utils/fundsFlow';
-import type { DestinationHint } from '@/services/gateway/fundsFlow';
+import { buildFundsFlowExport, type Counterparty, type DestinationHint } from '../utils/fundsFlow';
 import { AddressChip } from './SummaryCardKit';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 
-/** Counterparties listed on each side; the rest are in the total. */
+/** Counterparties listed on each side at first, and how many more each press of "Show more" adds. */
 const ROWS = 8;
 /** A share of what an address receives that is worth saying it passes on. */
 const NOTABLE_SHARE = 0.5;
@@ -64,9 +63,10 @@ function Side({ title, icon, rows, side, hints, network, locale, text, copiedAdd
     title: string; icon: React.ReactNode; rows: Counterparty[]; side: 'in' | 'out'; hints?: Record<string, DestinationHint>; network: Network; locale: string;
     text: NonNullable<NonNullable<Tt['account_summary']>['funds']> | undefined; copiedAddress: string | null; onCopy: (v: string) => void;
 }) {
+    const [visible, setVisible] = useState(ROWS);
     const amountOf = (c: Counterparty) => (side === 'in' ? c.received : c.sent);
     const listed = rows.filter(c => amountOf(c) > 0).toSorted((a, b) => amountOf(b) - amountOf(a));
-    const shown = listed.slice(0, ROWS);
+    const shown = listed.slice(0, visible);
     const max = amountOf(shown[0] ?? ({ received: 1, sent: 1 } as Counterparty)) || 1;
     return (
         <section className="min-w-0">
@@ -80,7 +80,20 @@ function Side({ title, icon, rows, side, hints, network, locale, text, copiedAdd
                         ))}
                     </ul>
                 )}
-            {listed.length > ROWS && <p className="text-[11px] text-[var(--color-text-muted)] mt-1">{fill(text?.others, { n: listed.length - ROWS })}</p>}
+            {listed.length > ROWS && (
+                <div className="mt-1 flex items-center gap-3 text-[11px] font-semibold">
+                    {listed.length > visible && (
+                        <button type="button" onClick={() => setVisible(v => v + ROWS)} className="text-[var(--color-primary)] hover:underline">
+                            {fill(text?.show_more, { n: Math.min(ROWS, listed.length - visible) })}
+                        </button>
+                    )}
+                    {visible > ROWS && (
+                        <button type="button" onClick={() => setVisible(ROWS)} className="text-[var(--color-text-muted)] hover:underline">
+                            {text?.show_less}
+                        </button>
+                    )}
+                </div>
+            )}
         </section>
     );
 }
@@ -95,6 +108,7 @@ export function AccountFundsFlowTab({ address, network, locale, copiedAddress, o
     address: string; network: Network; locale: string; copiedAddress: string | null; onCopy: (v: string) => void; tt?: Tt;
 }) {
     const text = tt?.account_summary?.funds;
+    const [copied, setCopied] = useState(false);
     const { data: flow, isLoading, isError } = useFundsFlow(address, network);
     const { data: hints, isLoading: hintsLoading } = useDestinationHints(address, network, !!flow && flow.sent > 0);
 
@@ -108,13 +122,41 @@ export function AccountFundsFlowTab({ address, network, locale, copiedAddress, o
     }
     if (isError || !flow) return <p className="text-xs font-semibold text-[var(--color-danger)]">{text?.error ?? 'Could not read the transactions.'}</p>;
 
+    const exported = () => JSON.stringify(buildFundsFlowExport(address, network, flow, hints, new Date()), null, 2);
+    const copyJson = async () => {
+        try {
+            await navigator.clipboard.writeText(exported());
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch {
+            setCopied(false);
+        }
+    };
+    const downloadJson = () => {
+        const url = URL.createObjectURL(new Blob([exported()], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `funds-flow-${address.slice(-8)}-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
     const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
     return (
         <div className="space-y-4">
-            <p className="text-xs text-[var(--color-text-muted)]">
-                {fill(text?.window, { n: flow.txs, from: date(flow.from), to: date(flow.to) })}
-                {flow.more && <> {text?.window_more}</>}
-            </p>
+            <div className="flex items-start justify-between gap-4">
+                <p className="text-xs text-[var(--color-text-muted)]">
+                    {fill(text?.window, { n: flow.txs, from: date(flow.from), to: date(flow.to) })}
+                    {flow.more && <> {text?.window_more}</>}
+                </p>
+                <div className="flex items-center gap-3 shrink-0 text-[11px] font-semibold">
+                    <button type="button" onClick={copyJson} className="text-[var(--color-primary)] hover:underline">
+                        {copied ? text?.copied : text?.copy_json}
+                    </button>
+                    <button type="button" onClick={downloadJson} className="text-[var(--color-primary)] hover:underline">
+                        {text?.download_json}
+                    </button>
+                </div>
+            </div>
             <div className="grid grid-cols-2 gap-3 max-w-md">
                 <div>
                     <div className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{text?.total_received}</div>
