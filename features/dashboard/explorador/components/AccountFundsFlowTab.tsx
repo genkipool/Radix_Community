@@ -59,8 +59,8 @@ function Row({ row, side, max, hint, network, locale, text, copiedAddress, onCop
     );
 }
 
-function Side({ title, icon, rows, side, hints, network, locale, text, copiedAddress, onCopy }: {
-    title: string; icon: React.ReactNode; rows: Counterparty[]; side: 'in' | 'out'; hints?: Record<string, DestinationHint>; network: Network; locale: string;
+function Side({ title, icon, total, totalLabel, rows, side, hints, network, locale, text, copiedAddress, onCopy }: {
+    title: string; icon: React.ReactNode; total: number; totalLabel?: string; rows: Counterparty[]; side: 'in' | 'out'; hints?: Record<string, DestinationHint>; network: Network; locale: string;
     text: NonNullable<NonNullable<Tt['account_summary']>['funds']> | undefined; copiedAddress: string | null; onCopy: (v: string) => void;
 }) {
     const [visible, setVisible] = useState(ROWS);
@@ -70,6 +70,11 @@ function Side({ title, icon, rows, side, hints, network, locale, text, copiedAdd
     const max = amountOf(shown[0] ?? ({ received: 1, sent: 1 } as Counterparty)) || 1;
     return (
         <section className="min-w-0">
+            {/* The column's total, over its title. */}
+            <div className="mb-3">
+                <div className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{totalLabel}</div>
+                <div className={`text-base font-mono font-black ${total > 0 ? (side === 'in' ? 'text-[var(--color-accent)]' : 'text-[var(--color-danger)]') : 'text-[var(--color-text-muted)]'}`}>{formatXRD(total, locale)} XRD</div>
+            </div>
             <h4 className="flex items-center gap-1.5 text-[11px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-1">{icon}{title}</h4>
             {shown.length === 0
                 ? <p className="text-xs text-[var(--color-text-muted)] py-3">{text?.empty}</p>
@@ -157,19 +162,9 @@ export function AccountFundsFlowTab({ address, network, locale, copiedAddress, o
                     </button>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 max-w-md">
-                <div>
-                    <div className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{text?.total_received}</div>
-                    <div className={`text-base font-mono font-black ${flow.received > 0 ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>{formatXRD(flow.received, locale)} XRD</div>
-                </div>
-                <div>
-                    <div className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{text?.total_sent}</div>
-                    <div className={`text-base font-mono font-black ${flow.sent > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'}`}>{formatXRD(flow.sent, locale)} XRD</div>
-                </div>
-            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
-                <Side title={text?.received_title ?? 'Received from'} icon={<ArrowDownLeft className="size-3.5 text-[var(--color-accent)]" />} rows={flow.counterparties} side="in" network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
-                <Side title={text?.sent_title ?? 'Sent to'} icon={<ArrowUpRight className="size-3.5 text-[var(--color-danger)]" />} rows={flow.counterparties} side="out" hints={hints} network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
+                <Side title={text?.received_title ?? 'Received from'} icon={<ArrowDownLeft className="size-3.5 text-[var(--color-accent)]" />} total={flow.received} totalLabel={text?.total_received} rows={flow.counterparties} side="in" network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
+                <Side title={text?.sent_title ?? 'Sent to'} icon={<ArrowUpRight className="size-3.5 text-[var(--color-danger)]" />} total={flow.sent} totalLabel={text?.total_sent} rows={flow.counterparties} side="out" hints={hints} network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
             </div>
             {hintsLoading && <p className="text-[11px] text-[var(--color-text-muted)]">{text?.hints_loading}</p>}
             <p className="flex items-start gap-1.5 text-[11px] text-[var(--color-text-muted)]">
