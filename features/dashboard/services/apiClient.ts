@@ -257,7 +257,7 @@ export interface RankedAccount {
     validator?: string;
 }
 
-export type RankingType = 'top_accounts' | 'top_lsu' | 'access_controllers' | 'owner_unlocks';
+export type RankingType = 'top_accounts' | 'top_lsu' | 'access_controllers' | 'owner_unlocks' | 'fee_changes';
 
 /** One page of a ranking of accounts, biggest first. */
 export async function apiFetchRanking(

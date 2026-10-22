@@ -846,6 +846,7 @@
       "commission": "Commission",
       "uptime": "Uptime",
       "owner_unlocking": "Owner unlocking",
+      "fee_effective": "New commission from",
       "owner_available": "Available from",
       "kinds": {
         "component": "Component",

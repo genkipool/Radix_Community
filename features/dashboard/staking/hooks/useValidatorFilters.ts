@@ -75,6 +75,12 @@ export function useValidatorFilters({
           result = result.filter(v => v.nominalFee <= 2);
         } else if (tag === 'High Uptime') {
           result = result.filter(v => v.recentUptime >= 98.5);
+        } else if (tag === 'Fee Change') {
+          result = result.filter(v => v.hasPendingFeeChange);
+        } else if (tag === 'Closed') {
+          result = result.filter(v => !v.externalStakeAccepted);
+        } else if (tag === 'Unregistered') {
+          result = result.filter(v => !v.registered);
         } else if (tag === 'Community') {
           result = result.filter(v =>
             (v.tags ?? []).includes('Community') || (v.tags ?? []).includes('Hispanic Community'),
@@ -98,6 +104,9 @@ export function useValidatorFilters({
     // 3. Sort
     if (activeTags.includes('Low Fee') && sortMode === 'random') {
       result.sort((a, b) => a.nominalFee - b.nominalFee);
+    } else if (activeTags.includes('Fee Change') && sortMode === 'random') {
+      // The biggest rise first: that is the one to be warned of.
+      result.sort((a, b) => ((b.upcomingFee ?? b.nominalFee) - b.nominalFee) - ((a.upcomingFee ?? a.nominalFee) - a.nominalFee));
     } else {
       if (sortMode === 'newest') result.sort((a, b) => b.totalStakeXRD - a.totalStakeXRD);
       if (sortMode === 'oldest') result.sort((a, b) => a.totalStakeXRD - b.totalStakeXRD);

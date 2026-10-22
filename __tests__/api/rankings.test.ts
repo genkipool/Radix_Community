@@ -8,9 +8,9 @@ vi.mock('@/services/gateway/accessControllers', () => ({
     advanceAccessControllers: vi.fn(),
 }));
 
-const readOwnerUnlocks = vi.fn();
-vi.mock('@/services/gateway/ownerUnlocks', () => ({
-    readOwnerUnlocks: (...args: unknown[]) => readOwnerUnlocks(...args),
+const readValidatorWatch = vi.fn();
+vi.mock('@/services/gateway/validatorWatch', () => ({
+    readValidatorWatch: (...args: unknown[]) => readValidatorWatch(...args),
 }));
 
 const request = (query: string) => new NextRequest(`http://localhost/api/rankings?${query}`);
@@ -83,7 +83,10 @@ describe('GET /api/rankings', () => {
     });
 
     it('lists the validators with an owner unlock under way, paged by offset', async () => {
-        readOwnerUnlocks.mockResolvedValue(Array.from({ length: 30 }, (_, i) => ({ validator: `validator_rdx1v${i}`, unlocking: 10, parts: 1, nextEpoch: 100 + i, lastEpoch: 100 + i })));
+        readValidatorWatch.mockResolvedValue({
+            ownerUnlocks: Array.from({ length: 30 }, (_, i) => ({ validator: `validator_rdx1v${i}`, unlocking: 10, parts: 1, nextEpoch: 100 + i, lastEpoch: 100 + i })),
+            feeChanges: [],
+        });
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
 
@@ -98,8 +101,18 @@ describe('GET /api/rankings', () => {
         expect(fetchMock).not.toHaveBeenCalled(); // the service is mocked: the route asks the Gateway for nothing itself
     });
 
+    it('lists the validators with a commission change coming, from the same read', async () => {
+        readValidatorWatch.mockResolvedValue({
+            ownerUnlocks: [{ validator: 'validator_rdx1unlock', unlocking: 1, parts: 1, nextEpoch: 1, lastEpoch: 1 }],
+            feeChanges: [{ validator: 'validator_rdx1fee', current: 25, next: 100, epoch: 5 }],
+        });
+        const body = await (await GET(request('type=fee_changes'))).json() as { accounts: { address: string }[]; nextCursor?: string };
+        expect(body.accounts).toEqual([{ address: 'validator_rdx1fee' }]);
+        expect(body.nextCursor).toBeUndefined();
+    });
+
     it('answers 503 without caching when the unlock list cannot be read', async () => {
-        readOwnerUnlocks.mockRejectedValue(new Error('Gateway 500'));
+        readValidatorWatch.mockRejectedValue(new Error('Gateway 500'));
         const res = await GET(request('type=owner_unlocks'));
         expect(res.status).toBe(503);
         expect(res.headers.get('Cache-Control')).toBe('no-store');

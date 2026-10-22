@@ -7,7 +7,7 @@
 
 /* ── Validator tag filters ──────────────────────────────────── */
 export const DASHBOARD_TAGS = [
-  'All', 'Active', 'Inactive', 'Low Fee', 'High Uptime', 'Foundation', 'Community',
+  'All', 'Active', 'Inactive', 'Low Fee', 'High Uptime', 'Fee Change', 'Closed', 'Unregistered', 'Foundation', 'Community',
 ] as const;
 
 export type DashboardTag = typeof DASHBOARD_TAGS[number];

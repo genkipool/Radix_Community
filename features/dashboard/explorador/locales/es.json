@@ -846,6 +846,7 @@
       "commission": "Comisión",
       "uptime": "Uptime",
       "owner_unlocking": "Propietario desbloquea",
+      "fee_effective": "Nueva comisión desde",
       "owner_available": "Disponible desde",
       "kinds": {
         "component": "Componente",
