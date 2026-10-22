@@ -745,6 +745,7 @@
           "received_title": "Received from",
           "sent_title": "Sent to",
           "txs": "{n} movements",
+          "share_title": "Share of the column's total",
           "show_more": "Show {n} more",
           "show_less": "Show less",
           "copy_json": "Copy JSON",

@@ -83,8 +83,8 @@ describe('buildFundsFlowExport', () => {
             destinationPatternsChecked: false,
         });
         expect(file.counterparties).toEqual([
-            { address: 'account_rdx1a', received: 100, sent: 0, movements: 1, lastAt: '2026-01-01' },
-            { address: 'account_rdx1b', received: 0, sent: 40, movements: 1, lastAt: '2026-01-03' },
+            { address: 'account_rdx1a', received: 100, receivedShare: 1, sent: 0, sentShare: 0, movements: 1, lastAt: '2026-01-01' },
+            { address: 'account_rdx1b', received: 0, receivedShare: 0, sent: 40, sentShare: 1, movements: 1, lastAt: '2026-01-03' },
         ]);
     });
 

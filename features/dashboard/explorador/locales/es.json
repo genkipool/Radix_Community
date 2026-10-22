@@ -745,6 +745,7 @@
           "received_title": "Recibido de",
           "sent_title": "Enviado a",
           "txs": "{n} movimientos",
+          "share_title": "Parte del total de la columna",
           "show_more": "Mostrar {n} más",
           "show_less": "Mostrar menos",
           "copy_json": "Copiar JSON",

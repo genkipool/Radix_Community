@@ -20,8 +20,15 @@ const NOTABLE_SHARE = 0.5;
 const fill = (template: string | undefined, values: Record<string, string | number>) =>
     (template ?? '').replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ''));
 
-function Row({ row, side, max, hint, network, locale, text, copiedAddress, onCopy }: {
-    row: Counterparty; side: 'in' | 'out'; max: number; hint?: DestinationHint; network: Network; locale: string;
+/** What part of the column's total a counterparty is; a sliver is said as such rather than as 0.0 %. */
+function percentOf(amount: number, total: number, locale: string) {
+    if (total <= 0) return '';
+    const percent = (amount / total) * 100;
+    return percent < 0.1 ? `<${formatPercent(0.1, 1, locale)}` : formatPercent(percent, 1, locale);
+}
+
+function Row({ row, side, max, total, hint, network, locale, text, copiedAddress, onCopy }: {
+    row: Counterparty; side: 'in' | 'out'; max: number; total: number; hint?: DestinationHint; network: Network; locale: string;
     text: NonNullable<NonNullable<Tt['account_summary']>['funds']> | undefined; copiedAddress: string | null; onCopy: (v: string) => void;
 }) {
     const meta = useEntityData(row.address, network);
@@ -40,7 +47,10 @@ function Row({ row, side, max, hint, network, locale, text, copiedAddress, onCop
                 </span>
                 <span className="text-right shrink-0">
                     <span className="block text-sm font-mono font-black" style={{ color: tone }}>{formatXRD(amount, locale)} XRD</span>
-                    <span className="block text-[10px] text-[var(--color-text-muted)]">{fill(text?.txs, { n: row.txs })}</span>
+                    <span className="block text-[10px] text-[var(--color-text-muted)]">
+                        <span className="font-bold" title={text?.share_title}>{percentOf(amount, total, locale)}</span>
+                        {' · '}{fill(text?.txs, { n: row.txs })}
+                    </span>
                 </span>
             </div>
             <div className="mt-1.5 h-1 rounded-full bg-[var(--color-card-border)]/40 overflow-hidden" aria-hidden="true">
@@ -81,7 +91,7 @@ function Side({ title, icon, total, totalLabel, rows, side, hints, network, loca
                 : (
                     <ul>
                         {shown.map(row => (
-                            <Row key={row.address} row={row} side={side} max={max} hint={hints?.[row.address]} network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
+                            <Row key={row.address} row={row} side={side} max={max} total={total} hint={hints?.[row.address]} network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
                         ))}
                     </ul>
                 )}

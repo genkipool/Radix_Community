@@ -178,7 +178,10 @@ export function buildFundsFlowExport(
         counterparties: flow.counterparties.map(c => ({
             address: c.address,
             received: c.received,
+            /** Part of the account's total received that came from it (0–1). */
+            receivedShare: flow.received > 0 ? c.received / flow.received : 0,
             sent: c.sent,
+            sentShare: flow.sent > 0 ? c.sent / flow.sent : 0,
             movements: c.txs,
             lastAt: c.lastAt,
             ...(hints?.[c.address]
