@@ -38,13 +38,15 @@ const MAX_INPUT_PIXELS = 24_000_000;
 /** Covers the largest card at twice the pixel density; the zoom uses the original. */
 const MAX_DIMENSION = 384;
 /**
- * What may leave this route untouched, from our own origin. An SVG is a
- * document that can carry script; opened on its own it would run here. The
- * site-wide CSP in next.config.ts replaces any header set on this response, so
- * the guarantee is made by never serving one: sharp turns SVGs into WebP, and
- * if it cannot, the card falls back to its initials.
+ * What may leave this route untouched. SVG is on the list: a card shows it in
+ * an <img>, where it is a static picture and never runs script. The danger is
+ * only someone opening the URL on its own, where it would be a document on our
+ * origin — so every answer carries `Content-Disposition: attachment`, which a
+ * browser honours for a navigation and ignores for an <img>. (The site-wide CSP
+ * in next.config.ts replaces any CSP set here, so it cannot be the safeguard.)
+ * sharp normally turns SVGs into WebP before any of this matters.
  */
-const SERVABLE_AS_IS = /^image\/(png|jpe?g|gif|webp|avif|bmp|x-icon|vnd\.microsoft\.icon)\s*(;|$)/i;
+const SERVABLE_AS_IS = /^image\/(png|jpe?g|gif|webp|avif|bmp|svg\+xml|x-icon|vnd\.microsoft\.icon)\s*(;|$)/i;
 /** Encoded logos held between requests, so a cold browser cache is not a cold fetch. */
 const MEMORY_LIMIT = 200;
 
@@ -100,8 +102,9 @@ function respond({ body, type }: CachedIcon) {
             // with it this path, so this answer never becomes the wrong one.
             'Cache-Control': 'public, max-age=31536000, immutable',
             'X-Content-Type-Options': 'nosniff',
-            // Belt and braces for the original bytes (see SERVABLE_AS_IS); the
-            // site-wide CSP may well replace this one.
+            // See SERVABLE_AS_IS: opened on its own, a logo is a download, not a page.
+            'Content-Disposition': 'attachment; filename="validator-logo"',
+            // Belt and braces; the site-wide CSP may well replace this one.
             'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
         },
     });
@@ -264,8 +267,7 @@ async function serveIcon(
             icon = { body, type: 'image/webp' };
         } catch (error) {
             // Something sharp will not read — an animated format, say. The original
-            // still works, and is still worth serving with a cache header, as long
-            // as it is a picture and not a document (see SERVABLE_AS_IS).
+            // still works, and is still worth serving with a cache header.
             logger.warn({ err: error, host: target.hostname }, '[ValidatorIcon] Serving the original');
         }
     }

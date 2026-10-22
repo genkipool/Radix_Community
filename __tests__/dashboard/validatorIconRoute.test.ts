@@ -175,9 +175,19 @@ describe('the validator logo route', () => {
             expect(sent).toBeLessThan(10); // 3 MB cap: it was not read to the end
         });
 
-        it('never serves an SVG from our origin when sharp cannot turn it into a bitmap', async () => {
+        it('shows an SVG logo sharp cannot read, but as a download when opened on its own', async () => {
             noSharp();
             vi.mocked(fetch).mockResolvedValue(new Response('<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>', { headers: { 'content-type': 'image/svg+xml' } }));
+            const res = await get();
+            expect(res.status).toBe(200);
+            expect(res.headers.get('content-type')).toBe('image/svg+xml');
+            expect(res.headers.get('content-disposition')).toMatch(/^attachment/);
+            expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+        });
+
+        it('still refuses what is not a picture, whatever it calls itself', async () => {
+            noSharp();
+            vi.mocked(fetch).mockResolvedValue(new Response('<html>', { headers: { 'content-type': 'text/html' } }));
             expect((await get()).status).toBe(404);
         });
 
