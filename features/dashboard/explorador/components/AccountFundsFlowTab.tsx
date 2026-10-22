@@ -8,7 +8,7 @@ import type { Network, TranslationsT } from '@/features/dashboard/types';
 import { formatPercent, formatXRD } from '@/utils/formatters';
 import { useDestinationHints, useFundsFlow } from '../hooks/useFundsFlow';
 import { buildFundsFlowExport, type Counterparty, type DestinationHint } from '../utils/fundsFlow';
-import { AddressChip } from './SummaryCardKit';
+import { AddressChip, CopyButton } from './SummaryCardKit';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 
@@ -50,7 +50,7 @@ function Row({ row, side, max, hint, network, locale, text, copiedAddress, onCop
                 <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[var(--color-text-muted)]">
                     <Info className="size-3 shrink-0 mt-0.5" />
                     <span>
-                        {passesOn && <>{fill(text?.passes_on, { share: formatPercent(hint.share * 100, 0, locale) })}{' '}<span className="font-mono" title={hint.hub ?? undefined}>{hint.hub!.slice(0, 12)}…{hint.hub!.slice(-6)}</span>. </>}
+                        {passesOn && <>{fill(text?.passes_on, { share: formatPercent(hint.share * 100, 0, locale) })}{' '}<span className="inline-flex items-center gap-0.5 align-middle"><span className="font-mono" title={hint.hub ?? undefined}>{hint.hub!.slice(0, 12)}…{hint.hub!.slice(-6)}</span><CopyButton value={hint.hub!} copiedAddress={copiedAddress} onCopy={onCopy} title={text?.copy ?? 'Copy'} /></span>. </>}
                         {hint.kind === 'collector' && <span className="font-semibold text-[var(--color-text-main)]">{fill(text?.collector, { n: hint.hubSenders })}</span>}
                     </span>
                 </p>
