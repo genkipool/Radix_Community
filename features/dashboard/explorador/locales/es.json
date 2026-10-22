@@ -732,6 +732,26 @@
           "copy": "Copiar",
           "open_locker": "Abrir la tarjeta del locker"
         },
+        "funds": {
+          "label": "Flujo de fondos",
+          "tooltip": "De dónde vino el XRD de esta cuenta y a dónde fue, en sus últimas 300 transacciones.",
+          "loading": "Leyendo las últimas transacciones…",
+          "error": "No se pudieron leer las transacciones de la cuenta.",
+          "empty": "En este periodo no se movió XRD con otras direcciones.",
+          "window": "Últimas {n} transacciones, del {from} al {to}.",
+          "window_more": "La cuenta tiene otras más antiguas que no se incluyen.",
+          "total_received": "XRD recibido",
+          "total_sent": "XRD enviado",
+          "received_title": "Recibido de",
+          "sent_title": "Enviado a",
+          "txs": "{n} movimientos",
+          "others": "y {n} más",
+          "copy": "Copiar dirección",
+          "passes_on": "Pasa el {share} de lo que recibe a",
+          "collector": "Patrón de cartera de depósito (posible exchange): el sitio al que reenvía lo alimentan {n}+ direcciones distintas.",
+          "hints_loading": "Comprobando qué hacen con él los mayores destinos…",
+          "note": "Las contrapartes se deducen de los cambios netos de saldo de cada transacción: si hay varias al otro lado, el importe se reparte en proporción. El patrón de cartera de depósito es solo eso, un patrón: nada en el ledger dice que una dirección pertenezca a un exchange."
+        },
         "security": {
           "label": "Seguridad de la cuenta",
           "tooltip": "Quién controla esta cuenta: su clave o un Access Controller, qué nivel de seguridad tiene y qué la mejoraría.",

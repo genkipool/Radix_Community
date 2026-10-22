@@ -42,6 +42,7 @@ import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchReward
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import { AccountDepositsTab } from './AccountDepositsTab';
 import { AccountSecurityTab } from './AccountSecurityTab';
+import { AccountFundsFlowTab } from './AccountFundsFlowTab';
 import { AccountLockersTab } from './AccountLockersTab';
 import { HeldResourcesList, type FungibleItem } from './HeldResourcesList';
 const AccountStakingTab = React.lazy(() =>
@@ -60,7 +61,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'deposits' | 'security' | 'metadata' | 'configuration' | 'raw';
+export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'deposits' | 'funds' | 'security' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -129,6 +130,12 @@ export function getTabsForEntity(
             key: 'transactions',
             label: accT?.transactions_tab || 'Transactions',
             tooltip: tt?.tab_transactions_tooltip
+        });
+        // After the transactions: where the XRD came from and went.
+        base.push({
+            key: 'funds',
+            label: accT?.funds?.label || 'Funds flow',
+            tooltip: accT?.funds?.tooltip
         });
         // Just before Metadata: who else may deposit into the account.
         base.push({
@@ -526,6 +533,10 @@ export function ExpandableEntityBadge({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
+                                        )}
+
+                                        {activeTab === 'funds' && (
+                                            <AccountFundsFlowTab address={address} network={network} locale={locale ?? 'en'} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} />
                                         )}
 
                                         {activeTab === 'security' && (

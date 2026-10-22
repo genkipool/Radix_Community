@@ -17,6 +17,7 @@ import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import { AccountDepositsTab } from './AccountDepositsTab';
 import { AccountSecurityTab } from './AccountSecurityTab';
+import { AccountFundsFlowTab } from './AccountFundsFlowTab';
 import { AccountLockersTab } from './AccountLockersTab';
 import { getTabsForEntity, type EntityTab } from './ExpandableEntityBadge';
 import { AccountStakingTab } from './AccountStakingTab';
@@ -409,6 +410,10 @@ export function AccountCard({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
+                                        )}
+
+                                        {activeTab === 'funds' && (
+                                            <AccountFundsFlowTab address={address} network={network} locale={locale ?? 'en'} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} />
                                         )}
 
                                         {activeTab === 'security' && (

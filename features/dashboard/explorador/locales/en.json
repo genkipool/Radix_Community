@@ -732,6 +732,26 @@
           "copy": "Copy",
           "open_locker": "Open the locker card"
         },
+        "funds": {
+          "label": "Funds flow",
+          "tooltip": "Where this account's XRD came from and where it went, over its latest 300 transactions.",
+          "loading": "Reading the latest transactions…",
+          "error": "Could not read the account's transactions.",
+          "empty": "No XRD moved with other addresses in this period.",
+          "window": "Latest {n} transactions, from {from} to {to}.",
+          "window_more": "The account has older ones that are not included.",
+          "total_received": "XRD received",
+          "total_sent": "XRD sent",
+          "received_title": "Received from",
+          "sent_title": "Sent to",
+          "txs": "{n} movements",
+          "others": "and {n} more",
+          "copy": "Copy address",
+          "passes_on": "It passes on {share} of what it receives to",
+          "collector": "Pattern of a deposit wallet (possible exchange): the place it forwards to is fed by {n}+ different addresses.",
+          "hints_loading": "Checking what the biggest destinations do with it…",
+          "note": "Counterparties are worked out from each transaction's net balance changes: where several are on the other side, the amount is shared in proportion. The deposit-wallet pattern is only that, a pattern: nothing on the ledger says an address belongs to an exchange."
+        },
         "security": {
           "label": "Account security",
           "tooltip": "Who controls this account: its key or an Access Controller, how strong that is and what would improve it.",
