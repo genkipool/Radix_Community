@@ -845,6 +845,8 @@
       "stake": "Stake",
       "commission": "Commission",
       "uptime": "Uptime",
+      "owner_unlocking": "Owner unlocking",
+      "owner_available": "Available from",
       "kinds": {
         "component": "Component",
         "package": "Package",

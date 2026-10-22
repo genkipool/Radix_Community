@@ -88,7 +88,7 @@ interface ExplorerEntityCardProps extends AccountCardProps {
 
 /**
  * The frame every non-account entity card shares: icon, address with copy,
- * up to five headline facts, and once expanded the summary, the kind's own
+ * up to six headline facts, and once expanded the summary, the kind's own
  * tabs, metadata, configuration (role assignments) and the raw details.
  *
  * Nothing is rendered until the details are in hand. The card must never
@@ -183,7 +183,7 @@ export function ExplorerEntityCard({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
+                        <div className={`grid grid-cols-2 ${facts.length > 5 ? 'sm:grid-cols-6' : 'sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             {facts.map((fact) => (
                                 <div key={fact.label} className="min-w-0">
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate">

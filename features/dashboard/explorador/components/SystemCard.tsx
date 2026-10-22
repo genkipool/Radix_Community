@@ -4,6 +4,7 @@ import { Box } from 'lucide-react';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import { formatPercent, formatXRD, formatXRDExact } from '@/utils/formatters';
 import type { AccountCardProps } from '../types/components.types';
+import { epochDate, summarizeOwnerUnlocks, type PendingOwnerUnlock } from '../utils/ownerUnlocks';
 import { ExplorerEntityCard, entityMeta, useExplorerEntity, type EntityFact } from './ExplorerEntityCard';
 
 /** A web link that does not expand the card it sits on. */
@@ -37,13 +38,32 @@ export function SystemCard(props: AccountCardProps) {
     const details = data?.details as Record<string, unknown> | undefined;
     const validator = address.startsWith('validator_') ? validators?.validators?.find((v) => v.address === address) : null;
 
+    // An owner with LSUs in the unlock period: how many, and when the first part frees up.
+    const ledger = (data as { ledger_state?: { epoch?: number; proposer_round_timestamp?: string } } | undefined)?.ledger_state;
+    const unlock = validator && ledger?.epoch !== undefined
+        ? summarizeOwnerUnlocks((details?.state as { pending_owner_stake_unit_withdrawals?: PendingOwnerUnlock[] } | undefined)?.pending_owner_stake_unit_withdrawals, ledger.epoch)
+        : null;
+    const availableFrom = unlock && ledger?.epoch !== undefined && ledger.proposer_round_timestamp
+        ? epochDate(unlock.nextEpoch, ledger.epoch, ledger.proposer_round_timestamp)
+        : null;
+
     const facts: EntityFact[] = validator
         ? [
               { label: c?.name ?? 'Name', value: validator.name || getMeta('name') || (c?.kinds.validator ?? 'Validator'), tone: 'accent' },
               { label: c?.stake ?? 'Stake', value: `${formatXRD(validator.totalStakeXRD, locale)} XRD`, title: formatXRDExact(validator.totalStakeXRD, locale), tone: 'primary' },
               { label: c?.commission ?? 'Commission', value: formatPercent(validator.feePercent, 2, locale), tone: 'blue' },
               { label: c?.uptime ?? 'Uptime', value: formatPercent(validator.uptimePercent, 2, locale), tone: 'green' },
-              { label: c?.web ?? 'Web', value: <WebLink url={validator.website ?? ''} /> },
+              ...(unlock
+                  ? [
+                        { label: c?.owner_unlocking ?? 'Owner unlocking', value: `${formatXRD(unlock.unlocking, locale)} LSU`, title: formatXRDExact(unlock.unlocking, locale), tone: 'secondary' as const },
+                        {
+                            label: c?.owner_available ?? 'Available from',
+                            value: availableFrom ? availableFrom.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }) : `Epoch ${unlock.nextEpoch}`,
+                            title: `Epoch ${unlock.nextEpoch}`,
+                            tone: 'secondary' as const,
+                        },
+                    ]
+                  : [{ label: c?.web ?? 'Web', value: <WebLink url={validator.website ?? ''} /> }]),
           ]
         : [
               { label: c?.blueprint_name ?? 'Blueprint name', value: String(details?.blueprint_name ?? '') || getMeta('name') || '-', tone: 'accent' },

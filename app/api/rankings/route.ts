@@ -6,6 +6,7 @@ import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import { after } from 'next/server';
 import { readTopLsu, advanceTopLsu } from '@/services/gateway/rankings';
 import { readAccessControllers, advanceAccessControllers } from '@/services/gateway/accessControllers';
+import { readOwnerUnlocks } from '@/services/gateway/ownerUnlocks';
 
 /** Accounts per page of the rankings that are stored whole and paged here (LSU positions, Access Controllers). */
 const LSU_PAGE = 25;
@@ -22,7 +23,7 @@ interface HolderItem {
 }
 
 /**
- * GET /api/rankings?type=top_accounts|top_lsu|access_controllers&network=mainnet[&cursor=…]
+ * GET /api/rankings?type=top_accounts|top_lsu|access_controllers|owner_unlocks&network=mainnet[&cursor=…]
  *
  * `top_accounts`: the accounts holding the most XRD, one page at a time. The Gateway's
  * resource-holders extension already returns holders ordered by balance and
@@ -34,14 +35,38 @@ interface HolderItem {
  *
  * `access_controllers`: the accounts shielded by an Access Controller, newest first
  * (see services/gateway/accessControllers), served and paged the same way.
+ *
+ * `owner_unlocks`: the validators whose owner has LSUs in the unlock period, the
+ * one that frees up first at the top. Read from the validator list itself (see
+ * services/gateway/ownerUnlocks), so there is no scan to build.
  */
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const type = searchParams.get('type');
-    if (type !== 'top_accounts' && type !== 'top_lsu' && type !== 'access_controllers') {
+    if (type !== 'top_accounts' && type !== 'top_lsu' && type !== 'access_controllers' && type !== 'owner_unlocks') {
         return NextResponse.json({ error: 'unsupported_ranking' }, { status: 400 });
     }
     const network = validateNetwork(searchParams.get('network'));
+
+    if (type === 'owner_unlocks') {
+        const rawOffset = searchParams.get('cursor');
+        const offset = rawOffset && /^\d{1,5}$/.test(rawOffset) ? Number(rawOffset) : 0;
+        try {
+            const unlocks = await readOwnerUnlocks(network);
+            const page = unlocks.slice(offset, offset + LSU_PAGE);
+            return NextResponse.json({
+                accounts: page.map(u => ({ address: u.validator })),
+                nextCursor: offset + LSU_PAGE < unlocks.length ? String(offset + LSU_PAGE) : undefined,
+            }, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.error({ err: error, network }, 'Owner unlock ranking error: %s', message);
+            return NextResponse.json({ error: 'rankings_unavailable' }, {
+                status: 503,
+                headers: { 'Cache-Control': 'no-store', 'Retry-After': '5' },
+            });
+        }
+    }
 
     if (type === 'access_controllers') {
         const rawOffset = searchParams.get('cursor');

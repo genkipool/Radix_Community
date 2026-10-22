@@ -8,6 +8,11 @@ vi.mock('@/services/gateway/accessControllers', () => ({
     advanceAccessControllers: vi.fn(),
 }));
 
+const readOwnerUnlocks = vi.fn();
+vi.mock('@/services/gateway/ownerUnlocks', () => ({
+    readOwnerUnlocks: (...args: unknown[]) => readOwnerUnlocks(...args),
+}));
+
 const request = (query: string) => new NextRequest(`http://localhost/api/rankings?${query}`);
 
 const holder = (holder_address: string, amount: string) => ({ holder_address, amount });
@@ -75,5 +80,28 @@ describe('GET /api/rankings', () => {
         expect(second.accounts).toHaveLength(5);
         expect(second.nextCursor).toBeUndefined();
         expect(fetchMock).not.toHaveBeenCalled(); // readers never reach the Gateway
+    });
+
+    it('lists the validators with an owner unlock under way, paged by offset', async () => {
+        readOwnerUnlocks.mockResolvedValue(Array.from({ length: 30 }, (_, i) => ({ validator: `validator_rdx1v${i}`, unlocking: 10, parts: 1, nextEpoch: 100 + i, lastEpoch: 100 + i })));
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+
+        const first = await (await GET(request('type=owner_unlocks'))).json() as { accounts: { address: string }[]; nextCursor?: string };
+        expect(first.accounts).toHaveLength(25);
+        expect(first.accounts[0]).toEqual({ address: 'validator_rdx1v0' });
+        expect(first.nextCursor).toBe('25');
+
+        const second = await (await GET(request('type=owner_unlocks&cursor=25'))).json() as { accounts: unknown[]; nextCursor?: string };
+        expect(second.accounts).toHaveLength(5);
+        expect(second.nextCursor).toBeUndefined();
+        expect(fetchMock).not.toHaveBeenCalled(); // the service is mocked: the route asks the Gateway for nothing itself
+    });
+
+    it('answers 503 without caching when the unlock list cannot be read', async () => {
+        readOwnerUnlocks.mockRejectedValue(new Error('Gateway 500'));
+        const res = await GET(request('type=owner_unlocks'));
+        expect(res.status).toBe(503);
+        expect(res.headers.get('Cache-Control')).toBe('no-store');
     });
 });

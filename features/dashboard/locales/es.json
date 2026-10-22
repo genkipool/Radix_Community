@@ -54,6 +54,7 @@
     "rankings": {
       "top_lsu": "top posiciones LSU",
       "access_controllers": "Access Controller",
+      "owner_unlocks": "owner desbloquea",
       "top_accounts": "top cuentas",
       "top_tokens": "top tokens",
       "top_nfts": "top NFTs",
