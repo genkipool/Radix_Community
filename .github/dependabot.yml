@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # pnpm's minimumReleaseAge already holds back fresh releases; security
+    # updates are opened by GitHub regardless of this schedule.
+    groups:
+      next:
+        patterns: ['next', 'eslint-config-next', '@next/*']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
