@@ -19,8 +19,8 @@
  */
 
 import { blake2b } from 'blakejs';
-import { ed25519 } from '@noble/curves/ed25519';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { PublicKey, RadixEngineToolkit } from '@radixdlt/radix-engine-toolkit';
 
 export { generateRolaChallenge } from '@/features/wallet/lib/wallet-interaction';
@@ -118,8 +118,9 @@ function signatureIsValid(proof: RolaProof['proof'], messageHex: string): boolea
   if (proof.curve === 'curve25519') {
     return ed25519.verify(hexToBytes(proof.signature), message, publicKey);
   }
-  // The wallet prefixes the secp256k1 signature with its recovery byte.
-  return secp256k1.verify(hexToBytes(proof.signature.slice(2)), message, publicKey);
+  // The wallet prefixes the secp256k1 signature with its recovery byte, and
+  // signs the blake2b hash itself: no sha256 on top of it.
+  return secp256k1.verify(hexToBytes(proof.signature.slice(2)), message, publicKey, { prehash: false });
 }
 
 async function derivedAddress(proof: RolaProof, networkId: number): Promise<string> {
