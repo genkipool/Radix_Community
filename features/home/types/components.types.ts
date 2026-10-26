@@ -56,6 +56,7 @@ export interface DevShellProps {
   tab1: React.ReactNode;
   tab2: React.ReactNode;
   tab3: React.ReactNode;
+  tab4: React.ReactNode;
 }
 
 export interface InstitutionalPilotButtonProps {

@@ -1,12 +1,24 @@
 /**
  * DesarrolladoresContent — RSC
  *
- * Exports four static tab-panel components (pure HTML, zero JS).
+ * Exports five static tab-panel components (pure HTML, zero JS).
  * Rendered server-side and passed as children/props to the DesarrolladoresShell
  * client component, so they never enter the JS bundle.
  */
+import Link from 'next/link';
 import type { Dictionary } from '@/types/i18n';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  BookOpen,
+  CheckCircle2,
+  Database,
+  FileCheck2,
+  ShieldCheck,
+  TerminalSquare,
+} from 'lucide-react';
+import { CopyButton } from '@/components/ui/CopyButton';
+import { BASE_URL } from '@/lib/seo';
 import { Tab3Client } from './DevTab3Client';
 
 /* ── Tab 0: Solidity vs Scrypto ────────────────────────────── */
@@ -206,4 +218,96 @@ export function DevTab2({ t }: { t: Dictionary }) {
 export function DevTab3({ t }: { t: Dictionary }) {
   // Pasamos el diccionario al cliente para que maneje la interactividad
   return <Tab3Client tab={t.devs.tab3} />;
+}
+
+/* ── Tab 4: MCP server ───────────────────────────────────────────────────── */
+const MCP_CLIENTS = ['Claude Code', 'Claude Desktop', 'Cursor', 'VS Code', 'ChatGPT'];
+const MCP_FEATURE_ICONS = [BookOpen, Database, FileCheck2];
+
+export function DevTab4({ t, locale }: { t: Dictionary; locale: string }) {
+  const tab = t.devs.tab4;
+  const endpoint = `${BASE_URL}/api/mcp`;
+  const command = `claude mcp add --transport http radix ${endpoint}`;
+
+  return (
+    <div className="relative max-w-6xl mx-auto flex flex-col gap-10">
+
+      {/* Cabecera: identidad + acción principal */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">{tab.eyebrow}</p>
+          <h3 className="text-[var(--color-text-main)] font-bold text-2xl sm:text-3xl tracking-tight mb-3">{tab.title}</h3>
+          <p className="text-[var(--color-text-muted)] leading-relaxed">{tab.desc}</p>
+        </div>
+        <Link
+          href={`/${locale}/console/mcp`}
+          className="group shrink-0 self-start md:self-auto inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--color-primary)] text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity"
+        >
+          {tab.cta}
+          <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
+      </div>
+
+      {/* Clientes compatibles */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-[var(--color-text-muted)] mr-1">{tab.clientsLabel}</span>
+        {MCP_CLIENTS.map((client) => (
+          <span
+            key={client}
+            className="text-xs font-medium px-3 py-1 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-main)]"
+          >
+            {client}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+        {/* Terminal: misma altura que la lista */}
+        <div className="lg:col-span-3 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col rounded-2xl border border-[var(--color-card-border)] overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[var(--color-surface)] border-b border-[var(--color-card-border)]">
+              <span className="flex items-center gap-1.5 text-xs font-mono text-[var(--color-text-muted)]">
+                <TerminalSquare className="size-3.5" />
+                {tab.terminalLabel}
+              </span>
+              <CopyButton value={command} title={tab.copy} variant="minimal" size="xs" />
+            </div>
+            <div className="flex-1 flex items-center bg-[var(--code-bg)]">
+              <pre className="w-full p-6 font-mono text-sm leading-7 overflow-x-auto text-[var(--code-punct)] whitespace-pre-wrap break-all sm:whitespace-pre sm:break-normal">
+                <span className="text-[var(--code-comment)] select-none">$ </span>
+                <span className="text-[var(--code-keyword)]">claude</span> mcp add --transport http <span className="text-[var(--code-type)]">radix</span> \{'\n'}
+                {'    '}<span className="text-[var(--code-string)]">{endpoint}</span>
+              </pre>
+            </div>
+          </div>
+        </div>
+
+        {/* Qué ofrece */}
+        <ul className="lg:col-span-2 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/60 divide-y divide-[var(--color-card-border)]">
+          {tab.features.map((feature, i) => {
+            const Icon = MCP_FEATURE_ICONS[i] ?? CheckCircle2;
+            return (
+              <li key={feature.title} className="flex items-start gap-4 p-5">
+                <div className="size-10 shrink-0 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center">
+                  <Icon className="size-5" />
+                </div>
+                <div>
+                  <p className="text-[var(--color-text-main)] font-semibold text-sm mb-0.5">{feature.title}</p>
+                  <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">{feature.desc}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Garantía */}
+      <div className="flex items-center gap-3 pt-6 border-t border-[var(--color-card-border)] text-sm text-[var(--color-text-muted)]">
+        <ShieldCheck className="size-5 shrink-0 text-[var(--color-accent)]" />
+        <p>{tab.note}</p>
+      </div>
+
+    </div>
+  );
 }

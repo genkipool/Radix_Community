@@ -340,7 +340,8 @@
       "Scrypto vs Solidity",
       "Blueprints & Componentes",
       "Manifiestos de Transacción",
-      "Herramientas Dev"
+      "Herramientas Dev",
+      "Servidor MCP"
     ],
     "tab0": {
       "solLabel": "Solidity (EVM) — Vulnerable a Reentrada",
@@ -496,6 +497,30 @@
         "coreStep5": "# Comprobación de salud y llamada API",
         "coreStep6": "# Control"
       }
+    },
+    "tab4": {
+      "eyebrow": "Model Context Protocol",
+      "title": "Un servidor MCP para tu IA",
+      "desc": "Conecta Claude Code, Cursor, ChatGPT o cualquier cliente MCP a esta web: tu asistente busca en la documentación de Radix, lee el ledger y te prepara transacciones listas para firmar.",
+      "terminalLabel": "Claude Code",
+      "copy": "Copiar comando",
+      "clientsLabel": "Compatible con",
+      "features": [
+        {
+          "title": "Documentación",
+          "desc": "Busca y lee la documentación oficial de Radix."
+        },
+        {
+          "title": "Datos del ledger",
+          "desc": "Cuentas, componentes, recursos y validadores en tiempo real."
+        },
+        {
+          "title": "Manifiestos listos para firmar",
+          "desc": "Construidos y simulados para que los apruebes en tu wallet."
+        }
+      ],
+      "note": "Sin estado y sin registro. El servidor nunca firma: tú apruebas cada transacción en tu wallet.",
+      "cta": "Abrir en la consola"
     }
   },
   "ecosistema": {
