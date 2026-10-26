@@ -84,7 +84,7 @@ export default async function HomePage({ params }: HomePageProps) {
       <TheProblem t={t} />
       <Institutions t={t} />
       <Comparison t={t} />
-      <DevSection t={t} />
+      <DevSection t={t} locale={locale} />
       <Ecosystem t={t} language={language} />
       <LargeStats t={t} />
       <Wallet t={t} />

@@ -4,7 +4,7 @@
  * DesarrolladoresShell — Client Component (boundary)
  *
  * Owns only the tab index state and the tab navigation buttons.
- * The four panel children (DevTab0–3 + DevConsole) are RSC subtrees passed in
+ * The five panel children (DevTab0–4) are RSC subtrees passed in
  * as props from Desarrolladores (RSC), so they are never bundled on the client.
  */
 import { useSpeedSyncURL } from '@/hooks/useSpeedSyncURL';
@@ -15,10 +15,11 @@ const SLUGS = [
   'scrypto-vs-solidity',
   'blueprints-components',
   'transaction-manifests',
-  'dev-toolkit'
+  'dev-toolkit',
+  'mcp-server'
 ];
 
-export function DevShell({ t: _t, tabs, tab0, tab1, tab2, tab3 }: DevShellProps) {
+export function DevShell({ t: _t, tabs, tab0, tab1, tab2, tab3, tab4 }: DevShellProps) {
   const [view, setView] = useSpeedSyncURL<string>('view', SLUGS[0]);
 
   const activeTab = SLUGS.indexOf(view || SLUGS[0]);
@@ -27,7 +28,7 @@ export function DevShell({ t: _t, tabs, tab0, tab1, tab2, tab3 }: DevShellProps)
     setView(SLUGS[index]);
   };
 
-  const panels = [tab0, tab1, tab2, tab3] as const;
+  const panels = [tab0, tab1, tab2, tab3, tab4] as const;
 
   return (
     <>
