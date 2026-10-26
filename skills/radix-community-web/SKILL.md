@@ -79,6 +79,7 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"Pay these 300 people from a spreadsheet"* → `build_bulk_send_manifests {"account": "account_…", "recipients": <csv>}` → sign each batch in order. Console: https://radix-community.genkipool.com/en/console/bulk-send.
 - *"Which validator should I stake with?"* → `list_validators` → compare fee/uptime/APY → staking page https://radix-community.genkipool.com/en/console/staking.
 - *"What is this manifest going to do?"* → `explain_manifest` (plain-language steps) + `preview_transaction` (fees, balance changes).
+- *"Is account_rdx1… my old Olympia account? / What was its Olympia address?"* → `find_olympia_address {"babylonAddress": "account_rdx1…"}` (only once the account has signed a Babylon withdrawal) → `convert_olympia_address` on the rdx1… it returns for the wallet-import QR. The other way round (rdx1… → account_…) is `convert_olympia_address` alone, offline.
 - *"What's the XRD price / network status?"* → `get_xrd_price`, `get_network_status`.
 - *"Log me in / prove who I am"* → the local connector's `request_login {network, dapp_definition, origin}` (the persona signs; add `accounts: {quantity: 1, with_proof: true}` to prove an account in the same approval) → then `request_ownership_proof {identity_address, accounts}` whenever exact accounts must be proven again.
 - *"A request never showed on my phone / nothing gets through"* → `pending_requests` → `check_wallet_connection` → `connector_log`; answer or force-close the wallet, then `await_response` or `cancel_request`. Never resend a request whose failure says `retry_safe: NO` If the log shows it never got a turn or a channel, look for other connector processes on the machine (an older version, or a session started before an update) and update/restart them.
@@ -320,6 +321,13 @@ Converts a legacy Olympia address (rdx1… account or _rr1… resource) into its
 - `addressIndex` (integer; required, default: 0) — BIP44 address index the account was derived with (0 for the first account).
 - `accountName` (string; required, default: "") — Display name shown in the mobile wallet during import (max 30 chars).
 - `wordCount` (any; required, default: 12) — Seed-phrase word count of the original Olympia wallet (12, 15, 18, 21 or 24).
+
+### `find_olympia_address` — Find the Olympia address of a Babylon account
+
+Reverse of convert_olympia_address: finds the legacy Olympia address (rdx1…) behind a Babylon account. A Babylon address is a hash of the key, so this recovers the secp256k1 public key from the account's own signatures on the ledger (its last 10 withdrawals) and keeps the one that derives the address. It only works once the account has signed a Babylon transaction: "found: false" with reason "no-transactions" means no signature yet, NOT that the account is not a legacy one; "not-found" means its keys are not secp256k1 (Radix Wallet accounts use Ed25519). Read-only, reads the Gateway.
+
+- `babylonAddress` (string; required) — Babylon account address (account_rdx1… / account_tdx_2_1…)
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 
 ### `resolve_vault_address` — Resolve a vault address
 
