@@ -8,6 +8,7 @@ import { NftTransferCard } from '@/features/dashboard/explorador/components/NftT
 import { AddressDisplay } from '@/features/dashboard/explorador/components/EntityBadge';
 import { SourceBadge } from '@/features/dashboard/explorador/components/SourceBadge';
 import { ValidatorInlinePanel } from '@/features/dashboard/explorador/components/ValidatorInlinePanel';
+import { ExpandableEntityBadge } from '@/features/dashboard/explorador/components/ExpandableEntityBadge';
 import { TransferFooter } from '@/features/dashboard/explorador/components/TransferFooter';
 import { isConsensusManager } from '@/features/dashboard/hooks/useEntityData';
 import { sanitizeText } from '@/utils/sanitize';
@@ -23,7 +24,7 @@ export function AssetTransferGroup({
     actualFeePaid, tt: _tt, t,
     onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network,
     isClaim, isUnstake, isStake, validatorOps, pairedValidatorOp, pairedNftChange, columns,
-    locale, selfTransfer,
+    locale, selfTransfer, calledComponents = [], marketData, dt,
 }: AssetTransferGroupProps) {
     const tt = _tt;
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -103,6 +104,36 @@ export function AssetTransferGroup({
     const feePaidRaw = (balanceChanges.fungible_fee_balance_changes ?? [])
         .filter(f => f.type === 'FeePayment')
         .reduce((s, f) => s + Math.abs(parseFloat(f.balance_change || '0')), 0);
+
+    // No account on that side: it was minted or burned through the component the manifest called (which may
+    // call others). Its card is the same one as in Affected entities: it reads that card's cached data, no new request.
+    const byComponent = (caption: string, fallback: string) => calledComponents.length === 0
+        ? <div className="text-xs text-[var(--color-text-muted)] italic py-2">{fallback}</div>
+        : (
+            <div>
+                {/* As tall and as far from its card as the address line above an asset row. */}
+                <p className="flex items-center min-h-5 mb-2 pl-2 text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">{caption}</p>
+                <div className="space-y-2">
+                    {calledComponents.map((component) => (
+                        <ExpandableEntityBadge
+                            key={component}
+                            address={component}
+                            tt={tt}
+                            onCopy={onCopy}
+                            copiedAddress={copiedAddress}
+                            onResourceClick={onResourceClick}
+                            network={network}
+                            locale={locale}
+                            marketData={marketData}
+                            dt={dt}
+                            variant="transfer-card"
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    // Only the fee left the origin: it went to the network, not to the component.
+    const onlyFees = originActors.length > 0 && originActors.every(o => o.is_fee);
 
     return (
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden mb-4 last:mb-0">
@@ -205,7 +236,7 @@ export function AssetTransferGroup({
                                     </div>
                                 );
                             })
-                            : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_generation || 'System component generation'}</div>
+                            : byComponent(tt?.minted_by_component || 'Minted through the component', tt?.system_generation || 'System component generation')
                         }
                         {/* Orphan NFT withdrawals — skipped for claim txs (already shown inline with address above) */}
                         {(() => {
@@ -351,7 +382,9 @@ export function AssetTransferGroup({
                                 )
                                 : keptByOrigin
                                     ? <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.deposited_to_origin || 'Deposited into the origin account itself'}</div>
-                                    : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_burn || 'System component burn'}</div>
+                                    : onlyFees
+                                        ? <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_burn || 'System component burn'}</div>
+                                        : byComponent(tt?.burned_by_component || 'Burned through the component', tt?.system_burn || 'System component burn')
                         }
                         {/* Orphan NFT deposits (no matching fungible receiver) — exclude initiator addresses */}
                         {(() => {

@@ -85,6 +85,9 @@ export interface AssetTransferGroupProps {
     marketData?: MarketData | null;
     /** The same account withdraws and deposits back the asset (balance changes show nothing). */
     selfTransfer?: boolean;
+    /** Components the manifest calls: who mints or burns when no account is on that side. */
+    calledComponents?: string[];
+    dt?: Partial<DashboardDict>;
 }
 
 export interface TransferFooterProps {

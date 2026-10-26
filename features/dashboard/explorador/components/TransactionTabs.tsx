@@ -112,6 +112,8 @@ const TransactionTabs = ({
     const callsExplained = hasAssetTransfers(balanceChanges) || selfMoves.length > 0 || parsed.oracleUpdates.length > 0
         || resourceCreations.length > 0 || governanceVotes.length > 0 || !!airdropData;
     const calls = callsExplained ? [] : componentCalls(String(manifest_instructions || ''));
+    // Read from the manifest, no request: the card of the component that minted or burned, in the transfer box.
+    const calledComponents = [...new Set(componentCalls(String(manifest_instructions || '')).map((c) => c.component))];
     const stateUpdates = receipt?.state_updates as { updated_substates?: Parameters<typeof storedChanges>[0]['updated']; created_substates?: Parameters<typeof storedChanges>[0]['created'] } | undefined;
     /* ── What a validator's owner did to the validator (unlock, register, key, fee…) ── */
     const ownerActions = extractValidatorOwnerActions({
@@ -380,6 +382,7 @@ const TransactionTabs = ({
                                         formatEntity={formatEntity}
                                         readingMode={readingMode}
                                         selfTransfer
+                                        calledComponents={calledComponents}
                                         {...shared}
                                     />
                                 ));
@@ -399,6 +402,7 @@ const TransactionTabs = ({
                                     isClaim={isClaimTx}
                                     isStake={isStakeTx}
                                     validatorOps={tx.validatorOps}
+                                    calledComponents={calledComponents}
                                     {...shared}
                                 />
                             ));
