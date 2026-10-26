@@ -7,7 +7,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { PublicKey, RadixEngineToolkit } from '@radixdlt/radix-engine-toolkit';
 import {
   DEFAULT_BATCH_SIZE,

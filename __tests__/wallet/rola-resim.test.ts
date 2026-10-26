@@ -16,8 +16,9 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ed25519 } from '@noble/curves/ed25519';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { hexToBytes } from '@noble/curves/utils.js';
 import { PublicKey, RadixEngineToolkit } from '@radixdlt/radix-engine-toolkit';
 import {
   generateRolaChallenge,
@@ -75,15 +76,14 @@ function walletProof(
   challenge: string,
   origin = ORIGIN,
 ): RolaProof {
-  const message = rolaSignatureMessage(challenge, DAPP, origin);
+  const message = hexToBytes(rolaSignatureMessage(challenge, DAPP, origin));
+  const privateKey = hexToBytes(key.privateKey);
   const signature =
     key.curve === 'curve25519'
-      ? bytesToHex(ed25519.sign(message, key.privateKey))
-      : (() => {
-          const sig = secp256k1.sign(message, key.privateKey);
-          // Recovery byte first, then r ‖ s: the wallet's 65-byte format.
-          return sig.recovery.toString(16).padStart(2, '0') + sig.toCompactHex();
-        })();
+      ? bytesToHex(ed25519.sign(message, privateKey))
+      : // Recovery byte first, then r ‖ s: the wallet's 65-byte format. The
+        // message is already a hash, so no sha256 on top of it.
+        bytesToHex(secp256k1.sign(message, privateKey, { prehash: false, format: 'recovered' }));
   return { type, address, proof: { curve: key.curve, publicKey: key.publicKey, signature } };
 }
 
@@ -103,8 +103,8 @@ describe.skipIf(!RESIM)('ROLA verification on a resim ledger', () => {
   // The same secp256k1 key's virtual (preallocated) account, instantiated on-ledger.
   let virtualSecp: string;
   // An Ed25519 key — the curve the Radix Wallet uses for its accounts.
-  const edPrivate = bytesToHex(ed25519.utils.randomPrivateKey());
-  const edKey = { curve: 'curve25519' as const, privateKey: edPrivate, publicKey: bytesToHex(ed25519.getPublicKey(edPrivate)) };
+  const edPrivate = ed25519.utils.randomSecretKey();
+  const edKey = { curve: 'curve25519' as const, privateKey: bytesToHex(edPrivate), publicKey: bytesToHex(ed25519.getPublicKey(edPrivate)) };
   let virtualEd: string;
   let virtualIdentity: string;
 
