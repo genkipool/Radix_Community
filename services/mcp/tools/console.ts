@@ -34,6 +34,11 @@ import {
   staticallyValidateManifest,
 } from '@/services/ret';
 import {
+  findOlympiaAddressForBabylonAccount,
+  OlympiaReverseError,
+  type OlympiaReverseFailure,
+} from '@/services/ret/olympia-reverse';
+import {
   buildOlympiaExportPayloads,
   type MnemonicWordCount,
 } from '@/features/console/lib/olympia-export';
@@ -617,6 +622,67 @@ export const convertOlympiaAddressTool = defineMcpTool({
   },
 });
 
+const OLYMPIA_REVERSE_MISS: Record<Exclude<OlympiaReverseFailure, 'invalid-address'>, string> = {
+  'no-transactions':
+    'The account has never withdrawn funds in a Babylon transaction, so no signature exists to recover its key from. It may still be a legacy account: this cannot tell until it signs one.',
+  'not-found':
+    'None of its recent signatures is a secp256k1 key of this address. Accounts created in the Radix Wallet (Ed25519 keys) have no Olympia address.',
+};
+
+export const findOlympiaAddressTool = defineMcpTool({
+  name: 'find_olympia_address',
+  title: 'Find the Olympia address of a Babylon account',
+  description:
+    'Reverse of convert_olympia_address: finds the legacy Olympia address (rdx1…) behind a Babylon account. A Babylon address is a hash of the key, so this recovers the secp256k1 public key from the account\'s own signatures on the ledger (its last 10 withdrawals) and keeps the one that derives the address. It only works once the account has signed a Babylon transaction: "found: false" with reason "no-transactions" means no signature yet, NOT that the account is not a legacy one; "not-found" means its keys are not secp256k1 (Radix Wallet accounts use Ed25519). Read-only, reads the Gateway.',
+  category: 'console',
+  readOnly: true,
+  inputSchema: z.object({
+    babylonAddress: z
+      .string()
+      .regex(/^account_[a-z0-9_]{10,80}$/, 'Expected a Babylon account address (account_…)')
+      .describe('Babylon account address (account_rdx1… / account_tdx_2_1…)'),
+    network: networkSchema,
+  }),
+  handler: async ({ babylonAddress, network }) => {
+    try {
+      const { olympiaAddress, publicKeyHex } = await findOlympiaAddressForBabylonAccount(babylonAddress, network);
+      return {
+        text: cliRender(
+          cliBanner('Babylon → Olympia'),
+          cliKeyValues([
+            ['Babylon address', babylonAddress],
+            ['Olympia address', olympiaAddress],
+            ['Public key (secp256k1)', publicKeyHex],
+            ['Network', network],
+          ]),
+          cliNext([
+            'The key was recovered from the account\'s own signatures and derives this exact address.',
+            'To import it into the Radix Wallet, call convert_olympia_address with this Olympia address for the QR payload.',
+          ]),
+        ),
+        structured: { found: true, babylonAddress, network, olympiaAddress, publicKeyHex },
+      };
+    } catch (error) {
+      if (!(error instanceof OlympiaReverseError)) throw error;
+      if (error.reason === 'invalid-address') {
+        throw new Error(`Not a valid ${network} account address: ${babylonAddress}`);
+      }
+      return {
+        text: cliRender(
+          cliBanner('Babylon → Olympia · not resolved'),
+          cliKeyValues([
+            ['Babylon address', babylonAddress],
+            ['Network', network],
+            ['Reason', error.reason],
+          ]),
+          OLYMPIA_REVERSE_MISS[error.reason],
+        ),
+        structured: { found: false, babylonAddress, network, reason: error.reason },
+      };
+    }
+  },
+});
+
 export const resolveVaultAddressTool = defineMcpTool({
   name: 'resolve_vault_address',
   title: 'Resolve a vault address',
@@ -1030,6 +1096,7 @@ export const consoleTools = [
   explainManifestTool,
   decodeSborTool,
   convertOlympiaAddressTool,
+  findOlympiaAddressTool,
   resolveVaultAddressTool,
   inspectAddressTool,
   verifyAccountSecurityTool,
