@@ -170,6 +170,8 @@
       "total_summary": "Total Transfer Action",
       "system_generation": "System/Network token generation via Component",
       "system_burn": "System/Network token burn via Component",
+      "minted_by_component": "Minted through the component",
+      "burned_by_component": "Burned through the component",
       "deposited_to_origin": "Deposited into the origin account itself",
       "resource_creation": {
         "title_nft": "New NFT collection",

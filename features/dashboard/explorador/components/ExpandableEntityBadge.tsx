@@ -15,6 +15,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { Pill } from '@/components/ui/Pill';
+import { TokenBadge } from '@/components/ui/TokenBadge';
 import {
     useEntityData,
     getEntityType,
@@ -79,7 +80,8 @@ interface ExpandableEntityBadgeProps {
     unstakes?: { amount: number; epoch: number }[];
     currentEpoch?: number;
     accountAddress?: string;
-    variant?: 'default' | 'resource-card';
+    /** `transfer-card` matches the asset rows of a transfer box (BalanceChangeRow). */
+    variant?: 'default' | 'resource-card' | 'transfer-card';
 }
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -224,6 +226,7 @@ export function ExpandableEntityBadge({
     const entityName = meta?.name;
     const iconUrl = meta?.iconUrl;
     const isResourceCard = variant === 'resource-card';
+    const isTransferCard = variant === 'transfer-card';
     const short = clean.length > 20
         ? (isResourceCard ? `${clean.slice(0, 10)}...${clean.slice(-6)}` : `${clean.slice(0, 12)}...${clean.slice(-6)}`)
         : clean;
@@ -263,8 +266,41 @@ export function ExpandableEntityBadge({
     };
 
     return (
-        <div className={`flex flex-col ${isResourceCard ? `bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-all duration-300 overflow-hidden ${expanded ? 'ring-2 ring-[var(--color-primary)] shadow-md' : 'shadow-md hover:shadow-lg'}` : `border ${bg} overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`} rounded-xl`}>
+        <div className={`flex flex-col ${isTransferCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] overflow-hidden' : isResourceCard ? `bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-all duration-300 overflow-hidden ${expanded ? 'ring-2 ring-[var(--color-primary)] shadow-md' : 'shadow-md hover:shadow-lg'}` : `border ${bg} overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`} rounded-xl`}>
             {/* ── Clickable header ─────────────────────── */}
+            {isTransferCard ? (
+                // Same markup and spacing as an asset row (BalanceChangeRow), so both columns read alike.
+                <div
+                    // sm:min-h: an asset row's height on wide screens (its amount block sets it), less the 2px of
+                    // border it draws itself and that here sit on the card around this header.
+                    className="flex items-center justify-between gap-3 p-3 sm:p-4 sm:min-h-[80px] cursor-pointer transition-all hover:bg-[var(--color-surface-hover)] group/entity"
+                    onClick={handleToggle}
+                >
+                    <div className="flex items-center gap-3 min-w-0">
+                        {iconUrl
+                            ? <SafeImage src={iconUrl} alt={entityName || label} fallbackName={entityName || label} className="size-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0" />
+                            : <div className="size-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0">{(entityName || label).slice(0, 2).toUpperCase()}</div>}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
+                                <div className="font-bold text-sm sm:text-base text-[var(--color-text-main)] group-hover/entity:text-[var(--color-primary)] transition-colors truncate min-w-0">{entityName || label}</div>
+                                {/* Without a name the type is the title already: no badge repeating it. */}
+                                {entityName && <TokenBadge className="shrink-0">{label}</TokenBadge>}
+                                <ChevronDown className={`size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={wellKnownTip || clean}>{short}</div>
+                                <span
+                                    onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
+                                    className={`p-1 rounded-md transition-colors cursor-pointer ${copiedAddress === clean ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`}
+                                    title="Copy address"
+                                >
+                                    {copiedAddress === clean ? <Check className="size-3" /> : <Copy className="size-3" />}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
             <div
                 className={`flex-1 flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5 hover:bg-white/5'} min-h-[52px] cursor-pointer transition-colors group/entity`}
                 onClick={handleToggle}
@@ -399,6 +435,7 @@ export function ExpandableEntityBadge({
                     />
                 </div>
             </div>
+            )}
 
             {/* CSV Modal rendering outside of list interactions for clarity */}
             {isCsvModalOpen && (
@@ -424,12 +461,13 @@ export function ExpandableEntityBadge({
                         className="overflow-hidden bg-[var(--color-bg)]"
                     >
                         <div
-                            className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]"
+                            className={`${isTransferCard ? '' : 'border-t border-[var(--color-card-border)]'} bg-[var(--color-surface)]`}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityTabs-${instanceId}`} />
 
-                            <div className="px-4 py-3 min-h-[200px]">
+                            {/* A transfer card's panel has the padding of a resource's (ResourceInlinePanel). */}
+                            <div className={isTransferCard ? 'px-5 py-4' : 'px-4 py-3 min-h-[200px]'}>
                                     <>
                                         {/* ── SUMMARY ── */}
                                         {activeTab === 'summary' && (
