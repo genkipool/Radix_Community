@@ -288,9 +288,9 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                                     ]}
                                                                     activeValues={selectedAccountAddresses}
                                                                     onChange={(vals) => setSelectedAccountAddresses(vals)}
-                                                                    title={navT.filter_addresses || 'Filtrar direcciones'}
-                                                                    filterText={navT.filter || 'Filtrar'}
-                                                                    multiSelectLabel={navT.selected || 'seleccionadas'}
+                                                                    title={navT.filter_addresses}
+                                                                    filterText={navT.filter}
+                                                                    multiSelectLabel={navT.selected}
                                                                     isRelative={false}
                                                                 />
                                                             </div>

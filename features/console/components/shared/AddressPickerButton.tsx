@@ -17,6 +17,8 @@ import {
   useSelectionDraft,
 } from '@/components/ui/SelectPopup';
 import { useLanguage } from '@/context/LanguageContext';
+import pickerEn from '../../locales/addressPicker.en.json';
+import pickerEs from '../../locales/addressPicker.es.json';
 import {
   useAddressBook,
   addressCategory,
@@ -65,86 +67,8 @@ const INITIAL_ROWS = 40;
 
 const fmtAmount = (amount: string) => Number(amount).toLocaleString(undefined, { maximumFractionDigits: 4 });
 
-const TEXT = {
-  es: {
-    search: 'Buscar por nombre o dirección…',
-    empty: 'No hay direcciones de este tipo. Guárdalas en la agenda.',
-    noMatch: 'Nada coincide con la búsqueda.',
-    pick: 'Elegir dirección',
-    pickBy: {
-      account: 'Elegir cuenta',
-      resource: 'Elegir recurso',
-      validator: 'Elegir validador',
-      pool: 'Elegir pool',
-      locker: 'Elegir locker',
-      component: 'Elegir componente',
-      package: 'Elegir paquete',
-    } as Partial<Record<AddressCategory, string>>,
-    loading: 'Buscando…',
-    more: 'Hay {count} más: usa el buscador.',
-    typedLabel: 'Usar esta dirección',
-    fee: 'Comisión',
-    add: 'Añadir',
-    addCount: 'Añadir ({count})',
-    close: 'Cerrar',
-    ownBadge: 'Tienes su insignia',
-    tabs: {
-      all: 'Todas',
-      allResources: 'Todos',
-      tokens: 'Tokens',
-      nfts: 'NFTs',
-      wallet: 'Tu billetera',
-      myValidators: 'Tuyos',
-      agenda: 'Agenda',
-      mine: 'Usados por ti',
-      ociswap: 'Ociswap',
-      defiplaza: 'DefiPlaza',
-      reddicks: 'Reddicks',
-      network: 'Actividad reciente',
-      validators: 'Validadores',
-    },
-    unnamed: { pool: 'Pool sin nombre', locker: 'Locker sin nombre', resource: 'Recurso sin nombre', other: 'Sin nombre' },
-  },
-  en: {
-    search: 'Search by name or address…',
-    empty: 'No addresses of this type. Save some in the address book.',
-    noMatch: 'Nothing matches the search.',
-    pick: 'Pick address',
-    pickBy: {
-      account: 'Pick account',
-      resource: 'Pick resource',
-      validator: 'Pick validator',
-      pool: 'Pick pool',
-      locker: 'Pick locker',
-      component: 'Pick component',
-      package: 'Pick package',
-    } as Partial<Record<AddressCategory, string>>,
-    loading: 'Searching…',
-    more: '{count} more: use the search.',
-    typedLabel: 'Use this address',
-    fee: 'Fee',
-    add: 'Add',
-    addCount: 'Add ({count})',
-    close: 'Close',
-    ownBadge: 'You hold its badge',
-    tabs: {
-      all: 'All',
-      allResources: 'All',
-      tokens: 'Tokens',
-      nfts: 'NFTs',
-      wallet: 'Your wallet',
-      myValidators: 'Yours',
-      agenda: 'Address book',
-      mine: 'Used by you',
-      ociswap: 'Ociswap',
-      defiplaza: 'DefiPlaza',
-      reddicks: 'Reddicks',
-      network: 'Recent activity',
-      validators: 'Validators',
-    },
-    unnamed: { pool: 'Unnamed pool', locker: 'Unnamed locker', resource: 'Unnamed resource', other: 'Unnamed' },
-  },
-};
+/** Every language at once: the popup is as wide as its tabs need in the widest one. */
+const TEXT = { es: pickerEs, en: pickerEn } as const satisfies Record<string, typeof pickerEn>;
 
 const SOURCE_ICON: Record<Source, ReactNode> = {
   wallet: <Wallet className="size-3.5 text-[var(--color-primary)]" />,
@@ -208,9 +132,9 @@ export function AddressPickerButton({
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
-  const L = language === 'es' ? TEXT.es : TEXT.en;
+  const L = TEXT[language] ?? TEXT.en;
   // Named after what it picks when it picks one kind only.
-  const pickTitle = (categories.length === 1 && L.pickBy[categories[0]]) || L.pick;
+  const pickTitle = (categories.length === 1 && (L.pickBy as Partial<Record<AddressCategory, string>>)[categories[0]]) || L.pick;
 
   const accepts = (c: AddressCategory) => categories.includes(c);
   const ledgerKinds = LEDGER_KINDS.filter((k) => accepts(k));
@@ -374,7 +298,7 @@ export function AddressPickerButton({
   // keeps the size; past MAX_WIDTH they wrap onto another line.
   const popupWidth =
     counts.length > 1
-      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...[TEXT.es, TEXT.en].map((lang) => selectPopupTabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count})`)))))
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...Object.values(TEXT).map((lang) => selectPopupTabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count})`)))))
       : MIN_WIDTH;
   const { style: popupStyle, direction } = layoutFor(popupWidth);
 
@@ -415,11 +339,16 @@ export function AddressPickerButton({
       const dropping = draft.draft.includes(address) && selected.includes(address);
       draft.toggle(address);
       if (dropping) onConfirm?.(selected.filter((a) => a !== address));
-      if (address === typed) setQuery('');
       return;
     }
     onSelect?.(address);
     closePopup();
+  };
+
+  // The search text stays after a pick; once it is cleared, everything picked so far goes on top.
+  const search = (value: string) => {
+    setQuery(value);
+    if (multi && !value.trim()) draft.repin();
   };
 
   const confirm = () => {
@@ -468,7 +397,7 @@ export function AddressPickerButton({
                     />
                   ) : undefined
                 }
-                search={{ value: query, onChange: setQuery, placeholder: L.search, autoFocus: true, onEnter: multi ? confirm : undefined }}
+                search={{ value: query, onChange: search, placeholder: L.search, clearLabel: L.clearSearch, autoFocus: true, onEnter: multi ? confirm : undefined }}
                 footer={
                   multi
                     ? { label: draft.draft.length ? L.addCount.replace('{count}', String(draft.draft.length)) : L.add, onClick: confirm }

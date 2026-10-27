@@ -27,6 +27,8 @@ import { TextField, TextAreaField, AddressField } from '../shared/fields';
 import { ManifestCode } from '../shared/ManifestCode';
 import { SimulateResultCard } from '../shared/SimulatePanel';
 import { TxResultBanner } from '../shared/TxResultBanner';
+import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
+import { consoleQueryParam } from '../../lib/console-query';
 
 /* ─── Manifest assembly ───────────────────────────────────────────────────── */
 
@@ -243,8 +245,12 @@ export default function ComponentPanelTool({ t }: ConsoleToolProps) {
   const labels = t.componentPanel;
   const { isLoading: walletLoading, accounts } = useRadixWallet();
 
-  const [addressInput, setAddressInput] = useState('');
-  const [loadedAddress, setLoadedAddress] = useState<string | null>(null);
+  // `?component=…` (the component info card links here) opens with it loaded.
+  const [linked] = useConsoleQueryState(() => consoleQueryParam('component') ?? '', '');
+  const [typedAddress, setAddressInput] = useState<string | null>(null);
+  const addressInput = typedAddress ?? linked;
+  const [chosenAddress, setLoadedAddress] = useState<string | null>(null);
+  const loadedAddress = chosenAddress ?? (linked || null);
   const { data: blueprint, isFetching, isError } = useComponentBlueprint(loadedAddress);
 
   const [proofAccount, setProofAccount] = useState<string | null>(null);

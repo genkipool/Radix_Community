@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 
-import { useLanguage } from '@/context/LanguageContext';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { isNonFungibleResource } from '../../lib/bulk-send';
 import { AddressField, TextField } from '../shared/fields';
+import { useConsoleDictionary } from '../../hooks/useConsoleDictionary';
 
 interface Row {
   id: number;
@@ -42,26 +42,6 @@ const toCsv = (rows: Row[]) =>
 /** Above this many rows only the first ones are drawn until asked: a holder split can be thousands. */
 const VISIBLE_ROWS = 50;
 
-const TEXT = {
-  es: {
-    account: 'account_rdx1…',
-    resource: 'Recurso por defecto',
-    value: 'Cantidad o #id#',
-    add: 'Añadir destinatario',
-    remove: 'Quitar destinatario',
-    showAll: 'Mostrar los {count} restantes',
-    noToken: 'token?',
-  },
-  en: {
-    account: 'account_rdx1…',
-    resource: 'Default resource',
-    value: 'Amount or #id#',
-    add: 'Add recipient',
-    remove: 'Remove recipient',
-    showAll: 'Show the remaining {count}',
-    noToken: 'token?',
-  },
-};
 
 interface RecipientRowsProps {
   csv: string;
@@ -80,8 +60,7 @@ interface RecipientRowsProps {
  * Row numbers match the "line N" of the list's error messages.
  */
 export function RecipientRows({ csv, onCsvChange, defaultResource = '', disabled }: RecipientRowsProps) {
-  const { language } = useLanguage();
-  const L = language === 'es' ? TEXT.es : TEXT.en;
+  const L = useConsoleDictionary().recipientRows;
   const [rows, setRows] = useState<Row[]>(() => toRows(csv));
   const [emitted, setEmitted] = useState(csv);
   const [showAll, setShowAll] = useState(false);

@@ -48,7 +48,8 @@
       "gamesTitle": "Radix Games",
       "gamesSubtitle": "Play · Compete · Win XRD",
       "games": "GAMES",
-      "radix": "RADIX"
+      "radix": "RADIX",
+      "ledger": "LEDGER"
     },
     "categories": {
       "arcade": "Arcade",

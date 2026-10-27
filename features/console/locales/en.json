@@ -6,6 +6,55 @@
     }
   },
   "console": {
+    "permissions": {
+      "title": "Permissions",
+      "hint": "Every role of the entity, grouped by module: who can do each thing and whether that can change.",
+      "fixed": "Fixed: nobody can change it",
+      "show": "Show the {count} roles",
+      "hide": "Hide the roles",
+      "modules": {
+        "Owner": "Owner",
+        "Main": "Main",
+        "Metadata": "Metadata",
+        "Royalty": "Royalties"
+      },
+      "options": {
+        "owner": "Owner",
+        "allowAll": "Allow all",
+        "denyAll": "Deny all",
+        "badge": "Badge",
+        "component": "Component",
+        "package": "Package",
+        "other": "Composite rule"
+      },
+      "optionHints": {
+        "owner": "Decided by the owner role.",
+        "allowAll": "Anyone can do it, with no restriction.",
+        "denyAll": "Nobody can do it: it is disabled.",
+        "badge": "Only whoever presents this badge.",
+        "component": "Only calls coming from this component (a smart contract).",
+        "package": "Only the components of this package.",
+        "other": "A rule with several conditions; open the entity in the explorer for the details."
+      },
+      "roleHints": {
+        "owner": "The owner role: every other role that says “Owner” belongs to it.",
+        "pool_manager_role": "Who can contribute liquidity and move reserves in or out of the pool.",
+        "storer": "Who can store resources in the locker for other accounts to claim.",
+        "storer_updater": "Who can later change the storer rule.",
+        "recoverer": "Who can take back from the locker what nobody has claimed.",
+        "recoverer_updater": "Who can later change the recoverer rule.",
+        "metadata_setter": "Who can change the metadata: name, description, icon, website…",
+        "metadata_setter_updater": "Who can later change the metadata_setter rule.",
+        "metadata_locker": "Who can lock a metadata entry so it never changes again.",
+        "metadata_locker_updater": "Who can later change the metadata_locker rule.",
+        "royalty_setter": "Who can set the royalties charged for calling its methods.",
+        "royalty_setter_updater": "Who can later change the royalty_setter rule.",
+        "royalty_locker": "Who can lock the royalties so they never change again.",
+        "royalty_locker_updater": "Who can later change the royalty_locker rule.",
+        "royalty_claimer": "Who can claim the accumulated royalties.",
+        "royalty_claimer_updater": "Who can later change the royalty_claimer rule."
+      }
+    },
     "heroTitle": "Console",
     "heroDescription": "The developer console for the Radix Network. Send tokens and NFTs, create fungible and non-fungible resources, deploy Scrypto packages, send raw transaction manifests, configure on-ledger metadata and convert Olympia addresses. Connect your wallet to start building.",
     "cta_connect_wallet": "Connect your wallet",
@@ -639,6 +688,58 @@
               "field": "Transaction manifest",
               "type": "textarea",
               "value": "CALL_METHOD Address(\"account_...\") \"withdraw\" ...;"
+            }
+          ]
+        }
+      },
+      "component-info": {
+        "title": "Component info",
+        "description": "A component's card: who controls it, what can change, what it charges and whether it is safe.",
+        "guide": {
+          "guideTitle": "Guide: component info",
+          "guideDescription": "A read-only view of a component (a smart contract): its profile, its package and blueprint, who owns it, its royalties, all its roles and a security analysis. Nothing is signed.",
+          "guideSteps": [
+            "1. Components: paste one or several component_… addresses, or pick them with the + button. Each one gets its own card.",
+            "2. Read the security summary, and unfold the full analysis for the details.",
+            "3. See in Permissions who can do each thing and whether that can change.",
+            "4. To call its methods, open it in the component panel."
+          ],
+          "fields": [
+            {
+              "label": "Component",
+              "description": "The component's address. You can paste several.",
+              "example": "component_rdx1…"
+            },
+            {
+              "label": "Security",
+              "description": "Who controls the component, whether a dApp claims it, what the issuers of the tokens it holds can do and which entities it controls.",
+              "example": "Managed by Ociswap (verified dApp)"
+            },
+            {
+              "label": "Permissions",
+              "description": "All its roles, grouped by module, with who holds them and whether they can change.",
+              "example": "metadata_setter · Owner"
+            }
+          ],
+          "example": [
+            {
+              "field": "Component",
+              "type": "input",
+              "value": "component_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Blueprint",
+              "definition": "The code template the component is made from. It lives in a package."
+            },
+            {
+              "term": "Royalties",
+              "definition": "What the component or its package charge for each call to its methods."
+            },
+            {
+              "term": "Verified dApp",
+              "definition": "The component points at a dApp and the dApp claims it: each one vouches for the other."
             }
           ]
         }
@@ -2539,7 +2640,8 @@
         "Pending": "The transaction has not been confirmed on the ledger yet. Check it in your wallet before trying again.",
         "Unknown": "The transaction could not be confirmed on the ledger.",
         "not_committed": "The transaction was not confirmed on the ledger, so nothing was recorded."
-      }
+      },
+      "otherNetworkField": "This address is on {other} and you are on {active}. Switch networks or use a {active} address."
     },
     "createToken": {
       "depositAccount": "Deposit initial supply to account",
@@ -2591,6 +2693,7 @@
       "invalidSupply": "Must be a positive number",
       "invalidDivisibility": "Must be an integer between 0 and 18",
       "invalidUrl": "Must start with https://",
+      "invalidMetadata": "Please check your custom metadata",
       "showManifest": "Show manifest",
       "hideManifest": "Hide manifest",
       "optionHints": {
@@ -4524,6 +4627,40 @@
       "exampleTag": "e.g."
     },
     "pool": {
+      "security": {
+        "title": "Security",
+        "summaryOk": "We see no risks in this pool's permissions.",
+        "disclaimer": "This checks the permissions and who controls the pool, not the code of the contracts.",
+        "show": "Show the full analysis ({count})",
+        "hide": "Hide the analysis",
+        "loading": "Analysing the pool…",
+        "unnamedDapp": "a dApp",
+        "findings": {
+          "drainable": "Anyone can drain this pool: its manager role is AllowAll.",
+          "xrdBadge": "The manager badge is XRD: any account holding XRD can drain this pool.",
+          "impersonation": "{token} is called “{symbol}” but is not the {symbol} traded on the DEXes: it may be an imitation. The genuine one is:",
+          "badgeMintable": "The manager badge can still be minted: whoever can mint it can become a manager and move the reserves.",
+          "badgeSupply": "There are {supply} units of the manager badge: every account holding one can contribute and move the reserves.",
+          "managerMoves": "The manager took reserves out or put them in without pool units in {count} of the latest transactions (the last one {date}).",
+          "reserveRecallable": "The issuer of {token} can recall it from any vault, the pool's reserves included.",
+          "reserveFreezable": "The issuer of {token} can freeze it, the pool's reserves included: it could not be taken out or redeemed.",
+          "reserveWithdrawRestricted": "Withdrawing {token} needs, or may come to need, its issuer's permission: you might not get it out when redeeming your units.",
+          "reserveDepositRestricted": "Depositing {token} needs, or may come to need, its issuer's permission.",
+          "reserveMintable": "The issuer of {token} can mint more: its supply can grow.",
+          "reserveRenamable": "The issuer of {token} can change its name, symbol or icon.",
+          "controllerAnyone": "Anyone can act as the owner of the component that manages the pool.",
+          "controllerBadge": "The component that manages the pool is controlled by this badge:",
+          "controllerComponent": "The component that manages the pool is controlled by another component.",
+          "controllerNobody": "Nobody can change the component that manages the pool: its owner is “Deny all”.",
+          "managerVerified": "Managed by {name}: the component and the dApp claim each other (verified dApp).",
+          "managerUnverified": "The component that manages it is not linked to any verified dApp.",
+          "profileChangeable": "The owner can change the pool's name or icon.",
+          "profileLocked": "The pool's name and icon cannot be changed.",
+          "unitChangeable": "The owner can change the pool unit's name, symbol or icon.",
+          "concentration": "A single account holds {share} % of the pool units.",
+          "rolesFixed": "The manager role is fixed: nobody can hand it to another badge or component."
+        }
+      },
       "contextTitle": "Account and pool",
       "accountLabel": "Account",
       "poolLabel": "Pool",
@@ -4738,10 +4875,6 @@
         "safetyDrainable": "Anyone can drain this pool: its manager role is AllowAll. If you hold units, redeem them now.",
         "safetyBadge": "Only the holder of the manager badge can contribute and move reserves.",
         "badgeRiskXrd": "The manager badge is XRD: any account holding XRD can drain this pool. If you hold units, redeem them now.",
-        "badgeRiskMintable": "The manager badge can still be minted: whoever can mint it can become a manager and move the reserves.",
-        "badgeRiskSupply": "There are {supply} units of the manager badge: every account holding one can contribute and move the reserves.",
-        "reserveRecallable": "The issuer of {token} can recall it from the pool's reserves.",
-        "reserveFreezable": "The issuer of {token} can freeze it in the pool's reserves: it could not be taken out or redeemed.",
         "safetyOther": "The manager role is not a plain badge; check the rule above.",
         "ownerUpdatable": "The owner can change the metadata and its own rules.",
         "ownerFixed": "The owner rule is fixed.",
@@ -5042,6 +5175,97 @@
     "signRequestOg": {
       "title": "You are invited to sign",
       "subtitle": "A document is waiting for your signature on Radix"
+    },
+    "nftIdPicker": {
+      "pick": "Pick NFT",
+      "any": "Any of the collection",
+      "anyHint": "Any NFT of this resource will do",
+      "search": "Search id…",
+      "clearSearch": "Clear the search",
+      "loading": "Loading the NFTs…",
+      "empty": "This collection has no NFTs.",
+      "noMatch": "No id matches.",
+      "more": "Only the first {count} are listed: type the id if it is missing.",
+      "close": "Close"
+    },
+    "multiAddressSelect": {
+      "hint": "Paste an address or press + to pick several.",
+      "full": "{max} are already selected: remove one to add more.",
+      "remove": "Remove"
+    },
+    "recipientRows": {
+      "account": "account_rdx1…",
+      "resource": "Default resource",
+      "value": "Amount or #id#",
+      "add": "Add recipient",
+      "remove": "Remove recipient",
+      "showAll": "Show the remaining {count}",
+      "noToken": "token?"
+    },
+    "componentInfo": {
+      "contextTitle": "Components",
+      "componentLabel": "Component",
+      "placeholder": "component_rdx1…",
+      "notAComponent": "That address is not a component.",
+      "remove": "Remove this component",
+      "unnamed": "Unnamed component",
+      "blueprintLabel": "Blueprint",
+      "packageLabel": "Package",
+      "packageNote": "A package's code cannot change once published.",
+      "packageOwnerLabel": "Package owner",
+      "ownerLabel": "Owner",
+      "ownerFixed": "Fixed: cannot be changed",
+      "ownerUpdatable": "The owner can change its own rule.",
+      "royaltiesLabel": "Royalties",
+      "royaltiesOff": "Charges no royalties",
+      "royaltiesOn": "{count} methods charge royalties",
+      "royaltiesOnOne": "1 method charges royalties",
+      "createdLabel": "Created",
+      "lastActivityLabel": "Last activity",
+      "holdsLabel": "Holds",
+      "holds": "{tokens} tokens and {nfts} NFT collections",
+      "holdsNothing": "Nothing",
+      "goPanel": "Open in the component panel",
+      "goExplorer": "View in the explorer",
+      "callerHints": {
+        "component": "Only that component's calls can do it.",
+        "package": "Only that package's components can do it."
+      },
+      "security": {
+        "title": "Security",
+        "summaryOk": "We see no risks in this component's permissions.",
+        "disclaimer": "This checks the permissions and who controls the component, not its code.",
+        "show": "Show the full analysis ({count})",
+        "hide": "Hide the analysis",
+        "loading": "Analysing the component…",
+        "unnamedDapp": "a dApp",
+        "findings": {
+          "ownerAnyone": "Anyone can act as the owner: change its metadata, royalties and roles.",
+          "ownerXrd": "The owner badge is XRD: any account holding XRD can act as the owner.",
+          "ownerBadgeMintable": "The owner badge can still be minted: whoever can mint it can become the owner.",
+          "ownerBadgeSupply": "There are {supply} units of the owner badge: every account holding one is an owner.",
+          "ownerBadge": "Its owner is whoever holds this badge:",
+          "ownerComponent": "Its owner is another component: only its calls can change it.",
+          "ownerNobody": "Nobody can act as the owner: its role is “Deny all”.",
+          "roleAnyone": "Anyone holds the {role} role: what that role allows is open to everyone.",
+          "holdsRecallable": "It holds {token}, which its issuer can recall from its vaults.",
+          "holdsFreezable": "It holds {token}, which its issuer can freeze in its vaults.",
+          "royaltiesOn": "It charges royalties on {methods} methods.",
+          "royaltiesOnOne": "It charges royalties on 1 method.",
+          "royaltiesChangeable": "Whoever holds the royalty_setter role can change its royalties.",
+          "packageRoyalties": "Its package charges royalties on {blueprints} blueprints.",
+          "packageRoyaltiesOne": "Its package charges royalties on 1 blueprint.",
+          "verified": "Managed by {name}: the component and the dApp claim each other (verified dApp).",
+          "unverified": "It is not linked to any verified dApp.",
+          "metadataChangeable": "The owner can change its name or icon.",
+          "metadataLocked": "Its name and icon cannot be changed.",
+          "controls": "It controls these entities, created with it:",
+          "young": "It was created {days} days ago: it is new on the network.",
+          "youngOne": "It was created 1 day ago: it is very new on the network.",
+          "youngToday": "It was created less than a day ago: it is very new on the network.",
+          "packageImmutable": "Its code is in a package that cannot be changed."
+        }
+      }
     }
   }
 }

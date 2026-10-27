@@ -30,6 +30,7 @@ export const CONSOLE_TOOL_SLUGS = [
   'build-manifest',
   'deploy-package',
   'transaction-manifest',
+  'component-info',
   'component-panel',
   'configure-metadata',
   'convert-olympia-address',

@@ -255,6 +255,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '139,92,246',
     requiresWallet: true,
   },
+  'component-info': {
+    slug: 'component-info',
+    icon: <Info className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '6,182,212',
+    requiresWallet: true,
+    wide: true,
+  },
   'component-panel': {
     slug: 'component-panel',
     icon: <LayoutDashboard className="size-5" />,
@@ -438,7 +446,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'deploy',
     icon: <Rocket className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
+    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-info', 'component-panel'],
   },
   {
     // Radix Seal: the self-custody suite (sign, encrypt, chat) that all share

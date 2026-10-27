@@ -258,10 +258,12 @@ interface RuleSummaryProps {
   callerHints?: { component: string; package: string };
   /** The component or package behind a caller rule, already rendered (an AddressLine). */
   caller?: ReactNode;
+  /** Renders a badge's address under its name (an AddressLine); without it only the name shows. */
+  address?: (address: string) => ReactNode;
 }
 
 /** Who a role belongs to, in words: anyone, nobody, a badge (and whether you hold it), or a contract. */
-export function RuleSummary({ t, rule, badgeName, held, note, callerHints, caller: callerAddress }: RuleSummaryProps) {
+export function RuleSummary({ t, rule, badgeName, held, note, callerHints, caller: callerAddress, address }: RuleSummaryProps) {
   const labels = t.pool;
   if (rule.type === 'resource' || rule.type === 'nonFungible') {
     // Engine caller badges are not something a person holds: say who acts instead.
@@ -296,6 +298,7 @@ export function RuleSummary({ t, rule, badgeName, held, note, callerHints, calle
           </span>
         )}
       </span>
+      {isBadge && address?.(rule.resource)}
       {rule.type === 'nonFungible' && <Sub>{labels.rule.nonFungible.replace('{id}', shortId(rule.localId))}</Sub>}
       {note && <Sub>{note}</Sub>}
     </>

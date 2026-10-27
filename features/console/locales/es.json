@@ -6,6 +6,55 @@
     }
   },
   "console": {
+    "permissions": {
+      "title": "Permisos",
+      "hint": "Todos los roles de la entidad, agrupados por módulo: quién puede hacer cada cosa y si eso se puede cambiar.",
+      "fixed": "Fijo: nadie puede cambiarlo",
+      "show": "Ver los {count} roles",
+      "hide": "Ocultar los roles",
+      "modules": {
+        "Owner": "Propietario",
+        "Main": "Principal",
+        "Metadata": "Metadatos",
+        "Royalty": "Royalties"
+      },
+      "options": {
+        "owner": "Propietario",
+        "allowAll": "Permitir a todos",
+        "denyAll": "Denegar a todos",
+        "badge": "Insignia",
+        "component": "Componente",
+        "package": "Paquete",
+        "other": "Regla compuesta"
+      },
+      "optionHints": {
+        "owner": "Lo decide el rol de propietario.",
+        "allowAll": "Cualquiera puede hacerlo, sin restricciones.",
+        "denyAll": "Nadie puede hacerlo: queda deshabilitado.",
+        "badge": "Solo quien presente esta insignia.",
+        "component": "Solo las llamadas que vienen de este componente (un contrato inteligente).",
+        "package": "Solo los componentes de este paquete.",
+        "other": "Una regla con varias condiciones; mira la entidad en el explorador para ver el detalle."
+      },
+      "roleHints": {
+        "owner": "El rol de propietario: los demás roles que dicen «Propietario» le pertenecen.",
+        "pool_manager_role": "Quién puede aportar liquidez y meter o sacar reservas del pool.",
+        "storer": "Quién puede guardar recursos en el locker para que otras cuentas los reclamen.",
+        "storer_updater": "Quién puede cambiar más adelante la regla de storer.",
+        "recoverer": "Quién puede recuperar del locker lo que nadie ha reclamado.",
+        "recoverer_updater": "Quién puede cambiar más adelante la regla de recoverer.",
+        "metadata_setter": "Quién puede cambiar los metadatos: nombre, descripción, icono, web…",
+        "metadata_setter_updater": "Quién puede cambiar más adelante la regla de metadata_setter.",
+        "metadata_locker": "Quién puede bloquear un metadato para que no se cambie nunca más.",
+        "metadata_locker_updater": "Quién puede cambiar más adelante la regla de metadata_locker.",
+        "royalty_setter": "Quién puede fijar los royalties que se cobran por llamar a sus métodos.",
+        "royalty_setter_updater": "Quién puede cambiar más adelante la regla de royalty_setter.",
+        "royalty_locker": "Quién puede bloquear los royalties para que no cambien nunca más.",
+        "royalty_locker_updater": "Quién puede cambiar más adelante la regla de royalty_locker.",
+        "royalty_claimer": "Quién puede cobrar los royalties acumulados.",
+        "royalty_claimer_updater": "Quién puede cambiar más adelante la regla de royalty_claimer."
+      }
+    },
     "heroTitle": "Consola",
     "heroDescription": "La consola para desarrolladores de la Red Radix. Envía tokens y NFTs, crea recursos fungibles y no fungibles, despliega paquetes Scrypto, envía manifiestos de transacción, configura metadatos on-ledger y convierte direcciones Olympia. Conecta tu billetera para empezar a construir.",
     "cta_connect_wallet": "Conecta tu billetera",
@@ -639,6 +688,58 @@
               "field": "Manifiesto de transacción",
               "type": "textarea",
               "value": "CALL_METHOD Address(\"account_...\") \"withdraw\" ...;"
+            }
+          ]
+        }
+      },
+      "component-info": {
+        "title": "Información del componente",
+        "description": "Ficha de un componente: quién lo controla, qué puede cambiar, qué cobra y si es seguro.",
+        "guide": {
+          "guideTitle": "Guía: información del componente",
+          "guideDescription": "Una vista de solo lectura de un componente (un contrato inteligente): su perfil, su paquete y blueprint, quién es su propietario, sus royalties, todos sus roles y un análisis de seguridad. No se firma nada.",
+          "guideSteps": [
+            "1. Componentes: pega una o varias direcciones component_… o elígelas con el botón +. Cada una sale en su propia ficha.",
+            "2. Revisa el resumen de seguridad y despliega el análisis completo si quieres el detalle.",
+            "3. Mira en Permisos quién puede hacer cada cosa y si eso puede cambiar.",
+            "4. Para llamar a sus métodos, ábrelo en el panel de componentes."
+          ],
+          "fields": [
+            {
+              "label": "Componente",
+              "description": "La dirección del componente. Puedes pegar varias.",
+              "example": "component_rdx1…"
+            },
+            {
+              "label": "Seguridad",
+              "description": "Quién controla el componente, si una dApp lo reconoce, qué pueden hacer los emisores de los tokens que guarda y qué entidades controla.",
+              "example": "Lo gestiona Ociswap (dApp verificada)"
+            },
+            {
+              "label": "Permisos",
+              "description": "Todos sus roles, agrupados por módulo, con quién los tiene y si se pueden cambiar.",
+              "example": "metadata_setter · Propietario"
+            }
+          ],
+          "example": [
+            {
+              "field": "Componente",
+              "type": "input",
+              "value": "component_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Blueprint",
+              "definition": "La plantilla de código de la que se crea el componente. Vive en un paquete."
+            },
+            {
+              "term": "Royalties",
+              "definition": "Lo que el componente o su paquete cobran por cada llamada a sus métodos."
+            },
+            {
+              "term": "dApp verificada",
+              "definition": "El componente apunta a una dApp y la dApp lo reclama como suyo: los dos se reconocen."
             }
           ]
         }
@@ -2539,7 +2640,8 @@
         "Pending": "La transacción todavía no está confirmada en el ledger. Compruébala en tu wallet antes de volver a intentarlo.",
         "Unknown": "No se pudo confirmar la transacción en el ledger.",
         "not_committed": "La transacción no se confirmó en el ledger, así que no se registró nada."
-      }
+      },
+      "otherNetworkField": "Esta dirección es de {other} y estás en {active}. Cambia de red o usa una dirección de {active}."
     },
     "createToken": {
       "depositAccount": "Depositar el suministro inicial en la cuenta",
@@ -4525,6 +4627,40 @@
       "exampleTag": "Ej."
     },
     "pool": {
+      "security": {
+        "title": "Seguridad",
+        "summaryOk": "No vemos riesgos en los permisos de este pool.",
+        "disclaimer": "Se comprueban los permisos y quién controla el pool, no el código de los contratos.",
+        "show": "Ver el análisis completo ({count})",
+        "hide": "Ocultar el análisis",
+        "loading": "Analizando el pool…",
+        "unnamedDapp": "una dApp",
+        "findings": {
+          "drainable": "Cualquiera puede vaciar este pool: su rol de gestor es AllowAll.",
+          "xrdBadge": "La insignia de gestor es XRD: cualquier cuenta con XRD puede vaciar este pool.",
+          "impersonation": "{token} se llama «{symbol}», pero no es el {symbol} que se negocia en los DEX: puede ser una imitación. El auténtico es este:",
+          "badgeMintable": "La insignia de gestor todavía se puede acuñar: quien pueda acuñarla puede convertirse en gestor y mover las reservas.",
+          "badgeSupply": "Hay {supply} unidades de la insignia de gestor: cada cuenta que tenga una puede aportar y mover las reservas.",
+          "managerMoves": "El gestor ha sacado o metido reservas sin unidades de pool en {count} de las últimas transacciones (la última, {date}).",
+          "reserveRecallable": "El emisor de {token} puede retirarlo (recall) de cualquier bóveda, también de las reservas del pool.",
+          "reserveFreezable": "El emisor de {token} puede congelarlo, también en las reservas del pool: no se podría sacar ni canjear.",
+          "reserveWithdrawRestricted": "Retirar {token} necesita, o puede llegar a necesitar, permiso de su emisor: quizá no puedas sacarlo al canjear tus unidades.",
+          "reserveDepositRestricted": "Depositar {token} necesita, o puede llegar a necesitar, permiso de su emisor.",
+          "reserveMintable": "El emisor de {token} puede acuñar más: su suministro puede crecer.",
+          "reserveRenamable": "El emisor de {token} puede cambiar su nombre, su símbolo o su icono.",
+          "controllerAnyone": "Cualquiera puede actuar como propietario del componente que gestiona el pool.",
+          "controllerBadge": "El componente que gestiona el pool lo controla esta insignia:",
+          "controllerComponent": "El componente que gestiona el pool lo controla otro componente.",
+          "controllerNobody": "Nadie puede cambiar el componente que gestiona el pool: su propietario es «Denegar a todos».",
+          "managerVerified": "Lo gestiona {name}: el componente y la dApp se reconocen mutuamente (dApp verificada).",
+          "managerUnverified": "El componente que lo gestiona no está vinculado a ninguna dApp verificada.",
+          "profileChangeable": "El propietario puede cambiar el nombre o el icono del pool.",
+          "profileLocked": "El nombre y el icono del pool no se pueden cambiar.",
+          "unitChangeable": "El propietario puede cambiar el nombre, el símbolo o el icono de la unidad de pool.",
+          "concentration": "Una sola cuenta tiene el {share} % de las unidades de pool.",
+          "rolesFixed": "El rol de gestor es fijo: nadie puede pasarlo a otra insignia o componente."
+        }
+      },
       "contextTitle": "Cuenta y pool",
       "accountLabel": "Cuenta",
       "poolLabel": "Pool",
@@ -4739,10 +4875,6 @@
         "safetyDrainable": "Cualquiera puede vaciar este pool: su rol de gestor es AllowAll. Si tienes unidades, canjéalas cuanto antes.",
         "safetyBadge": "Solo quien tenga la insignia de gestor puede aportar y mover reservas.",
         "badgeRiskXrd": "La insignia de gestor es XRD: cualquier cuenta con XRD puede vaciar este pool. Si tienes unidades, canjéalas cuanto antes.",
-        "badgeRiskMintable": "La insignia de gestor todavía se puede acuñar: quien pueda acuñarla puede convertirse en gestor y mover las reservas.",
-        "badgeRiskSupply": "Hay {supply} unidades de la insignia de gestor: cada cuenta que tenga una puede aportar y mover las reservas.",
-        "reserveRecallable": "El emisor de {token} puede retirarlo (recall) de las reservas del pool.",
-        "reserveFreezable": "El emisor de {token} puede congelarlo en las reservas del pool: no se podría sacar ni canjear.",
         "safetyOther": "El rol de gestor no es una insignia simple; revisa la regla de arriba.",
         "ownerUpdatable": "El propietario puede cambiar los metadatos y sus propias reglas.",
         "ownerFixed": "La regla del propietario es fija.",
@@ -5043,6 +5175,97 @@
     "signRequestOg": {
       "title": "Te invitan a firmar",
       "subtitle": "Un documento espera tu firma en Radix"
+    },
+    "nftIdPicker": {
+      "pick": "Elegir NFT",
+      "any": "Cualquiera de la colección",
+      "anyHint": "Vale cualquier NFT de este recurso",
+      "search": "Buscar ID…",
+      "clearSearch": "Borrar la búsqueda",
+      "loading": "Cargando los NFT…",
+      "empty": "Esta colección no tiene NFT.",
+      "noMatch": "Ningún ID coincide.",
+      "more": "Solo se muestran los primeros {count}: escribe el ID si no está.",
+      "close": "Cerrar"
+    },
+    "multiAddressSelect": {
+      "hint": "Pega una dirección o pulsa + para elegir varias.",
+      "full": "Ya hay {max} seleccionados: quita alguno para añadir más.",
+      "remove": "Quitar"
+    },
+    "recipientRows": {
+      "account": "account_rdx1…",
+      "resource": "Recurso por defecto",
+      "value": "Cantidad o #id#",
+      "add": "Añadir destinatario",
+      "remove": "Quitar destinatario",
+      "showAll": "Mostrar los {count} restantes",
+      "noToken": "token?"
+    },
+    "componentInfo": {
+      "contextTitle": "Componentes",
+      "componentLabel": "Componente",
+      "placeholder": "component_rdx1…",
+      "notAComponent": "Esa dirección no es un componente.",
+      "remove": "Quitar este componente",
+      "unnamed": "Componente sin nombre",
+      "blueprintLabel": "Blueprint",
+      "packageLabel": "Paquete",
+      "packageNote": "El código de un paquete no se puede cambiar una vez publicado.",
+      "packageOwnerLabel": "Propietario del paquete",
+      "ownerLabel": "Propietario",
+      "ownerFixed": "Fijo: no se puede cambiar",
+      "ownerUpdatable": "El propietario puede cambiar su propia regla.",
+      "royaltiesLabel": "Royalties",
+      "royaltiesOff": "No cobra royalties",
+      "royaltiesOn": "{count} métodos cobran royalties",
+      "royaltiesOnOne": "1 método cobra royalties",
+      "createdLabel": "Creado",
+      "lastActivityLabel": "Última actividad",
+      "holdsLabel": "Guarda",
+      "holds": "{tokens} tokens y {nfts} colecciones de NFT",
+      "holdsNothing": "Nada",
+      "goPanel": "Abrir en el panel de componentes",
+      "goExplorer": "Ver en el explorador",
+      "callerHints": {
+        "component": "Solo las llamadas de ese componente pueden hacerlo.",
+        "package": "Solo los componentes de ese paquete pueden hacerlo."
+      },
+      "security": {
+        "title": "Seguridad",
+        "summaryOk": "No vemos riesgos en los permisos de este componente.",
+        "disclaimer": "Se comprueban los permisos y quién controla el componente, no su código.",
+        "show": "Ver el análisis completo ({count})",
+        "hide": "Ocultar el análisis",
+        "loading": "Analizando el componente…",
+        "unnamedDapp": "una dApp",
+        "findings": {
+          "ownerAnyone": "Cualquiera puede actuar como propietario: cambiar sus metadatos, sus royalties y sus roles.",
+          "ownerXrd": "La insignia de propietario es XRD: cualquier cuenta con XRD puede actuar como propietario.",
+          "ownerBadgeMintable": "La insignia de propietario todavía se puede acuñar: quien pueda acuñarla puede convertirse en propietario.",
+          "ownerBadgeSupply": "Hay {supply} unidades de la insignia de propietario: cada cuenta que tenga una es propietaria.",
+          "ownerBadge": "Su propietario es quien tenga esta insignia:",
+          "ownerComponent": "Su propietario es otro componente: solo sus llamadas pueden cambiarlo.",
+          "ownerNobody": "Nadie puede actuar como propietario: su rol es «Denegar a todos».",
+          "roleAnyone": "Cualquiera tiene el rol {role}: lo que ese rol permite está abierto a todos.",
+          "holdsRecallable": "Guarda {token}, que su emisor puede retirar (recall) de sus bóvedas.",
+          "holdsFreezable": "Guarda {token}, que su emisor puede congelar en sus bóvedas.",
+          "royaltiesOn": "Cobra royalties en {methods} métodos.",
+          "royaltiesOnOne": "Cobra royalties en 1 método.",
+          "royaltiesChangeable": "Quien tiene el rol royalty_setter puede cambiar sus royalties.",
+          "packageRoyalties": "Su paquete cobra royalties en {blueprints} blueprints.",
+          "packageRoyaltiesOne": "Su paquete cobra royalties en 1 blueprint.",
+          "verified": "Lo gestiona {name}: el componente y la dApp se reconocen mutuamente (dApp verificada).",
+          "unverified": "No está vinculado a ninguna dApp verificada.",
+          "metadataChangeable": "El propietario puede cambiar su nombre o su icono.",
+          "metadataLocked": "Su nombre y su icono no se pueden cambiar.",
+          "controls": "Controla estas entidades, creadas junto a él:",
+          "young": "Se creó hace {days} días: lleva poco tiempo en la red.",
+          "youngOne": "Se creó hace 1 día: lleva muy poco tiempo en la red.",
+          "youngToday": "Se creó hace menos de un día: lleva muy poco tiempo en la red.",
+          "packageImmutable": "Su código está en un paquete que no se puede modificar."
+        }
+      }
     }
   }
 }

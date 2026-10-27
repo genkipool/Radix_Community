@@ -211,6 +211,19 @@ CALL_METHOD Address("${stranger.address}") "deposit_batch" Expression("ENTIRE_WO
       const manifest = `SET_METADATA Address("${pool}") "name" Enum<Metadata::String>("hijacked");`;
       expect(ledger.run(manifest, stranger.address).committed).toBe(false);
     });
+
+    // The pool info shows the manager role as fixed: not even the owner can hand it over.
+    it('lets the owner change a metadata role but never the manager role', () => {
+      ledger.use(creator);
+      const proof = `CALL_METHOD Address("${creator.address}") "create_proof_of_amount" Address("${badge}") Decimal("1");`;
+      const metadataRole = `${proof}\nSET_ROLE Address("${pool}") Enum<ModuleId::Metadata>() "metadata_setter" Enum<AccessRule::DenyAll>();`;
+      expectCommitted(ledger.run(metadataRole, creator.address), metadataRole);
+      const managerRole = `${proof}\nSET_ROLE Address("${pool}") Enum<ModuleId::Main>() "pool_manager_role" Enum<AccessRule::AllowAll>();`;
+      const run = ledger.run(managerRole, creator.address);
+      expect(run.committed).toBe(false);
+      // No role at all may update it: the list of rules that could is empty.
+      expect(run.output).toMatch(/Unauthorized.*failed_access_rules: RoleList\(\[\]\)/);
+    });
   });
 
   it('winds a pool down: empties it, tags it retired and locks its owner, in one transaction', () => {

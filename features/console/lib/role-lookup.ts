@@ -114,3 +114,53 @@ export function heldBadgeFor(
   return nf ? { resource: badge.resource, localId: nf.ids![0] } : null;
 }
 
+
+/** One role of an entity, from any of its modules. */
+export interface EntityRole {
+  /** `Owner` for the owner role, else the Gateway's module: `Main`, `Metadata`, `Royalty`… */
+  module: string;
+  name: string;
+  /** What the role resolves to: the owner rule when it defers to the owner. */
+  rule: RuleView;
+  /** The role defers to the owner role instead of having its own rule. */
+  viaOwner: boolean;
+  /** Nobody can ever change it: it has no updater, or every updater is DenyAll. */
+  fixed: boolean;
+}
+
+/**
+ * Every role of an entity, owner first, then each module's roles in the
+ * Gateway's order (each role next to its updater). A role's updaters are
+ * resolved too, so `fixed` says whether the rule can still change at all:
+ * the pool manager role of a native pool, for one, has no updater.
+ */
+export function entityRoles(entity: unknown): EntityRole[] {
+  const roles = obj(obj(obj(entity).details).role_assignments);
+  const ownerJson = obj(roles.owner);
+  const owner = parseAccessRule(ownerJson.rule);
+  const entries = arr(roles.entries).map(obj);
+  const ruleOf = (module: string, name: string): RuleView => {
+    const entry = entries.find((e) => obj(e.role_key).module === module && obj(e.role_key).name === name);
+    if (!entry) return { type: 'other' };
+    const assignment = obj(entry.assignment);
+    return assignment.resolution === 'Owner' ? owner : parseAccessRule(assignment.explicit_rule);
+  };
+
+  const ownerFixed = ownerJson.updater === 'None' || (ownerJson.updater === 'Owner' && owner.type === 'denyAll');
+  const list: EntityRole[] = ownerJson.rule ? [{ module: 'Owner', name: 'owner', rule: owner, viaOwner: false, fixed: ownerFixed }] : [];
+  for (const entry of entries) {
+    const key = obj(entry.role_key);
+    const moduleName = str(key.module);
+    const name = str(key.name);
+    if (!name) continue;
+    const updaters = arr(entry.updater_roles).map(obj);
+    list.push({
+      module: moduleName,
+      name,
+      rule: ruleOf(moduleName, name),
+      viaOwner: obj(entry.assignment).resolution === 'Owner',
+      fixed: updaters.every((u) => ruleOf(str(u.module), str(u.name)).type === 'denyAll'),
+    });
+  }
+  return list;
+}

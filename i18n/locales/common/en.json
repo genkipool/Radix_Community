@@ -170,7 +170,33 @@
     "agenda_recent_loading": "Looking through your transactions…",
     "agenda_recent_empty": "No movements with other accounts in the last month.",
     "agenda_recent_failed": "Could not read your transactions. Check the connection and try again.",
-    "agenda_search": "Search…"
+    "agenda_search": "Search…",
+    "wallet_tx_error": "An error occurred while sending the transaction.",
+    "wallet_pool_unit": "Pool unit",
+    "wallet_tab_addresses": "Addresses",
+    "wallet_tab_tokens": "Tokens",
+    "wallet_tab_nfts": "NFTs",
+    "wallet_tab_pools": "Pools",
+    "wallet_add_message": "Add a message to the transaction",
+    "wallet_inputs_count": "Number of inputs",
+    "wallet_no_other_addresses": "No other addresses found",
+    "wallet_no_tokens": "No tokens found",
+    "wallet_no_nfts": "No NFTs found",
+    "wallet_no_pool_units": "No pool units found",
+    "wallet_close": "Close",
+    "wallet_search_address": "Search address...",
+    "wallet_search_asset": "Search asset...",
+    "wallet_loading": "Loading...",
+    "wallet_dest_label": "Destination address",
+    "wallet_select_address": "Select address",
+    "wallet_link_assets": "Link assets",
+    "wallet_asset_amount": "Asset amount",
+    "wallet_change_asset": "Change asset",
+    "wallet_security_requirements": "Security requirements",
+    "wallet_presenting_badge": "Presenting badge",
+    "wallet_badge_missing": "Badge needed (you don't hold it)",
+    "wallet_message_placeholder": "Transaction message (optional)...",
+    "wallet_unknown_nft": "Unknown NFT"
   },
   "roadmap_status": {
     "done": "Done",
@@ -511,7 +537,10 @@
       "role_governance_lead": "Governance Lead",
       "role_legal_advisor": "Legal Advisor",
       "role_community_rep": "Community Representative",
-      "role_voting_coordinator": "Voting Coordinator"
+      "role_voting_coordinator": "Voting Coordinator",
+      "role_security_lead": "Security Lead",
+      "role_auditor": "Protocol Auditor",
+      "role_bug_hunter": "Bug Hunter (Whitehat)"
     },
     "funding_labels": {
       "funding_community_donation": "Hispanic Radix Donation",
@@ -554,7 +583,10 @@
       "task_inf_api_title": "Public Community Data API",
       "task_gov_constitution_title": "Hispanic Radix Constitution",
       "task_gov_voting_title": "On-Chain Voting System",
-      "task_gov_rfp_title": "Project Selection Process"
+      "task_gov_rfp_title": "Project Selection Process",
+      "task_sec_audit_v2_title": "Security Audit v2",
+      "task_sec_mfa_title": "MFA in the Wallet",
+      "task_sec_bounty_title": "Bug Bounty Programme 2025"
     },
     "task_descriptions": {
       "task_dev_portal_desc": "Development of the transparency web portal showing all activities, expenses and community members.",
@@ -575,7 +607,10 @@
       "task_inf_api_desc": "Public REST API with aggregated community data for third-party and external project use.",
       "task_gov_constitution_desc": "Collaborative drafting of the constitution governing the Spanish-speaking community organisation.",
       "task_gov_voting_desc": "Implementation of a decentralised voting system using Scrypto for community decisions.",
-      "task_gov_rfp_desc": "Methodological framework to evaluate and select which community projects receive funding."
+      "task_gov_rfp_desc": "Methodological framework to evaluate and select which community projects receive funding.",
+      "task_sec_audit_v2_desc": "In-depth technical review of Radix Engine v2 to ensure resilience against known exploits.",
+      "task_sec_mfa_desc": "Support for native multi-factor authentication in the Radix Wallet for institutional users.",
+      "task_sec_bounty_desc": "Rewards fund for discovering critical vulnerabilities on mainnet."
     },
     "task_deliverables": {
       "task_dev_portal_deliverable": "Complete web portal with real-time data.",
@@ -596,7 +631,10 @@
       "task_inf_api_deliverable": "Public API with 500+ calls/day.",
       "task_gov_constitution_deliverable": "Document ratified by 847 members.",
       "task_gov_voting_deliverable": "System live, 3 proposals voted on.",
-      "task_gov_rfp_deliverable": "Framework published, 12 projects evaluated."
+      "task_gov_rfp_deliverable": "Framework published, 12 projects evaluated.",
+      "task_sec_audit_v2_deliverable": "Final audit report and security patches applied.",
+      "task_sec_mfa_deliverable": "Working MFA module on Stokenet for community testing.",
+      "task_sec_bounty_deliverable": "Public rewards dashboard and programme rules."
     },
     "modal": {
       "state_label": "Current ecosystem status",
@@ -631,5 +669,17 @@
       "s4_transition_sub": "Historic transition",
       "s4_transition_body": "Radix is in a chapter of historic transition and survival. It has moved from heavy reliance on the private company RDX Works to being under the direct care of the Radix Foundation, which is working hard to stabilise the network and delegate the future of the project to a truly decentralised community."
     }
+  },
+  "ui": {
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next",
+    "search": "Search...",
+    "no_results": "No results found",
+    "validators": "Validators",
+    "select_validator": "Select validator",
+    "search_validators": "Search validators...",
+    "add": "Add",
+    "all": "All"
   }
 }

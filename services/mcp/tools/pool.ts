@@ -17,8 +17,11 @@ import { mapHoldings } from '@/features/console/lib/account-holdings';
 import { fetchPoolContributions } from '@/features/console/lib/pool-history';
 import { fetchAllHolders, type GatewayPost } from '@/features/console/lib/resource-holders';
 import { isPositiveDecimal } from '@/features/console/lib/decimal';
-import { findGlobalCaller, packageOfCallerRule } from '@/features/console/lib/caller-badge';
-import { badgeProblems, isXrd, managerBadgeRisks, reserveRisks, type BadgeProblem } from '@/features/console/lib/pool-safety';
+import { findGlobalCaller } from '@/features/console/lib/caller-badge';
+import { badgeProblems, isXrd, reserveRisks, type BadgeProblem } from '@/features/console/lib/pool-safety';
+import { poolFindings } from '@/features/console/lib/pool-security';
+import { gatherPoolSecurity } from '@/features/console/lib/security-data';
+import { getKnownTokensCached } from '@/services/gateway/knownTokens';
 import { heldBadgeFor, isDrainable, metadataTags, parsePoolState, redemptionValue, type PoolRule, type PoolState } from '@/features/console/lib/pool-lookup';
 import {
   POOL_BLUEPRINTS,
@@ -41,30 +44,11 @@ import { getKnownPoolsCached } from '@/services/gateway/knownPools';
 import { findLedgerEntities, type LedgerEntityKind } from '@/features/console/lib/ledger-entities';
 import { staticallyValidateManifest } from '@/services/ret';
 import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection } from '../cli';
+import { callerOf, findingLines, permissionRows, permissionsOut, poolFindingsOut, ruleText } from '../security';
 import { signingSteps } from '../dapp';
 import { defineMcpTool } from '../registry';
 import { assertAddressOnNetwork } from './console';
 import { networkSchema, localeSchema } from './schemas';
-
-/** The component or package a caller rule names, when known. */
-const callerOf = (rule: PoolRule, callers: Record<string, string>) =>
-  rule.type === 'nonFungible' ? (packageOfCallerRule(rule) ?? callers[rule.localId] ?? null) : null;
-
-const ruleText = (rule: PoolRule, callers: Record<string, string> = {}) => {
-  const caller = callerOf(rule, callers);
-  return caller ? `only ${caller} (${caller.startsWith('package_') ? 'package' : 'component'} caller badge)` : plainRuleText(rule);
-};
-
-const plainRuleText = (rule: PoolRule) =>
-  rule.type === 'allowAll'
-    ? 'AllowAll (ANYONE)'
-    : rule.type === 'denyAll'
-      ? 'DenyAll (nobody)'
-      : rule.type === 'resource'
-        ? `badge ${rule.resource}`
-        : rule.type === 'nonFungible'
-          ? `NFT ${rule.resource}:${rule.localId}`
-          : 'composite rule (not a plain badge)';
 
 async function readPool(pool: string, network: Network): Promise<PoolState> {
   const state = parsePoolState(await fetchEntityDetailsLive(pool, network));
@@ -142,7 +126,7 @@ export const getPoolStateTool = defineMcpTool({
   name: 'get_pool_state',
   title: 'Read native pool info',
   description:
-    'Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console\'s "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool\'s history). Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.',
+    'Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console\'s "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool\'s history). Includes the console\'s security analysis (findings worst first: AllowAll or XRD manager, a badge that can be minted or has several units, reserve tokens that imitate a known token or that their issuer can recall, freeze or restrict, whether the managing component belongs to a verified dApp and who controls it, reserves moved by a manager badge, whether the profile can change) and every role of the pool with whether it can change. These check permissions, not code. Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.',
   category: 'console',
   inputSchema: z.object({
     pool: oneOrMany('Pool component (pool_…)'),
@@ -165,19 +149,27 @@ export const getPoolStateTool = defineMcpTool({
       const state = details ? parsePoolState(details) : null;
       if (!state) return { address, error: `${address} is not a native pool on ${network}.` } as const;
       const post: GatewayPost = (path, body) => gatewayPost(network, path, body);
-      const managerBadge = state.manager.type === 'resource' || state.manager.type === 'nonFungible' ? state.manager.resource : null;
-      const [unitDetails, profiles, holders, history, badgeDetails, reserveDetails, callers] = await Promise.all([
+      const [unitDetails, profiles, holders, history, callers, knownTokens] = await Promise.all([
         fetchEntityDetailsLive(state.poolUnit, network),
         readProfiles([address, state.poolUnit], network).catch(() => ({}) as Awaited<ReturnType<typeof readProfiles>>),
         fetchAllHolders(post, state.poolUnit, { max: MAX_PARTICIPANTS }).catch(() => null),
         fetchPoolContributions(post, state).catch(() => null),
-        managerBadge ? fetchEntityDetailsLive(managerBadge, network).catch(() => null) : Promise.resolve(null),
-        Promise.all(state.resources.map((res) => fetchEntityDetailsLive(res, network).catch(() => null))),
         findGlobalCaller(post, address, [state.manager, state.owner]).catch(() => ({}) as Record<string, string>),
+        getKnownTokensCached(network).catch(() => ({})),
       ]);
-      const badgeRisks = managerBadge ? managerBadgeRisks(managerBadge, badgeDetails, state.manager.type === 'resource') : [];
-      const reserveWarnings = state.resources.flatMap((res, i) => reserveRisks(reserveDetails[i]).map((risk) => ({ resource: res, risk })));
       const supply = Number((unitDetails as { details?: { total_supply?: string } } | null)?.details?.total_supply ?? 0);
+      // The same analysis the console's pool card shows.
+      const largest = holders?.holders[0];
+      const findings = poolFindingsOut(
+        poolFindings(
+          await gatherPoolSecurity(post, state, {
+            callers,
+            knownTokens,
+            managerMoves: history?.managerMoves,
+            topShare: largest && supply > 0 ? Number(largest.amount) / supply : null,
+          }),
+        ),
+      );
       const profile = profiles[address]?.name ? profiles[address] : profiles[state.poolUnit];
       const unitValue = supply > 0
         ? Object.fromEntries(state.resources.map((r) => [r, Number(state.reserves[r] ?? 0) / supply]))
@@ -217,8 +209,7 @@ export const getPoolStateTool = defineMcpTool({
         historyTruncated: history?.truncated ?? false,
         holdsManager: holds(state.manager),
         holdsOwner: holds(state.owner),
-        badgeRisks,
-        reserveWarnings,
+        findings,
         callers,
       };
     };
@@ -232,16 +223,7 @@ export const getPoolStateTool = defineMcpTool({
         cliSection(r.profile?.name || state.address),
         drainable &&
           `⚠ DRAINABLE: the manager role is AllowAll, so ANY account can call protected_withdraw and take the reserves. The owner role ${state.ownerUpdatable ? 'can still be changed' : 'is fixed, so this cannot be repaired'}. Tell the user to redeem their pool units now and move to a new pool guarded by a badge.`,
-        ...r.badgeRisks.map((risk) =>
-          risk.kind === 'xrd'
-            ? '⚠ DRAINABLE: the manager badge is XRD, so ANY account holding XRD can take the reserves. Tell the user to redeem their pool units now.'
-            : risk.kind === 'mintable'
-              ? '⚠ The manager badge can still be minted: whoever can mint it can become a manager and move the reserves.'
-              : `⚠ The manager badge has a supply of ${fmtUnits(risk.supply)}: every holder of one is a manager and can move the reserves.`,
-        ),
-        ...r.reserveWarnings.map(
-          (w) => `⚠ The issuer of ${w.resource} can ${w.risk === 'recallable' ? 'recall it from' : 'freeze it in'} the pool's vaults.`,
-        ),
+        `Security (permissions, not code):\n${findingLines(r.findings)}`,
         cliKeyValues([
           ['Pool', state.address],
           ['Type', POOL_BLUEPRINTS[state.kind]],
@@ -275,6 +257,7 @@ export const getPoolStateTool = defineMcpTool({
               ] as Array<[string, string]>)
             : []),
         ]),
+        `Permissions:\n${cliKeyValues(permissionRows(state.roles, r.callers))}`,
         r.participants.length > 0 &&
           cliKeyValues([
             ['Participants', `${r.participantCount} (largest ${r.participants.length})`],
@@ -303,9 +286,9 @@ export const getPoolStateTool = defineMcpTool({
             managerCaller: callerOf(r.state.manager, r.callers),
             ownerCaller: callerOf(r.state.owner, r.callers),
             ownerUpdatable: r.state.ownerUpdatable,
-            drainable: isDrainable(r.state) || r.badgeRisks.some((risk) => risk.kind === 'xrd'),
-            managerBadgeRisks: r.badgeRisks,
-            reserveRisks: r.reserveWarnings,
+            drainable: isDrainable(r.state) || r.findings.some((f) => f.id === 'xrdBadge'),
+            findings: r.findings,
+            permissions: permissionsOut(r.state.roles, r.callers),
             retired: r.state.tags.includes(RETIRED_TAG),
             participantCount: r.participantCount,
             participants: r.participants,

@@ -109,6 +109,8 @@ interface SelectPopupProps {
     placeholder: string;
     autoFocus?: boolean;
     onEnter?: () => void;
+    /** Label of the clear (×) button; the button shows only when there is text and this is given. */
+    clearLabel?: string;
   };
   /** Rendered between the search box and the rows (tabs, options). */
   toolbar?: ReactNode;
@@ -174,8 +176,19 @@ export function SelectPopup({
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               onKeyDown={onKeyDown}
-              className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
+              className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-8 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
             />
+            {search.clearLabel && search.value && (
+              <button
+                type="button"
+                onClick={() => search.onChange('')}
+                aria-label={search.clearLabel}
+                title={search.clearLabel}
+                className="absolute right-2 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -254,7 +267,9 @@ export function SelectPopupEmpty({ children }: { children: ReactNode }) {
 /**
  * The draft behind a several-at-once popup. `open(current)` starts it from
  * what is applied now; `toggle` edits it; `pinned` is what was picked when it
- * opened, which `selectedFirst` lists on top.
+ * opened, which `selectedFirst` lists on top. `repin()` makes the current
+ * picks the pinned ones, for when the list starts over (the search cleared):
+ * rows never jump while toggling, only when the list is rebuilt anyway.
  */
 export function useSelectionDraft<T extends string>() {
   const [draft, setDraft] = useState<T[]>([]);
@@ -267,6 +282,7 @@ export function useSelectionDraft<T extends string>() {
       setPinned(current);
     },
     toggle: (value: T) => setDraft((d) => (d.includes(value) ? d.filter((v) => v !== value) : [...d, value])),
+    repin: () => setPinned(draft),
     set: setDraft,
   };
 }

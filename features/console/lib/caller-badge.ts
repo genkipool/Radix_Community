@@ -11,7 +11,7 @@ import { blake2b } from 'blakejs';
 
 import { decodeAddressNodeId, encodeAddress } from './address-inspect';
 import type { GatewayPost } from './resource-holders';
-import { isGlobalCallerBadge, isPackageCallerBadge, type RuleView } from './role-lookup';
+import { entityRoles, isGlobalCallerBadge, isPackageCallerBadge, type RuleView } from './role-lookup';
 
 const toHex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
@@ -66,4 +66,55 @@ export async function findGlobalCaller(post: GatewayPost, entity: string, rules:
     if (match && rule.type === 'nonFungible') found[rule.localId] = match;
   }
   return found;
+}
+
+/** When an entity appeared, when it was last used, and what its first transaction made it the caller of. */
+export interface EntityOrigin {
+  createdAt: string | null;
+  lastActivityAt: string | null;
+  /** Entities of its first transaction whose roles ask for its global caller badge. */
+  controls: string[];
+}
+
+type StreamPage = { items?: { confirmed_at?: string | null; affected_global_entities?: string[] }[] };
+
+/** Entities read from the first transaction, at most. */
+const MAX_CONTROLLED = 40;
+const DETAILS_BATCH = 20;
+
+/**
+ * Where a component comes from: its first and latest transactions, and which
+ * of the entities created with it answer to it. Those entities' roles ask for
+ * the component's global caller badge, which the hash confirms; entities it
+ * came to control later are not in that first transaction, so not listed.
+ */
+export async function entityOrigin(post: GatewayPost, entity: string): Promise<EntityOrigin> {
+  const stream = (order: 'Asc' | 'Desc') =>
+    post<StreamPage>('/stream/transactions', {
+      affected_global_entities_filter: [entity],
+      order,
+      limit_per_page: 1,
+      opt_ins: { affected_global_entities: order === 'Asc' },
+    });
+  const [first, last] = await Promise.all([stream('Asc'), stream('Desc')]);
+  const id = globalCallerId(entity);
+  const candidates = (first.items?.[0]?.affected_global_entities ?? [])
+    .filter((a) => a !== entity && !a.startsWith('account_') && !isGlobalCallerBadge(a) && !isPackageCallerBadge(a))
+    .slice(0, MAX_CONTROLLED);
+  const controls: string[] = [];
+  for (let i = 0; i < candidates.length && id; i += DETAILS_BATCH) {
+    const page = await post<{ items: unknown[] }>('/state/entity/details', { addresses: candidates.slice(i, i + DETAILS_BATCH) });
+    for (const item of page.items ?? []) {
+      const answersToIt = entityRoles(item).some(
+        (r) => r.rule.type === 'nonFungible' && isGlobalCallerBadge(r.rule.resource) && r.rule.localId.toLowerCase() === id,
+      );
+      const address = (item as { address?: string }).address;
+      if (answersToIt && address) controls.push(address);
+    }
+  }
+  return {
+    createdAt: first.items?.[0]?.confirmed_at ?? null,
+    lastActivityAt: last.items?.[0]?.confirmed_at ?? null,
+    controls,
+  };
 }

@@ -106,6 +106,7 @@
     "wallet_send_transaction": "Enviar Transacción",
     "wallet_sending": "Enviando...",
     "wallet_add_dest_input": "Añadir input dirección de destino",
+    "wallet_dest_placeholder": "Dirección de destino (account_...)",
     "wallet_insufficient_balance": "Saldo insuficiente",
     "wallet_pin_sidebar": "Anclar como barra lateral",
     "wallet_pin_sidebar_remove": "Desanclar barra lateral",
@@ -169,7 +170,33 @@
     "agenda_recent_loading": "Buscando en tus transacciones…",
     "agenda_recent_empty": "Sin movimientos con otras cuentas en el último mes.",
     "agenda_recent_failed": "No se pudieron leer tus transacciones. Revisa la conexión e inténtalo de nuevo.",
-    "agenda_search": "Buscar…"
+    "agenda_search": "Buscar…",
+    "wallet_tx_error": "Ocurrió un error al enviar la transacción.",
+    "wallet_pool_unit": "Unidad de pool",
+    "wallet_tab_addresses": "Direcciones",
+    "wallet_tab_tokens": "Tokens",
+    "wallet_tab_nfts": "NFTs",
+    "wallet_tab_pools": "Pools",
+    "wallet_add_message": "Añadir mensaje a la transacción",
+    "wallet_inputs_count": "Cantidad de inputs",
+    "wallet_no_other_addresses": "No se encontraron otras direcciones",
+    "wallet_no_tokens": "No se encontraron tokens",
+    "wallet_no_nfts": "No se encontraron NFTs",
+    "wallet_no_pool_units": "No se encontraron unidades de pool",
+    "wallet_close": "Cerrar",
+    "wallet_search_address": "Buscar dirección...",
+    "wallet_search_asset": "Buscar activo...",
+    "wallet_loading": "Cargando...",
+    "wallet_dest_label": "Dirección de destino",
+    "wallet_select_address": "Seleccionar dirección",
+    "wallet_link_assets": "Vincular activos",
+    "wallet_asset_amount": "Cantidad de activo",
+    "wallet_change_asset": "Cambiar activo",
+    "wallet_security_requirements": "Requisitos de seguridad",
+    "wallet_presenting_badge": "Presentando insignia",
+    "wallet_badge_missing": "Se necesita insignia (no la tienes)",
+    "wallet_message_placeholder": "Mensaje de la transacción (opcional)...",
+    "wallet_unknown_nft": "NFT desconocido"
   },
   "roadmap_status": {
     "done": "Completado",
@@ -642,5 +669,17 @@
       "s4_transition_sub": "Transición histórica",
       "s4_transition_body": "Radix se encuentra en un capítulo de transición histórica y supervivencia. Ha pasado de depender fuertemente de la empresa privada RDX Works a estar bajo el amparo directo de la Fundación Radix, la cual trabaja para estabilizar la red y delegar el futuro del proyecto a una comunidad verdaderamente descentralizada."
     }
+  },
+  "ui": {
+    "close": "Cerrar",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "search": "Buscar...",
+    "no_results": "No se encontraron resultados",
+    "validators": "Validadores",
+    "select_validator": "Seleccionar validador",
+    "search_validators": "Buscar validadores...",
+    "add": "Añadir",
+    "all": "Todas"
   }
 }

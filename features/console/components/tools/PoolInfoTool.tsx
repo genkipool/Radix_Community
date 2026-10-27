@@ -6,25 +6,28 @@ import { Archive, ArrowDownToLine, ArrowUpFromLine, Scale, Tags } from 'lucide-r
 
 import { useLanguage } from '@/context/LanguageContext';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
-import { apiFetchEntityDetails, apiFetchEntityDetailsBatch } from '@/features/dashboard/services/apiClient';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { gatewayPost } from '@/services/gateway/bases';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { usePoolContributions } from '../../hooks/usePoolContributions';
+import { usePoolSecurity } from '../../hooks/usePoolSecurity';
+import { useNetworkSelection } from '../../hooks/useNetworkSelection';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { useTopHolders } from '../../hooks/useTopHolders';
 import { heldBadgeFor, isDrainable, isGlobalCallerBadge, isPackageCallerBadge, parsePoolState, redemptionValue } from '../../lib/pool-lookup';
 import { RETIRED_TAG } from '../../lib/pool-manifests';
-import { managerBadgeRisks, reserveRisks } from '../../lib/pool-safety';
 import { findGlobalCaller, packageOfCallerRule } from '../../lib/caller-badge';
-import { isGlobalCallerBadge as isComponentBadge, type RuleView } from '../../lib/role-lookup';
+import type { RuleView } from '../../lib/role-lookup';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { AccountPicker } from '../shared/AccountPicker';
 import { AddressLine, CardSkeleton, CopyLine, cardError, EntityCard, EntityCardMessage, Facts, Heading, Note, RuleSummary, Sub, badgeNamer, fmtNumber, shortId } from '../shared/InfoParts';
 import { MultiAddressSelect, addressesFromUrl } from '../shared/MultiAddressSelect';
+import { PoolSecurity } from '../pool/PoolSecurity';
+import { EntityPermissions } from '../shared/EntityPermissions';
 import { RoleBadges } from '../shared/RoleBadges';
 import { ToolSection } from '../shared/ToolSection';
 import { TopHoldersList } from '../shared/TopHoldersList';
@@ -52,7 +55,9 @@ const amount = (value: string | number) =>
 export default function PoolInfoTool({ t }: ConsoleToolProps) {
   const labels = t.pool;
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
-  const [pools, setPools] = useConsoleQueryState<string[]>(() => addressesFromUrl('pool'), []);
+  const [allPools, setAllPools] = useConsoleQueryState<string[]>(() => addressesFromUrl('pool'), []);
+  // Only the active network's pools show; the others wait for their network.
+  const [pools, setPools] = useNetworkSelection(allPools, setAllPools);
   const { data: holdings } = useAccountResources(account);
 
   // Pools the account holds units of, offered as one-tap toggles.
@@ -135,9 +140,6 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
     ? [state.manager, state.owner].flatMap((r) => (r.type === 'resource' || r.type === 'nonFungible' ? [r.resource] : []))
     : [];
   const names = useResourceLabels(state ? [...state.resources, state.poolUnit, ...badgeResources] : []);
-  // Who else could hold the manager badge, and what the reserve tokens' issuers can do to the vaults.
-  const managerBadge = state && 'resource' in state.manager ? state.manager.resource : null;
-  const safetyLookups = state ? [...new Set([...(managerBadge ? [managerBadge] : []), ...state.resources])].sort() : [];
   // The component behind a "global caller" rule: found in the pool's first transaction, checked by its hash.
   const { data: callers, isFetched: callersFetched } = useQuery({
     queryKey: ['console-pool-callers', activeNetwork, address],
@@ -146,15 +148,17 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
     staleTime: Infinity,
     retry: false,
   });
-  const { data: safetyDetails } = useQuery({
-    queryKey: ['console-pool-safety', activeNetwork, safetyLookups],
-    queryFn: () => apiFetchEntityDetailsBatch(safetyLookups, activeNetwork),
-    enabled: safetyLookups.length > 0,
-    staleTime: 60_000,
-  });
   // Who takes part and what each put in and took out, as the explorer shows them.
   const { data: participants } = useTopHolders(state?.poolUnit, activeNetwork);
   const { data: contributions } = usePoolContributions(state, activeNetwork);
+  const largest = participants?.holders[0];
+  const { findings } = usePoolSecurity({
+    state,
+    network: activeNetwork,
+    callers,
+    managerMoves: contributions?.managerMoves,
+    topShare: largest && supply ? Number(largest.amount) / supply : null,
+  });
 
   if (isLoading) return <CardSkeleton />;
   if (!state) {
@@ -193,13 +197,8 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
         </span>
       );
     });
-  const badgeRisks = managerBadge
-    ? managerBadgeRisks(managerBadge, safetyDetails?.[managerBadge] ?? null, state.manager.type === 'resource')
-    : [];
-  const reserveWarnings = state.resources.flatMap((r) =>
-    reserveRisks(safetyDetails?.[r]).map((risk) => ({ resource: r, risk })),
-  );
-  const drainable = isDrainable(state) || badgeRisks.some((risk) => risk.kind === 'xrd');
+  const xrdBadge = !!findings?.some((f) => f.id === 'xrdBadge');
+  const drainable = isDrainable(state) || xrdBadge;
   const guarded = state.manager.type === 'resource' || state.manager.type === 'nonFungible';
   const byContract = 'resource' in state.manager && (isGlobalCallerBadge(state.manager.resource) || isPackageCallerBadge(state.manager.resource));
   const resourceName = (r: string) => names[r] ?? truncateAddress(r, 10, 6);
@@ -210,7 +209,7 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
     if (rule.type !== 'nonFungible') return undefined;
     const entity = packageOfCallerRule(rule) ?? callers?.[rule.localId];
     if (entity) return addressLine(entity);
-    return isComponentBadge(rule.resource) && callersFetched ? <Sub>{labels.callerUnknown}</Sub> : undefined;
+    return isGlobalCallerBadge(rule.resource) && callersFetched ? <Sub>{labels.callerUnknown}</Sub> : undefined;
   };
   /** The badge a rule asks for: its address, and the id when it is one NFT. */
   const badgeLine = (rule: RuleView) =>
@@ -261,23 +260,16 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
       ]}
     >
       <Note tone={drainable ? 'danger' : guarded ? 'success' : 'muted'}>
-        {badgeRisks.some((risk) => risk.kind === 'xrd') ? info.badgeRiskXrd : drainable ? info.safetyDrainable : byContract ? info.safetyContract : guarded ? info.safetyBadge : info.safetyOther}{' '}
+        {xrdBadge ? info.badgeRiskXrd : drainable ? info.safetyDrainable : byContract ? info.safetyContract : guarded ? info.safetyBadge : info.safetyOther}{' '}
         {state.ownerUpdatable ? info.ownerUpdatable : info.ownerFixed}
       </Note>
-      {badgeRisks
-        .filter((risk) => risk.kind !== 'xrd')
-        .map((risk) => (
-          <Note key={risk.kind} tone="warning">
-            {risk.kind === 'mintable'
-              ? info.badgeRiskMintable
-              : info.badgeRiskSupply.replace('{supply}', fmtNumber(risk.kind === 'supply' ? risk.supply : 0, 6))}
-          </Note>
-        ))}
-      {reserveWarnings.map(({ resource, risk }) => (
-        <Note key={`${resource}-${risk}`} tone="warning">
-          {(risk === 'recallable' ? info.reserveRecallable : info.reserveFreezable).replace('{token}', resourceName(resource))}
-        </Note>
-      ))}
+      <PoolSecurity
+        t={t}
+        findings={findings}
+        name={resourceName}
+        address={addressLine}
+        date={(iso) => new Date(iso).toLocaleString(language)}
+      />
 
       <Facts
         rows={[
@@ -323,6 +315,16 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
           { rule: state.owner, role: labels.ownerRole },
         ].flatMap(({ rule, role }) => (rule.type === 'resource' || rule.type === 'nonFungible' ? [{ resource: rule.resource, roles: [role] }] : []))}
         held={(resource) => (account && holdings ? !!heldBadgeFor({ type: 'resource', resource }, fungibles, nonFungibles) : undefined)}
+      />
+
+      <EntityPermissions
+        t={t}
+        roles={state.roles}
+        describe={(rule) =>
+          rule.type === 'nonFungible' && (isGlobalCallerBadge(rule.resource) || isPackageCallerBadge(rule.resource))
+            ? callerLine(rule)
+            : badgeLine(rule)
+        }
       />
 
       <div className="space-y-2">

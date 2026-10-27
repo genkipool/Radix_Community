@@ -12,18 +12,20 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { gatewayPost } from '@/services/gateway/bases';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
+import { useNetworkSelection } from '../../hooks/useNetworkSelection';
 import { useAccountLockerRoles } from '../../hooks/useAccountLockerRoles';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { useLockerActivity } from '../../hooks/useLockerActivity';
 import { MAX_LOCKER_RECIPIENTS, useLockerWaiting } from '../../hooks/useLockerWaiting';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { fetchLockerClaims, parseLockerState } from '../../lib/locker-lookup';
-import { heldBadgeFor, isGlobalCallerBadge, isPackageCallerBadge, ownerRule, type RuleView } from '../../lib/role-lookup';
+import { entityRoles, heldBadgeFor, isGlobalCallerBadge, isPackageCallerBadge, ownerRule, type RuleView } from '../../lib/role-lookup';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { AccountPicker } from '../shared/AccountPicker';
-import { CardSkeleton, cardError, EntityCard, EntityCardMessage, Facts, Heading, Note, RuleSummary, Sub, badgeNamer, type NoteTone } from '../shared/InfoParts';
+import { AddressLine, CardSkeleton, cardError, EntityCard, EntityCardMessage, Facts, Heading, Note, RuleSummary, Sub, badgeNamer, type NoteTone } from '../shared/InfoParts';
 import { MessageLine } from '../shared/MessageLine';
+import { EntityPermissions } from '../shared/EntityPermissions';
 import { RoleBadges } from '../shared/RoleBadges';
 import { MultiAddressSelect, addressesFromUrl } from '../shared/MultiAddressSelect';
 import { ToolSection } from '../shared/ToolSection';
@@ -47,7 +49,9 @@ const fmt = (value: string | number) =>
 export default function LockerInfoTool({ t }: ConsoleToolProps) {
   const info = t.locker.info;
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
-  const [lockers, setLockers] = useConsoleQueryState<string[]>(() => addressesFromUrl('locker'), []);
+  const [allLockers, setAllLockers] = useConsoleQueryState<string[]>(() => addressesFromUrl('locker'), []);
+  // Only the active network's lockers show; the others wait for their network.
+  const [lockers, setLockers] = useNetworkSelection(allLockers, setAllLockers);
   const { activeNetwork } = useRadixWallet();
   const { data: roles, isLoading: loadingOwn } = useAccountLockerRoles(account, activeNetwork);
   // Lockers the account has a part in (it can claim, store or recover), not every one it once touched.
@@ -117,6 +121,7 @@ function LockerInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionar
         packageAddress: details.package_address ?? '',
         blueprint: [details.blueprint_name, details.blueprint_version].filter(Boolean).join(' '),
         ownerUpdatable: ownerRule(entity).updatable,
+        roles: entityRoles(entity),
         name: readMeta(meta, 'name'),
         description: readMeta(meta, 'description'),
         iconUrl: readMeta(meta, 'icon_url'),
@@ -163,8 +168,11 @@ function LockerInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionar
 
   const holds = (rule: RuleView) => (account && holdings ? !!heldBadgeFor(rule, holdings.fungibles, holdings.nonFungibles) : undefined);
   const callerHints = { component: info.componentHint, package: info.packageHint };
+  const addressLine = (a: string) => (
+    <AddressLine address={a} href={dashboardRoutes.entity(language, a, { network: activeNetwork })} copyLabel={t.common.copy} />
+  );
   const rule = (r: RuleView, note?: string) => (
-    <RuleSummary t={t} rule={r} badgeName={badgeNamer(names)} held={holds(r)} note={note} callerHints={callerHints} />
+    <RuleSummary t={t} rule={r} badgeName={badgeNamer(names)} held={holds(r)} note={note} callerHints={callerHints} address={addressLine} />
   );
 
   // What a recipient most needs to know: can it be taken back before they claim?
@@ -252,6 +260,12 @@ function LockerInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionar
           { rule: state.recoverer, role: info.recovererLabel },
         ].flatMap(({ rule, role }) => (rule.type === 'resource' || rule.type === 'nonFungible' ? [{ resource: rule.resource, roles: [role] }] : []))}
         held={(resource) => holds({ type: 'resource', resource })}
+      />
+
+      <EntityPermissions
+        t={t}
+        roles={data.roles}
+        describe={(r) => (r.type === 'resource' || r.type === 'nonFungible' ? addressLine(r.resource) : null)}
       />
 
       <div className="space-y-2">

@@ -1,0 +1,45 @@
+{
+  "search": "Search by name or address…",
+  "clearSearch": "Clear the search",
+  "empty": "No addresses of this type. Save some in the address book.",
+  "noMatch": "Nothing matches the search.",
+  "pick": "Pick address",
+  "pickBy": {
+    "account": "Pick account",
+    "resource": "Pick resource",
+    "validator": "Pick validator",
+    "pool": "Pick pool",
+    "locker": "Pick locker",
+    "component": "Pick component",
+    "package": "Pick package"
+  },
+  "loading": "Searching…",
+  "more": "{count} more: use the search.",
+  "typedLabel": "Use this address",
+  "fee": "Fee",
+  "add": "Add",
+  "addCount": "Add ({count})",
+  "close": "Close",
+  "ownBadge": "You hold its badge",
+  "tabs": {
+    "all": "All",
+    "allResources": "All",
+    "tokens": "Tokens",
+    "nfts": "NFTs",
+    "wallet": "Your wallet",
+    "myValidators": "Yours",
+    "agenda": "Address book",
+    "mine": "Used by you",
+    "ociswap": "Ociswap",
+    "defiplaza": "DefiPlaza",
+    "reddicks": "Reddicks",
+    "network": "Recent activity",
+    "validators": "Validators"
+  },
+  "unnamed": {
+    "pool": "Unnamed pool",
+    "locker": "Unnamed locker",
+    "resource": "Unnamed resource",
+    "other": "Unnamed"
+  }
+}

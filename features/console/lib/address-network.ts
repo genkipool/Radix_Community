@@ -4,6 +4,9 @@
  */
 export type AddressNetwork = 'mainnet' | 'stokenet';
 
+/** The networks' names: proper names, the same in every language. */
+export const NETWORK_NAME: Record<AddressNetwork, string> = { mainnet: 'Mainnet', stokenet: 'Stokenet' };
+
 export function networkOfAddress(address: string): AddressNetwork | null {
   const value = address.trim();
   if (/^[a-z_]+_rdx1[0-9a-z]+$/.test(value)) return 'mainnet';

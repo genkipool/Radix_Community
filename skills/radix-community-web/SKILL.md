@@ -71,7 +71,8 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"What can I claim from my unstakes?"* → `list_claimable_stake_nfts {"account": "account_…"}` → feed the matured ids to `build_validator_manifest` as `claim-xrd` → sign. Console: https://radix-community.genkipool.com/en/console/validator-staking.
 - *"Create a validator"* → `build_validator_manifest` with a single `create-validator` operation (it cannot share a transaction with anything) → `preview_transaction` → sign → then `profile` + `register` + `accept-delegated-stake` in one transaction → set `consensus.validator_address` on the node → `stake-as-owner` once the node is synced. Console: https://radix-community.genkipool.com/en/console/validator-create.
 - *"Create a liquidity pool for XRD and my token"* → `build_pool_manifest {"operation": "create", "account": "account_…", "kind": "two", "resources": ["resource_…xrd", "resource_…"]}` → sign → `build_pool_manifest {"operation": "contribute", "pool": "pool_…", "amounts": {…}}`. Console: https://radix-community.genkipool.com/en/console/pool-create.
-- *"Is this pool safe?"* → `get_pool_state {"pool": "pool_…"}`: a manager of AllowAll means anyone can drain it.
+- *"Is this pool safe?"* → `get_pool_state {"pool": "pool_…"}`: its security findings (worst first) and every role. A manager of AllowAll, or an XRD manager badge, means anyone can drain it; these check permissions, not code.
+- *"Is component_rdx1… safe? Who controls it?"* → `get_component_info {"component": "component_…"}`: owner, royalties, verified dApp, what it controls, every role and its security findings. Console: https://radix-community.genkipool.com/en/console/component-info.
 - *"Which of these validators should I stake with?"* → `get_validator_state {"validator": ["validator_…", "validator_…"], "account": "account_…"}`: fee and pending fee changes, uptime, APY, warnings, and what the account already has with each. Console equivalent: https://radix-community.genkipool.com/en/console/validator-info.
 - *"Is this airdrop locker safe, and what is waiting for me?"* → `get_locker_claims {"locker": "locker_…", "account": "account_…"}`: whether the recoverer can take tokens back before they are claimed, and the claim link.
 - *"Find the XRD/HUG pool"* → `find_pools {"query": "HUG"}` → `get_pool_state` on the address it returns.
@@ -387,7 +388,7 @@ Builds one transaction manifest out of one or more validator operations, resolvi
 
 ### `get_pool_state` — Read native pool info
 
-Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console's "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool's history). Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.
+Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console's "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool's history). Includes the console's security analysis (findings worst first: AllowAll or XRD manager, a badge that can be minted or has several units, reserve tokens that imitate a known token or that their issuer can recall, freeze or restrict, whether the managing component belongs to a verified dApp and who controls it, reserves moved by a manager badge, whether the profile can change) and every role of the pool with whether it can change. These check permissions, not code. Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.
 
 - `pool` (any; required) — Pool component (pool_…) address, or a list of up to 10 to read them all at once
 - `account` (string; optional) — Optional account: its position and badge ownership
@@ -425,6 +426,13 @@ Finds native pools (pool_…) and Account Lockers (locker_…) by name or addres
 - `kind` ("pool" | "locker" | "both"; required, default: "pool") — What to look for
 - `accounts` (array; optional) — Accounts whose recent transactions are searched too
 - `limit` (integer; required, default: 25) — Maximum results
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `get_component_info` — Read component info
+
+Reads one or several Radix components (component_…), the same card the console's "Component info" section shows: name, description and link, blueprint and package (a package's code can never change), who owns the component and the package, its royalties, how many tokens and NFT collections it holds, when it was created and last used, every role with whether it can change, and a security analysis (findings worst first: an owner anyone or an XRD badge can act as, an owner badge that can be minted or has several units, roles open to everyone, held tokens their issuer can recall or freeze, royalties and who can change them, whether a verified dApp claims it, whether its name can change, the entities created with it that answer to it, whether it is new). These check permissions, not code: nothing here says the code is safe.
+
+- `component` (any; required) — Component address (component_…), or a list of up to 10 to read them all at once
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 
 ### `plan_holder_distribution` — Plan a distribution to holders

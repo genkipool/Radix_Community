@@ -894,7 +894,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 pollOnce(1);
             }
         } catch (err: unknown) {
-            setError((err as Error).message || 'Ocurrió un error al enviar la transacción.');
+            setError((err as Error).message || navT.wallet_tx_error);
             setIsTransacting(false);
         }
     };
@@ -1017,7 +1017,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         return entityData.non_fungible_resources.items.filter((nf: ResourceItem) => {
             if (!hasAvailableBalance(nf)) return false;
 
-            const rawName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
+            const rawName = getMetadataValue(nf.explicit_metadata?.items, 'name') || navT.wallet_unknown_nft;
             const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
             const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
             const isOwnerBadgeCollection = rawName.toLowerCase().includes('owner badge');
@@ -1048,7 +1048,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         if (!ed?.pool_units?.items) return [];
         return ed.pool_units.items.filter((pu: ResourceItem) => {
             if (!hasAvailableBalance(pu)) return false;
-            const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || 'Pool Unit';
+            const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || navT.wallet_pool_unit;
             return name.toLowerCase().includes(query);
         });
     })();
@@ -1072,10 +1072,10 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
     };
 
     const allTabs: { type: AssetType; label: string; count?: number }[] = [
-        { type: 'address', label: 'Direcciones', count: availableAddresses.length },
-        { type: 'fungible', label: 'Tokens', count: entityData?.fungible_resources?.items?.filter(hasAvailableBalance).length || 0 },
-        { type: 'non_fungible', label: 'NFTs', count: getIndividualNftCount() },
-        { type: 'pool_unit', label: 'Pools', count: ((entityData as { pool_units?: { items?: ResourceItem[] } } | undefined)?.pool_units?.items?.filter(hasAvailableBalance).length) || 0 },
+        { type: 'address', label: navT.wallet_tab_addresses, count: availableAddresses.length },
+        { type: 'fungible', label: navT.wallet_tab_tokens, count: entityData?.fungible_resources?.items?.filter(hasAvailableBalance).length || 0 },
+        { type: 'non_fungible', label: navT.wallet_tab_nfts, count: getIndividualNftCount() },
+        { type: 'pool_unit', label: navT.wallet_tab_pools, count: ((entityData as { pool_units?: { items?: ResourceItem[] } } | undefined)?.pool_units?.items?.filter(hasAvailableBalance).length) || 0 },
     ];
     const tabs = popupMode === 'asset' ? allTabs.filter(t => t.type !== 'address') : allTabs;
 
@@ -1127,7 +1127,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         return (
             <>
                 <div className="flex items-center justify-between px-1 mb-2 border-b border-[var(--color-card-border)] pb-3 mt-2">
-                    <span className="text-xs text-[var(--color-text-main)] font-medium">Añadir mensaje a la transacción</span>
+                    <span className="text-xs text-[var(--color-text-main)] font-medium">{navT.wallet_add_message}</span>
                     <button
                         type="button"
                         onClick={() => setShowMessageInput(prev => !prev)}
@@ -1138,10 +1138,10 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 </div>
                 {/* Add destination input section */}
                 <div className="flex items-end justify-between px-1 mb-2 border-b border-[var(--color-card-border)] pb-3">
-                    <span className="text-xs text-[var(--color-text-main)] font-medium mb-1">{navT.wallet_add_dest_input || 'Añadir input dirección de destino'}</span>
+                    <span className="text-xs text-[var(--color-text-main)] font-medium mb-1">{navT.wallet_add_dest_input}</span>
                     <input
                         type="number"
-                        aria-label="Cantidad de inputs"
+                        aria-label={navT.wallet_inputs_count}
                         min={0}
                         max={99}
                         value={addressCount}
@@ -1159,7 +1159,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             }
                         }}
                         className="w-14 h-8 text-center bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg px-1 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        title="Cantidad de inputs"
+                        title={navT.wallet_inputs_count}
                     />
                 </div>
                 {renderAddressItems()}
@@ -1169,7 +1169,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
     const renderAddressItems = () => {
         if (availableAddresses.length === 0) {
-            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron otras direcciones</div>;
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">{navT.wallet_no_other_addresses}</div>;
         }
 
         const itemsWithState = availableAddresses.map((acc: { address: string; label: string }) => {
@@ -1248,7 +1248,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
     const renderFungibleItems = () => {
         if (fungibles.length === 0) {
-            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron tokens</div>;
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">{navT.wallet_no_tokens}</div>;
         }
 
         const itemsWithState = fungibles.map((f: ResourceItem) => {
@@ -1379,7 +1379,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
     const renderNftItems = () => {
         if (nonFungibles.length === 0) {
-            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron NFTs</div>;
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">{navT.wallet_no_nfts}</div>;
         }
 
         const nftOwners = new Map<string, string | null>();
@@ -1403,7 +1403,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         const itemsWithState: { initialSel: boolean, jsx: React.ReactNode }[] = [];
 
         nonFungibles.forEach((nf: ResourceItem) => {
-            const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
+            const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || navT.wallet_unknown_nft;
             const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
             const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
             const isOwnerBadgeCollection = baseName.toLowerCase().includes('owner badge');
@@ -1536,11 +1536,11 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
     const renderPoolUnitItems = () => {
         if (poolUnits.length === 0) {
-            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron Pool Units</div>;
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">{navT.wallet_no_pool_units}</div>;
         }
 
         const itemsWithState = poolUnits.map((pu: ResourceItem) => {
-            const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || 'Pool Unit';
+            const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || navT.wallet_pool_unit;
             const symbol = getMetadataValue(pu.explicit_metadata?.items, 'symbol') || 'POOL';
             const icon = getMetadataValue(pu.explicit_metadata?.items, 'icon_url') || '';
             const item: SelectedAsset = { type: 'pool_unit', resourceAddress: pu.resource_address, symbol, name, iconUrl: icon };
@@ -1644,7 +1644,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             setPopupOpen(false);
                             setPopupDestTarget(null);
                         }}
-                        closeLabel="Cerrar"
+                        closeLabel={navT.wallet_close}
                         header={
                             <SelectPopupTabs
                                 tabs={tabs.map(tab => ({ value: tab.type, label: tab.label, count: tab.count }))}
@@ -1654,20 +1654,20 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             setPopupOpen(false);
                             setPopupDestTarget(null);
                         }}
-                                closeLabel="Cerrar"
+                                closeLabel={navT.wallet_close}
                             />
                         }
                         search={{
                             value: searchQuery,
                             onChange: setSearchQuery,
-                            placeholder: popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...',
+                            placeholder: popupMode === 'address' ? navT.wallet_search_address : navT.wallet_search_asset,
                             // eslint-disable-next-line react-hooks/refs
                             onEnter: isAddressMode ? handleConfirmSelection : undefined,
                         }}
-                        footer={isAddressMode ? { label: navT.wallet_confirm_selection || 'Agregar', onClick: handleConfirmSelection } : undefined}
+                        footer={isAddressMode ? { label: navT.wallet_confirm_selection, onClick: handleConfirmSelection } : undefined}
                     >
                         {isLoadingAssets ? (
-                            <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">Cargando...</div>
+                            <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">{navT.wallet_loading}</div>
                         ) : (
                             <>
                                 {activeTab === 'address' && renderAddressTab()}
@@ -1708,8 +1708,8 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                     )}
                                     <input
                                         type="text"
-                                        aria-label={navT.wallet_dest_placeholder || 'Dirección de destino'}
-                                        placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
+                                        aria-label={navT.wallet_dest_label}
+                                        placeholder={navT.wallet_dest_placeholder}
                                         value={formatAddress(destinationAddress, isDestFocused)}
                                         onFocus={() => setIsDestFocused(true)}
                                         onBlur={() => setIsDestFocused(false)}
@@ -1722,11 +1722,11 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
                                 type="button"
-                                aria-label="Seleccionar dirección"
+                                aria-label={navT.wallet_select_address}
                                 disabled={isWalletEmpty}
                                 onClick={(e) => handleOpenPopup('address', undefined, undefined, e.currentTarget)}
                                 className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Seleccionar dirección"
+                                title={navT.wallet_select_address}
                             >
                                 <Plus className="size-3.5" strokeWidth={3} />
                             </button>
@@ -1774,7 +1774,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                                     <div className="relative w-full h-[42px]">
                                                         <input
                                                             type="number"
-                                                            aria-label="Cantidad de activo"
+                                                            aria-label={navT.wallet_asset_amount}
                                                             min="0"
                                                             step="any"
                                                             placeholder="0.00"
@@ -1797,7 +1797,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                             disabled={isWalletEmpty}
                                             onClick={(e) => handleOpenPopup('asset', asset.internalId, undefined, e.currentTarget)}
                                             className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px] disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title="Cambiar Activo"
+                                            title={navT.wallet_change_asset}
                                         >
                                             <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
                                                 <SafeImage src={asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl} alt={asset.symbol} fallbackName={asset.name || asset.symbol} zoomable={false} className="w-full h-full object-cover" />
@@ -1850,8 +1850,8 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                             )}
                                             <input
                                                 type="text"
-                                                aria-label={navT.wallet_dest_placeholder || 'Dirección de destino'}
-                                                placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
+                                                aria-label={navT.wallet_dest_label}
+                                                placeholder={navT.wallet_dest_placeholder}
                                                 value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
                                                 onFocus={() => setFocusedGroupId(groupId)}
                                                 onBlur={() => setFocusedGroupId(null)}
@@ -1868,21 +1868,21 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                     {addressValidity[header.destAddress || ''] !== false && (
                                         <SaveToAddressBookButton
                                             address={header.destAddress || ''}
-                                            saveLabel={navT.wallet_save_contact || 'Guardar en la agenda'}
-                                            savedLabel={navT.wallet_saved_contact || 'Ya está en tu agenda'}
+                                            saveLabel={navT.wallet_save_contact}
+                                            savedLabel={navT.wallet_saved_contact}
                                             className="bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50"
                                         />
                                     )}
                                     <button
                                         type="button"
-                                        aria-label="Seleccionar dirección"
+                                        aria-label={navT.wallet_select_address}
                                         disabled={isWalletEmpty}
                                         // e.currentTarget is a DOM node captured in an event handler, not a
                                         // render-time ref read; the compiler rule is a false positive here.
                                         // eslint-disable-next-line react-hooks/refs
                                         onClick={(e) => handleOpenPopup('address', undefined, groupId, e.currentTarget)}
                                         className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Vincular activos"
+                                        title={navT.wallet_link_assets}
                                     >
                                         <Plus className="size-3.5" strokeWidth={3} />
                                     </button>
@@ -1921,7 +1921,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                                         <div className="relative w-full h-[42px]">
                                                             <input
                                                                 type="number"
-                                                                aria-label="Cantidad de activo"
+                                                                aria-label={navT.wallet_asset_amount}
                                                                 min="0"
                                                                 step="any"
                                                                 placeholder="0.00"
@@ -1944,7 +1944,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                                 disabled={isWalletEmpty}
                                                 onClick={(e) => handleOpenPopup('asset', item.internalId, undefined, e.currentTarget)}
                                                 className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                title="Cambiar Activo"
+                                                title={navT.wallet_change_asset}
                                             >
                                                 <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
                                                     <SafeImage src={item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl} alt={item.symbol} fallbackName={item.name || item.symbol} zoomable={false} className="w-full h-full object-cover" />
@@ -1971,7 +1971,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             {requiredBadges.length > 0 && (
                 <div className="flex flex-col gap-2 mt-2 p-3 bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] rounded-xl">
                     <div className="text-xs font-bold text-[var(--color-text-main)] opacity-80 uppercase tracking-wider mb-1">
-                        Requisitos de Seguridad
+                        {navT.wallet_security_requirements}
                     </div>
                     {requiredBadges.map((badge, idx) => {
                         const nfRes = entityData?.non_fungible_resources?.items?.find(i => i.resource_address === badge.badgeAddress);
@@ -1985,7 +1985,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                     <>
                                         <Check className="size-4 text-green-500" />
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-[var(--color-text-main)] font-medium text-xs truncate">Presentando insignia</span>
+                                            <span className="text-[var(--color-text-main)] font-medium text-xs truncate">{navT.wallet_presenting_badge}</span>
                                             <span className="text-[var(--color-text-muted)] text-[10px] font-mono truncate">{badgeName}</span>
                                         </div>
                                     </>
@@ -1993,7 +1993,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                     <>
                                         <X className="size-4 text-red-500" />
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-red-400 font-medium text-xs truncate">Se necesita insignia (No la tienes)</span>
+                                            <span className="text-red-400 font-medium text-xs truncate">{navT.wallet_badge_missing}</span>
                                             <span className="text-red-400/70 text-[10px] font-mono truncate">{badge.badgeAddress}</span>
                                         </div>
                                     </>
@@ -2022,7 +2022,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                 >
                                     <div className="relative pt-2">
                                         <textarea
-                                            placeholder="Mensaje de la transacción (opcional)..."
+                                            placeholder={navT.wallet_message_placeholder}
                                             value={messageText}
                                             onChange={(e) => setMessageText(e.target.value.slice(0, 255))}
                                             className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg py-3 px-3 text-sm text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 resize-none h-[72px]"
@@ -2050,7 +2050,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                 ) : (
                                     <>
                                         <RadixIcon className="size-5 relative -top-[1px]" strokeColor="currentColor" />
-                                        <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
+                                        <span>{navT.wallet_send_transaction}</span>
                                     </>
                                 )}
                             </button>
@@ -2059,13 +2059,13 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
                         {isAnyOverdrawn && (
                             <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20 text-center">
-                                {navT.wallet_insufficient_balance || 'Saldo insuficiente'}
+                                {navT.wallet_insufficient_balance}
                             </div>
                         )}
 
                         {hasAnyInvalidAddress && !isAnyOverdrawn && (
                             <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20 text-center">
-                                {navT.wallet_invalid_address || 'Dirección inválida'}
+                                {navT.wallet_invalid_address}
                             </div>
                         )}
 
