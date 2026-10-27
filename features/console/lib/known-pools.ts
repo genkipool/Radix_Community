@@ -1,17 +1,18 @@
 /**
  * Native pools that DEXes publish in their own APIs: the closest thing to a
- * list of every pool, which the Gateway cannot give. Mainnet only; neither
- * DEX has a Stokenet API.
+ * list of every pool, which the Gateway cannot give. Mainnet only; none of
+ * the DEXes has a Stokenet API.
  *
  * - Ociswap: `liquidity_pool_address` of its basic and flex pools, with a name.
  * - DefiPlaza: the base and quote pools of each pair, named from the tokens.
+ * - Reddicks: a DefiPlaza fork with the same `/api/pairs` shape.
  *
  * Runs on the server (DefiPlaza sends no CORS headers) and takes `fetch`
  * and the Gateway as arguments so it can be tested offline.
  */
 import type { GatewayPost } from './resource-holders';
 
-export type KnownPoolSource = 'ociswap' | 'defiplaza';
+export type KnownPoolSource = 'ociswap' | 'defiplaza' | 'reddicks';
 
 export interface KnownPool {
   address: string;
@@ -27,7 +28,11 @@ export type KnownPoolRow = [address: string, name: string, source: KnownPoolSour
 type Fetch = (url: string) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>;
 
 const OCISWAP = 'https://api.ociswap.com/pools';
-const DEFIPLAZA = 'https://radix.defiplaza.net/api/pairs';
+/** DEXes that publish their pairs as DefiPlaza does. */
+const PAIR_APIS = {
+  defiplaza: 'https://radix.defiplaza.net/api/pairs',
+  reddicks: 'https://dex.reddicks.meme/api/pairs',
+} as const;
 /** Ociswap has ~19 pages of 100; the cap only guards against a runaway cursor. */
 const MAX_OCISWAP_PAGES = 50;
 const DETAILS_BATCH = 20;
@@ -71,7 +76,7 @@ export async function fetchOciswapPools(fetcher: Fetch): Promise<KnownPool[]> {
   return pools;
 }
 
-interface DefiPlazaPairs {
+interface PairsResponse {
   data?: { baseToken?: string; quoteToken?: string; basePool?: string; quotePool?: string; tvlUSD?: number }[];
 }
 
@@ -99,8 +104,12 @@ async function symbols(post: GatewayPost, resources: string[]): Promise<Record<s
   return out;
 }
 
-export async function fetchDefiPlazaPools(fetcher: Fetch, post: GatewayPost): Promise<KnownPool[]> {
-  const pairs = ((await getJson(fetcher, DEFIPLAZA)) as DefiPlazaPairs).data ?? [];
+export async function fetchPairPools(
+  fetcher: Fetch,
+  post: GatewayPost,
+  source: keyof typeof PAIR_APIS,
+): Promise<KnownPool[]> {
+  const pairs = ((await getJson(fetcher, PAIR_APIS[source])) as PairsResponse).data ?? [];
   const tokens = [...new Set(pairs.flatMap((p) => [p.baseToken, p.quoteToken]).filter((t): t is string => !!t))];
   const names = await symbols(post, tokens).catch(() => ({}) as Record<string, string>);
   const sym = (t?: string) => (t ? names[t] ?? `${t.slice(0, 14)}…` : '?');
@@ -115,19 +124,23 @@ export async function fetchDefiPlazaPools(fetcher: Fetch, post: GatewayPost): Pr
     ];
     return sides
       .filter((side): side is [string, string | undefined] => !!side[0]?.startsWith('pool_'))
-      .map(([address, token]) => ({ address, name: `${pair} (${sym(token)})`, source: 'defiplaza', tvlUsd }));
+      .map(([address, token]) => ({ address, name: `${pair} (${sym(token)})`, source, tvlUsd }));
   });
 }
 
-/** Both DEXes, deduplicated, largest first. A DEX that fails is skipped. */
+/**
+ * Every DEX, deduplicated, largest first. A DEX that fails is skipped.
+ * Reddicks also lists some DefiPlaza pairs; the earlier DEX keeps the pool.
+ */
 export async function fetchKnownPools(fetcher: Fetch, post: GatewayPost): Promise<KnownPool[]> {
-  const [ociswap, defiplaza] = await Promise.allSettled([fetchOciswapPools(fetcher), fetchDefiPlazaPools(fetcher, post)]);
-  const all = [
-    ...(ociswap.status === 'fulfilled' ? ociswap.value : []),
-    ...(defiplaza.status === 'fulfilled' ? defiplaza.value : []),
-  ];
+  const lists = await Promise.allSettled([
+    fetchOciswapPools(fetcher),
+    fetchPairPools(fetcher, post, 'defiplaza'),
+    fetchPairPools(fetcher, post, 'reddicks'),
+  ]);
   const seen = new Set<string>();
-  return all
-    .sort((a, b) => b.tvlUsd - a.tvlUsd)
-    .filter((p) => !seen.has(p.address) && seen.add(p.address));
+  return lists
+    .flatMap((list) => (list.status === 'fulfilled' ? list.value : []))
+    .filter((p) => !seen.has(p.address) && seen.add(p.address))
+    .sort((a, b) => b.tvlUsd - a.tvlUsd);
 }

@@ -28,7 +28,7 @@ import { isNonFungibleResource } from '../../lib/bulk-send';
 import { findLedgerEntities, type LedgerEntityKind } from '../../lib/ledger-entities';
 
 /** Where an option comes from; also the popup's tabs, in this order. */
-const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'network', 'validators'] as const;
+const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'reddicks', 'network', 'validators'] as const;
 /** A picker of resources only is split by kind instead: tokens and NFTs. */
 const KINDS = ['tokens', 'nfts'] as const;
 type Tab = 'all' | (typeof SOURCES)[number] | (typeof KINDS)[number];
@@ -47,6 +47,12 @@ interface PickerOption {
 }
 
 const LEDGER_KINDS: LedgerEntityKind[] = ['pool', 'locker'];
+/**
+ * Wide enough for every tab of a pool input in either language (wallet, agenda,
+ * the three DEXes and recent activity: ~840 px in Spanish). Inputs that accept
+ * any address can have more tabs; those wrap onto a second line.
+ */
+const POPUP_WIDTH = 880;
 /** Shown before searching; the search runs over everything found. */
 const INITIAL_ROWS = 40;
 /** Tall enough for about eight rows, short enough not to cover the form. */
@@ -87,6 +93,7 @@ const TEXT = {
       mine: 'Usados por ti',
       ociswap: 'Ociswap',
       defiplaza: 'DefiPlaza',
+      reddicks: 'Reddicks',
       network: 'Actividad reciente',
       validators: 'Validadores',
     },
@@ -125,6 +132,7 @@ const TEXT = {
       mine: 'Used by you',
       ociswap: 'Ociswap',
       defiplaza: 'DefiPlaza',
+      reddicks: 'Reddicks',
       network: 'Recent activity',
       validators: 'Validators',
     },
@@ -140,6 +148,7 @@ const SOURCE_ICON: Record<Source, ReactNode> = {
   mine: <Database className="size-3.5 text-[var(--color-primary)]" />,
   ociswap: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
   defiplaza: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
+  reddicks: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
   network: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
   validators: <ServerCog className="size-3.5 text-[var(--color-text-muted)]" />,
 };
@@ -152,7 +161,7 @@ const SOURCE_ICON: Record<Source, ReactNode> = {
  * - the wallet: its accounts, and for resource inputs what those accounts hold;
  * - the saved agenda;
  * - for pools and lockers, the ones the wallet's accounts have touched, the
- *   native pools Ociswap and DefiPlaza publish (mainnet) and pools with recent
+ *   native pools Ociswap, DefiPlaza and Reddicks publish (mainnet) and pools with recent
  *   network activity;
  * - for validators, the ones the wallet's accounts own and the validator set.
  *
@@ -189,7 +198,7 @@ export function AddressPickerButton({
   const multi = !!onConfirm;
   const draft = useSelectionDraft<string>();
 
-  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, style: popupStyle, direction } = usePickerPopup();
+  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, style: popupStyle, direction } = usePickerPopup({ width: POPUP_WIDTH });
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 

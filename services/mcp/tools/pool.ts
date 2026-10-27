@@ -485,7 +485,7 @@ export const findPoolsTool = defineMcpTool({
   name: 'find_pools',
   title: 'Find native pools and lockers',
   description:
-    'Finds native pools (pool_…) and Account Lockers (locker_…) by name or address, from the same sources as the console pickers: the ones the given accounts have touched, the native pools Ociswap and DefiPlaza publish (mainnet only, largest first) and pools with recent network activity. No API lists every pool or locker on Radix, so a missing one can still be used by address. Use it to resolve "the XRD/HUG pool" into an address before get_pool_state.',
+    'Finds native pools (pool_…) and Account Lockers (locker_…) by name or address, from the same sources as the console pickers: the ones the given accounts have touched, the native pools Ociswap, DefiPlaza and Reddicks publish (mainnet only, largest first) and pools with recent network activity. No API lists every pool or locker on Radix, so a missing one can still be used by address. Use it to resolve "the XRD/HUG pool" into an address before get_pool_state.',
   category: 'console',
   inputSchema: z.object({
     query: z.string().optional().describe('Text to match against the name or the address (case insensitive)'),
