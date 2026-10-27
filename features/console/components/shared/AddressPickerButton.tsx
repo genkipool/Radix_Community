@@ -7,7 +7,15 @@ import { AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import { useValidatorList } from '@/features/dashboard/staking';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { SelectPopup, SelectPopupEmpty, SelectPopupRow, SelectPopupTabs, selectedFirst, useSelectionDraft } from '@/components/ui/SelectPopup';
+import {
+  SelectPopup,
+  SelectPopupEmpty,
+  SelectPopupRow,
+  SelectPopupTabs,
+  selectPopupTabsWidth,
+  selectedFirst,
+  useSelectionDraft,
+} from '@/components/ui/SelectPopup';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   useAddressBook,
@@ -47,25 +55,10 @@ interface PickerOption {
 }
 
 const LEDGER_KINDS: LedgerEntityKind[] = ['pool', 'locker'];
-/** Popup width bounds; between them it fits its tabs (see `tabsWidth`). */
+/** Popup width bounds; between them it fits its tabs (see `selectPopupTabsWidth`). */
 const MIN_WIDTH = 440;
 const MAX_WIDTH = 880;
 
-let measureCtx: CanvasRenderingContext2D | null | undefined;
-/**
- * Width the tab bar needs for these labels, matching `SelectPopupTabs`: 10 px
- * bold uppercase text with 0.05em tracking, 4 px padding a side, 12 px gaps,
- * 12 px bar padding a side and the 32 px close button, plus 8 px so subpixel
- * rounding never pushes the last tab onto another line.
- */
-function tabsWidth(labels: string[]): number {
-  if (typeof document === 'undefined') return MIN_WIDTH;
-  measureCtx ??= document.createElement('canvas').getContext('2d');
-  if (!measureCtx) return MAX_WIDTH;
-  measureCtx.font = `700 10px ${getComputedStyle(document.body).fontFamily}`;
-  const text = labels.reduce((sum, l) => sum + measureCtx!.measureText(l.toUpperCase()).width + l.length * 0.5 + 8, 0);
-  return Math.ceil(text + 12 * (labels.length - 1) + 24 + 32 + 8);
-}
 /** Shown before searching; the search runs over everything found. */
 const INITIAL_ROWS = 40;
 /** Tall enough for about eight rows, short enough not to cover the form. */
@@ -228,11 +221,11 @@ export function AddressPickerButton({
     open && accepts('resource') ? accountAddresses : null,
   );
   // One lookup for pools and lockers together, shared by every picker on the
-  // page and kept 30 minutes: the last 100 transactions of each account plus
-  // one page of recent pool activity, a few dozen KB in all.
+  // page and kept 30 minutes: the last 100 transactions of each account, a few
+  // dozen KB in all. Network-wide activity comes from the server below.
   const { data: ledgerAll, isFetching: ledgerLoading } = useQuery({
     queryKey: ['console-ledger-entities', activeNetwork, accountAddresses.join(',')],
-    enabled: open && ledgerKinds.length > 0,
+    enabled: open && ledgerKinds.length > 0 && accountAddresses.length > 0,
     staleTime: 30 * 60_000,
     retry: false,
     queryFn: () =>
@@ -240,9 +233,23 @@ export function AddressPickerButton({
         accounts: accountAddresses,
         kinds: LEDGER_KINDS,
         accountPages: 1,
+        networkPages: 0,
       }),
   });
   const ledger = ledgerAll?.filter((e) => ledgerKinds.includes(e.kind));
+  // Pools with recent network activity: the same for everyone, so the server
+  // caches them and the tab shows up with the DEX lists instead of a second later.
+  const { data: recentPools, isFetching: recentLoading } = useQuery({
+    queryKey: ['console-recent-pools', activeNetwork],
+    enabled: open && accepts('pool'),
+    staleTime: 5 * 60_000,
+    retry: false,
+    queryFn: async () => {
+      const res = await fetch(`/api/console/recent-pools?network=${activeNetwork}`);
+      if (!res.ok) throw new Error(`recent pools: ${res.status}`);
+      return ((await res.json()) as { pools: [address: string, name: string][] }).pools;
+    },
+  });
   const { data: knownPools, isFetching: knownLoading } = useQuery({
     queryKey: ['console-known-pools', activeNetwork],
     enabled: open && accepts('pool') && activeNetwork === 'mainnet',
@@ -277,7 +284,7 @@ export function AddressPickerButton({
     sendableOnly && open ? [...(holdings?.fungibles ?? []), ...(holdings?.nonFungibles ?? [])].map((r) => r.resourceAddress) : [],
     activeNetwork,
   );
-  const loading = holdingsLoading || ledgerLoading || knownLoading || validatorsLoading || myValidatorsLoading;
+  const loading = holdingsLoading || ledgerLoading || recentLoading || knownLoading || validatorsLoading || myValidatorsLoading;
 
   // Earlier sources win when an address shows up in several.
   const options: PickerOption[] = [];
@@ -325,7 +332,11 @@ export function AddressPickerButton({
   if (accepts('pool')) {
     (knownPools ?? []).forEach(([address, label, source]) => add({ address, label, source, category: 'pool' }));
   }
-  (ledger ?? []).filter((e) => !e.mine).forEach((e) => add({ address: e.address, label: e.name, source: 'network', category: e.kind }));
+  if (accepts('pool')) {
+    (recentPools ?? [])
+      .filter(([address]) => !ledger?.some((e) => e.address === address))
+      .forEach(([address, label]) => add({ address, label, source: 'network', category: 'pool' }));
+  }
   (accepts('validator') ? validators ?? [] : []).forEach((v) =>
     add({
       address: v.address,
@@ -363,7 +374,7 @@ export function AddressPickerButton({
   // keeps the size; past MAX_WIDTH they wrap onto another line.
   const popupWidth =
     counts.length > 1
-      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...[TEXT.es, TEXT.en].map((lang) => tabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count})`)))))
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...[TEXT.es, TEXT.en].map((lang) => selectPopupTabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count})`)))))
       : MIN_WIDTH;
   const { style: popupStyle, direction } = layoutFor(popupWidth);
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, X, Check } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
-import { SelectPopup, SelectPopupRow, SelectPopupTabs } from '@/components/ui/SelectPopup';
+import { SelectPopup, SelectPopupRow, SelectPopupTabs, selectPopupTabsWidth } from '@/components/ui/SelectPopup';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
@@ -1609,7 +1609,9 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
     const computePopupStyle = (): React.CSSProperties => {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const width = Math.min(380, vw - 24);
+        // 380 px, or wider when the tabs need it, so they stay on one line.
+        const tabsWidth = selectPopupTabsWidth(tabs.map(tab => `${tab.label} (${tab.count ?? 0})`));
+        const width = Math.min(Math.max(380, tabsWidth), vw - 24);
         // Above the wallet profile side panel (z-[9001]) so it is never covered.
         const zIndex = 10000;
         if (!anchorRect) {

@@ -34,6 +34,24 @@ export function SelectPopupClose({ onClick, label }: { onClick: () => void; labe
   );
 }
 
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+/**
+ * Width a popup needs for `SelectPopupTabs` with these labels (each with its
+ * count, as shown), so it can size itself to fit them on one line: 10 px
+ * bold uppercase text with 0.05em tracking, 4 px padding a side, 12 px gaps,
+ * 12 px bar padding a side and the 32 px close button, plus 8 px so subpixel
+ * rounding never pushes the last tab onto another line. 0 when it cannot
+ * measure (no DOM), so callers fall back to their own width.
+ */
+export function selectPopupTabsWidth(labels: string[]): number {
+  if (typeof document === 'undefined') return 0;
+  measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return 0;
+  measureCtx.font = `700 10px ${getComputedStyle(document.body).fontFamily}`;
+  const text = labels.reduce((sum, l) => sum + measureCtx!.measureText(l.toUpperCase()).width + l.length * 0.5 + 8, 0);
+  return Math.ceil(text + 12 * (labels.length - 1) + 24 + 32 + 8);
+}
+
 interface SelectPopupTabsProps<T extends string> {
   tabs: Array<{ value: T; label: ReactNode; count?: number }>;
   active: T;

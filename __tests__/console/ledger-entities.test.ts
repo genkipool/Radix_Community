@@ -51,6 +51,22 @@ describe('findLedgerEntities', () => {
     expect(calls.some((c) => c.manifest_class_filter)).toBe(false);
   });
 
+  it('skips the network-wide reads with networkPages 0 (the server caches those)', async () => {
+    const { post, calls } = fakeGateway();
+    const found = await findLedgerEntities(post, { accounts: [ACCOUNT], kinds: ['pool', 'locker'], networkPages: 0 });
+    expect(found.map((e) => e.mine)).toEqual([true, true]);
+    expect(calls.some((c) => c.manifest_class_filter)).toBe(false);
+  });
+
+  it('finds only network activity with no accounts', async () => {
+    const { post } = fakeGateway();
+    const found = await findLedgerEntities(post, { accounts: [], kinds: ['pool'] });
+    expect(found.map((e) => [e.address, e.mine])).toEqual([
+      [NET_POOL, false],
+      [MY_POOL, false],
+    ]);
+  });
+
   it('keeps what other sources found when one fails', async () => {
     const { post } = fakeGateway(['PoolContribution', 'PoolRedemption']);
     const found = await findLedgerEntities(post, { accounts: [ACCOUNT], kinds: ['pool'] });
