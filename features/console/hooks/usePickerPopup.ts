@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 const MAX_HEIGHT = 420;
+const DEFAULT_WIDTH = 440;
 
 /**
  * The floating popup behind the console's "+" picker buttons: drawn through a
@@ -10,8 +11,11 @@ const MAX_HEIGHT = 420;
  * above otherwise), following it on scroll and resize, and closing on a click
  * outside or Escape. The address picker and the NFT id picker share it, so
  * every "+" opens and behaves the same.
+ *
+ * `width` is fixed, not fitted to the content, so the popup keeps its size
+ * when the language changes; only a narrower screen shrinks it.
  */
-export function usePickerPopup() {
+export function usePickerPopup({ width: fixedWidth = DEFAULT_WIDTH }: { width?: number } = {}) {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -53,7 +57,7 @@ export function usePickerPopup() {
     }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const width = Math.min(440, vw - 24);
+    const width = Math.min(fixedWidth, vw - 24);
     const left = Math.min(Math.max(12, rect.right - width), Math.max(12, vw - width - 12));
     const spaceBelow = vh - rect.bottom;
     const spaceAbove = rect.top;

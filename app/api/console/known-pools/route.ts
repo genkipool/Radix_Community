@@ -5,7 +5,7 @@ import type { KnownPoolRow } from '@/features/console/lib/known-pools';
 import { validateNetwork } from '@/utils/apiValidation';
 
 /**
- * Native pools published by Ociswap and DefiPlaza (mainnet), for the console's
+ * Native pools published by Ociswap, DefiPlaza and Reddicks (mainnet), for the console's
  * pool pickers. Proxied because DefiPlaza sends no CORS headers. The CDN keeps
  * the answer for 6 hours (and serves it stale for a day while it refreshes),
  * so the upstream pages are read a few times a day, not on every popup.
