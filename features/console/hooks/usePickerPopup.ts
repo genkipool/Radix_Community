@@ -12,10 +12,11 @@ const DEFAULT_WIDTH = 440;
  * outside or Escape. The address picker and the NFT id picker share it, so
  * every "+" opens and behaves the same.
  *
- * `width` is fixed, not fitted to the content, so the popup keeps its size
- * when the language changes; only a narrower screen shrinks it.
+ * `style` is 440 px wide; `layoutFor(width)` gives the same placement at
+ * another width, for a popup that sizes itself after it renders (the address
+ * picker, from its tabs). A narrower screen shrinks either.
  */
-export function usePickerPopup({ width: fixedWidth = DEFAULT_WIDTH }: { width?: number } = {}) {
+export function usePickerPopup() {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -51,13 +52,17 @@ export function usePickerPopup({ width: fixedWidth = DEFAULT_WIDTH }: { width?: 
     };
   }, [open]);
 
-  const style: CSSProperties = (() => {
+  const layoutFor = (wanted: number) => {
+    const style = place(wanted);
+    return { style, direction: style.bottom !== undefined ? ('up' as const) : ('down' as const) };
+  };
+  const place = (wanted: number): CSSProperties => {
     if (typeof window === 'undefined' || !rect) {
       return { position: 'fixed', left: 12, top: 72, width: 320, zIndex: 9999 };
     }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const width = Math.min(fixedWidth, vw - 24);
+    const width = Math.min(wanted, vw - 24);
     const left = Math.min(Math.max(12, rect.right - width), Math.max(12, vw - width - 12));
     const spaceBelow = vh - rect.bottom;
     const spaceAbove = rect.top;
@@ -66,7 +71,7 @@ export function usePickerPopup({ width: fixedWidth = DEFAULT_WIDTH }: { width?: 
     return below
       ? { position: 'fixed', left, top: rect.bottom + 6, width, height: room(spaceBelow), zIndex: 9999 }
       : { position: 'fixed', left, bottom: vh - rect.top + 6, width, height: room(spaceAbove), zIndex: 9999 };
-  })();
+  };
 
-  return { open, show, close, buttonRef, popupRef, style, direction: style.bottom !== undefined ? ('up' as const) : ('down' as const) };
+  return { open, show, close, buttonRef, popupRef, layoutFor, ...layoutFor(DEFAULT_WIDTH) };
 }

@@ -47,12 +47,25 @@ interface PickerOption {
 }
 
 const LEDGER_KINDS: LedgerEntityKind[] = ['pool', 'locker'];
+/** Popup width bounds; between them it fits its tabs (see `tabsWidth`). */
+const MIN_WIDTH = 440;
+const MAX_WIDTH = 880;
+
+let measureCtx: CanvasRenderingContext2D | null | undefined;
 /**
- * Wide enough for every tab of a pool input in either language (wallet, agenda,
- * the three DEXes and recent activity: ~840 px in Spanish). Inputs that accept
- * any address can have more tabs; those wrap onto a second line.
+ * Width the tab bar needs for these labels, matching `SelectPopupTabs`: 10 px
+ * bold uppercase text with 0.05em tracking, 4 px padding a side, 12 px gaps,
+ * 12 px bar padding a side and the 32 px close button, plus 8 px so subpixel
+ * rounding never pushes the last tab onto another line.
  */
-const POPUP_WIDTH = 880;
+function tabsWidth(labels: string[]): number {
+  if (typeof document === 'undefined') return MIN_WIDTH;
+  measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return MAX_WIDTH;
+  measureCtx.font = `700 10px ${getComputedStyle(document.body).fontFamily}`;
+  const text = labels.reduce((sum, l) => sum + measureCtx!.measureText(l.toUpperCase()).width + l.length * 0.5 + 8, 0);
+  return Math.ceil(text + 12 * (labels.length - 1) + 24 + 32 + 8);
+}
 /** Shown before searching; the search runs over everything found. */
 const INITIAL_ROWS = 40;
 /** Tall enough for about eight rows, short enough not to cover the form. */
@@ -198,7 +211,7 @@ export function AddressPickerButton({
   const multi = !!onConfirm;
   const draft = useSelectionDraft<string>();
 
-  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, style: popupStyle, direction } = usePickerPopup({ width: POPUP_WIDTH });
+  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, layoutFor } = usePickerPopup();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
@@ -341,6 +354,18 @@ export function AddressPickerButton({
         .filter((address) => !options.some((o) => o.address === address))
         .map((address) => ({ address, label: '', source: 'typed', category: addressCategory(address) }))
     : [];
+  const tabs = ([['all', unique.length + typedSelected.length] as const, ...counts]).map(([key, count]) => ({
+    value: key,
+    label: (lang: typeof L) => (key === 'all' && byKind ? lang.tabs.allResources : lang.tabs[key]),
+    count,
+  }));
+  // As wide as the tabs need in the wider language, so switching language
+  // keeps the size; past MAX_WIDTH they wrap onto another line.
+  const popupWidth =
+    counts.length > 1
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...[TEXT.es, TEXT.en].map((lang) => tabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count})`)))))
+      : MIN_WIDTH;
+  const { style: popupStyle, direction } = layoutFor(popupWidth);
 
   const q = query.trim().toLowerCase();
   const inTab =
@@ -424,11 +449,7 @@ export function AddressPickerButton({
                 header={
                   counts.length > 1 ? (
                     <SelectPopupTabs
-                      tabs={([['all', unique.length + typedSelected.length] as const, ...counts]).map(([key, count]) => ({
-                        value: key,
-                        label: key === 'all' && byKind ? L.tabs.allResources : L.tabs[key],
-                        count,
-                      }))}
+                      tabs={tabs.map((t) => ({ value: t.value, label: t.label(L), count: t.count }))}
                       active={activeTab}
                       onChange={setTab}
                       onClose={() => closePopup()}

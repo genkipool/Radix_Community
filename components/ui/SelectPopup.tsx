@@ -48,7 +48,8 @@ export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onCl
     // The top padding belongs to the tabs (their underline sits on the border),
     // so the close button centres on the whole bar.
     <div className="shrink-0 px-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-      {/* Tabs that do not fit wrap onto another line instead of hiding behind a scroll. */}
+      {/* Each tab grows from its own width, so they fill the bar with even gaps;
+          tabs that do not fit wrap onto another line instead of hiding behind a scroll. */}
       <div role="tablist" className="flex flex-wrap gap-x-3 pt-3 flex-1 min-w-0">
         {tabs.map((tab) => (
           <button
@@ -57,7 +58,7 @@ export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onCl
             role="tab"
             aria-selected={active === tab.value}
             onClick={() => onChange(tab.value)}
-            className="relative py-2 px-1 outline-none flex items-center justify-center group"
+            className="relative flex-auto py-2 px-1 outline-none flex items-center justify-center group"
           >
             <span
               className={`text-[10px] font-bold tracking-wider uppercase whitespace-nowrap transition-opacity duration-200 ${
