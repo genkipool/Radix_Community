@@ -17,6 +17,7 @@
  * server, so the three cannot drift apart.
  */
 
+import { inspectAddress } from './address-inspect';
 import { buildBadgeProofManifest } from './badge-proof-manifest';
 import { escapeManifestString as escape } from './manifest-escape';
 import { setStringArrayMetadata, setStringMetadata, setUrlMetadata } from './metadata-manifests';
@@ -83,6 +84,43 @@ CALL_METHOD
 const requireResource = (badge: string) =>
   `Enum<2u8>(Enum<0u8>(Enum<0u8>(Enum<1u8>(${badge}))))`;
 
+/** Network part of an address's prefix: `rdx`, `tdx_2_`, `sim`… */
+const networkOf = (address: string) => {
+  const hrp = address.slice(0, address.lastIndexOf('1'));
+  return hrp.slice(hrp.indexOf('_') + 1);
+};
+
+/**
+ * Whether `address` is a well-formed address of the given kind: valid bech32m
+ * checksum, canonical lowercase, nothing around it. Addresses go into the
+ * manifest unquoted by any escaping, so this is what keeps a pasted
+ * `resource_…")` from closing the literal and adding instructions.
+ */
+export function isManifestAddress(address: string, prefix: 'account_' | 'resource_' | 'package_'): boolean {
+  if (!address.startsWith(prefix) || !/^[a-z0-9_]+$/.test(address)) return false;
+  return !!inspectAddress(address)?.checksumValid;
+}
+
+/** A template placeholder such as `{account}`: it cannot carry a quote. */
+const isPlaceholder = (value: string) => /^\{[a-zA-Z_]+\}$/.test(value);
+
+/** Throws unless every address is well formed and on the account's network. */
+function assertPoolAddresses({ account, resources, manager, packages }: CreatePoolInput) {
+  const checks: Array<[string, string, Parameters<typeof isManifestAddress>[1]]> = [
+    ['account', account, 'account_'],
+    ...resources.map((r, i): [string, string, 'resource_'] => [`resource ${i + 1}`, r, 'resource_']),
+    ['pool package', packages.pool, 'package_'],
+    ['resource package', packages.resource, 'package_'],
+  ];
+  if (manager.mode === 'existingBadge') checks.push(['manager badge', manager.resource, 'resource_']);
+  const network = isPlaceholder(account) ? null : networkOf(account);
+  for (const [label, address, prefix] of checks) {
+    if (label === 'account' && isPlaceholder(address)) continue;
+    if (!isManifestAddress(address, prefix)) throw new Error(`The ${label} "${address}" is not a valid ${prefix.slice(0, -1)} address.`);
+    if (network !== null && networkOf(address) !== network) throw new Error(`The ${label} "${address}" is on another network.`);
+  }
+}
+
 /** The pool's own public profile, written in the creating transaction. */
 export interface PoolProfileInit {
   name?: string;
@@ -112,8 +150,13 @@ const initEntry = (key: string, value: string | undefined, kind: 'String' | 'Url
  * badge into that reservation, and references it by name in both rules, so the
  * badge and the pool are created atomically: nobody can see the pool before it
  * is guarded. The badge lands in the creator's account.
+ *
+ * Throws when an address is malformed or on another network. Whether an
+ * existing badge is safe to use is a ledger question: see `pool-safety`.
  */
-export function createPoolManifest({ account, kind, resources, manager, packages, profile }: CreatePoolInput): string {
+export function createPoolManifest(input: CreatePoolInput): string {
+  assertPoolAddresses(input);
+  const { account, kind, resources, manager, packages, profile } = input;
   const badgeRef =
     manager.mode === 'newBadge' ? `NamedAddress("${BADGE_NAME}")` : `Address("${manager.resource}")`;
   const rule = requireResource(badgeRef);

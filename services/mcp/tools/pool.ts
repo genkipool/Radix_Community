@@ -17,6 +17,8 @@ import { mapHoldings } from '@/features/console/lib/account-holdings';
 import { fetchPoolContributions } from '@/features/console/lib/pool-history';
 import { fetchAllHolders, type GatewayPost } from '@/features/console/lib/resource-holders';
 import { isPositiveDecimal } from '@/features/console/lib/decimal';
+import { findGlobalCaller, packageOfCallerRule } from '@/features/console/lib/caller-badge';
+import { badgeProblems, isXrd, managerBadgeRisks, reserveRisks, type BadgeProblem } from '@/features/console/lib/pool-safety';
 import { heldBadgeFor, isDrainable, metadataTags, parsePoolState, redemptionValue, type PoolRule, type PoolState } from '@/features/console/lib/pool-lookup';
 import {
   POOL_BLUEPRINTS,
@@ -44,7 +46,16 @@ import { defineMcpTool } from '../registry';
 import { assertAddressOnNetwork } from './console';
 import { networkSchema, localeSchema } from './schemas';
 
-const ruleText = (rule: PoolRule) =>
+/** The component or package a caller rule names, when known. */
+const callerOf = (rule: PoolRule, callers: Record<string, string>) =>
+  rule.type === 'nonFungible' ? (packageOfCallerRule(rule) ?? callers[rule.localId] ?? null) : null;
+
+const ruleText = (rule: PoolRule, callers: Record<string, string> = {}) => {
+  const caller = callerOf(rule, callers);
+  return caller ? `only ${caller} (${caller.startsWith('package_') ? 'package' : 'component'} caller badge)` : plainRuleText(rule);
+};
+
+const plainRuleText = (rule: PoolRule) =>
   rule.type === 'allowAll'
     ? 'AllowAll (ANYONE)'
     : rule.type === 'denyAll'
@@ -59,6 +70,24 @@ async function readPool(pool: string, network: Network): Promise<PoolState> {
   const state = parsePoolState(await fetchEntityDetailsLive(pool, network));
   if (!state) throw new Error(`${pool} is not a native pool on ${network}.`);
   return state;
+}
+
+const BADGE_PROBLEMS: Record<BadgeProblem, string> = {
+  xrd: 'XRD cannot guard a pool: every account holds some, so anyone could drain it.',
+  notHeld: 'the account does not hold it, so the pool would belong to whoever does.',
+  sharedSupply: 'other accounts hold part of its supply, and any of them could drain the pool. The account must hold the whole supply.',
+  mintable: 'it can still be minted, so whoever can mint it could become a manager and drain the pool.',
+};
+
+/** Warnings for reserve tokens whose issuer can recall or freeze them. */
+async function reserveNotes(resources: string[], network: Network): Promise<Array<[string, string]>> {
+  const details = await Promise.all(resources.map((r) => fetchEntityDetailsLive(r, network).catch(() => null)));
+  return resources.flatMap((resource, i) =>
+    reserveRisks(details[i]).map((risk): [string, string] => [
+      '⚠ Reserve risk',
+      `${resource}: its issuer can ${risk === 'recallable' ? 'recall it from' : 'freeze it in'} the pool's vaults`,
+    ]),
+  );
 }
 
 /** The proof an account can present for a rule, or null. */
@@ -136,12 +165,18 @@ export const getPoolStateTool = defineMcpTool({
       const state = details ? parsePoolState(details) : null;
       if (!state) return { address, error: `${address} is not a native pool on ${network}.` } as const;
       const post: GatewayPost = (path, body) => gatewayPost(network, path, body);
-      const [unitDetails, profiles, holders, history] = await Promise.all([
+      const managerBadge = state.manager.type === 'resource' || state.manager.type === 'nonFungible' ? state.manager.resource : null;
+      const [unitDetails, profiles, holders, history, badgeDetails, reserveDetails, callers] = await Promise.all([
         fetchEntityDetailsLive(state.poolUnit, network),
         readProfiles([address, state.poolUnit], network).catch(() => ({}) as Awaited<ReturnType<typeof readProfiles>>),
         fetchAllHolders(post, state.poolUnit, { max: MAX_PARTICIPANTS }).catch(() => null),
         fetchPoolContributions(post, state).catch(() => null),
+        managerBadge ? fetchEntityDetailsLive(managerBadge, network).catch(() => null) : Promise.resolve(null),
+        Promise.all(state.resources.map((res) => fetchEntityDetailsLive(res, network).catch(() => null))),
+        findGlobalCaller(post, address, [state.manager, state.owner]).catch(() => ({}) as Record<string, string>),
       ]);
+      const badgeRisks = managerBadge ? managerBadgeRisks(managerBadge, badgeDetails, state.manager.type === 'resource') : [];
+      const reserveWarnings = state.resources.flatMap((res, i) => reserveRisks(reserveDetails[i]).map((risk) => ({ resource: res, risk })));
       const supply = Number((unitDetails as { details?: { total_supply?: string } } | null)?.details?.total_supply ?? 0);
       const profile = profiles[address]?.name ? profiles[address] : profiles[state.poolUnit];
       const unitValue = supply > 0
@@ -182,6 +217,9 @@ export const getPoolStateTool = defineMcpTool({
         historyTruncated: history?.truncated ?? false,
         holdsManager: holds(state.manager),
         holdsOwner: holds(state.owner),
+        badgeRisks,
+        reserveWarnings,
+        callers,
       };
     };
     const results = await Promise.all(pools.map(read));
@@ -194,6 +232,16 @@ export const getPoolStateTool = defineMcpTool({
         cliSection(r.profile?.name || state.address),
         drainable &&
           `⚠ DRAINABLE: the manager role is AllowAll, so ANY account can call protected_withdraw and take the reserves. The owner role ${state.ownerUpdatable ? 'can still be changed' : 'is fixed, so this cannot be repaired'}. Tell the user to redeem their pool units now and move to a new pool guarded by a badge.`,
+        ...r.badgeRisks.map((risk) =>
+          risk.kind === 'xrd'
+            ? '⚠ DRAINABLE: the manager badge is XRD, so ANY account holding XRD can take the reserves. Tell the user to redeem their pool units now.'
+            : risk.kind === 'mintable'
+              ? '⚠ The manager badge can still be minted: whoever can mint it can become a manager and move the reserves.'
+              : `⚠ The manager badge has a supply of ${fmtUnits(risk.supply)}: every holder of one is a manager and can move the reserves.`,
+        ),
+        ...r.reserveWarnings.map(
+          (w) => `⚠ The issuer of ${w.resource} can ${w.risk === 'recallable' ? 'recall it from' : 'freeze it in'} the pool's vaults.`,
+        ),
         cliKeyValues([
           ['Pool', state.address],
           ['Type', POOL_BLUEPRINTS[state.kind]],
@@ -204,8 +252,8 @@ export const getPoolStateTool = defineMcpTool({
           ['Pool unit', state.poolUnit],
           ['Pool unit supply', fmtUnits(r.supply)],
           ...Object.entries(r.unitValue).map(([res, v]): [string, string] => [`1 unit ≈ ${res}`, fmtUnits(v)]),
-          ['Manager role', ruleText(state.manager)],
-          ['Owner role', `${ruleText(state.owner)}${state.ownerUpdatable ? '' : ' (fixed)'}`],
+          ['Manager role', ruleText(state.manager, r.callers)],
+          ['Owner role', `${ruleText(state.owner, r.callers)}${state.ownerUpdatable ? '' : ' (fixed)'}`],
           ...(account
             ? ([
                 ['Account units', fmtUnits(r.position?.units ?? 0)],
@@ -252,8 +300,12 @@ export const getPoolStateTool = defineMcpTool({
             unitValue: r.unitValue,
             manager: r.state.manager,
             owner: r.state.owner,
+            managerCaller: callerOf(r.state.manager, r.callers),
+            ownerCaller: callerOf(r.state.owner, r.callers),
             ownerUpdatable: r.state.ownerUpdatable,
-            drainable: isDrainable(r.state),
+            drainable: isDrainable(r.state) || r.badgeRisks.some((risk) => risk.kind === 'xrd'),
+            managerBadgeRisks: r.badgeRisks,
+            reserveRisks: r.reserveWarnings,
             retired: r.state.tags.includes(RETIRED_TAG),
             participantCount: r.participantCount,
             participants: r.participants,
@@ -347,7 +399,20 @@ export const buildPoolManifestTool = defineMcpTool({
       }
       if (new Set(resources).size !== resources.length) throw new Error('A resource is repeated.');
       resources.forEach((r) => assertAddressOnNetwork('resource', r, network));
-      if (input.managerBadge) assertAddressOnNetwork('managerBadge', input.managerBadge, network);
+      if (input.managerBadge) {
+        assertAddressOnNetwork('managerBadge', input.managerBadge, network);
+        // The rule accepts any amount of the resource: it must be this account's alone.
+        if (isXrd(input.managerBadge)) throw new Error(`${input.managerBadge} cannot guard the pool: ${BADGE_PROBLEMS.xrd} Omit managerBadge to mint a fresh badge instead.`);
+        const [badgeDetails, accountDetails] = await Promise.all([
+          fetchEntityDetailsLive(input.managerBadge, network),
+          fetchEntityDetailsLive(account, network),
+        ]);
+        const holdings = mapHoldings((accountDetails ?? {}) as Record<string, unknown>);
+        const problems = badgeProblems({ resource: input.managerBadge, details: badgeDetails, ...holdings });
+        if (problems.length) {
+          throw new Error(`${input.managerBadge} cannot guard the pool: ${BADGE_PROBLEMS[problems[0]]} Omit managerBadge to mint a fresh badge instead.`);
+        }
+      }
       const known = await fetchKnownAddresses(network);
       manifest = createPoolManifest({
         account,
@@ -369,6 +434,7 @@ export const buildPoolManifestTool = defineMcpTool({
         notes.push(['Pool profile', 'written in this transaction; name the pool unit afterwards with "profile"']);
       }
       notes.push(['Manager / owner', input.managerBadge ? `badge ${input.managerBadge}` : 'new badge, minted to the account']);
+      notes.push(...(await reserveNotes(resources, network)));
     } else {
       if (!input.pool) throw new Error(`"${operation}" needs the pool address.`);
       assertAddressOnNetwork('pool', input.pool, network);

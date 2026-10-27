@@ -47,6 +47,22 @@ describe('pool and distribution MCP tools', () => {
   });
 });
 
+describe('build_pool_manifest create', () => {
+  const call = (args: Record<string, unknown>) =>
+    getMcpRegistry().call('build_pool_manifest', { operation: 'create', account: ACCOUNT, network: 'stokenet', ...args }, { origin: 'https://example.test' });
+
+  it('refuses XRD as the manager badge: every account holds some', async () => {
+    const res = await call({ kind: 'two', resources: [XRD, LSU], managerBadge: XRD });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain('XRD cannot guard a pool');
+  });
+
+  it('refuses a resource address that is not one', async () => {
+    const res = await call({ kind: 'two', resources: [XRD, `${LSU}") ; CALL_METHOD`] });
+    expect(res.isError).toBe(true);
+  });
+});
+
 describe('pool and locker manifests are valid to the Radix Engine Toolkit', () => {
   it('create pool with a new badge, and with an existing one', async () => {
     const packages = { pool: POOL_PACKAGE, resource: RESOURCE_PACKAGE };

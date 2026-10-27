@@ -215,6 +215,35 @@ export const CardSkeleton = () => (
 );
 
 /** `[714041…8e89]`: long non-fungible ids shortened, short ones (`#1#`, `<gold>`) kept as they are. */
+/**
+ * A value on its own line with a copy button, centred on the text: an address
+ * (shortened, opening in the explorer) or an id. The button keeps its hit area
+ * but takes no extra height, so the line is as tall as its text.
+ */
+export function CopyLine({ value, text, href, copyLabel, mono = true }: { value: string; text?: ReactNode; href?: string; copyLabel: string; mono?: boolean }) {
+  const shown = text ?? truncateAddress(value, 14, 6);
+  const textClass = `leading-5 ${mono ? 'font-mono' : ''}`;
+  return (
+    <span className="flex items-center gap-1 text-xs font-normal" title={value}>
+      {href ? (
+        <a href={href} className={`${textClass} hover:opacity-70`} style={{ color: 'var(--color-primary)' }}>
+          {shown}
+        </a>
+      ) : (
+        <span className={textClass} style={{ color: 'var(--color-text-muted)' }}>
+          {shown}
+        </span>
+      )}
+      <CopyButton value={value} size="xs" variant="minimal" title={copyLabel} className="-my-1 shrink-0" />
+    </span>
+  );
+}
+
+/** An address: shortened, opening in the explorer, with a copy button. */
+export const AddressLine = ({ address, href, copyLabel }: { address: string; href: string; copyLabel: string }) => (
+  <CopyLine value={address} href={href} copyLabel={copyLabel} />
+);
+
 export const shortId = (id: string) => (id.length > 20 ? `${id.slice(0, 7)}…${id.slice(-5)}` : id);
 
 interface RuleSummaryProps {
@@ -227,10 +256,12 @@ interface RuleSummaryProps {
   note?: string;
   /** What "a component" means where this rule lives (a DEX pool, a dApp's locker). */
   callerHints?: { component: string; package: string };
+  /** The component or package behind a caller rule, already rendered (an AddressLine). */
+  caller?: ReactNode;
 }
 
 /** Who a role belongs to, in words: anyone, nobody, a badge (and whether you hold it), or a contract. */
-export function RuleSummary({ t, rule, badgeName, held, note, callerHints }: RuleSummaryProps) {
+export function RuleSummary({ t, rule, badgeName, held, note, callerHints, caller: callerAddress }: RuleSummaryProps) {
   const labels = t.pool;
   if (rule.type === 'resource' || rule.type === 'nonFungible') {
     // Engine caller badges are not something a person holds: say who acts instead.
@@ -239,6 +270,7 @@ export function RuleSummary({ t, rule, badgeName, held, note, callerHints }: Rul
       return (
         <>
           <span className="font-semibold">{labels.rule[caller]}</span>
+          {callerAddress}
           <Sub>{callerHints?.[caller] ?? labels.rule[`${caller}Hint`]}</Sub>
           {note && <Sub>{note}</Sub>}
         </>

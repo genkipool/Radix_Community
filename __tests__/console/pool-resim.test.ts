@@ -21,6 +21,7 @@ import {
 import {
   RESIM,
   ResimLedger,
+  SIM_XRD,
   expectCommitted,
   simulatorPackages,
   type ResimAccount,
@@ -374,5 +375,122 @@ SET_METADATA Address("${pool}") "name" Enum<Metadata::String>("renamed");`;
         expect(ledger.show(badge)).toContain('PBDG');
       }
     }
+  });
+
+  /*
+   * Why the console refuses some badges and warns about some tokens: these are
+   * the attacks, run against the engine. The builders still emit them on
+   * purpose (the checks live in pool-safety, which needs the ledger).
+   */
+  describe('attacks the console guards against', () => {
+    it('lets any XRD holder drain a pool guarded by XRD', () => {
+      ledger.use(creator);
+      const manifest = createPoolManifest({
+        account: creator.address,
+        kind: 'two',
+        resources: [tokenA, tokenB],
+        manager: { mode: 'existingBadge', resource: SIM_XRD },
+        packages,
+      });
+      const run = ledger.run(manifest, creator.address);
+      expectCommitted(run, manifest);
+      const pool = run.newEntities.find((a) => a.startsWith('pool_sim1'))!;
+      const contribute = contributeManifest({
+        account: creator.address,
+        pool,
+        kind: 'two',
+        contributions: [
+          { resource: tokenA, amount: '10' },
+          { resource: tokenB, amount: '10' },
+        ],
+        manager: { account: creator.address, resource: SIM_XRD },
+      });
+      expectCommitted(ledger.run(contribute, creator.address), contribute);
+
+      ledger.use(stranger);
+      const before = Number(ledger.balance(stranger.address, tokenA));
+      const drain = `
+CALL_METHOD Address("${stranger.address}") "create_proof_of_amount" Address("${SIM_XRD}") Decimal("0.000001");
+CALL_METHOD Address("${pool}") "protected_withdraw" Address("${tokenA}") Decimal("10") Enum<0u8>();
+CALL_METHOD Address("${stranger.address}") "deposit_batch" Expression("ENTIRE_WORKTOP");
+`;
+      expectCommitted(ledger.run(drain, stranger.address), drain);
+      expect(Number(ledger.balance(stranger.address, tokenA)) - before).toBe(10);
+    });
+
+    it('creates a pool guarded by a badge the creator does not hold', () => {
+      ledger.use(stranger);
+      const foreign = ledger.newBadge('Not the creator’s');
+      ledger.use(creator);
+      const manifest = createPoolManifest({
+        account: creator.address,
+        kind: 'two',
+        resources: [tokenA, tokenB],
+        manager: { mode: 'existingBadge', resource: foreign },
+        packages,
+      });
+      expect(ledger.run(manifest, creator.address).committed).toBe(true);
+    });
+
+    it('lets the issuer of a recallable token take it out of the pool', () => {
+      ledger.use(stranger);
+      const issuerBadge = ledger.newBadge('Issuer');
+      const rule = `Enum<2u8>(Enum<0u8>(Enum<0u8>(Enum<1u8>(Address("${issuerBadge}")))))`;
+      const mint = `
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<OwnerRole::None>() true 18u8 Decimal("1000")
+    Tuple(None, None, None, Some(Tuple(Some(${rule}), Some(Enum<AccessRule::DenyAll>()))), None, None)
+    Tuple(Map<String, Tuple>(), Map<String, Enum>())
+    None
+;
+CALL_METHOD Address("${stranger.address}") "deposit_batch" Expression("ENTIRE_WORKTOP");
+`;
+      const minted = ledger.run(mint, stranger.address);
+      expectCommitted(minted, mint);
+      const recallable = minted.newEntities[0];
+      const give = `
+CALL_METHOD Address("${stranger.address}") "withdraw" Address("${recallable}") Decimal("100");
+CALL_METHOD Address("${creator.address}") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
+`;
+      expectCommitted(ledger.run(give, stranger.address), give);
+
+      ledger.use(creator);
+      const created = ledger.run(
+        createPoolManifest({
+          account: creator.address,
+          kind: 'two',
+          resources: [recallable, tokenB],
+          manager: { mode: 'newBadge', badgeName: 'Pool manager' },
+          packages,
+        }),
+        creator.address,
+      );
+      const pool = created.newEntities.find((a) => a.startsWith('pool_sim1'))!;
+      const badge = created.newEntities.filter((a) => a.startsWith('resource_sim1'))[0];
+      const contribute = contributeManifest({
+        account: creator.address,
+        pool,
+        kind: 'two',
+        contributions: [
+          { resource: recallable, amount: '10' },
+          { resource: tokenB, amount: '7' },
+        ],
+        manager: { account: creator.address, resource: badge },
+      });
+      const funded = ledger.run(contribute, creator.address);
+      expectCommitted(funded, contribute);
+      // The pool's vault of the recallable token is the one that took the 10.
+      const vault = funded.output.match(/node: (internal_vault_sim1\w+)[^\n]*\n\s*Event: DepositEvent \{\s*amount: Decimal\("10"\)/)?.[1];
+      expect(vault).toBeTruthy();
+
+      ledger.use(stranger);
+      const recall = `
+CALL_METHOD Address("${stranger.address}") "create_proof_of_amount" Address("${issuerBadge}") Decimal("1");
+RECALL_FROM_VAULT Address("${vault}") Decimal("10");
+CALL_METHOD Address("${stranger.address}") "deposit_batch" Expression("ENTIRE_WORKTOP");
+`;
+      expectCommitted(ledger.run(recall, stranger.address), recall);
+      expect(ledger.show(pool)).toMatch(new RegExp(`${recallable}: 0\\b`));
+    });
   });
 });

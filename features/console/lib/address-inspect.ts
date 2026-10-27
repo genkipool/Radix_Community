@@ -106,6 +106,25 @@ export function decodeAddressNodeId(address: string): Uint8Array | null {
   return bytes.length === 30 ? Uint8Array.from(bytes) : null;
 }
 
+/** Bech32m address of `bytes` under `hrp`: the inverse of `decodeAddressNodeId`. */
+export function encodeAddress(hrp: string, bytes: Uint8Array): string {
+  const data: number[] = [];
+  let accumulator = 0;
+  let bits = 0;
+  for (const byte of bytes) {
+    accumulator = (accumulator << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      bits -= 5;
+      data.push((accumulator >> bits) & 31);
+    }
+  }
+  if (bits > 0) data.push((accumulator << (5 - bits)) & 31);
+  const mod = polymod(hrpExpand(hrp).concat(data, [0, 0, 0, 0, 0, 0])) ^ BECH32M_CONST;
+  const checksum = Array.from({ length: 6 }, (_, i) => (mod >> (5 * (5 - i))) & 31);
+  return `${hrp}1${data.concat(checksum).map((v) => CHARSET[v]).join('')}`;
+}
+
 const toHex = (bytes: Uint8Array) =>
   Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 
