@@ -1,0 +1,28 @@
+[package]
+name = "dex_mocks"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+sbor = { version = "1.4.0" }
+scrypto = { version = "1.4.0" }
+
+[dev-dependencies]
+scrypto-test = { version = "1.4.0" }
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = true
+overflow-checks = true
+
+[features]
+default = []
+scrypto-test = []
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[workspace]

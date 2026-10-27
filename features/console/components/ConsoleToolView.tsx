@@ -58,6 +58,8 @@ import PoolCreateTool from './tools/PoolCreateTool';
 import PoolContributeTool from './tools/PoolContributeTool';
 import PoolReservesTool from './tools/PoolReservesTool';
 import PoolRedeemTool from './tools/PoolRedeemTool';
+import PoolPositionsTool from './tools/PoolPositionsTool';
+import PoolDexAddTool from './tools/PoolDexAddTool';
 import PoolInfoTool from './tools/PoolInfoTool';
 import ComponentInfoTool from './tools/ComponentInfoTool';
 import ValidatorInfoTool from './tools/ValidatorInfoTool';
@@ -96,6 +98,8 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'pool-contribute': PoolContributeTool,
   'pool-reserves': PoolReservesTool,
   'pool-redeem': PoolRedeemTool,
+  'pool-positions': PoolPositionsTool,
+  'pool-dex-add': PoolDexAddTool,
   'pool-profile': PoolProfileTool,
   'account-deposits': AccountDepositsTool,
   'locker-recover': LockerRecoverTool,

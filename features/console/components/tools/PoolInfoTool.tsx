@@ -13,6 +13,7 @@ import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { usePoolContributions } from '../../hooks/usePoolContributions';
+import { useDexListing, useUnitValueChanges } from '../../hooks/useDexPools';
 import { usePoolSecurity } from '../../hooks/usePoolSecurity';
 import { useNetworkSelection } from '../../hooks/useNetworkSelection';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
@@ -44,6 +45,9 @@ const readProfile = (list?: MetadataList) => {
 };
 
 /** Amounts with thousands separators and at most four decimals; the exact figure is in the tooltip. */
+/** Periods the yield section looks back over, in days. */
+const YIELD_PERIODS = [7, 30];
+
 const amount = (value: string | number) =>
   Number(value).toLocaleString(undefined, { maximumFractionDigits: Number(value) >= 1 ? 4 : 8 });
 
@@ -159,6 +163,9 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
     managerMoves: contributions?.managerMoves,
     topShare: largest && supply ? Number(largest.amount) / supply : null,
   });
+  // The yield the DEX reports, and how a unit's value moved, from the ledger as it was.
+  const listing = useDexListing(state ? address : null);
+  const changes = useUnitValueChanges(state ? address : null, state?.poolUnit ?? null, YIELD_PERIODS);
 
   if (isLoading) return <CardSkeleton />;
   if (!state) {
@@ -230,7 +237,7 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
     profiles?.pool.name || profiles?.unit.name || state.resources.map((r) => names[r] ?? '?').join('/') || info.unnamed;
   // The tool opens on this pool, with the same account.
   const query = toolQuery({ pool: address, account });
-  const link = (slug: 'pool-contribute' | 'pool-redeem' | 'pool-reserves' | 'pool-profile' | 'pool-manage') => ({
+  const link = (slug: 'pool-contribute' | 'pool-dex-add' | 'pool-redeem' | 'pool-reserves' | 'pool-profile' | 'pool-manage') => ({
     href: `/${language}/console/${slug}?${query}`,
     tool: { slug, query },
   });
@@ -252,7 +259,10 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
       removeLabel={info.remove}
       copyLabel={t.common.copy}
       shortcuts={[
-        { ...link('pool-contribute'), label: info.goContribute, icon: <ArrowDownToLine className="size-4" /> },
+        // A pool a contract runs takes liquidity through that contract.
+        byContract
+          ? { ...link('pool-dex-add'), label: info.goDexAdd, icon: <ArrowDownToLine className="size-4" /> }
+          : { ...link('pool-contribute'), label: info.goContribute, icon: <ArrowDownToLine className="size-4" /> },
         { ...link('pool-redeem'), label: info.goRedeem, icon: <ArrowUpFromLine className="size-4" /> },
         { ...link('pool-reserves'), label: info.goReserves, icon: <Scale className="size-4" /> },
         { ...link('pool-profile'), label: info.goProfile, icon: <Tags className="size-4" /> },
@@ -340,6 +350,33 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
         ) : (
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{info.emptyPool}</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <Heading>{info.yieldTitle}</Heading>
+        <ul className="space-y-1 text-sm" style={{ color: 'var(--color-text-main)' }}>
+          {listing.data && (listing.data.aprByPool[address] ?? listing.data.apr) !== null && (
+            <li>
+              {info.dexApr
+                .replace('{dex}', info.dexNames[listing.data.dex])
+                .replace('{apr}', fmtNumber((listing.data.aprByPool[address] ?? listing.data.apr ?? 0) * 100, 2))}
+            </li>
+          )}
+          {YIELD_PERIODS.map((days, i) => {
+            const change = changes[i]?.data;
+            const pct = (v: number) => `${v >= 0 ? '+' : ''}${fmtNumber(v * 100, 3)} %`;
+            return (
+              <li key={days} style={{ color: change ? undefined : 'var(--color-text-muted)' }}>
+                {changes[i]?.isPending
+                  ? '…'
+                  : change
+                    ? info.unitChange.replace('{days}', String(days)).replace('{change}', pct(change.growth)).replace('{annual}', pct(change.annualized))
+                    : info.unitChangeNone.replace('{days}', String(days))}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{info.yieldNote}</p>
       </div>
 
       {participants && participants.holders.length > 0 && (

@@ -10,6 +10,7 @@
  * Runs on the server (DefiPlaza sends no CORS headers) and takes `fetch`
  * and the Gateway as arguments so it can be tested offline.
  */
+import { OCISWAP_POOLS_API, PAIR_APIS } from './dex-apis';
 import type { GatewayPost } from './resource-holders';
 
 export type KnownPoolSource = 'ociswap' | 'defiplaza' | 'reddicks';
@@ -27,12 +28,6 @@ export type KnownPoolRow = [address: string, name: string, source: KnownPoolSour
 
 type Fetch = (url: string) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>;
 
-const OCISWAP = 'https://api.ociswap.com/pools';
-/** DEXes that publish their pairs as DefiPlaza does. */
-const PAIR_APIS = {
-  defiplaza: 'https://radix.defiplaza.net/api/pairs',
-  reddicks: 'https://dex.reddicks.meme/api/pairs',
-} as const;
 /** Ociswap has ~19 pages of 100; the cap only guards against a runaway cursor. */
 const MAX_OCISWAP_PAGES = 50;
 const DETAILS_BATCH = 20;
@@ -58,7 +53,7 @@ export async function fetchOciswapPools(fetcher: Fetch): Promise<KnownPool[]> {
   const pools: KnownPool[] = [];
   let cursor: number | string | null | undefined;
   for (let page = 0; page < MAX_OCISWAP_PAGES; page++) {
-    const data = (await getJson(fetcher, `${OCISWAP}?limit=100${cursor ? `&cursor=${cursor}` : ''}`)) as OciswapPage;
+    const data = (await getJson(fetcher, `${OCISWAP_POOLS_API}?limit=100${cursor ? `&cursor=${cursor}` : ''}`)) as OciswapPage;
     for (const p of data.data ?? []) {
       // Precision pools are Ociswap's own component, with no native pool behind them.
       if (p.liquidity_pool_address?.startsWith('pool_')) {

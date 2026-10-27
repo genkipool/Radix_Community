@@ -143,6 +143,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     requiresWallet: true,
     wide: true,
   },
+  'pool-dex-add': {
+    slug: 'pool-dex-add',
+    icon: <Droplets className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '6,182,212',
+    requiresWallet: true,
+    wide: true,
+  },
   'pool-reserves': {
     slug: 'pool-reserves',
     icon: <HandCoins className="size-5" />,
@@ -154,6 +162,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
   'pool-redeem': {
     slug: 'pool-redeem',
     icon: <ArrowUpFromLine className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '6,182,212',
+    requiresWallet: true,
+    wide: true,
+  },
+  'pool-positions': {
+    slug: 'pool-positions',
+    icon: <HandCoins className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '6,182,212',
     requiresWallet: true,
@@ -432,7 +448,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'pools',
     icon: <Waves className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['pool-info', 'pool-create', 'pool-contribute', 'pool-reserves', 'pool-redeem', 'pool-profile', 'pool-manage'],
+    tools: ['pool-info', 'pool-positions', 'pool-dex-add', 'pool-create', 'pool-contribute', 'pool-reserves', 'pool-redeem', 'pool-profile', 'pool-manage'],
   },
   {
     // Locker: the native AccountLocker, from both sides. The badge holder

@@ -96,7 +96,7 @@ const networkOf = (address: string) => {
  * manifest unquoted by any escaping, so this is what keeps a pasted
  * `resource_…")` from closing the literal and adding instructions.
  */
-export function isManifestAddress(address: string, prefix: 'account_' | 'resource_' | 'package_'): boolean {
+export function isManifestAddress(address: string, prefix: 'account_' | 'resource_' | 'package_' | 'component_'): boolean {
   if (!address.startsWith(prefix) || !/^[a-z0-9_]+$/.test(address)) return false;
   return !!inspectAddress(address)?.checksumValid;
 }

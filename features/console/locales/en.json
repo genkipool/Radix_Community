@@ -1921,6 +1921,58 @@
           ]
         }
       },
+      "pool-dex-add": {
+        "title": "Add to a DEX",
+        "description": "Adds liquidity to Ociswap (Basic, Flex and Precision) and DefiPlaza pools through their component. Public, no badge.",
+        "guide": {
+          "guideTitle": "Guide: add to a DEX",
+          "guideDescription": "Pools a DEX runs only take liquidity through its component, not with \"Add liquidity\" (which needs the manager badge). Here you pick the pool; the console identifies the DEX on the ledger, checks with its API that it lists it, works out the other amount and simulates what you will receive before you sign.",
+          "guideSteps": [
+            "1. Account: the one that puts in the tokens and receives the units or the NFT.",
+            "2. Pool: paste the pool or component address, or pick it with the +.",
+            "3. Amounts: type one; the other follows. For Precision also pick the price range.",
+            "4. Check \"You will receive\", simulate if you like, and sign."
+          ],
+          "fields": [
+            {
+              "label": "Listed by the DEX",
+              "description": "The DEX's API confirms the component is theirs. Otherwise you have to confirm explicitly that you accept the risk.",
+              "example": "Listed by the DEX"
+            },
+            {
+              "label": "Range (Precision)",
+              "description": "The full range works at any price; a narrow range earns more fees while the price stays inside and stops earning outside it.",
+              "example": "±5 %"
+            },
+            {
+              "label": "You will receive",
+              "description": "Pool units (or the position NFT) and anything left over, from simulating the real transaction.",
+              "example": "+ 4,535 units"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "add_liquidity",
+              "definition": "Public method of the DEX component that takes the tokens, contributes to the pool and returns the units or the NFT."
+            },
+            {
+              "term": "Co-liquidity",
+              "definition": "On DefiPlaza, the other token an out-of-balance side asks for to keep the pool's ratio."
+            },
+            {
+              "term": "Tick",
+              "definition": "Price step of a Precision pool: the range is fitted to multiples of the pool's spacing."
+            }
+          ]
+        }
+      },
       "pool-reserves": {
         "title": "Adjust reserves",
         "description": "Put resources into or take them out of the reserves without minting or burning pool units. Requires the manager badge.",
@@ -2190,6 +2242,58 @@
             {
               "term": "LOCK_OWNER_ROLE",
               "definition": "Stops the owner rule from changing. On its own it does not freeze the metadata: the owner could still write it."
+            }
+          ]
+        }
+      },
+      "pool-positions": {
+        "title": "Your pool positions",
+        "description": "Everything you have in pools: native pool units with their value and yield, and Ociswap Precision positions to claim fees from or withdraw.",
+        "guide": {
+          "guideTitle": "Guide: your pool positions",
+          "guideDescription": "Gathers what the account has in pools. Native pool units show what they are worth now, which DEX runs the pool, the APR it publishes and how much a unit's value changed over 7 and 30 days. Ociswap Precision positions are concentrated-liquidity NFTs: here you see what each one has earned and what withdrawing it would return, worked out by simulating the real transaction, and you claim or withdraw with a single signature.",
+          "guideSteps": [
+            "1. Account: the one holding the position NFTs.",
+            "2. Positions: they show up by themselves, grouped by pool. Untick the pools you want to leave out.",
+            "3. Action: \"Claim fees\" leaves the positions as they are; \"Withdraw positions\" closes them and returns the liquidity and the fees.",
+            "4. Simulate if you like, and sign."
+          ],
+          "fields": [
+            {
+              "label": "Fees to claim",
+              "description": "What the positions have earned and not claimed yet. Refreshed every 30 seconds.",
+              "example": "≈ 331 REDDICKS and 143 XRD"
+            },
+            {
+              "label": "Withdrawing returns",
+              "description": "The positions' liquidity plus their fees: the pool claims them before withdrawing.",
+              "example": "≈ 993 REDDICKS and 1,800 XRD"
+            },
+            {
+              "label": "Listed by Ociswap",
+              "description": "Ociswap lists the pool in its API. When it does not, the pool is a real PrecisionPool on the ledger but is not on record as an official Ociswap pool.",
+              "example": "Listed by Ociswap"
+            }
+          ],
+          "example": [
+            {
+              "field": "Action",
+              "type": "input",
+              "value": "Claim fees"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "claim_fees",
+              "definition": "Public pool method: given a proof of the NFTs, it pays out the earned fees without touching the liquidity."
+            },
+            {
+              "term": "remove_liquidity",
+              "definition": "Public pool method: takes the NFTs, burns them and returns both tokens with the pending fees."
+            },
+            {
+              "term": "Concentrated liquidity",
+              "definition": "Liquidity only works within a price range; that is why every position differs and is an NFT."
             }
           ]
         }
@@ -4770,7 +4874,9 @@
           "amountError": "Invalid amount.",
           "balanceError": "You don't hold that much.",
           "needsManager": "This account does not hold the pool's manager badge.",
-          "sendButton": "Add liquidity"
+          "sendButton": "Add liquidity",
+          "dexNote": "A contract (a DEX) runs this pool: only its component can contribute to the native pool, so this will not work without its badge.",
+          "dexLink": "Add through the DEX"
         },
         "reserves": {
           "title": "Adjust reserves",
@@ -4799,7 +4905,9 @@
           "sendButton": "Redeem units",
           "totalLabel": "Total",
           "redeemingLabel": "Redeeming",
-          "remainingLabel": "You keep"
+          "remainingLabel": "You keep",
+          "precisionNote": "This account has {count} Ociswap Precision NFT positions. They are not pool units: they are claimed and withdrawn in \"Your pool positions\".",
+          "precisionLink": "See your positions"
         },
         "profile": {
           "title": "Pool profile",
@@ -4898,7 +5006,18 @@
         "participantsAll": "See them all in the explorer",
         "putIn": "Put in",
         "takenOut": "Taken out",
-        "result": "Result"
+        "result": "Result",
+        "yieldTitle": "Yield",
+        "dexApr": "APR according to {dex}: {apr} %",
+        "dexNames": {
+          "ociswap": "Ociswap",
+          "defiplaza": "DefiPlaza",
+          "reddicks": "Reddicks"
+        },
+        "unitChange": "Last {days} days: {change} per unit ({annual} a year)",
+        "unitChangeNone": "Last {days} days: no data (the pool is newer, or a reserve was empty)",
+        "yieldNote": "The change per unit compares what one unit was worth then and now, as the geometric mean of its tokens: in a constant-product pool it rises with the fees even when prices move. It is history, not a promise.",
+        "goDexAdd": "Add through the DEX"
       },
       "ownerUpdatable": "Can be changed",
       "badgesTitle": "Pool badges",
@@ -5107,6 +5226,110 @@
       "resourcesCount": "{count} resources",
       "unnamed": "Unnamed resource",
       "unnamedLocker": "Unnamed locker"
+    },
+    "poolPositions": {
+      "accountTitle": "Account",
+      "positionsTitle": "Your positions",
+      "positionsHint": "Positions in Ociswap Precision pools, confirmed on the ledger. What you claim or receive is simulated with the real transaction and refreshed every 30 seconds.",
+      "pickAccount": "Pick an account to see its positions.",
+      "loading": "Looking for positions…",
+      "none": "This account has no positions in Ociswap Precision pools.",
+      "error": "Could not read the positions: {message}",
+      "estimateError": "Could not simulate: {message}",
+      "unnamed": "Unnamed pool",
+      "include": "Include this pool in the transaction",
+      "listed": "Listed by Ociswap",
+      "notListed": "Not listed by Ociswap",
+      "poolLabel": "Pool",
+      "positionsOne": "1 position",
+      "positionsCount": "{count} positions",
+      "feesLabel": "Fees to claim",
+      "withdrawLabel": "Withdrawing returns",
+      "nothing": "Nothing",
+      "actionTitle": "What do you want to do",
+      "claimOption": "Claim fees",
+      "removeOption": "Withdraw positions",
+      "claimHint": "Claims only what was earned. The positions stay open and the NFTs stay in your account.",
+      "removeHint": "Closes the positions: the NFTs are burned and you receive the liquidity and the pending fees.",
+      "claimButton": "Claim fees",
+      "removeButton": "Withdraw positions",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "unitsTitle": "Pool units",
+      "unitsHint": "The account's native pool units (Ociswap Basic and Flex, DefiPlaza, Reddicks or your own pools), with what they are worth now. The pool and its unit confirm each other on the ledger.",
+      "noUnits": "This account holds no native pool units.",
+      "dexNames": {
+        "ociswap": "Ociswap",
+        "defiplaza": "DefiPlaza",
+        "reddicks": "Reddicks"
+      },
+      "unitsHeld": "{units} units · {share} % of the pool",
+      "worthLabel": "Worth now",
+      "yieldLabel": "Yield",
+      "dexApr": "DEX APR: {apr} %",
+      "unitChange": "{days} days: {change} ({annual} a year)",
+      "unitChangeNone": "{days} days: no data",
+      "redeemLink": "Redeem",
+      "addMoreLink": "Add more",
+      "rangeStatus": {
+        "in": "In range",
+        "below": "Out of range · price below",
+        "above": "Out of range · price above"
+      },
+      "rangeUnknown": "Range unknown",
+      "outOfRangeOne": "1 position is out of range: the pool's price has left its range and it earns no fees until it comes back. You can wait, or withdraw it and open another with a range that includes the current price.",
+      "outOfRangeMany": "{count} positions are out of range: the pool's price has left their range and they earn no fees until it comes back. You can wait, or withdraw them and open others with a range that includes the current price.",
+      "newRangeLink": "Open with a new range"
+    },
+    "poolDexAdd": {
+      "accountTitle": "Account",
+      "poolTitle": "DEX pool",
+      "poolHint": "A native pool a DEX runs (Ociswap Basic or Flex, DefiPlaza) or the component of an Ociswap Precision pool. It is read from the ledger, checking that the component really runs that pool.",
+      "poolLabel": "Pool or component",
+      "poolPlaceholder": "pool_… or component_…",
+      "notDex": "No supported DEX runs it. If the pool is yours, use \"Add liquidity\".",
+      "reading": "Reading the pool…",
+      "kinds": {
+        "ociswap-basic": "Ociswap Basic",
+        "ociswap-flex": "Ociswap Flex",
+        "ociswap-precision": "Ociswap Precision",
+        "defiplaza": "DefiPlaza"
+      },
+      "listed": "Listed by the DEX",
+      "notListed": "Not listed by the DEX",
+      "listingUnknown": "Could not check with the DEX",
+      "listingOffMainnet": "Unverified: the DEXes have no Stokenet API",
+      "listingLoading": "Checking with the DEX…",
+      "componentLabel": "Component",
+      "dexApr": "APR the DEX publishes: {apr} %",
+      "amountsTitle": "How much you add",
+      "hintBoth": "Both tokens go in the ratio of the reserves: type one and the other follows. Anything left over comes back to your account.",
+      "hintPlaza": "DefiPlaza takes a single token: pick the side and the amount. You receive units of that side's pool.",
+      "hintPlazaShort": "This side is out of balance: DefiPlaza also asks for the other token in the pool's ratio. Anything left over comes back to your account.",
+      "hintPrecision": "Pick the price range your liquidity will work in: type one token and the other follows. You receive an NFT with the position.",
+      "sideOption": "{token} side",
+      "currentPrice": "Current price: {price} {y} per {x}",
+      "rangeFull": "Full range",
+      "rangeWide": "±25 %",
+      "rangeNarrow": "±5 %",
+      "rangeCustom": "Custom",
+      "minPrice": "Minimum price",
+      "maxPrice": "Maximum price",
+      "rangeFullNote": "Your liquidity works at any price, as in a classic pool.",
+      "rangeNote": "Range: {min} to {max}, fitted to the pool's steps.",
+      "oneSided": "The price is outside the range: only {token} goes in.",
+      "rangeError": "The range is not valid: the minimum must be below the maximum.",
+      "amountError": "Not a valid amount.",
+      "balanceError": "More than the account holds.",
+      "receiveTitle": "You will receive",
+      "receiveNote": "Simulated with this very transaction. The exact figure can change slightly if the reserves move before you sign.",
+      "estimateError": "The simulation failed: {message}",
+      "acknowledge": "I understand the DEX does not list this component and that I am sending my tokens to an unverified contract.",
+      "acknowledgeTestnet": "I understand that on Stokenet the component cannot be checked with the DEX.",
+      "acknowledgeFirst": "First confirm that you accept adding to an unverified component.",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "sendButton": "Add liquidity"
     },
     "lockerRecover": {
       "roleWho": "For whoever made the airdrop",

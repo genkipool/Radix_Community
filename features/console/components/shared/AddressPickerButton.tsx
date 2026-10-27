@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, BookUser, CornerDownLeft, Crown, Database, Plus, ServerCog, Wallet } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
@@ -35,7 +35,8 @@ import { usePickerPopup } from '../../hooks/usePickerPopup';
 import { fetchOwnedValidators } from '../../hooks/useOwnedValidators';
 import type { KnownPoolRow } from '../../lib/known-pools';
 import { isNonFungibleResource } from '../../lib/bulk-send';
-import { findLedgerEntities, type LedgerEntityKind } from '../../lib/ledger-entities';
+import { findLedgerEntities, type LedgerEntity, type LedgerEntityKind } from '../../lib/ledger-entities';
+import { browserCopyOptions, writeBrowserCopy } from '../../lib/browser-copy';
 
 /** Where an option comes from; also the popup's tabs, in this order. */
 const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'reddicks', 'network', 'validators'] as const;
@@ -140,32 +141,54 @@ export function AddressPickerButton({
   const ledgerKinds = LEDGER_KINDS.filter((k) => accepts(k));
   const accountAddresses = accounts.map((a) => a.address);
 
-  // Everything below loads only once the popup is open, and is cached after.
+  // The lists load before the first click: once the page is idle, or as soon
+  // as the pointer or focus reaches the button. Every picker on the page shares
+  // the same cached queries, so this costs one load per page, not per button.
+  const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    if (disabled) return;
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(() => setWarm(true), { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(() => setWarm(true), 1000);
+    return () => window.clearTimeout(id);
+  }, [disabled]);
+  const load = open || warm;
+
+  // Everything below is cached once loaded.
   const { data: holdings, isFetching: holdingsLoading } = useAccountResources(
-    open && accepts('resource') ? accountAddresses : null,
+    load && accepts('resource') ? accountAddresses : null,
   );
   // One lookup for pools and lockers together, shared by every picker on the
   // page and kept 30 minutes: the last 100 transactions of each account, a few
   // dozen KB in all. Network-wide activity comes from the server below.
+  // The account-specific lists below also keep their last answer in the
+  // browser: it shows at once on the next visit and is replaced right away.
+  const ledgerKey = ['console-ledger-entities', activeNetwork, accountAddresses.join(',')];
   const { data: ledgerAll, isFetching: ledgerLoading } = useQuery({
-    queryKey: ['console-ledger-entities', activeNetwork, accountAddresses.join(',')],
-    enabled: open && ledgerKinds.length > 0 && accountAddresses.length > 0,
+    queryKey: ledgerKey,
+    ...browserCopyOptions<LedgerEntity[]>(ledgerKey),
+    enabled: load && ledgerKinds.length > 0 && accountAddresses.length > 0,
     staleTime: 30 * 60_000,
     retry: false,
-    queryFn: () =>
-      findLedgerEntities((path, body) => gatewayPost(activeNetwork, path, body), {
+    queryFn: async () => {
+      const found = await findLedgerEntities((path, body) => gatewayPost(activeNetwork, path, body), {
         accounts: accountAddresses,
         kinds: LEDGER_KINDS,
         accountPages: 1,
         networkPages: 0,
-      }),
+      });
+      writeBrowserCopy(ledgerKey, found);
+      return found;
+    },
   });
   const ledger = ledgerAll?.filter((e) => ledgerKinds.includes(e.kind));
   // Pools with recent network activity: the same for everyone, so the server
   // caches them and the tab shows up with the DEX lists instead of a second later.
   const { data: recentPools, isFetching: recentLoading } = useQuery({
     queryKey: ['console-recent-pools', activeNetwork],
-    enabled: open && accepts('pool'),
+    enabled: load && accepts('pool'),
     staleTime: 5 * 60_000,
     retry: false,
     queryFn: async () => {
@@ -176,7 +199,7 @@ export function AddressPickerButton({
   });
   const { data: knownPools, isFetching: knownLoading } = useQuery({
     queryKey: ['console-known-pools', activeNetwork],
-    enabled: open && accepts('pool') && activeNetwork === 'mainnet',
+    enabled: load && accepts('pool') && activeNetwork === 'mainnet',
     // Kept for the whole visit: the list is ~2,000 rows and changes a few times a day.
     staleTime: Infinity,
     gcTime: Infinity,
@@ -188,24 +211,29 @@ export function AddressPickerButton({
     },
   });
   // The site's shared validator set: already loaded if the staking list or the explorer was opened.
-  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(activeNetwork, open && accepts('validator'));
+  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(activeNetwork, load && accepts('validator'));
   const validators = validatorSet?.validators;
   const ownerBadge = RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet].OWNER_BADGE;
+  const myValidatorsKey = ['console-picker-owned-validators', activeNetwork, accountAddresses.join(',')];
   const { data: myValidators, isFetching: myValidatorsLoading } = useQuery({
-    queryKey: ['console-picker-owned-validators', activeNetwork, accountAddresses.join(',')],
-    enabled: open && accepts('validator') && accountAddresses.length > 0,
+    queryKey: myValidatorsKey,
+    ...browserCopyOptions<Awaited<ReturnType<typeof fetchOwnedValidators>>>(myValidatorsKey),
+    enabled: load && accepts('validator') && accountAddresses.length > 0,
     staleTime: 5 * 60_000,
     retry: false,
-    queryFn: async () =>
-      (
+    queryFn: async () => {
+      const owned = (
         await Promise.all(
           accountAddresses.map((account) => fetchOwnedValidators(account, activeNetwork, ownerBadge).catch(() => [])),
         )
-      ).flat(),
+      ).flat();
+      writeBrowserCopy(myValidatorsKey, owned);
+      return owned;
+    },
   });
   // Soulbound resources (withdrawer DenyAll) are left out when the input is for sending.
   const locked = useLockedResources(
-    sendableOnly && open ? [...(holdings?.fungibles ?? []), ...(holdings?.nonFungibles ?? [])].map((r) => r.resourceAddress) : [],
+    sendableOnly && load ? [...(holdings?.fungibles ?? []), ...(holdings?.nonFungibles ?? [])].map((r) => r.resourceAddress) : [],
     activeNetwork,
   );
   const loading = holdingsLoading || ledgerLoading || recentLoading || knownLoading || validatorsLoading || myValidatorsLoading;
@@ -363,6 +391,8 @@ export function AddressPickerButton({
         type="button"
         disabled={disabled}
         onClick={openPopup}
+        onPointerEnter={() => setWarm(true)}
+        onFocus={() => setWarm(true)}
         aria-label={pickTitle}
         title={pickTitle}
         className="flex size-7 items-center justify-center rounded-lg border transition-colors hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
