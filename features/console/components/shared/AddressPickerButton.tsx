@@ -303,9 +303,35 @@ export function AddressPickerButton({
   const unique = options.filter((o, i) => options.findIndex((x) => x.address === o.address) === i);
   const byKind = categories.length === 1 && categories[0] === 'resource';
   const ofKind = (kind: (typeof KINDS)[number]) => unique.filter((o) => isNonFungibleResource(o.address) === (kind === 'nfts'));
+  // Every source this input can draw from has its tab from the start, "…"
+  // while its list loads and 0 when it has nothing, so the header is there at
+  // once and never changes shape.
+  const sourceApplies: Record<(typeof SOURCES)[number], boolean> = {
+    wallet: accepts('account') || accepts('resource'),
+    myValidators: accepts('validator'),
+    agenda: true,
+    mine: ledgerKinds.length > 0,
+    ociswap: accepts('pool') && activeNetwork === 'mainnet',
+    defiplaza: accepts('pool') && activeNetwork === 'mainnet',
+    reddicks: accepts('pool') && activeNetwork === 'mainnet',
+    network: accepts('pool'),
+    validators: accepts('validator'),
+  };
+  const sourceLoading: Record<(typeof SOURCES)[number], boolean> = {
+    wallet: accepts('resource') && holdingsLoading,
+    myValidators: accepts('validator') && myValidatorsLoading,
+    agenda: false,
+    mine: ledgerKinds.length > 0 && ledgerLoading,
+    ociswap: accepts('pool') && knownLoading,
+    defiplaza: accepts('pool') && knownLoading,
+    reddicks: accepts('pool') && knownLoading,
+    network: accepts('pool') && recentLoading,
+    validators: accepts('validator') && validatorsLoading,
+  };
   const counts: Array<readonly [Exclude<Tab, 'all'>, number]> = byKind
     ? KINDS.map((kind) => [kind, ofKind(kind).length] as const)
-    : SOURCES.map((src) => [src, options.filter((o) => o.source === src).length] as const).filter(([, n]) => n > 0);
+    : SOURCES.map((src) => [src, options.filter((o) => o.source === src).length] as const).filter(([src, n]) => n > 0 || sourceApplies[src]);
+  const pendingTab = (key: Tab) => (key === 'all' ? loading : !byKind && sourceLoading[key as (typeof SOURCES)[number]]);
   const activeTab: Tab = tab === 'all' || counts.some(([src]) => src === tab) ? tab : 'all';
 
   // Picked addresses no list has (typed or pasted) still show, under "All".
@@ -320,13 +346,15 @@ export function AddressPickerButton({
   const tabs = ([['all', unique.length + typedSelected.length] as const, ...counts]).map(([key, count]) => ({
     value: key,
     label: (lang: typeof L) => (key === 'all' && byKind ? lang.tabs.allResources : lang.tabs[key]),
-    count,
+    // Nothing found yet while still loading reads "…", not a misleading 0.
+    count: count === 0 && pendingTab(key) ? '…' : count,
   }));
   // As wide as the tabs need in the wider language, so switching language
-  // keeps the size; past MAX_WIDTH they wrap onto another line.
+  // keeps the size; past MAX_WIDTH they wrap onto another line. A count still
+  // loading is measured as three digits, so the popup hardly moves when it arrives.
   const popupWidth =
     counts.length > 1
-      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...Object.values(TEXT).map((lang) => selectPopupTabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count})`)))))
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...Object.values(TEXT).map((lang) => selectPopupTabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count === '…' ? '000' : t.count})`)))))
       : MIN_WIDTH;
   const { style: popupStyle, direction } = layoutFor(popupWidth);
 

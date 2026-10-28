@@ -9,7 +9,8 @@
  * much is known is reported alongside, and a verdict is only given when enough is.
  */
 import type { Validator } from '@/types/radix';
-import { shortVersion, validatorLocation, validatorProvider, validatorVersion } from './validatorNode';
+import { sanitizeText } from '@/utils/sanitize';
+import { shortVersion, validatorLocation, validatorProvider } from './validatorNode';
 
 /* ─── Versions ──────────────────────────────────────────────────────────── */
 
@@ -33,9 +34,14 @@ const compareRelease = (a: number[], b: number[]) => {
 };
 
 export interface VersionAdoption {
-    /** The highest release any active validator reports, as written ("v1.4.0.0"); null when none does. */
+    /**
+     * The latest release, as written ("v1.4.0.0"): the one published on GitHub
+     * when known, else the highest any active validator runs; null when neither is known.
+     */
     latest: string | null;
-    /** Active validators running it. */
+    /** Where `latest` comes from. */
+    source: 'release' | 'validators' | null;
+    /** Active validators running it (or a newer build). */
     updated: number;
     /** Active validators in all. */
     total: number;
@@ -43,27 +49,66 @@ export interface VersionAdoption {
     unknown: number;
     /** `updated` as a share of `total`, 0–100. */
     percent: number;
+    /** XRD delegated to the validators on the latest release. */
+    updatedStake: number;
+    /** XRD delegated to all active validators. */
+    totalStake: number;
+    /** `updatedStake` as a share of `totalStake`, 0–100. */
+    stakePercent: number;
 }
 
-export function versionAdoption(validators: Validator[]): VersionAdoption {
+/**
+ * How long a version our node saw stays valid for this count: the window the
+ * node telemetry uses to call a node online. A version seen longer ago may
+ * have changed since (the telemetry keeps the last one for days), and the one
+ * a validator publishes in its metadata is whatever it last typed, so neither
+ * counts: those validators count as unknown, never as an old answer.
+ */
+export const VERSION_FRESH_MS = 30 * 60_000;
+
+/** The version our node saw on this validator within `VERSION_FRESH_MS`, or null. */
+function freshVersion(validator: Validator, now: number): string | null {
+    const node = validator.node;
+    if (!node?.version || !node.lastSeen || now - node.lastSeen > VERSION_FRESH_MS) return null;
+    return sanitizeText(node.version) || null;
+}
+
+/**
+ * @param release  The latest published release (from GitHub). Without it,
+ *                 the highest release the validators run stands in.
+ */
+export function versionAdoption(
+    validators: Validator[],
+    { release = null, now = Date.now() }: { release?: string | null; now?: number } = {},
+): VersionAdoption {
     const active = validators.filter(v => v.status === 'active');
     const reported = active.map(v => {
-        const version = validatorVersion(v);
-        return { version, release: releaseOf(version) };
+        const version = freshVersion(v, now);
+        return { version, release: releaseOf(version), stake: v.delegatedStake };
     });
-    const known = reported.filter((r): r is { version: string; release: number[] } => r.release !== null);
+    const known = reported.filter((r): r is { version: string; release: number[]; stake: number } => r.release !== null);
 
     const newest = known.reduce<(typeof known)[number] | null>(
         (best, r) => (!best || compareRelease(r.release, best.release) > 0 ? r : best), null);
-    const updated = newest ? known.filter(r => compareRelease(r.release, newest.release) === 0).length : 0;
+    const published = releaseOf(release);
+    const target = published ?? newest?.release ?? null;
+    // A validator on a newer build than the published release (a release candidate) is up to date too.
+    const onLatest = target ? known.filter(r => compareRelease(r.release, target) >= 0) : [];
+    const updated = onLatest.length;
     const total = active.length;
+    const updatedStake = onLatest.reduce((sum, r) => sum + r.stake, 0);
+    const totalStake = reported.reduce((sum, r) => sum + r.stake, 0);
 
     return {
-        latest: newest ? shortVersion(newest.version) : null,
+        latest: published ? shortVersion(release!) : newest ? shortVersion(newest.version) : null,
+        source: published ? 'release' : newest ? 'validators' : null,
         updated,
         total,
         unknown: total - known.length,
         percent: total > 0 ? (updated / total) * 100 : 0,
+        updatedStake,
+        totalStake,
+        stakePercent: totalStake > 0 ? (updatedStake / totalStake) * 100 : 0,
     };
 }
 

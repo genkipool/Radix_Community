@@ -440,6 +440,13 @@ export async function apiFetchValidators(
     return res.json();
 }
 
+/** The latest stable release of the Radix node software, from GitHub (see /api/node-release). */
+export async function apiFetchNodeRelease(): Promise<{ version: string; name: string; publishedAt: string; url: string }> {
+    const res = await fetch('/api/node-release');
+    if (!res.ok) throw new Error(`Node release API error: ${res.status}`);
+    return res.json();
+}
+
 /** The live validator set fingerprint (see /api/validators/fingerprint). */
 export async function apiFetchValidatorSetFingerprint(
     network: 'mainnet' | 'stokenet' = 'mainnet',

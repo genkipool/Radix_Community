@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-    versionAdoption, providerDistribution, countryDistribution, assessDecentralization, nakamoto, hostingShare, releaseOf,
+    versionAdoption, VERSION_FRESH_MS, providerDistribution, countryDistribution, assessDecentralization, nakamoto, hostingShare, releaseOf,
 } from '@/features/dashboard/staking/lib/networkHealth';
 import type { Validator } from '@/types/radix';
 
@@ -32,30 +32,74 @@ describe('releaseOf', () => {
 });
 
 describe('versionAdoption', () => {
+    const NOW = 1_800_000_000_000;
+    /** An active validator whose version our node saw `ago` ms before NOW. */
+    const seen = (version: string, over: Omit<Partial<Validator>, 'node'> = {}, ago = 60_000) =>
+        v({ node: { version, lastSeen: NOW - ago }, ...over });
+
     it('counts the active validators on the newest release against all of them', () => {
         const set = [
-            ...Array.from({ length: 5 }, () => v({ version: 'v1.4.0.0' })),
-            ...Array.from({ length: 3 }, () => v({ version: 'v1.3.0.2' })),
-            v({ version: '' }), // unknown
-            v({ version: 'v1.4.0.0', status: 'inactive' }), // not active: not counted at all
+            ...Array.from({ length: 5 }, () => seen('v1.4.0.0')),
+            ...Array.from({ length: 3 }, () => seen('v1.3.0.2')),
+            v(), // unknown
+            seen('v1.4.0.0', { status: 'inactive' }), // not active: not counted at all
         ];
-        const result = versionAdoption(set);
+        const result = versionAdoption(set, { now: NOW });
         expect(result).toMatchObject({ latest: 'v1.4.0.0', updated: 5, total: 9, unknown: 1 });
         expect(result.percent).toBeCloseTo((5 / 9) * 100);
     });
 
+    it('weighs adoption by the stake delegated to the active validators', () => {
+        const result = versionAdoption([
+            seen('v1.4.0.0', { delegatedStake: 500_000 }),
+            seen('v1.3.0.2', { delegatedStake: 1_000_000 }),
+            v({ delegatedStake: 500_000 }), // unknown version: its stake still counts in the total
+            seen('v1.4.0.0', { delegatedStake: 9_000_000, status: 'inactive' }),
+        ], { now: NOW });
+        expect(result).toMatchObject({ updatedStake: 500_000, totalStake: 2_000_000 });
+        expect(result.stakePercent).toBeCloseTo(25);
+    });
+
     it('compares numerically, not as text', () => {
-        const result = versionAdoption([v({ version: 'v1.10.0' }), v({ version: 'v1.9.0' })]);
+        const result = versionAdoption([seen('v1.10.0'), seen('v1.9.0')], { now: NOW });
         expect(result.latest).toBe('v1.10.0');
         expect(result.updated).toBe(1);
     });
 
     it('treats 1.4.0 and 1.4.0.0 as the same release', () => {
-        expect(versionAdoption([v({ version: 'v1.4.0' }), v({ version: 'v1.4.0.0' })]).updated).toBe(2);
+        expect(versionAdoption([seen('v1.4.0'), seen('v1.4.0.0')], { now: NOW }).updated).toBe(2);
+    });
+
+    it('counts only versions our node saw in the last 30 minutes, never metadata', () => {
+        const result = versionAdoption([
+            seen('v1.4.0.0'),
+            seen('v1.5.0.0', {}, VERSION_FRESH_MS + 1), // seen too long ago: may have changed since
+            v({ version: 'v1.5.0.0' }), // only published in its metadata
+        ], { now: NOW });
+        expect(result).toMatchObject({ latest: 'v1.4.0.0', updated: 1, total: 3, unknown: 2 });
+    });
+
+    it('measures against the release published on GitHub when it is known', () => {
+        const result = versionAdoption([
+            seen('v1.4.0.0'),
+            seen('v1.4.0.0-RC1'), // the same release, as a candidate build: up to date
+            seen('v1.3.0.5'),
+        ], { release: 'v1.5.0.0', now: NOW });
+        // Nobody runs the published v1.5.0.0 yet: it is still the target, and none count.
+        expect(result).toMatchObject({ latest: 'v1.5.0.0', source: 'release', updated: 0, total: 3 });
+
+        const current = versionAdoption([seen('v1.4.0.0'), seen('v1.4.0.0-RC1'), seen('v1.3.0.5'), seen('v1.5.0.0')], { release: 'v1.4.0.0', now: NOW });
+        // At or past the release counts; below it does not.
+        expect(current).toMatchObject({ latest: 'v1.4.0.0', source: 'release', updated: 3, total: 4 });
+    });
+
+    it('falls back to the highest release the validators run without a published one', () => {
+        expect(versionAdoption([seen('v1.4.0.0'), seen('v1.3.0.5')], { release: null, now: NOW })).toMatchObject({ latest: 'v1.4.0.0', source: 'validators', updated: 1 });
+        expect(versionAdoption([seen('v1.4.0.0')], { release: 'not-a-release', now: NOW }).source).toBe('validators');
     });
 
     it('has no latest version when none is known', () => {
-        expect(versionAdoption([v(), v()])).toMatchObject({ latest: null, updated: 0, total: 2, unknown: 2, percent: 0 });
+        expect(versionAdoption([v(), v()], { now: NOW })).toMatchObject({ latest: null, updated: 0, total: 2, unknown: 2, percent: 0 });
     });
 });
 

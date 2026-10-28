@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Cpu, Server, ShieldAlert, ShieldCheck, ShieldQuestion, TriangleAlert, Info, type LucideIcon } from 'lucide-react';
-import { formatPercent } from '@/utils/formatters';
+import { formatPercent, formatXRD } from '@/utils/formatters';
 import { StatCard } from './StatCard';
 import { TONES } from '../staking/lib/validatorHealth';
 import {
-    assessDecentralization, countryDistribution, hostingShare, MIN_COVERAGE, providerDistribution, versionAdoption,
+    assessDecentralization, countryDistribution, hostingShare, MIN_COVERAGE, providerDistribution, versionAdoption, VERSION_FRESH_MS,
     type Level,
 } from '../staking/lib/networkHealth';
+import { apiFetchNodeRelease } from '../services/apiClient';
 import type { TranslationsT } from '../types';
 import type { Validator } from '@/types/radix';
 
@@ -32,6 +34,9 @@ const fill = (template: string, values: Record<string, string | number>) =>
 /** How many providers the inline value names; the full list is in the card's tooltip. */
 const INLINE_PROVIDERS = 3;
 const LISTED_PROVIDERS = 10;
+const freshMinutes = VERSION_FRESH_MS / 60_000;
+/** How often the published release is checked; the server caches GitHub's answer as long. */
+const RELEASE_REFRESH_MS = 15 * 60_000;
 
 /**
  * How current and how spread out the active validator set is, as one more row of
@@ -42,7 +47,16 @@ const LISTED_PROVIDERS = 10;
  */
 export function NetworkHealthSection({ validators, dt, locale }: NetworkHealthSectionProps) {
     const t = dt?.insights;
-    const version = versionAdoption(validators);
+    // The latest node release, as published on GitHub: what "latest" means here.
+    // While it loads, or if GitHub cannot be read, the highest release the validators run stands in.
+    const { data: release } = useQuery({
+        queryKey: ['node-release'],
+        queryFn: apiFetchNodeRelease,
+        staleTime: RELEASE_REFRESH_MS,
+        refetchInterval: RELEASE_REFRESH_MS,
+        retry: 1,
+    });
+    const version = versionAdoption(validators, { release: release?.version });
     const providers = providerDistribution(validators);
     const countries = countryDistribution(validators);
     const hosting = hostingShare(validators);
@@ -77,12 +91,25 @@ export function NetworkHealthSection({ validators, dt, locale }: NetworkHealthSe
                     icon={<Cpu className="size-5" />}
                     label={t?.version_title ?? 'On the latest version'}
                     value={version.latest
-                        ? <>{version.updated}/{version.total} · {formatPercent(version.percent, 0, locale)}</>
+                        ? (
+                            <>
+                                {version.updated}/{version.total} · {formatPercent(version.percent, 2, locale)}
+                                {/* The same adoption weighted by stake: what share of the XRD delegated to active validators runs the latest release. */}
+                                {version.totalStake > 0 && (
+                                    <span title={t?.version_stake_title}>
+                                        {' · '}{formatXRD(version.updatedStake, locale)}/{formatXRD(version.totalStake, locale)} XRD · {formatPercent(version.stakePercent, 2, locale)}
+                                    </span>
+                                )}
+                            </>
+                        )
                         : '---'}
                     accent
                     description={[
-                        version.latest ? fill(t?.version_hint ?? '', { latest: version.latest }) : t?.version_none,
-                        version.unknown > 0 ? fill(t?.version_unknown ?? '', { n: version.unknown }) : '',
+                        version.latest
+                            ? fill((version.source === 'release' ? t?.version_hint_release : t?.version_hint) ?? '', { latest: version.latest, minutes: freshMinutes })
+                            : fill(t?.version_none ?? '', { minutes: freshMinutes }),
+                        version.latest && version.totalStake > 0 ? fill(t?.version_stake ?? '', { percent: formatPercent(version.stakePercent, 2, locale) }) : '',
+                        version.unknown > 0 ? fill(t?.version_unknown ?? '', { n: version.unknown, minutes: freshMinutes }) : '',
                     ].filter(Boolean).join(' ')}
                 />
                 <StatCard

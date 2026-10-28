@@ -53,7 +53,8 @@ export function selectPopupTabsWidth(labels: string[]): number {
 }
 
 interface SelectPopupTabsProps<T extends string> {
-  tabs: Array<{ value: T; label: ReactNode; count?: number }>;
+  /** `count` may be a placeholder (e.g. "…") while the tab's list is still loading. */
+  tabs: Array<{ value: T; label: ReactNode; count?: number | string }>;
   active: T;
   onChange: (value: T) => void;
   onClose: () => void;

@@ -1,6 +1,7 @@
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { NetworkHealthSection } from '@/features/dashboard/components/NetworkHealthSection';
 import { translations } from '@/i18n';
 import type { Validator } from '@/types/radix';
@@ -15,17 +16,40 @@ const validator = (version: string, provider: string | null): Validator => ({
     country: '',
     countryCode: '',
     delegatedStake: 1000,
-    node: provider ? { countryCode: 'DE', online: true, acceptsConnections: true, version: null, commit: null, lastSeen: 1, provider } : null,
+    node: provider ? { countryCode: 'DE', online: true, acceptsConnections: true, version, commit: null, lastSeen: Date.now(), provider } : null,
 } as Validator);
 
 const many = (n: number, version: string, provider: string | null) => Array.from({ length: n }, () => validator(version, provider));
 
-const renderSection = (validators: Validator[]) => render(<NetworkHealthSection validators={validators} dt={dt} locale="en" />);
+/** GitHub's latest release, as /api/node-release answers; null makes it fail. */
+let release: string | null = null;
+vi.mock('@/features/dashboard/services/apiClient', () => ({
+    apiFetchNodeRelease: async () => {
+        if (!release) throw new Error('unavailable');
+        return { version: release, name: release, publishedAt: '', url: '' };
+    },
+}));
+
+const renderSection = (validators: Validator[]) =>
+    render(
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+            <NetworkHealthSection validators={validators} dt={dt} locale="en" />
+        </QueryClientProvider>,
+    );
 
 describe('NetworkHealthSection', () => {
     it('shows how many run the latest version, as a count and a share, in a card', () => {
         renderSection([...many(5, 'v1.4.0.0', 'Hetzner'), ...many(5, 'v1.3.0.2', 'AWS')]);
-        expect(screen.getByText('5/10 · 50%')).toBeInTheDocument();
+        expect(screen.getByText('5/10 · 50.00%')).toBeInTheDocument();
+    });
+
+    it('measures against the release published on GitHub once it arrives', async () => {
+        release = 'v1.5.0.0';
+        renderSection([...many(5, 'v1.4.0.0', 'Hetzner'), ...many(5, 'v1.5.0.0', 'AWS')]);
+        // Until the release arrives the highest the validators run stands in: the same 5/10 here.
+        expect(await screen.findByTitle(/latest Radix node release published on GitHub/)).toBeInTheDocument();
+        expect(screen.getByText('5/10 · 50.00%')).toBeInTheDocument();
+        release = null;
     });
 
     it('names the biggest providers with their share of the validators', () => {
