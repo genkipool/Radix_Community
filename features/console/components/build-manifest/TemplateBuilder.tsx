@@ -56,8 +56,13 @@ export function TemplateBuilder({ t, onManifestChange, disabled }: TemplateBuild
     resourcePackage: knownAddresses?.resource_package ?? '',
     validatorOwnerBadge: networkAddresses.OWNER_BADGE,
   };
-  const manifest =
-    template ? template.build(values, ctx) : '';
+  // A builder that refuses its input (a malformed address, say) leaves no manifest to send.
+  let manifest = '';
+  try {
+    manifest = template ? template.build(values, ctx) : '';
+  } catch {
+    manifest = '';
+  }
 
   useEffect(() => {
     onManifestChange(manifest);

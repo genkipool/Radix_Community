@@ -13,8 +13,9 @@ import { fillTemplate, formatTokenAmount } from './TransactionSummaryPanels';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 
-const ARG_GRID = 'grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3';
-const ROW_HEIGHT = 'h-12';
+const ARG_GRID = 'grid grid-cols-[1.75rem_minmax(0,1fr)_auto] gap-3';
+// A floor, not a fixed height: rows of the two columns line up, and a long value grows its row instead of spilling over the next one.
+const ROW_HEIGHT = 'min-h-12';
 
 /** A template's {placeholders} replaced by plain text, for title attributes. */
 const fillText = (template: string, values: Record<string, string>) =>
@@ -128,7 +129,7 @@ export function ComponentCallSection({ calls, changes, caller, feePaid, tt, onCo
                     )
                     </span>
                 </p>
-                <div className={`${ARG_GRID} border-y border-[var(--color-card-border)] px-1 py-1.5`}>
+                <div className={`${ARG_GRID} items-center border-y border-[var(--color-card-border)] px-1 py-1.5`}>
                     <span className={columnTitle}>#</span>
                     <span className={columnTitle}>{tt?.component_call_value || 'Value'}</span>
                     <span className={columnTitle}>{tt?.component_call_type || 'Type'}</span>
@@ -136,13 +137,15 @@ export function ComponentCallSection({ calls, changes, caller, feePaid, tt, onCo
                 <ul className="flex-1 divide-y divide-[var(--color-card-border)] border-b border-[var(--color-card-border)]">
                     {call.args.map((arg, i) => {
                         const symbol = symbolOf(resources[i]);
+                        const kindLabel = tt?.component_call_kinds?.[arg.kind] ?? arg.kind;
                         let shown: React.ReactNode;
                         if (arg.kind === 'address' && arg.value.startsWith('resource_')) {
                             shown = <ResourceLine address={arg.value} details={entities?.[arg.value]} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />;
                         } else if (arg.kind === 'address') {
                             shown = <AddressChip address={arg.value} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />;
                         } else if (arg.kind === 'other') {
-                            shown = <code className="block whitespace-pre-wrap break-all font-mono text-[11px] text-[var(--color-text-main)]">{arg.value}</code>;
+                            // Tuples, arrays, enums…: kept as written, indentation included, in a box that scrolls rather than stretching the card.
+                            shown = <pre className="max-h-64 overflow-auto rounded-md border border-[var(--color-card-border)] bg-[var(--code-bg)] p-2 font-mono text-[11px] leading-relaxed text-[var(--color-text-main)]">{arg.value}</pre>;
                         } else if (arg.kind === 'decimal' || arg.kind === 'integer') {
                             const title = fillText(tt?.component_call_arg_title || 'Exact value: {value}. Argument {n} of {method}().', { value: arg.value, n: String(i + 1), method: call.method }) + unitNote(symbol);
                             shown = amount(arg.value, arg.kind, symbol, title);
@@ -150,10 +153,23 @@ export function ComponentCallSection({ calls, changes, caller, feePaid, tt, onCo
                             shown = <span className="font-mono text-xs font-bold text-[var(--color-text-main)] break-all">{arg.kind === 'string' ? `"${arg.value}"` : arg.value}</span>;
                         }
                         return (
-                            <li key={i} className={`${ARG_GRID} ${ROW_HEIGHT} px-1 py-1.5`}>
+                            <li key={i} className={`${ARG_GRID} ${ROW_HEIGHT} px-1 py-1.5 ${arg.kind === 'other' ? 'items-start' : 'items-center'}`}>
                                 <span className="grid size-5 place-items-center rounded-full bg-[var(--color-primary)]/10 text-[9px] font-black text-[var(--color-primary)]">{i + 1}</span>
-                                <div className="min-w-0 text-sm">{shown}</div>
-                                <span className={columnTitle}>{tt?.component_call_kinds?.[arg.kind] ?? arg.kind}</span>
+                                {arg.kind === 'other' ? (
+                                    <>
+                                        {/* On a narrow card the code takes the type's column too, with the type above it. */}
+                                        <div className="min-w-0 text-sm @max-md:col-span-2">
+                                            <span className={`mb-1 block @md:hidden ${columnTitle}`}>{kindLabel}</span>
+                                            {shown}
+                                        </div>
+                                        <span className={`@max-md:hidden ${columnTitle}`}>{kindLabel}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="min-w-0 text-sm">{shown}</div>
+                                        <span className={columnTitle}>{kindLabel}</span>
+                                    </>
+                                )}
                             </li>
                         );
                     })}
@@ -184,7 +200,8 @@ export function ComponentCallSection({ calls, changes, caller, feePaid, tt, onCo
                     ) : 'address' in entry.key ? (
                         <ResourceLine address={entry.key.address} details={entities?.[entry.key.address]} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
                     ) : (
-                        <span className="font-mono text-xs text-[var(--color-text-main)] truncate" title={entry.key.hex}>{tt?.component_call_key || 'Key'} {entry.key.hex.slice(0, 16)}…</span>
+                        // The whole key when it fits; the ellipsis only when the column is too narrow.
+                        <span className="min-w-0 truncate font-mono text-xs text-[var(--color-text-main)]" title={entry.key.hex}>{tt?.component_call_key || 'Key'} {entry.key.hex}</span>
                     )}
                     {!entry.before && <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[var(--color-success)]">{tt?.component_call_new_entry || 'New'}</span>}
                 </div>
@@ -257,7 +274,7 @@ export function ComponentCallSection({ calls, changes, caller, feePaid, tt, onCo
                 const pkg = details?.details?.package_address;
                 const last = c === calls.length - 1;
                 return (
-                    <div key={call.component + call.method + c} className="p-3 space-y-5">
+                    <div key={call.component + call.method + c} className={`p-3 space-y-5 ${c > 0 ? 'border-t border-[var(--color-card-border)]' : ''}`}>
                         <p className="px-1 text-[13px] leading-relaxed text-[var(--color-text-main)]">
                             {fillTemplate(tt?.component_call_desc || '{caller} called {method} on {component}. No assets moved.', {
                                 caller: <strong>{caller ? shortenAddress(caller) : tt?.component_call_someone || 'Someone'}</strong>,

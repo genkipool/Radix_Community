@@ -15,6 +15,7 @@ import { sumSignedDecimals } from './decimal';
 import type { GatewayPost } from './resource-holders';
 
 export interface PoolHistoryTransaction {
+  confirmed_at?: string | null;
   balance_changes?: {
     fungible_balance_changes?: Array<{ entity_address: string; resource_address: string; balance_change: string }>;
   } | null;
@@ -26,8 +27,24 @@ export interface AccountPoolFlows {
   takenOut: Record<string, string>;
 }
 
+/**
+ * Reserves moved by the manager: the pool's own balance changed in a
+ * transaction where no pool unit moved, which only protected_deposit and
+ * protected_withdraw do. On a DEX pool that is every swap; on a pool managed
+ * by a badge, it is a person taking reserves out (or putting them in).
+ */
+export interface ManagerMoves {
+  /** Transactions with such a move. */
+  count: number;
+  withdrawn: Record<string, string>;
+  deposited: Record<string, string>;
+  /** When the latest one was confirmed (the history is newest first). */
+  lastAt: string | null;
+}
+
 export interface PoolContributions {
   byAccount: Record<string, AccountPoolFlows>;
+  managerMoves: ManagerMoves;
   transactions: number;
   /** The history was longer than what was read: amounts cover the latest part only. */
   truncated: boolean;
@@ -62,6 +79,33 @@ export function poolContributions(
   );
 }
 
+export function poolManagerMoves(
+  transactions: PoolHistoryTransaction[],
+  pool: string,
+  poolUnit: string,
+  resources: string[],
+): ManagerMoves {
+  const withdrawn: Record<string, string[]> = {};
+  const deposited: Record<string, string[]> = {};
+  let count = 0;
+  let lastAt: string | null = null;
+  for (const tx of transactions) {
+    const rows = tx.balance_changes?.fungible_balance_changes ?? [];
+    if (rows.some((row) => row.resource_address === poolUnit)) continue;
+    const moves = rows.filter((row) => row.entity_address === pool && resources.includes(row.resource_address));
+    if (!moves.length) continue;
+    count++;
+    lastAt ??= tx.confirmed_at ?? null;
+    for (const row of moves) {
+      if (row.balance_change.startsWith('-')) (withdrawn[row.resource_address] ??= []).push(row.balance_change.slice(1));
+      else (deposited[row.resource_address] ??= []).push(row.balance_change);
+    }
+  }
+  const total = (byResource: Record<string, string[]>) =>
+    Object.fromEntries(Object.entries(byResource).map(([resource, values]) => [resource, sumSignedDecimals(values)]));
+  return { count, withdrawn: total(withdrawn), deposited: total(deposited), lastAt };
+}
+
 /** Up to `maxPages` × 100 of the pool's transactions, newest first. */
 export async function fetchPoolContributions(
   post: GatewayPost,
@@ -84,6 +128,7 @@ export async function fetchPoolContributions(
   } while (cursor && pages < maxPages);
   return {
     byAccount: poolContributions(transactions, pool.poolUnit, pool.resources),
+    managerMoves: poolManagerMoves(transactions, pool.address, pool.poolUnit, pool.resources),
     transactions: transactions.length,
     truncated: !!cursor,
   };

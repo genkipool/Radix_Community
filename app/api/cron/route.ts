@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { advanceVoteTail } from '@/services/gateway/protocolVotes';
+import { advanceTopLsu } from '@/services/gateway/rankings';
+import { advanceAccessControllers } from '@/services/gateway/accessControllers';
+import { refreshNetworkUnstaking } from '@/services/gateway/networkUnstaking';
 import crypto from 'crypto';
 
 function sameSecret(given: string | null, expected: string): boolean {
@@ -50,10 +53,36 @@ export async function GET(request: Request) {
       advanceVoteTail('stokenet'),
     ]);
 
+    /*
+     * The top-LSU ranking is built a few validators at a time. It is normally
+     * advanced by whoever is looking at it; this finishes it, and rebuilds it
+     * when old, if nobody is. A fresh ranking costs one Redis read, and steps
+     * are spaced by a lock, so pinging often is safe.
+     */
+    const lsuRanking = await Promise.all([
+      advanceTopLsu('mainnet'),
+      advanceTopLsu('stokenet'),
+    ]);
+
+    /* The shielded-accounts list, kept up to date the same way: a few requests when there is anything new. */
+    const accessControllers = await Promise.all([
+      advanceAccessControllers('mainnet'),
+      advanceAccessControllers('stokenet'),
+    ]);
+
+    /* The network's pending-withdraw figure, kept warm for the dashboard panel. Same rules. */
+    const unstaking = await Promise.all([
+      refreshNetworkUnstaking('mainnet'),
+      refreshNetworkUnstaking('stokenet'),
+    ]);
+
     return NextResponse.json({
       success: true,
       message: 'Radix cache revalidated successfully',
       votes: { mainnet: votes[0], stokenet: votes[1] },
+      lsuRanking: { mainnet: lsuRanking[0], stokenet: lsuRanking[1] },
+      accessControllers: { mainnet: accessControllers[0], stokenet: accessControllers[1] },
+      networkUnstaking: { mainnet: unstaking[0], stokenet: unstaking[1] },
       timestamp: new Date().toISOString()
     });
   } catch (_error) {

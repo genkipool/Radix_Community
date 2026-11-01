@@ -17,7 +17,7 @@
  */
 
 import { RadixEngineToolkit, PublicKey } from '@radixdlt/radix-engine-toolkit';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { getGateway, withRetry, type Network } from '@/services/gateway/client';
 import { networkIdFromName, olympiaAddressFromPublicKeyHex } from './index';
 
@@ -40,10 +40,10 @@ export interface OlympiaReverseResult {
 function recoverPublicKey(signature: Uint8Array, signedHash: Uint8Array): Uint8Array | null {
   if (signature.length !== 65) return null;
   try {
-    return secp256k1.Signature.fromCompact(signature.slice(1))
+    return secp256k1.Signature.fromBytes(signature.slice(1), 'compact')
       .addRecoveryBit(signature[0])
       .recoverPublicKey(signedHash)
-      .toRawBytes(true);
+      .toBytes(true);
   } catch {
     return null;
   }

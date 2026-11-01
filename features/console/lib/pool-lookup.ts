@@ -7,7 +7,7 @@
  */
 
 import { poolKindOfBlueprint, type PoolKind } from './pool-manifests';
-import { mainRoleRule, parseAccessRule, type RuleView } from './role-lookup';
+import { entityRoles, mainRoleRule, parseAccessRule, type EntityRole, type RuleView } from './role-lookup';
 
 export { badgeOfRule, heldBadgeFor, isGlobalCallerBadge, isPackageCallerBadge, parseAccessRule } from './role-lookup';
 /** Who a role resolves to (see role-lookup). */
@@ -26,6 +26,8 @@ export interface PoolState {
   ownerUpdatable: boolean;
   /** The pool's `tags` metadata (a retired pool carries "retired"). */
   tags: string[];
+  /** Every role of the pool, by module: the full permissions view. */
+  roles: EntityRole[];
 }
 
 type Json = Record<string, unknown>;
@@ -77,6 +79,7 @@ export function parsePoolState(entity: unknown): PoolState | null {
     owner,
     ownerUpdatable: ownerJson.updater === 'Owner' || ownerJson.updater === 'Object',
     tags: metadataTags(e),
+    roles: entityRoles(e),
   };
 }
 

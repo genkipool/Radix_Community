@@ -8,7 +8,7 @@ import type { StatCardProps } from '../types';
 
 /* ═══════ STAT MINI CARD ═══════ */
 const StatCard = ({
-    icon, label, value, accent = false, description, fullValue, copyText, isLoading = false,
+    icon, label, value, accent = false, description, fullValue, copyText, isLoading = false, wrap = false,
 }: StatCardProps) => {
     const { copiedText, copy } = useCopyToClipboard(2000);
     const copied = copiedText === copyText && copyText !== undefined;
@@ -37,7 +37,7 @@ const StatCard = ({
             </div>
             <div className="min-w-0 flex-1">
                 <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold flex items-center gap-1.5">
-                    <span className="truncate">{label}</span>
+                    <span className={wrap ? 'break-words' : 'truncate'}>{label}</span>
                     {description && <Info className="size-3 opacity-60 flex-shrink-0" />}
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -45,7 +45,7 @@ const StatCard = ({
                         /* Skeleton pulse — only shown when no value is available yet */
                         <div className="h-6 w-28 rounded-md bg-[var(--color-card-border)] animate-pulse mt-0.5" />
                     ) : (
-                        <div className="text-[15px] font-black text-[var(--color-text-main)] truncate">{value}</div>
+                        <div className={`text-[15px] font-black text-[var(--color-text-main)] ${wrap ? 'break-words' : 'truncate'}`}>{value}</div>
                     )}
                     {copyText && !isLoading && (
                         <button

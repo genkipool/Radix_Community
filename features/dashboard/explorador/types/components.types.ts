@@ -85,6 +85,9 @@ export interface AssetTransferGroupProps {
     marketData?: MarketData | null;
     /** The same account withdraws and deposits back the asset (balance changes show nothing). */
     selfTransfer?: boolean;
+    /** Components the manifest calls: who mints or burns when no account is on that side. */
+    calledComponents?: string[];
+    dt?: Partial<DashboardDict>;
 }
 
 export interface TransferFooterProps {
@@ -165,6 +168,8 @@ export interface AccountCardProps {
     marketData?: MarketData | null;
     readingMode?: boolean;
     isModal?: boolean;
+    /** Leave out the header (icon, address, balances, CSV) and start at the tabs: for a card shown inside another view that already names the account. */
+    headless?: boolean;
 }
 
 export interface ValidatorInlinePanelProps {

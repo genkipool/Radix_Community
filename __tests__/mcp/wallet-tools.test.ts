@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ed25519 } from '@noble/curves/ed25519';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { hexToBytes } from '@noble/curves/utils.js';
 import { PublicKey, RadixEngineToolkit } from '@radixdlt/radix-engine-toolkit';
 import { getMcpRegistry } from '@/services/mcp/tools';
 import { RADIX_COMMUNITY_ORIGIN, dappDefinitionFor } from '@/services/mcp/dapp';
@@ -91,11 +92,11 @@ describe('build_wallet_request', () => {
 });
 
 describe('verify_rola_proofs', () => {
-  const privateKey = ed25519.utils.randomPrivateKey();
+  const privateKey = ed25519.utils.randomSecretKey();
   const publicKey = Buffer.from(ed25519.getPublicKey(privateKey)).toString('hex');
   const challenge = 'ef'.repeat(32);
   const sign = (origin: string) =>
-    Buffer.from(ed25519.sign(rolaSignatureMessage(challenge, dappDefinitionFor('stokenet'), origin), privateKey)).toString('hex');
+    Buffer.from(ed25519.sign(hexToBytes(rolaSignatureMessage(challenge, dappDefinitionFor('stokenet'), origin)), privateKey)).toString('hex');
 
   it('accepts a persona proof signed like the wallet and rejects a foreign origin', async () => {
     const identity = await RadixEngineToolkit.Derive.virtualIdentityAddressFromPublicKey(new PublicKey.Ed25519(publicKey), 2);

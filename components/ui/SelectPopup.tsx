@@ -34,8 +34,27 @@ export function SelectPopupClose({ onClick, label }: { onClick: () => void; labe
   );
 }
 
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+/**
+ * Width a popup needs for `SelectPopupTabs` with these labels (each with its
+ * count, as shown), so it can size itself to fit them on one line: 10 px
+ * bold uppercase text with 0.05em tracking, 4 px padding a side, 12 px gaps,
+ * 12 px bar padding a side and the 32 px close button, plus 8 px so subpixel
+ * rounding never pushes the last tab onto another line. 0 when it cannot
+ * measure (no DOM), so callers fall back to their own width.
+ */
+export function selectPopupTabsWidth(labels: string[]): number {
+  if (typeof document === 'undefined') return 0;
+  measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return 0;
+  measureCtx.font = `700 10px ${getComputedStyle(document.body).fontFamily}`;
+  const text = labels.reduce((sum, l) => sum + measureCtx!.measureText(l.toUpperCase()).width + l.length * 0.5 + 8, 0);
+  return Math.ceil(text + 12 * (labels.length - 1) + 24 + 32 + 8);
+}
+
 interface SelectPopupTabsProps<T extends string> {
-  tabs: Array<{ value: T; label: ReactNode; count?: number }>;
+  /** `count` may be a placeholder (e.g. "…") while the tab's list is still loading. */
+  tabs: Array<{ value: T; label: ReactNode; count?: number | string }>;
   active: T;
   onChange: (value: T) => void;
   onClose: () => void;
@@ -48,7 +67,9 @@ export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onCl
     // The top padding belongs to the tabs (their underline sits on the border),
     // so the close button centres on the whole bar.
     <div className="shrink-0 px-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-      <div role="tablist" className="flex gap-3 pt-3 overflow-x-auto no-scrollbar flex-1 min-w-0">
+      {/* Each tab grows from its own width, so they fill the bar with even gaps;
+          tabs that do not fit wrap onto another line instead of hiding behind a scroll. */}
+      <div role="tablist" className="flex flex-wrap gap-x-3 pt-3 flex-1 min-w-0">
         {tabs.map((tab) => (
           <button
             key={tab.value}
@@ -56,7 +77,7 @@ export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onCl
             role="tab"
             aria-selected={active === tab.value}
             onClick={() => onChange(tab.value)}
-            className="relative py-2 px-1 outline-none flex items-center justify-center group"
+            className="relative flex-auto py-2 px-1 outline-none flex items-center justify-center group"
           >
             <span
               className={`text-[10px] font-bold tracking-wider uppercase whitespace-nowrap transition-opacity duration-200 ${
@@ -89,6 +110,8 @@ interface SelectPopupProps {
     placeholder: string;
     autoFocus?: boolean;
     onEnter?: () => void;
+    /** Label of the clear (×) button; the button shows only when there is text and this is given. */
+    clearLabel?: string;
   };
   /** Rendered between the search box and the rows (tabs, options). */
   toolbar?: ReactNode;
@@ -154,8 +177,19 @@ export function SelectPopup({
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               onKeyDown={onKeyDown}
-              className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
+              className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-8 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
             />
+            {search.clearLabel && search.value && (
+              <button
+                type="button"
+                onClick={() => search.onChange('')}
+                aria-label={search.clearLabel}
+                title={search.clearLabel}
+                className="absolute right-2 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -234,7 +268,9 @@ export function SelectPopupEmpty({ children }: { children: ReactNode }) {
 /**
  * The draft behind a several-at-once popup. `open(current)` starts it from
  * what is applied now; `toggle` edits it; `pinned` is what was picked when it
- * opened, which `selectedFirst` lists on top.
+ * opened, which `selectedFirst` lists on top. `repin()` makes the current
+ * picks the pinned ones, for when the list starts over (the search cleared):
+ * rows never jump while toggling, only when the list is rebuilt anyway.
  */
 export function useSelectionDraft<T extends string>() {
   const [draft, setDraft] = useState<T[]>([]);
@@ -247,6 +283,7 @@ export function useSelectionDraft<T extends string>() {
       setPinned(current);
     },
     toggle: (value: T) => setDraft((d) => (d.includes(value) ? d.filter((v) => v !== value) : [...d, value])),
+    repin: () => setPinned(draft),
     set: setDraft,
   };
 }

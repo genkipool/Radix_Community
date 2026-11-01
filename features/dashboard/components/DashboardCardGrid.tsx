@@ -78,6 +78,10 @@ export const DashboardCardGrid = ({
   onCopy,
   marketData,
   entitiesToShow = EMPTY_ENTITIES,
+  rankingActive = false,
+  loadingRanking = false,
+  rankingFailed = false,
+  onRetryRanking,
 }: DashboardCardGridProps) => {
   return (
     <>
@@ -137,7 +141,14 @@ export const DashboardCardGrid = ({
                 readingMode={readingMode}
               />
             ))}
-            {loadingTxs
+            {rankingActive && loadingRanking &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={`rank-skeleton-${i}`}
+                  className="h-32 bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl animate-pulse"
+                />
+              ))}
+            {rankingActive ? null : loadingTxs
               ? Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
@@ -200,7 +211,16 @@ export const DashboardCardGrid = ({
           </div>
         )}
 
-      {activeView === 'transactions' && txsFailed && (
+      {activeView === 'transactions' && rankingActive && rankingFailed && (
+        <UnavailableState
+          message={dt?.error?.unavailable_title ?? 'Could not read the network'}
+          hint={dt?.error?.unavailable_hint}
+          retryLabel={dt?.error?.retry}
+          onRetry={onRetryRanking}
+        />
+      )}
+
+      {activeView === 'transactions' && !rankingActive && txsFailed && (
         <UnavailableState
           message={dt?.error?.unavailable_title ?? 'Could not read the network'}
           hint={dt?.error?.unavailable_hint}
@@ -210,6 +230,7 @@ export const DashboardCardGrid = ({
       )}
 
       {activeView === 'transactions' &&
+        !rankingActive &&
         !txsFailed &&
         txsInitialized &&
         filteredTxs.length === 0 &&

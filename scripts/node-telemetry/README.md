@@ -19,6 +19,7 @@ every five minutes from cron. Standard library only.
 | System API `identity` and `version` | our own node, which never appears among its own peers |
 | TCP connect to the gossip port | whether a node accepts inbound connections (for our own node: a peer dialling in, or its public address answering) |
 | ip-api.com, country.is | country of each IP (cached for a week) |
+| ip-api.com `fields=status,countryCode,isp,org,as,asname,hosting` | who hosts each IP: the provider and whether it is a datacenter (same cache, same request as the country) |
 
 ## Data
 
@@ -36,9 +37,28 @@ Entry fields:
 | `acceptsConnections` | its port answered (`true`) or not (`false`); `null` with no known address |
 | `version`, `commit` | build it reports, only real releases (`v1.4.0.0`) |
 | `lastSeen` | last time connected, `0` when only known from the address book |
+| `provider` | who hosts the IP ("Hetzner", "AWS", "OVH"…), see "Hosting provider"; `null` when it cannot be placed |
+| `hosting` | `true` when the IP belongs to a datacenter / hosting network, `false` for a home or office line, `null` unknown |
 
-No IP address is published. The web ignores the view once `updatedAt` is older
+No IP address is published (only the country and the provider's name). The web ignores the view once `updatedAt` is older
 than 20 minutes.
+
+## Hosting provider
+
+The web groups the active validators by `provider` to say how spread out the
+network is (staking view → network panel → "Network health"). Without the field
+it shows "unknown" and gives no verdict, so nothing breaks while the script is
+not updated; the web reads `provider` and `hosting` when they are there.
+
+`node_telemetry.py` asks ip-api.com for the extra fields in the call that already
+locates the IP (`fields=status,countryCode,isp,org,as,asname,hosting,query`) and
+keeps them in the same weekly cache. `provider_from_ipapi` turns the answer into a
+known cloud / hosting name when the ISP, organisation or AS name matches one
+(checked against live answers: `5.9.0.1` → Hetzner, `8.8.8.8` → Google Cloud,
+`51.38.0.1` → OVH), else the ISP as published, without legal suffixes. Cache
+entries written before the provider was kept are looked up again once. The web
+side is already done (`ValidatorNodeTelemetry`, `parseNodeTelemetry`, the facts
+row and the network-health row).
 
 ## How the web decides "online"
 

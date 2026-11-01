@@ -1,5 +1,5 @@
 /**
- * Server-side cache of the native pools Ociswap and DefiPlaza publish
+ * Server-side cache of the native pools Ociswap, DefiPlaza and Reddicks publish
  * (mainnet only), shared by /api/console/known-pools and the MCP tools.
  */
 import { fetchKnownPools, type KnownPool } from '@/features/console/lib/known-pools';
@@ -7,7 +7,7 @@ import logger from '@/lib/logger';
 import { gatewayPost } from './bases';
 
 /**
- * A refresh reads ~19 Ociswap pages (~160 KB each, gzipped) and DefiPlaza, so
+ * A refresh reads ~19 Ociswap pages (~160 KB each, gzipped), DefiPlaza and Reddicks, so
  * it runs at most every 6 hours per instance; new pools are rare and anything
  * missing can still be typed. The HTTP route adds a CDN cache on top.
  */

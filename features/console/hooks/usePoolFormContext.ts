@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { otherNetworkOf } from '../lib/address-network';
+import { networkOfAddress, otherNetworkOf } from '../lib/address-network';
 import { accountFromQuery, consoleQueryParam } from '../lib/console-query';
 import { heldBadgeFor, parsePoolState, type PoolState } from '../lib/pool-lookup';
 import type { PoolBadgeProof } from '../lib/pool-manifests';
@@ -56,14 +57,24 @@ export interface PoolFormContext {
 export function usePoolFormContext(): PoolFormContext {
   const { activeNetwork } = useRadixWallet();
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
-  const [typedPool, setPool] = useConsoleQueryState(poolFromUrl, '');
+  const [typedPool, setTypedPool] = useConsoleQueryState(poolFromUrl, '');
+  // The network the pool was chosen on. A pool of the other network chosen
+  // before a switch is hidden until its network is back; one typed or pasted
+  // on this network stays, so its field can say it is on the wrong one.
+  const [chosenOn, setChosenOn] = useState<string | null>(null);
+  const setPool = (address: string) => {
+    setTypedPool(address);
+    setChosenOn(activeNetwork);
+  };
   const { data: holdings } = useAccountResources(account);
 
   const detected: DetectedPool[] = (holdings?.fungibles ?? [])
     .filter((f) => f.pool?.startsWith('pool_'))
     .map((f) => ({ address: f.pool!, poolUnit: f.resourceAddress, units: f.amount, name: f.name || f.symbol }));
 
-  const pool = typedPool.trim();
+  const stored = typedPool.trim();
+  const fromOtherNetwork = !!otherNetworkOf(stored, activeNetwork) && (chosenOn ?? networkOfAddress(stored)) !== activeNetwork;
+  const pool = fromOtherNetwork ? '' : stored;
 
   const { data: state, isLoading: isLoadingState } = useQuery({
     queryKey: ['console-pool-state', activeNetwork, pool],

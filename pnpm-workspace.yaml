@@ -9,6 +9,10 @@ allowBuilds:
   snyk: true
   unrs-resolver: true
 
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv
+
 minimumReleaseAge: 10080
 
 minimumReleaseAgeExclude:

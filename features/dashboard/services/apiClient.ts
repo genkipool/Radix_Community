@@ -211,6 +211,68 @@ export async function apiFetchStakeHistory(
 
 
 
+export interface AccountUnlockData {
+    address: string;
+    /** XRD of theirs still locked. */
+    xrd: number;
+    unstakes: number;
+    /** Validators they unstaked from, the biggest first. */
+    validators: string[];
+    /** When their first part unlocks, and when they last unstaked, in ms. */
+    nextUnlock: number;
+    lastUnstake: number;
+}
+
+export interface NetworkUnstakingData {
+    /** XRD in the validators' pending-withdraw vaults (locked, or unlocked and not claimed). Exact. */
+    pending: number;
+    /** Of it, the part still locked: unstaked within the last 7 days. Null until the ledger has been read that far. */
+    unbonding: number | null;
+    /** The same figure 24 h and 7 days ago; null until the ledger has been read that far back. */
+    unbonding24hAgo: number | null;
+    unbonding7dAgo: number | null;
+    /** When the locked part unlocks, by UTC day, today first; empty when unknown. */
+    schedule: { date: string; xrd: number }[];
+    /** Who has it unlocking, biggest first; empty when unknown. */
+    accounts: AccountUnlockData[];
+    /** XRD of the locked part whose account the ledger events did not name. */
+    unattributedXrd: number;
+    validators: number;
+    updatedAt: number | null;
+}
+
+export async function apiFetchNetworkUnstaking(network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<NetworkUnstakingData> {
+    const res = await fetch(`/api/network-unstaking?network=${network}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json() as Promise<NetworkUnstakingData>;
+}
+
+export interface RankedAccount {
+    address: string;
+    /** XRD balance (top_accounts) or the stake position's worth in XRD (top_lsu); absent for access_controllers and owner_unlocks. */
+    amount?: string;
+    /** access_controllers: the Access Controller that holds the account's owner badge. */
+    controller?: string;
+    /** top_lsu: the validator the position is with. */
+    validator?: string;
+}
+
+export type RankingType = 'top_accounts' | 'top_lsu' | 'access_controllers' | 'owner_unlocks' | 'fee_changes';
+
+/** One page of a ranking of accounts, biggest first. */
+export async function apiFetchRanking(
+    type: RankingType,
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+    cursor?: string,
+): Promise<{ accounts: RankedAccount[]; nextCursor: string | undefined; partial: boolean }> {
+    const params = new URLSearchParams({ type, network });
+    if (cursor) params.set('cursor', cursor);
+    const res = await fetch(`/api/rankings?${params.toString()}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json() as { accounts?: RankedAccount[]; nextCursor?: string; partial?: boolean };
+    return { accounts: data.accounts ?? [], nextCursor: data.nextCursor, partial: !!data.partial };
+}
+
 export async function apiFetchHistoricalStakingBalance(
     accountAddress: string,
     stateVersion: number,
@@ -375,6 +437,13 @@ export async function apiFetchValidators(
     const version = fingerprint ? `&v=${encodeURIComponent(fingerprint)}` : '';
     const res = await fetch(`/api/validators?network=${network}${version}`);
     if (!res.ok) throw new Error(`Validators API error: ${res.status}`);
+    return res.json();
+}
+
+/** The latest stable release of the Radix node software, from GitHub (see /api/node-release). */
+export async function apiFetchNodeRelease(): Promise<{ version: string; name: string; publishedAt: string; url: string }> {
+    const res = await fetch('/api/node-release');
+    if (!res.ok) throw new Error(`Node release API error: ${res.status}`);
     return res.json();
 }
 

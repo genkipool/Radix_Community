@@ -1,14 +1,24 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, BookUser, CornerDownLeft, Crown, Database, Plus, ServerCog, Wallet } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import { useValidatorList } from '@/features/dashboard/staking';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { SelectPopup, SelectPopupEmpty, SelectPopupRow, SelectPopupTabs, selectedFirst, useSelectionDraft } from '@/components/ui/SelectPopup';
+import {
+  SelectPopup,
+  SelectPopupEmpty,
+  SelectPopupRow,
+  SelectPopupTabs,
+  selectPopupTabsWidth,
+  selectedFirst,
+  useSelectionDraft,
+} from '@/components/ui/SelectPopup';
 import { useLanguage } from '@/context/LanguageContext';
+import pickerEn from '../../locales/addressPicker.en.json';
+import pickerEs from '../../locales/addressPicker.es.json';
 import {
   useAddressBook,
   addressCategory,
@@ -25,10 +35,11 @@ import { usePickerPopup } from '../../hooks/usePickerPopup';
 import { fetchOwnedValidators } from '../../hooks/useOwnedValidators';
 import type { KnownPoolRow } from '../../lib/known-pools';
 import { isNonFungibleResource } from '../../lib/bulk-send';
-import { findLedgerEntities, type LedgerEntityKind } from '../../lib/ledger-entities';
+import { findLedgerEntities, type LedgerEntity, type LedgerEntityKind } from '../../lib/ledger-entities';
+import { browserCopyOptions, writeBrowserCopy } from '../../lib/browser-copy';
 
 /** Where an option comes from; also the popup's tabs, in this order. */
-const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'network', 'validators'] as const;
+const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'reddicks', 'network', 'validators'] as const;
 /** A picker of resources only is split by kind instead: tokens and NFTs. */
 const KINDS = ['tokens', 'nfts'] as const;
 type Tab = 'all' | (typeof SOURCES)[number] | (typeof KINDS)[number];
@@ -47,90 +58,18 @@ interface PickerOption {
 }
 
 const LEDGER_KINDS: LedgerEntityKind[] = ['pool', 'locker'];
+/** Popup width bounds; between them it fits its tabs (see `selectPopupTabsWidth`). */
+const MIN_WIDTH = 440;
+const MAX_WIDTH = 880;
+
 /** Shown before searching; the search runs over everything found. */
 const INITIAL_ROWS = 40;
 /** Tall enough for about eight rows, short enough not to cover the form. */
 
 const fmtAmount = (amount: string) => Number(amount).toLocaleString(undefined, { maximumFractionDigits: 4 });
 
-const TEXT = {
-  es: {
-    search: 'Buscar por nombre o dirección…',
-    empty: 'No hay direcciones de este tipo. Guárdalas en la agenda.',
-    noMatch: 'Nada coincide con la búsqueda.',
-    pick: 'Elegir dirección',
-    pickBy: {
-      account: 'Elegir cuenta',
-      resource: 'Elegir recurso',
-      validator: 'Elegir validador',
-      pool: 'Elegir pool',
-      locker: 'Elegir locker',
-      component: 'Elegir componente',
-      package: 'Elegir paquete',
-    } as Partial<Record<AddressCategory, string>>,
-    loading: 'Buscando…',
-    more: 'Hay {count} más: usa el buscador.',
-    typedLabel: 'Usar esta dirección',
-    fee: 'Comisión',
-    add: 'Añadir',
-    addCount: 'Añadir ({count})',
-    close: 'Cerrar',
-    ownBadge: 'Tienes su insignia',
-    tabs: {
-      all: 'Todas',
-      allResources: 'Todos',
-      tokens: 'Tokens',
-      nfts: 'NFTs',
-      wallet: 'Tu billetera',
-      myValidators: 'Tuyos',
-      agenda: 'Agenda',
-      mine: 'Usados por ti',
-      ociswap: 'Ociswap',
-      defiplaza: 'DefiPlaza',
-      network: 'Actividad reciente',
-      validators: 'Validadores',
-    },
-    unnamed: { pool: 'Pool sin nombre', locker: 'Locker sin nombre', resource: 'Recurso sin nombre', other: 'Sin nombre' },
-  },
-  en: {
-    search: 'Search by name or address…',
-    empty: 'No addresses of this type. Save some in the address book.',
-    noMatch: 'Nothing matches the search.',
-    pick: 'Pick address',
-    pickBy: {
-      account: 'Pick account',
-      resource: 'Pick resource',
-      validator: 'Pick validator',
-      pool: 'Pick pool',
-      locker: 'Pick locker',
-      component: 'Pick component',
-      package: 'Pick package',
-    } as Partial<Record<AddressCategory, string>>,
-    loading: 'Searching…',
-    more: '{count} more: use the search.',
-    typedLabel: 'Use this address',
-    fee: 'Fee',
-    add: 'Add',
-    addCount: 'Add ({count})',
-    close: 'Close',
-    ownBadge: 'You hold its badge',
-    tabs: {
-      all: 'All',
-      allResources: 'All',
-      tokens: 'Tokens',
-      nfts: 'NFTs',
-      wallet: 'Your wallet',
-      myValidators: 'Yours',
-      agenda: 'Address book',
-      mine: 'Used by you',
-      ociswap: 'Ociswap',
-      defiplaza: 'DefiPlaza',
-      network: 'Recent activity',
-      validators: 'Validators',
-    },
-    unnamed: { pool: 'Unnamed pool', locker: 'Unnamed locker', resource: 'Unnamed resource', other: 'Unnamed' },
-  },
-};
+/** Every language at once: the popup is as wide as its tabs need in the widest one. */
+const TEXT = { es: pickerEs, en: pickerEn } as const satisfies Record<string, typeof pickerEn>;
 
 const SOURCE_ICON: Record<Source, ReactNode> = {
   wallet: <Wallet className="size-3.5 text-[var(--color-primary)]" />,
@@ -140,6 +79,7 @@ const SOURCE_ICON: Record<Source, ReactNode> = {
   mine: <Database className="size-3.5 text-[var(--color-primary)]" />,
   ociswap: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
   defiplaza: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
+  reddicks: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
   network: <Activity className="size-3.5 text-[var(--color-text-muted)]" />,
   validators: <ServerCog className="size-3.5 text-[var(--color-text-muted)]" />,
 };
@@ -152,7 +92,7 @@ const SOURCE_ICON: Record<Source, ReactNode> = {
  * - the wallet: its accounts, and for resource inputs what those accounts hold;
  * - the saved agenda;
  * - for pools and lockers, the ones the wallet's accounts have touched, the
- *   native pools Ociswap and DefiPlaza publish (mainnet) and pools with recent
+ *   native pools Ociswap, DefiPlaza and Reddicks publish (mainnet) and pools with recent
  *   network activity;
  * - for validators, the ones the wallet's accounts own and the validator set.
  *
@@ -189,41 +129,77 @@ export function AddressPickerButton({
   const multi = !!onConfirm;
   const draft = useSelectionDraft<string>();
 
-  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, style: popupStyle, direction } = usePickerPopup();
+  const { open, show: showPopup, close: closePopup, buttonRef, popupRef, layoutFor } = usePickerPopup();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
-  const L = language === 'es' ? TEXT.es : TEXT.en;
+  const L = TEXT[language] ?? TEXT.en;
   // Named after what it picks when it picks one kind only.
-  const pickTitle = (categories.length === 1 && L.pickBy[categories[0]]) || L.pick;
+  const pickTitle = (categories.length === 1 && (L.pickBy as Partial<Record<AddressCategory, string>>)[categories[0]]) || L.pick;
 
   const accepts = (c: AddressCategory) => categories.includes(c);
   const ledgerKinds = LEDGER_KINDS.filter((k) => accepts(k));
   const accountAddresses = accounts.map((a) => a.address);
 
-  // Everything below loads only once the popup is open, and is cached after.
+  // The lists load before the first click: once the page is idle, or as soon
+  // as the pointer or focus reaches the button. Every picker on the page shares
+  // the same cached queries, so this costs one load per page, not per button.
+  const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    if (disabled) return;
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(() => setWarm(true), { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(() => setWarm(true), 1000);
+    return () => window.clearTimeout(id);
+  }, [disabled]);
+  const load = open || warm;
+
+  // Everything below is cached once loaded.
   const { data: holdings, isFetching: holdingsLoading } = useAccountResources(
-    open && accepts('resource') ? accountAddresses : null,
+    load && accepts('resource') ? accountAddresses : null,
   );
   // One lookup for pools and lockers together, shared by every picker on the
-  // page and kept 30 minutes: the last 100 transactions of each account plus
-  // one page of recent pool activity, a few dozen KB in all.
+  // page and kept 30 minutes: the last 100 transactions of each account, a few
+  // dozen KB in all. Network-wide activity comes from the server below.
+  // The account-specific lists below also keep their last answer in the
+  // browser: it shows at once on the next visit and is replaced right away.
+  const ledgerKey = ['console-ledger-entities', activeNetwork, accountAddresses.join(',')];
   const { data: ledgerAll, isFetching: ledgerLoading } = useQuery({
-    queryKey: ['console-ledger-entities', activeNetwork, accountAddresses.join(',')],
-    enabled: open && ledgerKinds.length > 0,
+    queryKey: ledgerKey,
+    ...browserCopyOptions<LedgerEntity[]>(ledgerKey),
+    enabled: load && ledgerKinds.length > 0 && accountAddresses.length > 0,
     staleTime: 30 * 60_000,
     retry: false,
-    queryFn: () =>
-      findLedgerEntities((path, body) => gatewayPost(activeNetwork, path, body), {
+    queryFn: async () => {
+      const found = await findLedgerEntities((path, body) => gatewayPost(activeNetwork, path, body), {
         accounts: accountAddresses,
         kinds: LEDGER_KINDS,
         accountPages: 1,
-      }),
+        networkPages: 0,
+      });
+      writeBrowserCopy(ledgerKey, found);
+      return found;
+    },
   });
   const ledger = ledgerAll?.filter((e) => ledgerKinds.includes(e.kind));
+  // Pools with recent network activity: the same for everyone, so the server
+  // caches them and the tab shows up with the DEX lists instead of a second later.
+  const { data: recentPools, isFetching: recentLoading } = useQuery({
+    queryKey: ['console-recent-pools', activeNetwork],
+    enabled: load && accepts('pool'),
+    staleTime: 5 * 60_000,
+    retry: false,
+    queryFn: async () => {
+      const res = await fetch(`/api/console/recent-pools?network=${activeNetwork}`);
+      if (!res.ok) throw new Error(`recent pools: ${res.status}`);
+      return ((await res.json()) as { pools: [address: string, name: string][] }).pools;
+    },
+  });
   const { data: knownPools, isFetching: knownLoading } = useQuery({
     queryKey: ['console-known-pools', activeNetwork],
-    enabled: open && accepts('pool') && activeNetwork === 'mainnet',
+    enabled: load && accepts('pool') && activeNetwork === 'mainnet',
     // Kept for the whole visit: the list is ~2,000 rows and changes a few times a day.
     staleTime: Infinity,
     gcTime: Infinity,
@@ -235,27 +211,32 @@ export function AddressPickerButton({
     },
   });
   // The site's shared validator set: already loaded if the staking list or the explorer was opened.
-  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(activeNetwork, open && accepts('validator'));
+  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(activeNetwork, load && accepts('validator'));
   const validators = validatorSet?.validators;
   const ownerBadge = RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet].OWNER_BADGE;
+  const myValidatorsKey = ['console-picker-owned-validators', activeNetwork, accountAddresses.join(',')];
   const { data: myValidators, isFetching: myValidatorsLoading } = useQuery({
-    queryKey: ['console-picker-owned-validators', activeNetwork, accountAddresses.join(',')],
-    enabled: open && accepts('validator') && accountAddresses.length > 0,
+    queryKey: myValidatorsKey,
+    ...browserCopyOptions<Awaited<ReturnType<typeof fetchOwnedValidators>>>(myValidatorsKey),
+    enabled: load && accepts('validator') && accountAddresses.length > 0,
     staleTime: 5 * 60_000,
     retry: false,
-    queryFn: async () =>
-      (
+    queryFn: async () => {
+      const owned = (
         await Promise.all(
           accountAddresses.map((account) => fetchOwnedValidators(account, activeNetwork, ownerBadge).catch(() => [])),
         )
-      ).flat(),
+      ).flat();
+      writeBrowserCopy(myValidatorsKey, owned);
+      return owned;
+    },
   });
   // Soulbound resources (withdrawer DenyAll) are left out when the input is for sending.
   const locked = useLockedResources(
-    sendableOnly && open ? [...(holdings?.fungibles ?? []), ...(holdings?.nonFungibles ?? [])].map((r) => r.resourceAddress) : [],
+    sendableOnly && load ? [...(holdings?.fungibles ?? []), ...(holdings?.nonFungibles ?? [])].map((r) => r.resourceAddress) : [],
     activeNetwork,
   );
-  const loading = holdingsLoading || ledgerLoading || knownLoading || validatorsLoading || myValidatorsLoading;
+  const loading = holdingsLoading || ledgerLoading || recentLoading || knownLoading || validatorsLoading || myValidatorsLoading;
 
   // Earlier sources win when an address shows up in several.
   const options: PickerOption[] = [];
@@ -303,7 +284,11 @@ export function AddressPickerButton({
   if (accepts('pool')) {
     (knownPools ?? []).forEach(([address, label, source]) => add({ address, label, source, category: 'pool' }));
   }
-  (ledger ?? []).filter((e) => !e.mine).forEach((e) => add({ address: e.address, label: e.name, source: 'network', category: e.kind }));
+  if (accepts('pool')) {
+    (recentPools ?? [])
+      .filter(([address]) => !ledger?.some((e) => e.address === address))
+      .forEach(([address, label]) => add({ address, label, source: 'network', category: 'pool' }));
+  }
   (accepts('validator') ? validators ?? [] : []).forEach((v) =>
     add({
       address: v.address,
@@ -318,9 +303,35 @@ export function AddressPickerButton({
   const unique = options.filter((o, i) => options.findIndex((x) => x.address === o.address) === i);
   const byKind = categories.length === 1 && categories[0] === 'resource';
   const ofKind = (kind: (typeof KINDS)[number]) => unique.filter((o) => isNonFungibleResource(o.address) === (kind === 'nfts'));
+  // Every source this input can draw from has its tab from the start, "…"
+  // while its list loads and 0 when it has nothing, so the header is there at
+  // once and never changes shape.
+  const sourceApplies: Record<(typeof SOURCES)[number], boolean> = {
+    wallet: accepts('account') || accepts('resource'),
+    myValidators: accepts('validator'),
+    agenda: true,
+    mine: ledgerKinds.length > 0,
+    ociswap: accepts('pool') && activeNetwork === 'mainnet',
+    defiplaza: accepts('pool') && activeNetwork === 'mainnet',
+    reddicks: accepts('pool') && activeNetwork === 'mainnet',
+    network: accepts('pool'),
+    validators: accepts('validator'),
+  };
+  const sourceLoading: Record<(typeof SOURCES)[number], boolean> = {
+    wallet: accepts('resource') && holdingsLoading,
+    myValidators: accepts('validator') && myValidatorsLoading,
+    agenda: false,
+    mine: ledgerKinds.length > 0 && ledgerLoading,
+    ociswap: accepts('pool') && knownLoading,
+    defiplaza: accepts('pool') && knownLoading,
+    reddicks: accepts('pool') && knownLoading,
+    network: accepts('pool') && recentLoading,
+    validators: accepts('validator') && validatorsLoading,
+  };
   const counts: Array<readonly [Exclude<Tab, 'all'>, number]> = byKind
     ? KINDS.map((kind) => [kind, ofKind(kind).length] as const)
-    : SOURCES.map((src) => [src, options.filter((o) => o.source === src).length] as const).filter(([, n]) => n > 0);
+    : SOURCES.map((src) => [src, options.filter((o) => o.source === src).length] as const).filter(([src, n]) => n > 0 || sourceApplies[src]);
+  const pendingTab = (key: Tab) => (key === 'all' ? loading : !byKind && sourceLoading[key as (typeof SOURCES)[number]]);
   const activeTab: Tab = tab === 'all' || counts.some(([src]) => src === tab) ? tab : 'all';
 
   // Picked addresses no list has (typed or pasted) still show, under "All".
@@ -332,6 +343,20 @@ export function AddressPickerButton({
         .filter((address) => !options.some((o) => o.address === address))
         .map((address) => ({ address, label: '', source: 'typed', category: addressCategory(address) }))
     : [];
+  const tabs = ([['all', unique.length + typedSelected.length] as const, ...counts]).map(([key, count]) => ({
+    value: key,
+    label: (lang: typeof L) => (key === 'all' && byKind ? lang.tabs.allResources : lang.tabs[key]),
+    // Nothing found yet while still loading reads "…", not a misleading 0.
+    count: count === 0 && pendingTab(key) ? '…' : count,
+  }));
+  // As wide as the tabs need in the wider language, so switching language
+  // keeps the size; past MAX_WIDTH they wrap onto another line. A count still
+  // loading is measured as three digits, so the popup hardly moves when it arrives.
+  const popupWidth =
+    counts.length > 1
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ...Object.values(TEXT).map((lang) => selectPopupTabsWidth(tabs.map((t) => `${t.label(lang)} (${t.count === '…' ? '000' : t.count})`)))))
+      : MIN_WIDTH;
+  const { style: popupStyle, direction } = layoutFor(popupWidth);
 
   const q = query.trim().toLowerCase();
   const inTab =
@@ -370,11 +395,16 @@ export function AddressPickerButton({
       const dropping = draft.draft.includes(address) && selected.includes(address);
       draft.toggle(address);
       if (dropping) onConfirm?.(selected.filter((a) => a !== address));
-      if (address === typed) setQuery('');
       return;
     }
     onSelect?.(address);
     closePopup();
+  };
+
+  // The search text stays after a pick; once it is cleared, everything picked so far goes on top.
+  const search = (value: string) => {
+    setQuery(value);
+    if (multi && !value.trim()) draft.repin();
   };
 
   const confirm = () => {
@@ -389,6 +419,8 @@ export function AddressPickerButton({
         type="button"
         disabled={disabled}
         onClick={openPopup}
+        onPointerEnter={() => setWarm(true)}
+        onFocus={() => setWarm(true)}
         aria-label={pickTitle}
         title={pickTitle}
         className="flex size-7 items-center justify-center rounded-lg border transition-colors hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -415,11 +447,7 @@ export function AddressPickerButton({
                 header={
                   counts.length > 1 ? (
                     <SelectPopupTabs
-                      tabs={([['all', unique.length + typedSelected.length] as const, ...counts]).map(([key, count]) => ({
-                        value: key,
-                        label: key === 'all' && byKind ? L.tabs.allResources : L.tabs[key],
-                        count,
-                      }))}
+                      tabs={tabs.map((t) => ({ value: t.value, label: t.label(L), count: t.count }))}
                       active={activeTab}
                       onChange={setTab}
                       onClose={() => closePopup()}
@@ -427,7 +455,7 @@ export function AddressPickerButton({
                     />
                   ) : undefined
                 }
-                search={{ value: query, onChange: setQuery, placeholder: L.search, autoFocus: true, onEnter: multi ? confirm : undefined }}
+                search={{ value: query, onChange: search, placeholder: L.search, clearLabel: L.clearSearch, autoFocus: true, onEnter: multi ? confirm : undefined }}
                 footer={
                   multi
                     ? { label: draft.draft.length ? L.addCount.replace('{count}', String(draft.draft.length)) : L.add, onClick: confirm }

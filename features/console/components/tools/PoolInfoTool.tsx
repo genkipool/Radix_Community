@@ -13,15 +13,22 @@ import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { usePoolContributions } from '../../hooks/usePoolContributions';
+import { useDexListing, useUnitValueChanges } from '../../hooks/useDexPools';
+import { usePoolSecurity } from '../../hooks/usePoolSecurity';
+import { useNetworkSelection } from '../../hooks/useNetworkSelection';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { useTopHolders } from '../../hooks/useTopHolders';
 import { heldBadgeFor, isDrainable, isGlobalCallerBadge, isPackageCallerBadge, parsePoolState, redemptionValue } from '../../lib/pool-lookup';
 import { RETIRED_TAG } from '../../lib/pool-manifests';
+import { findGlobalCaller, packageOfCallerRule } from '../../lib/caller-badge';
+import type { RuleView } from '../../lib/role-lookup';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { AccountPicker } from '../shared/AccountPicker';
-import { CardSkeleton, cardError, EntityCard, EntityCardMessage, Facts, Heading, Note, RuleSummary, Sub, badgeNamer, fmtNumber } from '../shared/InfoParts';
+import { AddressLine, CardSkeleton, CopyLine, cardError, EntityCard, EntityCardMessage, Facts, Heading, Note, RuleSummary, Sub, badgeNamer, fmtNumber, shortId } from '../shared/InfoParts';
 import { MultiAddressSelect, addressesFromUrl } from '../shared/MultiAddressSelect';
+import { PoolSecurity } from '../pool/PoolSecurity';
+import { EntityPermissions } from '../shared/EntityPermissions';
 import { RoleBadges } from '../shared/RoleBadges';
 import { ToolSection } from '../shared/ToolSection';
 import { TopHoldersList } from '../shared/TopHoldersList';
@@ -38,6 +45,9 @@ const readProfile = (list?: MetadataList) => {
 };
 
 /** Amounts with thousands separators and at most four decimals; the exact figure is in the tooltip. */
+/** Periods the yield section looks back over, in days. */
+const YIELD_PERIODS = [7, 30];
+
 const amount = (value: string | number) =>
   Number(value).toLocaleString(undefined, { maximumFractionDigits: Number(value) >= 1 ? 4 : 8 });
 
@@ -49,7 +59,9 @@ const amount = (value: string | number) =>
 export default function PoolInfoTool({ t }: ConsoleToolProps) {
   const labels = t.pool;
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
-  const [pools, setPools] = useConsoleQueryState<string[]>(() => addressesFromUrl('pool'), []);
+  const [allPools, setAllPools] = useConsoleQueryState<string[]>(() => addressesFromUrl('pool'), []);
+  // Only the active network's pools show; the others wait for their network.
+  const [pools, setPools] = useNetworkSelection(allPools, setAllPools);
   const { data: holdings } = useAccountResources(account);
 
   // Pools the account holds units of, offered as one-tap toggles.
@@ -132,9 +144,28 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
     ? [state.manager, state.owner].flatMap((r) => (r.type === 'resource' || r.type === 'nonFungible' ? [r.resource] : []))
     : [];
   const names = useResourceLabels(state ? [...state.resources, state.poolUnit, ...badgeResources] : []);
+  // The component behind a "global caller" rule: found in the pool's first transaction, checked by its hash.
+  const { data: callers, isFetched: callersFetched } = useQuery({
+    queryKey: ['console-pool-callers', activeNetwork, address],
+    queryFn: () => findGlobalCaller((path, body) => gatewayPost(activeNetwork, path, body), address, [state!.manager, state!.owner]),
+    enabled: !!state,
+    staleTime: Infinity,
+    retry: false,
+  });
   // Who takes part and what each put in and took out, as the explorer shows them.
   const { data: participants } = useTopHolders(state?.poolUnit, activeNetwork);
   const { data: contributions } = usePoolContributions(state, activeNetwork);
+  const largest = participants?.holders[0];
+  const { findings } = usePoolSecurity({
+    state,
+    network: activeNetwork,
+    callers,
+    managerMoves: contributions?.managerMoves,
+    topShare: largest && supply ? Number(largest.amount) / supply : null,
+  });
+  // The yield the DEX reports, and how a unit's value moved, from the ledger as it was.
+  const listing = useDexListing(state ? address : null);
+  const changes = useUnitValueChanges(state ? address : null, state?.poolUnit ?? null, YIELD_PERIODS);
 
   if (isLoading) return <CardSkeleton />;
   if (!state) {
@@ -173,15 +204,40 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
         </span>
       );
     });
-  const drainable = isDrainable(state);
+  const xrdBadge = !!findings?.some((f) => f.id === 'xrdBadge');
+  const drainable = isDrainable(state) || xrdBadge;
   const guarded = state.manager.type === 'resource' || state.manager.type === 'nonFungible';
   const byContract = 'resource' in state.manager && (isGlobalCallerBadge(state.manager.resource) || isPackageCallerBadge(state.manager.resource));
   const resourceName = (r: string) => names[r] ?? truncateAddress(r, 10, 6);
+  const explorer = (a: string) => dashboardRoutes.entity(language, a, { network: activeNetwork });
+  const addressLine = (a: string) => <AddressLine address={a} href={explorer(a)} copyLabel={t.common.copy} />;
+  /** The component or package a caller rule names, as a line under the rule. */
+  const callerLine = (rule: RuleView) => {
+    if (rule.type !== 'nonFungible') return undefined;
+    const entity = packageOfCallerRule(rule) ?? callers?.[rule.localId];
+    if (entity) return addressLine(entity);
+    return isGlobalCallerBadge(rule.resource) && callersFetched ? <Sub>{labels.callerUnknown}</Sub> : undefined;
+  };
+  /** The badge a rule asks for: its address, and the id when it is one NFT. */
+  const badgeLine = (rule: RuleView) =>
+    rule.type === 'resource' || rule.type === 'nonFungible' ? (
+      <>
+        {rule.type === 'resource' && <span className="block">{resourceName(rule.resource)}</span>}
+        {addressLine(rule.resource)}
+        {rule.type === 'nonFungible' && (
+          <CopyLine value={rule.localId} text={labels.badgeId.replace('{id}', shortId(rule.localId))} copyLabel={t.common.copy} mono={false} />
+        )}
+      </>
+    ) : null;
+  // Both roles ask for exactly the same badge (and id): it is listed once.
+  const sameBadge = JSON.stringify(state.manager) === JSON.stringify(state.owner);
+  const managerBadgeRow = badgeLine(state.manager);
+  const ownerBadgeRow = sameBadge ? null : badgeLine(state.owner);
   const title =
     profiles?.pool.name || profiles?.unit.name || state.resources.map((r) => names[r] ?? '?').join('/') || info.unnamed;
   // The tool opens on this pool, with the same account.
   const query = toolQuery({ pool: address, account });
-  const link = (slug: 'pool-contribute' | 'pool-redeem' | 'pool-reserves' | 'pool-profile' | 'pool-manage') => ({
+  const link = (slug: 'pool-contribute' | 'pool-dex-add' | 'pool-redeem' | 'pool-reserves' | 'pool-profile' | 'pool-manage') => ({
     href: `/${language}/console/${slug}?${query}`,
     tool: { slug, query },
   });
@@ -203,7 +259,10 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
       removeLabel={info.remove}
       copyLabel={t.common.copy}
       shortcuts={[
-        { ...link('pool-contribute'), label: info.goContribute, icon: <ArrowDownToLine className="size-4" /> },
+        // A pool a contract runs takes liquidity through that contract.
+        byContract
+          ? { ...link('pool-dex-add'), label: info.goDexAdd, icon: <ArrowDownToLine className="size-4" /> }
+          : { ...link('pool-contribute'), label: info.goContribute, icon: <ArrowDownToLine className="size-4" /> },
         { ...link('pool-redeem'), label: info.goRedeem, icon: <ArrowUpFromLine className="size-4" /> },
         { ...link('pool-reserves'), label: info.goReserves, icon: <Scale className="size-4" /> },
         { ...link('pool-profile'), label: info.goProfile, icon: <Tags className="size-4" /> },
@@ -211,9 +270,16 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
       ]}
     >
       <Note tone={drainable ? 'danger' : guarded ? 'success' : 'muted'}>
-        {drainable ? info.safetyDrainable : byContract ? info.safetyContract : guarded ? info.safetyBadge : info.safetyOther}{' '}
+        {xrdBadge ? info.badgeRiskXrd : drainable ? info.safetyDrainable : byContract ? info.safetyContract : guarded ? info.safetyBadge : info.safetyOther}{' '}
         {state.ownerUpdatable ? info.ownerUpdatable : info.ownerFixed}
       </Note>
+      <PoolSecurity
+        t={t}
+        findings={findings}
+        name={resourceName}
+        address={addressLine}
+        date={(iso) => new Date(iso).toLocaleString(language)}
+      />
 
       <Facts
         rows={[
@@ -232,7 +298,8 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
               {supply !== undefined && <Sub>{labels.supply.replace('{amount}', amount(total))}</Sub>}
             </>,
           ],
-          [labels.managerLabel, <RuleSummary key="m" t={t} rule={state.manager} badgeName={badgeNamer(names)} held={holds(state.manager)} />],
+          [labels.managerLabel, <RuleSummary key="m" t={t} rule={state.manager} badgeName={badgeNamer(names)} held={holds(state.manager)} caller={callerLine(state.manager)} />],
+          !sameBadge && managerBadgeRow && [labels.managerBadgeLabel, managerBadgeRow],
           [
             labels.ownerLabel,
             <RuleSummary
@@ -242,8 +309,11 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
               badgeName={badgeNamer(names)}
               held={holds(state.owner)}
               note={state.ownerUpdatable ? labels.ownerUpdatable : labels.ownerFixed}
+              caller={callerLine(state.owner)}
             />,
           ],
+          // One badge often fills both roles: shown once, after both.
+          sameBadge ? managerBadgeRow && [labels.sharedBadgeLabel, managerBadgeRow] : ownerBadgeRow && [labels.ownerBadgeLabel, ownerBadgeRow],
         ]}
       />
 
@@ -255,6 +325,16 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
           { rule: state.owner, role: labels.ownerRole },
         ].flatMap(({ rule, role }) => (rule.type === 'resource' || rule.type === 'nonFungible' ? [{ resource: rule.resource, roles: [role] }] : []))}
         held={(resource) => (account && holdings ? !!heldBadgeFor({ type: 'resource', resource }, fungibles, nonFungibles) : undefined)}
+      />
+
+      <EntityPermissions
+        t={t}
+        roles={state.roles}
+        describe={(rule) =>
+          rule.type === 'nonFungible' && (isGlobalCallerBadge(rule.resource) || isPackageCallerBadge(rule.resource))
+            ? callerLine(rule)
+            : badgeLine(rule)
+        }
       />
 
       <div className="space-y-2">
@@ -270,6 +350,33 @@ function PoolInfoCard({ t, address, account, onRemove }: { t: ConsoleDictionary;
         ) : (
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{info.emptyPool}</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <Heading>{info.yieldTitle}</Heading>
+        <ul className="space-y-1 text-sm" style={{ color: 'var(--color-text-main)' }}>
+          {listing.data && (listing.data.aprByPool[address] ?? listing.data.apr) !== null && (
+            <li>
+              {info.dexApr
+                .replace('{dex}', info.dexNames[listing.data.dex])
+                .replace('{apr}', fmtNumber((listing.data.aprByPool[address] ?? listing.data.apr ?? 0) * 100, 2))}
+            </li>
+          )}
+          {YIELD_PERIODS.map((days, i) => {
+            const change = changes[i]?.data;
+            const pct = (v: number) => `${v >= 0 ? '+' : ''}${fmtNumber(v * 100, 3)} %`;
+            return (
+              <li key={days} style={{ color: change ? undefined : 'var(--color-text-muted)' }}>
+                {changes[i]?.isPending
+                  ? '…'
+                  : change
+                    ? info.unitChange.replace('{days}', String(days)).replace('{change}', pct(change.growth)).replace('{annual}', pct(change.annualized))
+                    : info.unitChangeNone.replace('{days}', String(days))}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{info.yieldNote}</p>
       </div>
 
       {participants && participants.holders.length > 0 && (

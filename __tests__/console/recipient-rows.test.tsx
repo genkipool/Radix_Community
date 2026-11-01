@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React, { useState } from 'react';
 
-vi.mock('@/context/LanguageContext', () => ({ useLanguage: () => ({ language: 'es' }) }));
+// The real Spanish console dictionary: the rows read their texts from it.
+vi.mock('@/context/LanguageContext', async () => {
+  const es = (await import('@/features/console/locales/es.json')).default;
+  return { useLanguage: () => ({ language: 'es', t: { console: es.console } }) };
+});
 // Symbol (or name) per resource, as the Gateway would give it.
 vi.mock('@/features/console/hooks/useResourceLabels', () => ({
   useResourceLabels: () => ({ resource_t: 'TT', resource_d: 'Default Token' }),

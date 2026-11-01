@@ -7,6 +7,7 @@ import ConsoleHome from './components/ConsoleHome';
 import ConsoleSidebar from './components/ConsoleSidebar';
 import ConsoleToolView from './components/ConsoleToolView';
 import { isConsoleToolSlug, type ConsoleToolSlug } from './types/console.types';
+import { ConsoleDictionaryProvider } from './ConsoleDictionary';
 import { ConsoleNavProvider } from './ConsoleNav';
 import { setPendingConsoleQuery } from './lib/console-query';
 import { useLanguage } from '@/context/LanguageContext';
@@ -107,34 +108,36 @@ export default function ConsoleShell({
   const handleHomeClick = () => navigate(null);
 
   return (
-    <ConsoleNavProvider value={navigate}>
-      <div
-        className="flex flex-col md:flex-row w-full flex-1"
-        style={{ background: 'var(--color-bg)', minHeight: '100vh', paddingTop: '80px' }}
-      >
-        <ConsoleSidebar
-          dictionary={dictionary}
-          selectedSlug={shownSlug}
-          onSelectTool={handleSelectTool}
-          onHomeClick={handleHomeClick}
-          initialAutoCollapse={initialAutoCollapse}
-          initialExpandedGroups={initialExpandedGroups}
-          initialFlatView={initialFlatView}
-          initialFavorites={initialFavorites}
-          initialFavoritesOnly={initialFavoritesOnly}
-        />
-        <main className="flex-1 relative min-w-0" style={{ overflowX: 'clip' }}>
-          {/* The landing stays mounted and folds up when a tool opens, so the
-              tool, already rendered below it, rises into place as in Docs. */}
-          <ConsoleHome
+    <ConsoleDictionaryProvider dictionary={dictionary}>
+      <ConsoleNavProvider value={navigate}>
+        <div
+          className="flex flex-col md:flex-row w-full flex-1"
+          style={{ background: 'var(--color-bg)', minHeight: '100vh', paddingTop: '80px' }}
+        >
+          <ConsoleSidebar
             dictionary={dictionary}
-            collapsed={shownSlug !== null}
-            onOpenTool={handleSelectTool}
+            selectedSlug={shownSlug}
+            onSelectTool={handleSelectTool}
+            onHomeClick={handleHomeClick}
+            initialAutoCollapse={initialAutoCollapse}
+            initialExpandedGroups={initialExpandedGroups}
+            initialFlatView={initialFlatView}
+            initialFavorites={initialFavorites}
+            initialFavoritesOnly={initialFavoritesOnly}
           />
-          {shownTool && <ConsoleToolView key={shownTool} slug={shownTool} dictionary={dictionary} />}
-          {children}
-        </main>
-      </div>
-    </ConsoleNavProvider>
+          <main className="flex-1 relative min-w-0" style={{ overflowX: 'clip' }}>
+            {/* The landing stays mounted and folds up when a tool opens, so the
+                tool, already rendered below it, rises into place as in Docs. */}
+            <ConsoleHome
+              dictionary={dictionary}
+              collapsed={shownSlug !== null}
+              onOpenTool={handleSelectTool}
+            />
+            {shownTool && <ConsoleToolView key={shownTool} slug={shownTool} dictionary={dictionary} />}
+            {children}
+          </main>
+        </div>
+      </ConsoleNavProvider>
+    </ConsoleDictionaryProvider>
   );
 }

@@ -17,7 +17,7 @@ export function ExplorerTable({ title, icon, headers, children }: ExplorerTableP
     return (
         <div className="w-full">
             {title && (
-                <h4 className="px-4 py-3 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] flex items-center gap-1.5">
+                <h4 className="px-4 py-3 text-[11px] uppercase font-black tracking-widest text-[var(--color-text-muted)] flex items-center gap-1.5">
                     {icon}
                     {title}
                 </h4>
@@ -32,7 +32,7 @@ export function ExplorerTable({ title, icon, headers, children }: ExplorerTableP
                                 return (
                                     <th
                                         key={`th-${label}`}
-                                        className={`py-3 px-4 text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] ${idx === headers.length - 1 ? 'text-right' : 'text-left'} ${customClass}`}
+                                        className={`py-3 px-4 text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] ${idx === headers.length - 1 ? 'text-right' : 'text-left'} ${customClass}`}
                                     >
                                         {label}
                                     </th>

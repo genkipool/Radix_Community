@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence } from "motion/react";
+import { useLanguage } from '@/context/LanguageContext';
 import { SelectPopup, SelectPopupEmpty, SelectPopupRow, selectedFirst } from './SelectPopup';
 
 export interface CarouselFilterOption {
@@ -29,12 +30,19 @@ export function CarouselFilter({
     activeValues = EMPTY_VALUES,
     onChange,
     className = '',
-    placeholder = 'Buscar...',
-    title = 'Filtrar direcciones',
-    filterText = 'Filtrar',
-    multiSelectLabel = 'seleccionadas',
+    placeholder: placeholderProp,
+    title: titleProp,
+    filterText: filterTextProp,
+    multiSelectLabel: multiSelectLabelProp,
     isRelative = true
 }: CarouselFilterProps) {
+    const { t } = useLanguage();
+    const ui = t.ui;
+    // The address filter is what it is used for; the dictionary gives its words.
+    const title = titleProp ?? t.nav.filter_addresses;
+    const filterText = filterTextProp ?? t.nav.filter;
+    const multiSelectLabel = multiSelectLabelProp ?? t.nav.selected;
+    const placeholder = placeholderProp ?? ui.search;
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [tempValues, setTempValues] = useState<string[]>(activeValues);
@@ -49,7 +57,7 @@ export function CarouselFilter({
         } else if (options.length === 0) {
             activeLabel = placeholder;
         } else {
-            activeLabel = options.find(o => o.value === null)?.label || 'Todas';
+            activeLabel = options.find(o => o.value === null)?.label || ui.all;
         }
     } else if (activeValues.length === 1) {
         const foundOption = options.find(o => o.value === activeValues[0]);
@@ -60,7 +68,7 @@ export function CarouselFilter({
         } else if (options.length === 0) {
             activeLabel = placeholder;
         } else {
-            activeLabel = options.find(o => o.value === null)?.label || 'Todas';
+            activeLabel = options.find(o => o.value === null)?.label || ui.all;
         }
     } else {
         const firstOption = options.find(o => o.value === activeValues[0]);
@@ -160,7 +168,7 @@ export function CarouselFilter({
                     <SelectPopup
                         title={title}
                         onClose={() => setIsOpen(false)}
-                        closeLabel="Cerrar"
+                        closeLabel={ui.close}
                         search={{ value: searchQuery, onChange: setSearchQuery, placeholder }}
                         footer={{ label: filterText, onClick: handleFilter }}
                         listClassName="max-h-60"
@@ -174,7 +182,7 @@ export function CarouselFilter({
                                 label={opt.label}
                             />
                         ))}
-                        {filteredOptions.length === 0 && <SelectPopupEmpty>No se encontraron resultados</SelectPopupEmpty>}
+                        {filteredOptions.length === 0 && <SelectPopupEmpty>{ui.no_results}</SelectPopupEmpty>}
                     </SelectPopup>
                 )}
             </AnimatePresence>

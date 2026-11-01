@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Check, Landmark } from 'lucide-react';
 import { AnimatePresence } from "motion/react";
 import { SelectPopup, SelectPopupEmpty, SelectPopupRow, selectedFirst } from '@/components/ui/SelectPopup';
 import { SafeImage } from '@/components/ui/SafeImage';
-import type { TranslationsT } from '@/features/dashboard/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 export interface ValidatorOption {
     value: string;
@@ -20,7 +20,6 @@ interface ValidatorCarouselSelectorProps {
     className?: string;
     placeholder?: string;
     locale?: string;
-    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     headerTitle?: string;
     footerActionText?: string;
     onFooterAction?: () => void;
@@ -33,11 +32,11 @@ export function ValidatorCarouselSelector({
     className = '',
     placeholder,
     locale: _locale,
-    tt,
     headerTitle,
     footerActionText,
     onFooterAction
 }: ValidatorCarouselSelectorProps) {
+    const ui = useLanguage().t.ui;
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +47,7 @@ export function ValidatorCarouselSelector({
     const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
     const [tempValues, setTempValues] = useState<string[]>(selectedValues);
 
-    const activeLabel = options[activeIndex]?.label || (tt?.account_summary?.validators_label || 'Validators');
+    const activeLabel = options[activeIndex]?.label || ui.validators;
 
     const cycle = (direction: 'next' | 'prev') => {
         let nextIdx;
@@ -96,7 +95,7 @@ export function ValidatorCarouselSelector({
                 <button
                     type="button"
                     onClick={() => cycle('prev')}
-                    aria-label="Anterior"
+                    aria-label={ui.previous}
                     className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-l-full"
                 >
                     <ChevronLeft className="size-4" aria-hidden="true" />
@@ -131,7 +130,7 @@ export function ValidatorCarouselSelector({
                 <button
                     type="button"
                     onClick={() => cycle('next')}
-                    aria-label="Siguiente"
+                    aria-label={ui.next}
                     className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-r-full"
                 >
                     <ChevronRight className="size-4" aria-hidden="true" />
@@ -141,16 +140,16 @@ export function ValidatorCarouselSelector({
             <AnimatePresence>
                 {isOpen && (
                     <SelectPopup
-                        title={headerTitle || 'Seleccionar validador'}
+                        title={headerTitle || ui.select_validator}
                         onClose={() => setIsOpen(false)}
-                        closeLabel="Cerrar"
+                        closeLabel={ui.close}
                         search={{
                             value: searchQuery,
                             onChange: setSearchQuery,
-                            placeholder: placeholder || (tt?.account_summary?.search_validators_placeholder || 'Search validators...'),
+                            placeholder: placeholder || ui.search_validators,
                         }}
                         footer={{
-                            label: footerActionText || 'Añadir',
+                            label: footerActionText || ui.add,
                             onClick: () => {
                                 onChange(tempValues);
                                 if (onFooterAction) onFooterAction();
@@ -180,7 +179,7 @@ export function ValidatorCarouselSelector({
                             />
                         ))}
                         {filteredOptions.length === 0 && (
-                            <SelectPopupEmpty>{tt?.account_summary?.no_results || 'No results found'}</SelectPopupEmpty>
+                            <SelectPopupEmpty>{ui.no_results}</SelectPopupEmpty>
                         )}
                     </SelectPopup>
                 )}

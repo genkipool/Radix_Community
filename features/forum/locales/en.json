@@ -269,7 +269,13 @@
       "15": {
         "title": "RWA tokenization on Radix: Real estate use case",
         "content": "We're tokenizing a $50M commercial real estate portfolio on Radix. Why Radix over Ethereum/Polygon:\n\n1. ROA ensures the token IS the asset\n2. Badge-based access control for accredited investors\n3. Mutable NFTs for property status changes\n4. Transaction Manifests for atomic settlement\n5. Native compliance via KYC Badges\n\nCurrently in the Blueprint design phase. Input welcome.",
-        "replies": {}
+        "replies": {
+          "1": "For RWA tokenization, I would recommend a multi-Blueprint architecture:\n1. Property Blueprint (represents the asset, mutable state)\n2. Fractional Ownership Blueprint (manages the shares)\n3. Compliance Gateway Blueprint (KYC/AML checks)\n4. Distribution Blueprint (dividends/rent payments)",
+          "2": "The mutable NFT approach for property state is brilliant. On Ethereum you would need complex proxy patterns. In Scrypto, you simply update a field on the NFT resource.",
+          "3": "As an investor, atomic settlement for fractional ownership is the killer feature. In traditional real estate, title transfers take 30-90 days. On Radix, 3 seconds.",
+          "4": "I love the multi-Blueprint approach. Would the Compliance Gateway hold the list of accredited investor Badges, or a separate registry?",
+          "5": "A separate registry Blueprint. It handles issuing and revoking Badges. Your Compliance Gateway only checks the Badge proof. One KYC provider can serve many RWA projects — reusable, monetized through royalties."
+        }
       }
     }
   },

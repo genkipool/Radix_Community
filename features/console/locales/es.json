@@ -6,6 +6,55 @@
     }
   },
   "console": {
+    "permissions": {
+      "title": "Permisos",
+      "hint": "Todos los roles de la entidad, agrupados por módulo: quién puede hacer cada cosa y si eso se puede cambiar.",
+      "fixed": "Fijo: nadie puede cambiarlo",
+      "show": "Ver los {count} roles",
+      "hide": "Ocultar los roles",
+      "modules": {
+        "Owner": "Propietario",
+        "Main": "Principal",
+        "Metadata": "Metadatos",
+        "Royalty": "Royalties"
+      },
+      "options": {
+        "owner": "Propietario",
+        "allowAll": "Permitir a todos",
+        "denyAll": "Denegar a todos",
+        "badge": "Insignia",
+        "component": "Componente",
+        "package": "Paquete",
+        "other": "Regla compuesta"
+      },
+      "optionHints": {
+        "owner": "Lo decide el rol de propietario.",
+        "allowAll": "Cualquiera puede hacerlo, sin restricciones.",
+        "denyAll": "Nadie puede hacerlo: queda deshabilitado.",
+        "badge": "Solo quien presente esta insignia.",
+        "component": "Solo las llamadas que vienen de este componente (un contrato inteligente).",
+        "package": "Solo los componentes de este paquete.",
+        "other": "Una regla con varias condiciones; mira la entidad en el explorador para ver el detalle."
+      },
+      "roleHints": {
+        "owner": "El rol de propietario: los demás roles que dicen «Propietario» le pertenecen.",
+        "pool_manager_role": "Quién puede aportar liquidez y meter o sacar reservas del pool.",
+        "storer": "Quién puede guardar recursos en el locker para que otras cuentas los reclamen.",
+        "storer_updater": "Quién puede cambiar más adelante la regla de storer.",
+        "recoverer": "Quién puede recuperar del locker lo que nadie ha reclamado.",
+        "recoverer_updater": "Quién puede cambiar más adelante la regla de recoverer.",
+        "metadata_setter": "Quién puede cambiar los metadatos: nombre, descripción, icono, web…",
+        "metadata_setter_updater": "Quién puede cambiar más adelante la regla de metadata_setter.",
+        "metadata_locker": "Quién puede bloquear un metadato para que no se cambie nunca más.",
+        "metadata_locker_updater": "Quién puede cambiar más adelante la regla de metadata_locker.",
+        "royalty_setter": "Quién puede fijar los royalties que se cobran por llamar a sus métodos.",
+        "royalty_setter_updater": "Quién puede cambiar más adelante la regla de royalty_setter.",
+        "royalty_locker": "Quién puede bloquear los royalties para que no cambien nunca más.",
+        "royalty_locker_updater": "Quién puede cambiar más adelante la regla de royalty_locker.",
+        "royalty_claimer": "Quién puede cobrar los royalties acumulados.",
+        "royalty_claimer_updater": "Quién puede cambiar más adelante la regla de royalty_claimer."
+      }
+    },
     "heroTitle": "Consola",
     "heroDescription": "La consola para desarrolladores de la Red Radix. Envía tokens y NFTs, crea recursos fungibles y no fungibles, despliega paquetes Scrypto, envía manifiestos de transacción, configura metadatos on-ledger y convierte direcciones Olympia. Conecta tu billetera para empezar a construir.",
     "cta_connect_wallet": "Conecta tu billetera",
@@ -639,6 +688,58 @@
               "field": "Manifiesto de transacción",
               "type": "textarea",
               "value": "CALL_METHOD Address(\"account_...\") \"withdraw\" ...;"
+            }
+          ]
+        }
+      },
+      "component-info": {
+        "title": "Información del componente",
+        "description": "Ficha de un componente: quién lo controla, qué puede cambiar, qué cobra y si es seguro.",
+        "guide": {
+          "guideTitle": "Guía: información del componente",
+          "guideDescription": "Una vista de solo lectura de un componente (un contrato inteligente): su perfil, su paquete y blueprint, quién es su propietario, sus royalties, todos sus roles y un análisis de seguridad. No se firma nada.",
+          "guideSteps": [
+            "1. Componentes: pega una o varias direcciones component_… o elígelas con el botón +. Cada una sale en su propia ficha.",
+            "2. Revisa el resumen de seguridad y despliega el análisis completo si quieres el detalle.",
+            "3. Mira en Permisos quién puede hacer cada cosa y si eso puede cambiar.",
+            "4. Para llamar a sus métodos, ábrelo en el panel de componentes."
+          ],
+          "fields": [
+            {
+              "label": "Componente",
+              "description": "La dirección del componente. Puedes pegar varias.",
+              "example": "component_rdx1…"
+            },
+            {
+              "label": "Seguridad",
+              "description": "Quién controla el componente, si una dApp lo reconoce, qué pueden hacer los emisores de los tokens que guarda y qué entidades controla.",
+              "example": "Lo gestiona Ociswap (dApp verificada)"
+            },
+            {
+              "label": "Permisos",
+              "description": "Todos sus roles, agrupados por módulo, con quién los tiene y si se pueden cambiar.",
+              "example": "metadata_setter · Propietario"
+            }
+          ],
+          "example": [
+            {
+              "field": "Componente",
+              "type": "input",
+              "value": "component_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Blueprint",
+              "definition": "La plantilla de código de la que se crea el componente. Vive en un paquete."
+            },
+            {
+              "term": "Royalties",
+              "definition": "Lo que el componente o su paquete cobran por cada llamada a sus métodos."
+            },
+            {
+              "term": "dApp verificada",
+              "definition": "El componente apunta a una dApp y la dApp lo reclama como suyo: los dos se reconocen."
             }
           ]
         }
@@ -1820,6 +1921,58 @@
           ]
         }
       },
+      "pool-dex-add": {
+        "title": "Aportar a un DEX",
+        "description": "Añade liquidez a pools de Ociswap (Basic, Flex y Precision) y DefiPlaza a través de su componente. Público, sin insignia.",
+        "guide": {
+          "guideTitle": "Guía: aportar a un DEX",
+          "guideDescription": "Los pools que gestiona un DEX solo aceptan liquidez a través de su componente, no con «Aportar liquidez» (que exige la insignia de gestor). Aquí eliges el pool, la consola identifica el DEX en el ledger, comprueba con su API que lo lista, calcula la otra cantidad y simula lo que recibirás antes de firmar.",
+          "guideSteps": [
+            "1. Cuenta: la que aporta los tokens y recibe las unidades o el NFT.",
+            "2. Pool: pega la dirección del pool o del componente, o elígelo con el +.",
+            "3. Cantidades: escribe una; la otra se calcula. En Precision elige además el rango de precios.",
+            "4. Revisa «Recibirás», simula si quieres y firma."
+          ],
+          "fields": [
+            {
+              "label": "Listado por el DEX",
+              "description": "La API del DEX confirma que el componente es suyo. Si no, tienes que confirmar expresamente que aceptas el riesgo.",
+              "example": "Listado por el DEX"
+            },
+            {
+              "label": "Rango (Precision)",
+              "description": "Todo el rango funciona a cualquier precio; un rango estrecho gana más comisiones mientras el precio esté dentro y deja de ganar fuera.",
+              "example": "±5 %"
+            },
+            {
+              "label": "Recibirás",
+              "description": "Unidades del pool (o el NFT de la posición) y lo que sobre, según la simulación de la transacción real.",
+              "example": "+ 4.535 unidades"
+            }
+          ],
+          "example": [
+            {
+              "field": "Pool",
+              "type": "input",
+              "value": "pool_rdx1…"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "add_liquidity",
+              "definition": "Método público del componente del DEX que recibe los tokens, aporta al pool y devuelve las unidades o el NFT."
+            },
+            {
+              "term": "Co-liquidez",
+              "definition": "En DefiPlaza, el otro token que pide un lado desequilibrado para mantener la proporción del pool."
+            },
+            {
+              "term": "Tick",
+              "definition": "Paso de precio de un pool Precision: el rango se ajusta a múltiplos del espaciado del pool."
+            }
+          ]
+        }
+      },
       "pool-reserves": {
         "title": "Ajustar reservas",
         "description": "Mete o saca recursos de las reservas sin acuñar ni quemar unidades de pool. Exige la insignia de gestor.",
@@ -2089,6 +2242,58 @@
             {
               "term": "LOCK_OWNER_ROLE",
               "definition": "Impide cambiar la regla del propietario. Por sí solo no congela los metadatos: el propietario podría seguir escribiéndolos."
+            }
+          ]
+        }
+      },
+      "pool-positions": {
+        "title": "Tus posiciones en pools",
+        "description": "Todo lo que tienes en pools: unidades de pools nativos con su valor y rendimiento, y posiciones de Ociswap Precision para cobrar comisiones o retirarlas.",
+        "guide": {
+          "guideTitle": "Guía: tus posiciones en pools",
+          "guideDescription": "Reúne lo que la cuenta tiene en pools. Las unidades de pools nativos muestran lo que valen ahora, qué DEX gestiona el pool, el APR que publica y cuánto ha cambiado el valor de una unidad en 7 y 30 días. Las posiciones de Ociswap Precision son NFT de liquidez concentrada: aquí ves lo que ha ganado cada una y lo que recibirías al retirarla, calculado simulando la transacción real, y lo cobras o retiras con una sola firma.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene los NFT de las posiciones.",
+            "2. Posiciones: salen solas, agrupadas por pool. Desmarca los pools que no quieras incluir.",
+            "3. Acción: «Cobrar comisiones» deja las posiciones como están; «Retirar posiciones» las cierra y devuelve la liquidez y las comisiones.",
+            "4. Simula si quieres y firma."
+          ],
+          "fields": [
+            {
+              "label": "Comisiones por cobrar",
+              "description": "Lo que han ganado las posiciones y todavía no se ha cobrado. Se actualiza cada 30 segundos.",
+              "example": "≈ 331 REDDICKS y 143 XRD"
+            },
+            {
+              "label": "Al retirar recibes",
+              "description": "La liquidez de las posiciones más sus comisiones: el pool las cobra antes de retirar.",
+              "example": "≈ 993 REDDICKS y 1.800 XRD"
+            },
+            {
+              "label": "Listado en Ociswap",
+              "description": "Ociswap lista el pool en su API. Si no lo lista, el pool es un PrecisionPool real según el ledger, pero no consta como pool oficial de Ociswap.",
+              "example": "Listado en Ociswap"
+            }
+          ],
+          "example": [
+            {
+              "field": "Acción",
+              "type": "input",
+              "value": "Cobrar comisiones"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "claim_fees",
+              "definition": "Método público del pool: con una prueba de los NFT entrega las comisiones ganadas, sin tocar la liquidez."
+            },
+            {
+              "term": "remove_liquidity",
+              "definition": "Método público del pool: recibe los NFT, los quema y devuelve los dos tokens con las comisiones pendientes."
+            },
+            {
+              "term": "Liquidez concentrada",
+              "definition": "La liquidez solo trabaja en un rango de precios; por eso cada posición es distinta y se representa con un NFT."
             }
           ]
         }
@@ -2539,7 +2744,8 @@
         "Pending": "La transacción todavía no está confirmada en el ledger. Compruébala en tu wallet antes de volver a intentarlo.",
         "Unknown": "No se pudo confirmar la transacción en el ledger.",
         "not_committed": "La transacción no se confirmó en el ledger, así que no se registró nada."
-      }
+      },
+      "otherNetworkField": "Esta dirección es de {other} y estás en {active}. Cambia de red o usa una dirección de {active}."
     },
     "createToken": {
       "depositAccount": "Depositar el suministro inicial en la cuenta",
@@ -4082,242 +4288,6 @@
       "knownTitle": "Direcciones conocidas",
       "knownHint": "Direcciones nativas de la red activa (XRD, paquetes del sistema, faucet, paquete de pools, …)."
     },
-    "accountSecurity": {
-      "checkTitle": "Comprobar una cuenta",
-      "checkHint": "Lee del ledger quién controla la cuenta: su clave, o una insignia de dueño. Y si es una insignia, dónde vive. Solo lectura: no firma nada ni envía nada.",
-      "placeholder": "account_rdx1… / account_tdx_2_1…",
-      "states": {
-        "malformed": "La suma de control bech32m no cuadra. Revisa si hay una errata antes de fiarte de cualquier respuesta sobre esta dirección.",
-        "notAccount": "Es una dirección válida, pero no es una cuenta. La comprobación solo aplica a cuentas.",
-        "wrongNetwork": "Esa dirección es de otra red. Cambia la consola a {network} o pega una dirección de esa red."
-      },
-      "checking": "Leyendo el ledger…",
-      "error": "No se ha podido leer el estado. Puede que la cuenta aún no exista en esta red, o que el Gateway no esté disponible.",
-      "verdicts": {
-        "key": {
-          "label": "La gobierna su clave",
-          "meaning": "Quien tenga la frase semilla tiene la cuenta. No hay segundo factor ni recuperación: si se pierde la frase, se pierde la cuenta. Es el estado en el que nace toda cuenta de la cartera."
-        },
-        "accessController": {
-          "label": "Protegida por un Access Controller",
-          "meaning": "La cuenta la gobierna una insignia de dueño que vive dentro de un Access Controller, así que el control sigue sus roles y un factor perdido se puede sustituir por recuperación."
-        },
-        "badgeInAccount": {
-          "label": "Securificada, insignia suelta en una cuenta",
-          "meaning": "La cuenta la gobierna una insignia de dueño que está en una cuenta corriente, no en un controller. La cuenta es un NFT transferible: quien lo mueva se lleva la cuenta, y no hay recuperación posible."
-        },
-        "badgeElsewhere": {
-          "label": "Securificada, insignia en otra entidad",
-          "meaning": "La cuenta la gobierna una insignia de dueño que vive fuera de cualquier Access Controller, en una entidad que no es una cuenta. Lo que la tenga, tiene la cuenta."
-        },
-        "badgeUnknown": {
-          "label": "Securificada, insignia sin localizar",
-          "meaning": "La regla de dueño nombra la insignia de dueño de cuenta, pero el Gateway no ha informado de dónde está ahora mismo."
-        },
-        "open": {
-          "label": "Abierta a cualquiera",
-          "meaning": "El rol de dueño es AllowAll: cualquier transacción puede actuar como dueña de esta cuenta."
-        },
-        "other": {
-          "label": "La gobierna otra regla",
-          "meaning": "La regla de dueño no es ni una insignia de firma ni la insignia de dueño de cuenta. Lee la regla antes de sacar conclusiones."
-        },
-        "unknown": {
-          "label": "No se ha podido determinar",
-          "meaning": "No se ha podido leer el rol de dueño del estado de esta cuenta."
-        }
-      },
-      "controlTitle": "Qué la gobierna",
-      "controlHint": "El rol de dueño de la cuenta, tal y como lo guarda el ledger.",
-      "control": {
-        "addressKind": "Tipo de dirección",
-        "ownerRule": "Regla de dueño",
-        "signature": {
-          "secp256k1": "Insignia de firma (secp256k1)",
-          "ed25519": "Insignia de firma (ed25519)"
-        },
-        "publicKeyHash": "Hash de la clave pública",
-        "matchesAddress": "Coincide con la dirección",
-        "mismatch": "NO: dirección y regla no coinciden",
-        "ownerBadge": "Insignia de dueño de cuenta",
-        "badgeId": "Id de la insignia",
-        "holder": "La tiene",
-        "notReported": "el Gateway no lo informa",
-        "other": {
-          "custom": "Una regla propia, con insignias que esta comprobación no modela",
-          "allowAll": "AllowAll: no se exige ninguna prueba",
-          "denyAll": "DenyAll: nadie puede actuar como dueño",
-          "unknown": "Ilegible"
-        }
-      },
-      "addressKind": {
-        "preallocated-secp256k1": "Preasignada, clave secp256k1 (viene de Olympia)",
-        "preallocated-ed25519": "Preasignada, clave ed25519 (nativa de Babylon)",
-        "allocated": "Creada en el ledger",
-        "unknown": "Desconocido"
-      },
-      "common": {
-        "yes": "Sí",
-        "no": "No"
-      },
-      "notesTitle": "Hallazgos",
-      "notes": {
-        "addressRuleMismatch": "El hash de clave pública de la regla de dueño no es el que codifica esta dirección. Una dirección preasignada es el hash de su clave, así que no pueden discrepar por casualidad.",
-        "badgeHeldBySelf": "La insignia de dueño la tiene la propia cuenta que gobierna.",
-        "singleTransferableBadge": "Un NFT transferible es la cuenta: sin segundo factor, sin recuperación, y una transferencia no se deshace.",
-        "olympiaDerived": "Dirección que viene de Olympia: se recupera con la frase semilla de Olympia, no con la de Babylon.",
-        "holderUnresolved": "La insignia está en una bóveda cuya entidad propietaria no ha informado el Gateway."
-      },
-      "controllerTitle": "Access Controller",
-      "controllerHint": "Los roles que pueden actuar sobre la cuenta, y si hay algo en marcha ahora mismo.",
-      "controller": {
-        "address": "Controller",
-        "primary": "Rol primario",
-        "recovery": "Rol de recuperación",
-        "confirmation": "Rol de confirmación",
-        "delay": "Retraso de recuperación temporizada",
-        "delayDisabled": "Desactivado",
-        "delayValue": "{minutes} minutos",
-        "primaryLocked": "Rol primario bloqueado",
-        "feeVault": "Paga sus propias fees de recuperación",
-        "factors": "{need} de {total} insignias",
-        "anyone": "Cualquiera",
-        "nobody": "Nadie",
-        "unreadable": "Regla ilegible",
-        "recoveryInProgress": "Hay una propuesta de recuperación en marcha en este controller ahora mismo.",
-        "withdrawAttempt": "Alguien está intentando sacar la insignia de dueño de este controller.",
-        "factorsVerdict": {
-          "multi": {
-            "title": "Firma con varios factores: {need} de {total}",
-            "detail": "Para mover esta cuenta hacen falta {need} de sus {total} factores a la vez. Si te roban o pierdes uno solo, nadie puede usarla con él."
-          },
-          "single": {
-            "title": "Basta un factor para firmar ({need} de {total})",
-            "detail": "Cualquiera de sus {total} factores puede mover la cuenta por sí solo. Si quieres que un teléfono robado no baste, edita el escudo en la billetera para que la firma exija dos factores, por ejemplo el teléfono y una tarjeta Arculus."
-          },
-          "anyone": {
-            "title": "Cualquiera puede firmar",
-            "detail": "El rol principal del controlador es AllowAll: cualquiera puede actuar como dueño de esta cuenta. Mueve los fondos a una cuenta segura cuanto antes."
-          },
-          "nobody": {
-            "title": "Nadie puede firmar ahora mismo",
-            "detail": "El rol principal está bloqueado (DenyAll). La cuenta solo se puede usar a través de la recuperación."
-          },
-          "unknown": {
-            "title": "No se pudo leer cuántos factores pide",
-            "detail": "La regla del rol principal no tiene una forma que la consola sepa interpretar. Revísala en la billetera."
-          },
-          "recoveryMulti": "Para recuperar la cuenta hacen falta {need} de {total} factores.",
-          "recoverySingle": "Para recuperar la cuenta basta cualquiera de sus {total} factores.",
-          "recoveryOne": "Para recuperar la cuenta basta un único factor.",
-          "singleOne": {
-            "title": "Un solo factor firma por esta cuenta",
-            "detail": "El escudo protege la cuenta con un único factor para firmar. Si quieres que un teléfono robado no baste, edítalo en la billetera para que la firma exija dos factores, por ejemplo el teléfono y una tarjeta Arculus."
-          }
-        }
-      },
-      "levelTitle": "Nivel de seguridad",
-      "levelHint": "Dónde queda la cuenta en una escala de cuatro niveles, según quién la controla en el ledger.",
-      "levelScale": "{current} de {max}",
-      "levels": {
-        "none": {
-          "label": "Nula",
-          "meaning": "El rol de dueño es AllowAll: cualquiera puede retirar los fondos y cambiar la cuenta."
-        },
-        "low": {
-          "label": "Baja",
-          "meaning": "Una insignia de dueño suelta, fuera de un Access Controller: es transferible y no tiene recuperación."
-        },
-        "basic": {
-          "label": "Básica",
-          "meaning": "Una sola clave, la de la frase semilla. Aguanta mientras la frase esté a salvo, pero no hay segundo factor ni recuperación."
-        },
-        "high": {
-          "label": "Alta",
-          "meaning": "La insignia de dueño vive en un Access Controller: varios factores, roles separados y recuperación si pierdes uno."
-        },
-        "unknown": {
-          "label": "Sin determinar",
-          "meaning": "Con lo que ha devuelto el ledger no se puede situar la cuenta en la escala."
-        }
-      },
-      "improveTitle": "Cómo mejorar la seguridad",
-      "improveHint": "Los pasos para subir de nivel, del más urgente al menos. Esta herramienta no envía nada: cada cambio lo firmas tú desde tu cartera.",
-      "improveHintShielded": "La cuenta ya está en el nivel más alto. Estos ajustes la refuerzan a partir de la configuración de su Access Controller.",
-      "improveBasics": "En cualquier nivel: no escribas la frase semilla en ninguna web ni se la des a nadie, lee el manifiesto antes de firmar y rechaza las transacciones que no hayas iniciado tú.",
-      "improvements": {
-        "abandonOpenAccount": {
-          "title": "No uses esta cuenta",
-          "detail": "Con AllowAll cualquiera puede retirar sus fondos y cambiar su configuración. No envíes nada a esta dirección y, si algo tuyo depende de ella, muévelo a una cuenta que controles."
-        },
-        "backupSeedPhrase": {
-          "title": "Guarda la frase semilla sin conexión",
-          "detail": "Hoy la frase semilla es la cuenta. Apúntala en papel o metal y guárdala en un lugar seguro, nunca en capturas, notas del móvil ni la nube. Confirma en la Radix Wallet que la copia de seguridad está hecha."
-        },
-        "applyShield": {
-          "title": "Aplica un escudo de seguridad",
-          "detail": "En la Radix Wallet, crea un escudo de seguridad con varios factores (este dispositivo, una tarjeta Arculus, un Ledger, una contraseña) y aplícalo a la cuenta. La insignia de dueño pasa a un Access Controller y la cuenta sube a nivel alto: si pierdes un factor, la recuperas con los demás. Aplicarlo es una transacción con una pequeña fee en XRD."
-        },
-        "guardBadgeHolder": {
-          "title": "Protege a quien tiene la insignia",
-          "detail": "Mientras la insignia de dueño esté suelta, esta cuenta es tan segura como la entidad que la guarda. Asegura esa entidad y no firmes nada que mueva la insignia."
-        },
-        "moveBadgeToController": {
-          "title": "Mete la insignia en un Access Controller",
-          "detail": "Crea un Access Controller con la insignia de dueño dentro y roles primario, de recuperación y de confirmación basados en factores distintos. Así deja de ser un NFT que controla la cuenta quien lo reciba."
-        },
-        "reviewRule": {
-          "title": "Lee la regla de dueño",
-          "detail": "Esta regla no es de las que esta comprobación sabe valorar. Revísala en el explorador antes de enviar fondos: qué insignias exige y quién las tiene."
-        },
-        "retryCheck": {
-          "title": "Vuelve a comprobarla",
-          "detail": "Puede ser un fallo puntual del Gateway o una cuenta que aún no existe en esta red. Repite la comprobación en un rato y confirma que la consola está en la red de la dirección."
-        },
-        "answerRecovery": {
-          "title": "Revisa lo que está en marcha",
-          "detail": "Si la propuesta de recuperación o el intento de sacar la insignia no los has iniciado tú, actúa ya: cancélalos o bloquéalos desde tu cartera con los factores que conserves antes de que venza el retraso."
-        },
-        "addPrimaryFactors": {
-          "title": "Exige más de un factor para firmar",
-          "detail": "Hoy basta un único factor para actuar como dueño. Pedir al menos dos en el rol primario hace que un dispositivo robado no alcance para vaciar la cuenta."
-        },
-        "enableTimedRecovery": {
-          "title": "Activa la recuperación temporizada",
-          "detail": "Con un retraso configurado, el rol de recuperación puede completar una recuperación sin el de confirmación cuando pasa ese tiempo, y mientras tanto el rol primario puede cancelarla. Ahora está desactivada."
-        },
-        "fundFeeVault": {
-          "title": "Deposita XRD en el controller",
-          "detail": "El controller no tiene bóveda de fees. Con XRD en ella puede pagar su propia recuperación aunque la cuenta no tenga fondos o no puedas usarla."
-        },
-        "keepFactorsApart": {
-          "title": "Guarda los factores por separado",
-          "detail": "Un escudo vale lo que la distancia entre sus factores: no guardes la tarjeta, el Ledger y la contraseña en el mismo sitio, y comprueba de vez en cuando que siguen funcionando."
-        }
-      },
-      "multiSigner": {
-        "title": "¿Y una cuenta con varias firmas?",
-        "hint": "Lo que se puede hacer hoy con la Radix Wallet, y por qué esta consola no crea cuentas multifirma.",
-        "points": [
-          {
-            "title": "La billetera solo firma con sus propias claves",
-            "detail": "Para que dos personas aprueben la misma transacción, alguien tiene que juntar sus firmas y enviarla. Eso exige un servicio aparte que coordine a los firmantes; no es algo que una página pueda montar sin custodiar nada."
-          },
-          {
-            "title": "Montarlo a mano puede dejarte sin la cuenta",
-            "detail": "Los escudos de la Radix Wallet usan el mismo mecanismo (un Access Controller con la insignia de dueño). Si una web lo configura por su cuenta, la billetera puede dejar de saber firmar por esa cuenta, y eso no tiene vuelta atrás."
-          },
-          {
-            "title": "Lo que sí funciona: un escudo con varios factores",
-            "detail": "Crea un escudo en la billetera que exija dos factores para firmar, por ejemplo este teléfono y una tarjeta Arculus. Si la tarjeta la guarda otra persona, ninguna transacción sale sin las dos. Hace falta estar juntos para firmar, pero el control es compartido de verdad."
-          },
-          {
-            "title": "Para tesorerías de grupo",
-            "detail": "Un DAO o un equipo que necesite votar cada pago necesita un componente propio (un blueprint de multifirma) o una herramienta de gobernanza. Revisa su código o su auditoría antes de meter fondos."
-          }
-        ]
-      }
-    },
     "walletPlayground": {
       "configTitle": "Solicitud a la billetera",
       "configHint": "Construye cualquier solicitud que una dApp puede enviar a la Radix Wallet. Sale por un canal aislado, así que no afecta a tu sesión.",
@@ -4761,6 +4731,40 @@
       "exampleTag": "Ej."
     },
     "pool": {
+      "security": {
+        "title": "Seguridad",
+        "summaryOk": "No vemos riesgos en los permisos de este pool.",
+        "disclaimer": "Se comprueban los permisos y quién controla el pool, no el código de los contratos.",
+        "show": "Ver el análisis completo ({count})",
+        "hide": "Ocultar el análisis",
+        "loading": "Analizando el pool…",
+        "unnamedDapp": "una dApp",
+        "findings": {
+          "drainable": "Cualquiera puede vaciar este pool: su rol de gestor es AllowAll.",
+          "xrdBadge": "La insignia de gestor es XRD: cualquier cuenta con XRD puede vaciar este pool.",
+          "impersonation": "{token} se llama «{symbol}», pero no es el {symbol} que se negocia en los DEX: puede ser una imitación. El auténtico es este:",
+          "badgeMintable": "La insignia de gestor todavía se puede acuñar: quien pueda acuñarla puede convertirse en gestor y mover las reservas.",
+          "badgeSupply": "Hay {supply} unidades de la insignia de gestor: cada cuenta que tenga una puede aportar y mover las reservas.",
+          "managerMoves": "El gestor ha sacado o metido reservas sin unidades de pool en {count} de las últimas transacciones (la última, {date}).",
+          "reserveRecallable": "El emisor de {token} puede retirarlo (recall) de cualquier bóveda, también de las reservas del pool.",
+          "reserveFreezable": "El emisor de {token} puede congelarlo, también en las reservas del pool: no se podría sacar ni canjear.",
+          "reserveWithdrawRestricted": "Retirar {token} necesita, o puede llegar a necesitar, permiso de su emisor: quizá no puedas sacarlo al canjear tus unidades.",
+          "reserveDepositRestricted": "Depositar {token} necesita, o puede llegar a necesitar, permiso de su emisor.",
+          "reserveMintable": "El emisor de {token} puede acuñar más: su suministro puede crecer.",
+          "reserveRenamable": "El emisor de {token} puede cambiar su nombre, su símbolo o su icono.",
+          "controllerAnyone": "Cualquiera puede actuar como propietario del componente que gestiona el pool.",
+          "controllerBadge": "El componente que gestiona el pool lo controla esta insignia:",
+          "controllerComponent": "El componente que gestiona el pool lo controla otro componente.",
+          "controllerNobody": "Nadie puede cambiar el componente que gestiona el pool: su propietario es «Denegar a todos».",
+          "managerVerified": "Lo gestiona {name}: el componente y la dApp se reconocen mutuamente (dApp verificada).",
+          "managerUnverified": "El componente que lo gestiona no está vinculado a ninguna dApp verificada.",
+          "profileChangeable": "El propietario puede cambiar el nombre o el icono del pool.",
+          "profileLocked": "El nombre y el icono del pool no se pueden cambiar.",
+          "unitChangeable": "El propietario puede cambiar el nombre, el símbolo o el icono de la unidad de pool.",
+          "concentration": "Una sola cuenta tiene el {share} % de las unidades de pool.",
+          "rolesFixed": "El rol de gestor es fijo: nadie puede pasarlo a otra insignia o componente."
+        }
+      },
       "contextTitle": "Cuenta y pool",
       "accountLabel": "Cuenta",
       "poolLabel": "Pool",
@@ -4784,6 +4788,11 @@
       "managerLabel": "Gestor",
       "ownerLabel": "Propietario",
       "ownerFixed": "Fijo: no se puede cambiar",
+      "managerBadgeLabel": "Insignia del gestor",
+      "ownerBadgeLabel": "Insignia del propietario",
+      "sharedBadgeLabel": "Insignia del gestor y del propietario",
+      "badgeId": "Id {id}",
+      "callerUnknown": "No se ha podido identificar qué componente es.",
       "rule": {
         "allowAll": "Cualquiera (AllowAll)",
         "denyAll": "Nadie",
@@ -4820,14 +4829,25 @@
           "managerNew": "Acuñar una nueva",
           "managerNewHint": "Suministro 1, llega a esta cuenta",
           "managerExisting": "Usar una que ya tengo",
-          "managerExistingHint": "Una que ya está en tu cuenta",
+          "managerExistingHint": "Una que solo tengas tú",
           "badgeNameLabel": "Nombre de la insignia",
           "badgeNameDefault": "Gestor del pool",
           "badgeResourceLabel": "Recurso de la insignia",
           "countError": "Un pool de un recurso lleva exactamente uno; de dos, exactamente dos; y de varios, al menos dos.",
           "duplicateError": "Hay un recurso repetido.",
-          "resourceError": "Cada recurso debe ser una dirección resource_….",
-          "badgeError": "Indica el recurso de la insignia.",
+          "resourceError": "Cada recurso debe ser una dirección resource_… válida de esta red.",
+          "badgeError": "Indica una dirección resource_… válida de esta red para la insignia.",
+          "badgeChecking": "Comprobando la insignia en el ledger…",
+          "badgeProblems": {
+            "xrd": "XRD no sirve como insignia: todas las cuentas tienen algo de XRD, así que cualquiera podría vaciar el pool.",
+            "notHeld": "Esta cuenta no tiene esa insignia: el pool quedaría en manos de quien sí la tenga.",
+            "sharedSupply": "Otras cuentas también tienen este recurso: cualquiera de ellas podría aportar y vaciar las reservas. Para usarlo como insignia necesitas tener todo su suministro.",
+            "mintable": "Este recurso todavía se puede acuñar: quien pueda acuñarlo podría crear otra unidad y vaciar el pool."
+          },
+          "noSafeBadges": "Ninguno de tus recursos sirve como insignia: tendrías que tener todo su suministro y que nadie pueda acuñar más. Acuña una nueva.",
+          "badgesHidden": "{count} recursos de tu cuenta no aparecen: otras cuentas también los tienen o se pueden acuñar más.",
+          "reserveRecallable": "El emisor de {token} puede retirarlo (recall) de cualquier bóveda, también de las reservas del pool.",
+          "reserveFreezable": "El emisor de {token} puede congelarlo, también en las reservas del pool: no se podría sacar ni canjear.",
           "badgeNameError": "Ponle nombre a la insignia.",
           "created": "Pool creado",
           "badgeSearch": "Buscar insignia…",
@@ -4854,7 +4874,9 @@
           "amountError": "Cantidad no válida.",
           "balanceError": "No tienes tanto.",
           "needsManager": "Esta cuenta no tiene la insignia de gestor del pool.",
-          "sendButton": "Aportar liquidez"
+          "sendButton": "Aportar liquidez",
+          "dexNote": "Este pool lo gestiona un contrato (un DEX): solo su componente puede aportar al pool nativo, así que aquí no funcionará sin su insignia.",
+          "dexLink": "Aportar a través del DEX"
         },
         "reserves": {
           "title": "Ajustar reservas",
@@ -4883,7 +4905,9 @@
           "sendButton": "Canjear unidades",
           "totalLabel": "Total",
           "redeemingLabel": "Canjeas",
-          "remainingLabel": "Te quedarán"
+          "remainingLabel": "Te quedarán",
+          "precisionNote": "Esta cuenta tiene {count} posiciones NFT de Ociswap Precision. No son unidades de pool: se cobran y se retiran en «Tus posiciones en pools».",
+          "precisionLink": "Ver tus posiciones"
         },
         "profile": {
           "title": "Perfil del pool",
@@ -4958,6 +4982,7 @@
         "unit": "unidad",
         "safetyDrainable": "Cualquiera puede vaciar este pool: su rol de gestor es AllowAll. Si tienes unidades, canjéalas cuanto antes.",
         "safetyBadge": "Solo quien tenga la insignia de gestor puede aportar y mover reservas.",
+        "badgeRiskXrd": "La insignia de gestor es XRD: cualquier cuenta con XRD puede vaciar este pool. Si tienes unidades, canjéalas cuanto antes.",
         "safetyOther": "El rol de gestor no es una insignia simple; revisa la regla de arriba.",
         "ownerUpdatable": "El propietario puede cambiar los metadatos y sus propias reglas.",
         "ownerFixed": "La regla del propietario es fija.",
@@ -4981,7 +5006,18 @@
         "participantsAll": "Ver todos en el explorador",
         "putIn": "Aportado",
         "takenOut": "Retirado",
-        "result": "Resultado"
+        "result": "Resultado",
+        "yieldTitle": "Rendimiento",
+        "dexApr": "APR según {dex}: {apr} %",
+        "dexNames": {
+          "ociswap": "Ociswap",
+          "defiplaza": "DefiPlaza",
+          "reddicks": "Reddicks"
+        },
+        "unitChange": "Últimos {days} días: {change} por unidad ({annual} al año)",
+        "unitChangeNone": "Últimos {days} días: sin datos (el pool es más reciente o una reserva estaba vacía)",
+        "yieldNote": "El cambio por unidad compara lo que valía una unidad entonces y ahora, en la media geométrica de sus tokens: en un pool de producto constante sube con las comisiones aunque cambien los precios. Es histórico, no una promesa.",
+        "goDexAdd": "Aportar a un DEX"
       },
       "ownerUpdatable": "Se puede cambiar",
       "badgesTitle": "Insignias del pool",
@@ -5191,6 +5227,110 @@
       "unnamed": "Recurso sin nombre",
       "unnamedLocker": "Locker sin nombre"
     },
+    "poolPositions": {
+      "accountTitle": "Cuenta",
+      "positionsTitle": "Tus posiciones",
+      "positionsHint": "Posiciones de pools Precision de Ociswap confirmadas en el ledger. Lo que cobras o recibes se simula con la transacción real y se actualiza cada 30 segundos.",
+      "pickAccount": "Elige una cuenta para ver sus posiciones.",
+      "loading": "Buscando posiciones…",
+      "none": "Esta cuenta no tiene posiciones en pools Precision de Ociswap.",
+      "error": "No se han podido leer las posiciones: {message}",
+      "estimateError": "No se ha podido simular: {message}",
+      "unnamed": "Pool sin nombre",
+      "include": "Incluir este pool en la transacción",
+      "listed": "Listado en Ociswap",
+      "notListed": "Ociswap no lo lista",
+      "poolLabel": "Pool",
+      "positionsOne": "1 posición",
+      "positionsCount": "{count} posiciones",
+      "feesLabel": "Comisiones por cobrar",
+      "withdrawLabel": "Al retirar recibes",
+      "nothing": "Nada",
+      "actionTitle": "Qué quieres hacer",
+      "claimOption": "Cobrar comisiones",
+      "removeOption": "Retirar posiciones",
+      "claimHint": "Cobra solo lo ganado. Las posiciones siguen abiertas y los NFT se quedan en tu cuenta.",
+      "removeHint": "Cierra las posiciones: los NFT se queman y recibes la liquidez y las comisiones pendientes.",
+      "claimButton": "Cobrar comisiones",
+      "removeButton": "Retirar posiciones",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "unitsTitle": "Unidades de pools",
+      "unitsHint": "Unidades de pools nativos de la cuenta (Ociswap Basic y Flex, DefiPlaza, Reddicks o pools propios), con lo que valen ahora. El pool y su unidad se confirman entre sí en el ledger.",
+      "noUnits": "Esta cuenta no tiene unidades de pools nativos.",
+      "dexNames": {
+        "ociswap": "Ociswap",
+        "defiplaza": "DefiPlaza",
+        "reddicks": "Reddicks"
+      },
+      "unitsHeld": "{units} unidades · {share} % del pool",
+      "worthLabel": "Valen ahora",
+      "yieldLabel": "Rendimiento",
+      "dexApr": "APR del DEX: {apr} %",
+      "unitChange": "{days} días: {change} ({annual} al año)",
+      "unitChangeNone": "{days} días: sin datos",
+      "redeemLink": "Canjear",
+      "addMoreLink": "Aportar más",
+      "rangeStatus": {
+        "in": "En rango",
+        "below": "Fuera de rango · precio por debajo",
+        "above": "Fuera de rango · precio por encima"
+      },
+      "rangeUnknown": "Rango desconocido",
+      "outOfRangeOne": "1 posición está fuera de rango: el precio del pool ha salido de su rango y no gana comisiones hasta que vuelva. Puedes esperar, o retirarla y abrir otra con un rango que incluya el precio actual.",
+      "outOfRangeMany": "{count} posiciones están fuera de rango: el precio del pool ha salido de su rango y no ganan comisiones hasta que vuelva. Puedes esperar, o retirarlas y abrir otras con un rango que incluya el precio actual.",
+      "newRangeLink": "Abrir con un rango nuevo"
+    },
+    "poolDexAdd": {
+      "accountTitle": "Cuenta",
+      "poolTitle": "Pool del DEX",
+      "poolHint": "Un pool nativo que gestiona un DEX (Ociswap Basic o Flex, DefiPlaza) o el componente de un pool Ociswap Precision. Se lee del ledger y se comprueba que el componente gestiona de verdad ese pool.",
+      "poolLabel": "Pool o componente",
+      "poolPlaceholder": "pool_… o component_…",
+      "notDex": "No lo gestiona un DEX compatible. Si el pool es tuyo, usa «Aportar liquidez».",
+      "reading": "Leyendo el pool…",
+      "kinds": {
+        "ociswap-basic": "Ociswap Basic",
+        "ociswap-flex": "Ociswap Flex",
+        "ociswap-precision": "Ociswap Precision",
+        "defiplaza": "DefiPlaza"
+      },
+      "listed": "Listado por el DEX",
+      "notListed": "El DEX no lo lista",
+      "listingUnknown": "No se ha podido comprobar con el DEX",
+      "listingOffMainnet": "Sin verificar: los DEX no tienen API en Stokenet",
+      "listingLoading": "Comprobando con el DEX…",
+      "componentLabel": "Componente",
+      "dexApr": "APR que publica el DEX: {apr} %",
+      "amountsTitle": "Cuánto aportas",
+      "hintBoth": "Los dos tokens van en la proporción de las reservas: escribe uno y se calcula el otro. Si sobra algo, vuelve a tu cuenta.",
+      "hintPlaza": "DefiPlaza acepta un solo token: elige el lado y la cantidad. Recibes unidades del pool de ese lado.",
+      "hintPlazaShort": "Este lado está desequilibrado: DefiPlaza pide también el otro token en la proporción del pool. Lo que sobre vuelve a tu cuenta.",
+      "hintPrecision": "Elige el rango de precios en el que trabajará tu liquidez: escribe un token y se calcula el otro. Recibes un NFT con la posición.",
+      "sideOption": "Lado {token}",
+      "currentPrice": "Precio actual: {price} {y} por {x}",
+      "rangeFull": "Todo el rango",
+      "rangeWide": "±25 %",
+      "rangeNarrow": "±5 %",
+      "rangeCustom": "Personalizado",
+      "minPrice": "Precio mínimo",
+      "maxPrice": "Precio máximo",
+      "rangeFullNote": "Tu liquidez trabaja a cualquier precio, como en un pool clásico.",
+      "rangeNote": "Rango: de {min} a {max}, ajustado a los pasos del pool.",
+      "oneSided": "El precio está fuera del rango: solo se aporta {token}.",
+      "rangeError": "El rango no es válido: el mínimo tiene que ser menor que el máximo.",
+      "amountError": "Cantidad no válida.",
+      "balanceError": "Es más de lo que tiene la cuenta.",
+      "receiveTitle": "Recibirás",
+      "receiveNote": "Simulado con esta misma transacción. La cifra exacta puede cambiar un poco si se mueven las reservas antes de firmar.",
+      "estimateError": "La simulación ha fallado: {message}",
+      "acknowledge": "Entiendo que el DEX no lista este componente y que envío mis tokens a un contrato no verificado.",
+      "acknowledgeTestnet": "Entiendo que en Stokenet no se puede verificar el componente con el DEX.",
+      "acknowledgeFirst": "Confirma antes que aceptas aportar a un componente sin verificar.",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "sendButton": "Aportar liquidez"
+    },
     "lockerRecover": {
       "roleWho": "Para quien hizo el airdrop",
       "roleWhat": "Recupera a tu cuenta lo que tus destinatarios no han reclamado. Necesitas la insignia de recuperación del locker.",
@@ -5258,6 +5398,97 @@
     "signRequestOg": {
       "title": "Te invitan a firmar",
       "subtitle": "Un documento espera tu firma en Radix"
+    },
+    "nftIdPicker": {
+      "pick": "Elegir NFT",
+      "any": "Cualquiera de la colección",
+      "anyHint": "Vale cualquier NFT de este recurso",
+      "search": "Buscar ID…",
+      "clearSearch": "Borrar la búsqueda",
+      "loading": "Cargando los NFT…",
+      "empty": "Esta colección no tiene NFT.",
+      "noMatch": "Ningún ID coincide.",
+      "more": "Solo se muestran los primeros {count}: escribe el ID si no está.",
+      "close": "Cerrar"
+    },
+    "multiAddressSelect": {
+      "hint": "Pega una dirección o pulsa + para elegir varias.",
+      "full": "Ya hay {max} seleccionados: quita alguno para añadir más.",
+      "remove": "Quitar"
+    },
+    "recipientRows": {
+      "account": "account_rdx1…",
+      "resource": "Recurso por defecto",
+      "value": "Cantidad o #id#",
+      "add": "Añadir destinatario",
+      "remove": "Quitar destinatario",
+      "showAll": "Mostrar los {count} restantes",
+      "noToken": "token?"
+    },
+    "componentInfo": {
+      "contextTitle": "Componentes",
+      "componentLabel": "Componente",
+      "placeholder": "component_rdx1…",
+      "notAComponent": "Esa dirección no es un componente.",
+      "remove": "Quitar este componente",
+      "unnamed": "Componente sin nombre",
+      "blueprintLabel": "Blueprint",
+      "packageLabel": "Paquete",
+      "packageNote": "El código de un paquete no se puede cambiar una vez publicado.",
+      "packageOwnerLabel": "Propietario del paquete",
+      "ownerLabel": "Propietario",
+      "ownerFixed": "Fijo: no se puede cambiar",
+      "ownerUpdatable": "El propietario puede cambiar su propia regla.",
+      "royaltiesLabel": "Royalties",
+      "royaltiesOff": "No cobra royalties",
+      "royaltiesOn": "{count} métodos cobran royalties",
+      "royaltiesOnOne": "1 método cobra royalties",
+      "createdLabel": "Creado",
+      "lastActivityLabel": "Última actividad",
+      "holdsLabel": "Guarda",
+      "holds": "{tokens} tokens y {nfts} colecciones de NFT",
+      "holdsNothing": "Nada",
+      "goPanel": "Abrir en el panel de componentes",
+      "goExplorer": "Ver en el explorador",
+      "callerHints": {
+        "component": "Solo las llamadas de ese componente pueden hacerlo.",
+        "package": "Solo los componentes de ese paquete pueden hacerlo."
+      },
+      "security": {
+        "title": "Seguridad",
+        "summaryOk": "No vemos riesgos en los permisos de este componente.",
+        "disclaimer": "Se comprueban los permisos y quién controla el componente, no su código.",
+        "show": "Ver el análisis completo ({count})",
+        "hide": "Ocultar el análisis",
+        "loading": "Analizando el componente…",
+        "unnamedDapp": "una dApp",
+        "findings": {
+          "ownerAnyone": "Cualquiera puede actuar como propietario: cambiar sus metadatos, sus royalties y sus roles.",
+          "ownerXrd": "La insignia de propietario es XRD: cualquier cuenta con XRD puede actuar como propietario.",
+          "ownerBadgeMintable": "La insignia de propietario todavía se puede acuñar: quien pueda acuñarla puede convertirse en propietario.",
+          "ownerBadgeSupply": "Hay {supply} unidades de la insignia de propietario: cada cuenta que tenga una es propietaria.",
+          "ownerBadge": "Su propietario es quien tenga esta insignia:",
+          "ownerComponent": "Su propietario es otro componente: solo sus llamadas pueden cambiarlo.",
+          "ownerNobody": "Nadie puede actuar como propietario: su rol es «Denegar a todos».",
+          "roleAnyone": "Cualquiera tiene el rol {role}: lo que ese rol permite está abierto a todos.",
+          "holdsRecallable": "Guarda {token}, que su emisor puede retirar (recall) de sus bóvedas.",
+          "holdsFreezable": "Guarda {token}, que su emisor puede congelar en sus bóvedas.",
+          "royaltiesOn": "Cobra royalties en {methods} métodos.",
+          "royaltiesOnOne": "Cobra royalties en 1 método.",
+          "royaltiesChangeable": "Quien tiene el rol royalty_setter puede cambiar sus royalties.",
+          "packageRoyalties": "Su paquete cobra royalties en {blueprints} blueprints.",
+          "packageRoyaltiesOne": "Su paquete cobra royalties en 1 blueprint.",
+          "verified": "Lo gestiona {name}: el componente y la dApp se reconocen mutuamente (dApp verificada).",
+          "unverified": "No está vinculado a ninguna dApp verificada.",
+          "metadataChangeable": "El propietario puede cambiar su nombre o su icono.",
+          "metadataLocked": "Su nombre y su icono no se pueden cambiar.",
+          "controls": "Controla estas entidades, creadas junto a él:",
+          "young": "Se creó hace {days} días: lleva poco tiempo en la red.",
+          "youngOne": "Se creó hace 1 día: lleva muy poco tiempo en la red.",
+          "youngToday": "Se creó hace menos de un día: lleva muy poco tiempo en la red.",
+          "packageImmutable": "Su código está en un paquete que no se puede modificar."
+        }
+      }
     }
   }
 }

@@ -14,6 +14,7 @@ import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
+import { useNetworkSelection } from '../../hooks/useNetworkSelection';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { useClaimableNfts } from '../../hooks/useClaimableNfts';
 import { useOwnedValidators } from '../../hooks/useOwnedValidators';
@@ -38,7 +39,9 @@ import { accountFromQuery, toolQuery } from '../../lib/console-query';
 export default function ValidatorInfoTool({ t }: ConsoleToolProps) {
   const info = t.validator.info;
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
-  const [validators, setValidators] = useConsoleQueryState<string[]>(() => addressesFromUrl('validator'), []);
+  const [allValidators, setAllValidators] = useConsoleQueryState<string[]>(() => addressesFromUrl('validator'), []);
+  // Only the active network's validators show; the others wait for their network.
+  const [validators, setValidators] = useNetworkSelection(allValidators, setAllValidators);
   const { data: owned } = useOwnedValidators(account);
 
   return (

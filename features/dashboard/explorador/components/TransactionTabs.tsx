@@ -23,6 +23,8 @@ import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { ResourceCreationCard } from './ResourceCreationCard';
 import { extractResourceCreations } from '../utils/resourceCreationUtils';
 import type { priceRewrites } from '../utils/oraclePrices';
+import { ValidatorOwnerActionCard } from './ValidatorOwnerActionCard';
+import { extractValidatorOwnerActions } from '../utils/validatorOwnerActions';
 import { GovernanceVoteCard } from './GovernanceVoteCard';
 import { extractGovernanceVotes } from '@/features/governance/lib/governanceVotes';
 
@@ -110,7 +112,22 @@ const TransactionTabs = ({
     const callsExplained = hasAssetTransfers(balanceChanges) || selfMoves.length > 0 || parsed.oracleUpdates.length > 0
         || resourceCreations.length > 0 || governanceVotes.length > 0 || !!airdropData;
     const calls = callsExplained ? [] : componentCalls(String(manifest_instructions || ''));
+    // Read from the manifest, no request: the card of the component that minted or burned, in the transfer box.
+    const calledComponents = [...new Set(componentCalls(String(manifest_instructions || '')).map((c) => c.component))];
     const stateUpdates = receipt?.state_updates as { updated_substates?: Parameters<typeof storedChanges>[0]['updated']; created_substates?: Parameters<typeof storedChanges>[0]['created'] } | undefined;
+    /* ── What a validator's owner did to the validator (unlock, register, key, fee…) ── */
+    const ownerActions = extractValidatorOwnerActions({
+        manifest: String(manifest_instructions || ''),
+        substates: stateUpdates?.updated_substates as unknown as Parameters<typeof extractValidatorOwnerActions>[0]['substates'],
+        events: receipt?.events as unknown as Parameters<typeof extractValidatorOwnerActions>[0]['events'],
+        epoch: tx.epoch,
+        balanceChanges: balanceChanges as unknown as Parameters<typeof extractValidatorOwnerActions>[0]['balanceChanges'],
+    });
+    // A lock or a finished unlock moves LSU between the owner's account and the validator,
+    // which the asset-transfer box already draws: no second card for them.
+    const ownerCards = ownerActions.filter(a => !(hasAssetTransfers(balanceChanges) && (a.kind === 'lock' || a.kind === 'finish_unlock')));
+    // One card per validator, whatever the owner did to it in this transaction.
+    const ownerGroups = Object.values(Object.groupBy(ownerCards, a => a.validator)) as (typeof ownerCards)[];
     const callChanges = calls.length === 0 ? [] : storedChanges(
         { updated: stateUpdates?.updated_substates, created: stateUpdates?.created_substates },
         calls.flatMap((c) => c.args.filter((a) => a.kind === 'address').map((a) => a.value)),
@@ -118,6 +135,16 @@ const TransactionTabs = ({
 
     // Shared props passed to most child panels
     const shared = { tt, dt, te, onCopy, copiedAddress, onResourceClick, network, columns, locale, marketData };
+
+    // Who pays and which badge authorises the call. Usually they follow what the transaction did,
+    // but an owner action has little else to show, so they come first there.
+    const lockFeePanel = lockFeeAmountFormatted ? (
+        <LockFeePanel lockFeeAmount={lockFeeAmountFormatted} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
+    ) : null;
+    const authBadgePanel = parsed.badgeResource && badgeAmountFormatted ? (
+        <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={badgeAmountFormatted} badgeOrigin={parsed.badgeOrigin} badgeNftIds={parsed.badgeNftIds} t={t as TranslationsT} readingMode={readingMode} {...shared} />
+    ) : null;
+    const authFirst = ownerGroups.length > 0;
 
     return (
         <div
@@ -153,6 +180,8 @@ const TransactionTabs = ({
                 {activeTab === 'summary' && (
                     <div className="space-y-6">
                         <ProposerSection details={details} tx={tx} tt={tt} network={network} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+
+                        {authFirst && <>{lockFeePanel}{authBadgePanel}</>}
 
                         {/* Message payload */}
                         {tx.message && (
@@ -220,6 +249,22 @@ const TransactionTabs = ({
                             />
                         ))}
 
+                        {/* What the validator's owner did: unlock or lock their stake, register, key, fee… */}
+                        {ownerGroups.map(group => (
+                            <ValidatorOwnerActionCard
+                                key={group[0].validator}
+                                actions={group}
+                                owner={parsed.lockFeeAccount ?? parsed.badgeOrigin ?? null}
+                                confirmedAt={details.confirmed_at}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                network={network}
+                                locale={locale}
+                                timezone={timezone}
+                            />
+                        ))}
+
                         {/* Resource creation: new NFT collection or token */}
                         {resourceCreations.map(creation => (
                             <ResourceCreationCard
@@ -236,9 +281,10 @@ const TransactionTabs = ({
                         ))}
 
                         {/* Lock Fee */}
-                        {lockFeeAmountFormatted && (
-                            <LockFeePanel lockFeeAmount={lockFeeAmountFormatted} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
-                        )}
+                        {!authFirst && lockFeePanel}
+
+                        {/* Auth Badge: who is allowed to do it comes before what moved */}
+                        {!authFirst && authBadgePanel}
 
                         {/* Asset transfers / Swap settlement */}
                         {(() => {
@@ -336,6 +382,7 @@ const TransactionTabs = ({
                                         formatEntity={formatEntity}
                                         readingMode={readingMode}
                                         selfTransfer
+                                        calledComponents={calledComponents}
                                         {...shared}
                                     />
                                 ));
@@ -355,15 +402,11 @@ const TransactionTabs = ({
                                     isClaim={isClaimTx}
                                     isStake={isStakeTx}
                                     validatorOps={tx.validatorOps}
+                                    calledComponents={calledComponents}
                                     {...shared}
                                 />
                             ));
                         })()}
-
-                        {/* Auth Badge */}
-                        {parsed.badgeResource && badgeAmountFormatted && (
-                            <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={badgeAmountFormatted} badgeOrigin={parsed.badgeOrigin} badgeNftIds={parsed.badgeNftIds} t={t as TranslationsT} readingMode={readingMode} {...shared} />
-                        )}
 
                         {/* A call that moved no assets: what it asked the component and what that changed */}
                         <ComponentCallSection calls={calls} changes={callChanges} caller={parsed.lockFeeAccount ?? parsed.badgeOrigin} feePaid={actualFeePaid} {...shared} />

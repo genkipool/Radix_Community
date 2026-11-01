@@ -38,6 +38,8 @@ import { isPublicHost } from '@/lib/publicAddress';
 /** Enough for any avatar; something larger than this is not a logo. */
 const MAX_BYTES = 3 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 8_000;
+/** sharp refuses anything that would decode to more pixels than a logo ever has. */
+const MAX_INPUT_PIXELS = 24_000_000;
 /** Covers the largest card at twice the pixel density; the zoom uses the original. */
 const MAX_DIMENSION = 384;
 /** Encoded logos held between requests, so a cold browser cache is not a cold fetch. */
@@ -105,21 +107,63 @@ function respond({ body, type }: CachedIcon) {
 }
 
 /**
- * Fetches a logo, following redirects by hand so every hop is held to the
- * same rules as the published URL: https, and a public host.
+ * Downloads a logo, never trusting the host that serves it.
+ *
+ * - The response must arrive uncompressed. Asking for `identity` and refusing a
+ *   `Content-Encoding` anyway keeps a hostile host from steering the body
+ *   through the runtime's decompressors (Brotli among them).
+ * - Redirects are followed by hand, a few at most, and every hop has to be https
+ *   on a public host like the first URL did.
+ * - The body is read as a stream and dropped at the size cap, instead of being
+ *   buffered whole before anyone looks at its length.
  */
-async function fetchPublic(url: URL): Promise<Response | null> {
-    let target = url;
+async function downloadLogo(first: URL): Promise<{ bytes: Buffer; type: string } | null> {
+    let url = first;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-        if (target.protocol !== 'https:' || !(await isPublicHost(target.hostname))) return null;
-        const response = await fetch(target, {
-            redirect: 'manual',
+        if (url.protocol !== 'https:' || !(await isPublicHost(url.hostname))) return null;
+        const upstream = await fetch(url, {
             signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-            headers: { Accept: 'image/*' },
+            headers: { Accept: 'image/*', 'Accept-Encoding': 'identity' },
+            redirect: 'manual',
         });
-        const location = response.headers.get('location');
-        if (response.status < 300 || response.status >= 400 || !location) return response;
-        target = new URL(location, target);
+
+        if (upstream.status >= 300 && upstream.status < 400) {
+            const location = upstream.headers.get('location');
+            await upstream.body?.cancel();
+            if (!location) return null;
+            let next: URL;
+            try {
+                next = new URL(location, url);
+            } catch {
+                return null;
+            }
+            url = next;
+            continue;
+        }
+
+        const type = upstream.headers.get('content-type') ?? '';
+        const encoding = upstream.headers.get('content-encoding')?.trim().toLowerCase();
+        const declared = Number(upstream.headers.get('content-length'));
+        if (!upstream.ok || !type.startsWith('image/') || (encoding && encoding !== 'identity') || declared > MAX_BYTES) {
+            await upstream.body?.cancel();
+            return null;
+        }
+
+        const reader = upstream.body?.getReader();
+        if (!reader) return null;
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.byteLength;
+            if (size > MAX_BYTES) {
+                await reader.cancel();
+                return null;
+            }
+            chunks.push(value);
+        }
+        return { bytes: Buffer.concat(chunks), type };
     }
     return null;
 }
@@ -175,13 +219,9 @@ async function serveIcon(
 
     let original: Buffer;
     try {
-        const upstream = await fetchPublic(target);
-        const originalType = upstream?.headers.get('content-type') ?? '';
-        if (!upstream?.ok || !originalType.startsWith('image/')) return notFound();
-
-        const bytes = await upstream.arrayBuffer();
-        if (bytes.byteLength > MAX_BYTES) return notFound();
-        original = Buffer.from(bytes);
+        const downloaded = await downloadLogo(target);
+        if (!downloaded) return notFound();
+        original = downloaded.bytes;
     } catch (error) {
         logger.error({ err: error, host: target.hostname }, '[ValidatorIcon] Upstream fetch failed');
         return notFound();
@@ -192,9 +232,9 @@ async function serveIcon(
     let icon: CachedIcon;
     try {
         // The format is read from the bytes, not from what the host claimed.
-        const { format } = await sharp(original).metadata();
+        const { format } = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS }).metadata();
         if (!format || !READABLE_FORMATS.has(format)) return notFound();
-        const body = await sharp(original)
+        const body = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })
             .rotate() // honour the EXIF orientation before it is stripped
             .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
             .webp({ quality: 80 })

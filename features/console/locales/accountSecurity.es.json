@@ -1,0 +1,240 @@
+{
+  "console": {
+    "accountSecurity": {
+      "checkTitle": "Comprobar una cuenta",
+      "checkHint": "Lee del ledger quién controla la cuenta: su clave, o una insignia de dueño. Y si es una insignia, dónde vive. Solo lectura: no firma nada ni envía nada.",
+      "placeholder": "account_rdx1… / account_tdx_2_1…",
+      "states": {
+        "malformed": "La suma de control bech32m no cuadra. Revisa si hay una errata antes de fiarte de cualquier respuesta sobre esta dirección.",
+        "notAccount": "Es una dirección válida, pero no es una cuenta. La comprobación solo aplica a cuentas.",
+        "wrongNetwork": "Esa dirección es de otra red. Cambia la consola a {network} o pega una dirección de esa red."
+      },
+      "checking": "Leyendo el ledger…",
+      "error": "No se ha podido leer el estado. Puede que la cuenta aún no exista en esta red, o que el Gateway no esté disponible.",
+      "verdicts": {
+        "key": {
+          "label": "La gobierna su clave",
+          "meaning": "Quien tenga la frase semilla tiene la cuenta. No hay segundo factor ni recuperación: si se pierde la frase, se pierde la cuenta. Es el estado en el que nace toda cuenta de la cartera."
+        },
+        "accessController": {
+          "label": "Protegida por un Access Controller",
+          "meaning": "La cuenta la gobierna una insignia de dueño que vive dentro de un Access Controller, así que el control sigue sus roles y un factor perdido se puede sustituir por recuperación."
+        },
+        "badgeInAccount": {
+          "label": "Securificada, insignia suelta en una cuenta",
+          "meaning": "La cuenta la gobierna una insignia de dueño que está en una cuenta corriente, no en un controller. La cuenta es un NFT transferible: quien lo mueva se lleva la cuenta, y no hay recuperación posible."
+        },
+        "badgeElsewhere": {
+          "label": "Securificada, insignia en otra entidad",
+          "meaning": "La cuenta la gobierna una insignia de dueño que vive fuera de cualquier Access Controller, en una entidad que no es una cuenta. Lo que la tenga, tiene la cuenta."
+        },
+        "badgeUnknown": {
+          "label": "Securificada, insignia sin localizar",
+          "meaning": "La regla de dueño nombra la insignia de dueño de cuenta, pero el Gateway no ha informado de dónde está ahora mismo."
+        },
+        "open": {
+          "label": "Abierta a cualquiera",
+          "meaning": "El rol de dueño es AllowAll: cualquier transacción puede actuar como dueña de esta cuenta."
+        },
+        "other": {
+          "label": "La gobierna otra regla",
+          "meaning": "La regla de dueño no es ni una insignia de firma ni la insignia de dueño de cuenta. Lee la regla antes de sacar conclusiones."
+        },
+        "unknown": {
+          "label": "No se ha podido determinar",
+          "meaning": "No se ha podido leer el rol de dueño del estado de esta cuenta."
+        }
+      },
+      "controlTitle": "Qué la gobierna",
+      "controlHint": "El rol de dueño de la cuenta, tal y como lo guarda el ledger.",
+      "control": {
+        "addressKind": "Tipo de dirección",
+        "ownerRule": "Regla de dueño",
+        "signature": {
+          "secp256k1": "Insignia de firma (secp256k1)",
+          "ed25519": "Insignia de firma (ed25519)"
+        },
+        "publicKeyHash": "Hash de la clave pública",
+        "matchesAddress": "Coincide con la dirección",
+        "mismatch": "NO: dirección y regla no coinciden",
+        "ownerBadge": "Insignia de dueño de cuenta",
+        "badgeId": "Id de la insignia",
+        "holder": "La tiene",
+        "notReported": "el Gateway no lo informa",
+        "other": {
+          "custom": "Una regla propia, con insignias que esta comprobación no modela",
+          "allowAll": "AllowAll: no se exige ninguna prueba",
+          "denyAll": "DenyAll: nadie puede actuar como dueño",
+          "unknown": "Ilegible"
+        }
+      },
+      "addressKind": {
+        "preallocated-secp256k1": "Preasignada, clave secp256k1 (viene de Olympia)",
+        "preallocated-ed25519": "Preasignada, clave ed25519 (nativa de Babylon)",
+        "allocated": "Creada en el ledger",
+        "unknown": "Desconocido"
+      },
+      "common": {
+        "yes": "Sí",
+        "no": "No"
+      },
+      "notesTitle": "Hallazgos",
+      "notes": {
+        "addressRuleMismatch": "El hash de clave pública de la regla de dueño no es el que codifica esta dirección. Una dirección preasignada es el hash de su clave, así que no pueden discrepar por casualidad.",
+        "badgeHeldBySelf": "La insignia de dueño la tiene la propia cuenta que gobierna.",
+        "singleTransferableBadge": "Un NFT transferible es la cuenta: sin segundo factor, sin recuperación, y una transferencia no se deshace.",
+        "olympiaDerived": "Dirección que viene de Olympia: se recupera con la frase semilla de Olympia, no con la de Babylon.",
+        "holderUnresolved": "La insignia está en una bóveda cuya entidad propietaria no ha informado el Gateway."
+      },
+      "controllerTitle": "Access Controller",
+      "controllerHint": "Los roles que pueden actuar sobre la cuenta, y si hay algo en marcha ahora mismo.",
+      "controller": {
+        "address": "Controller",
+        "primary": "Rol primario",
+        "recovery": "Rol de recuperación",
+        "confirmation": "Rol de confirmación",
+        "delay": "Retraso de recuperación temporizada",
+        "delayDisabled": "Desactivado",
+        "delayValue": "{minutes} minutos",
+        "primaryLocked": "Rol primario bloqueado",
+        "feeVault": "Paga sus propias fees de recuperación",
+        "factors": "{need} de {total} insignias",
+        "anyone": "Cualquiera",
+        "nobody": "Nadie",
+        "unreadable": "Regla ilegible",
+        "recoveryInProgress": "Hay una propuesta de recuperación en marcha en este controller ahora mismo.",
+        "withdrawAttempt": "Alguien está intentando sacar la insignia de dueño de este controller.",
+        "factorsVerdict": {
+          "multi": {
+            "title": "Firma con varios factores: {need} de {total}",
+            "detail": "Para mover esta cuenta hacen falta {need} de sus {total} factores a la vez. Si te roban o pierdes uno solo, nadie puede usarla con él."
+          },
+          "single": {
+            "title": "Basta un factor para firmar ({need} de {total})",
+            "detail": "Cualquiera de sus {total} factores puede mover la cuenta por sí solo. Si quieres que un teléfono robado no baste, edita el escudo en la billetera para que la firma exija dos factores, por ejemplo el teléfono y una tarjeta Arculus."
+          },
+          "anyone": {
+            "title": "Cualquiera puede firmar",
+            "detail": "El rol principal del controlador es AllowAll: cualquiera puede actuar como dueño de esta cuenta. Mueve los fondos a una cuenta segura cuanto antes."
+          },
+          "nobody": {
+            "title": "Nadie puede firmar ahora mismo",
+            "detail": "El rol principal está bloqueado (DenyAll). La cuenta solo se puede usar a través de la recuperación."
+          },
+          "unknown": {
+            "title": "No se pudo leer cuántos factores pide",
+            "detail": "La regla del rol principal no tiene una forma que la consola sepa interpretar. Revísala en la billetera."
+          },
+          "recoveryMulti": "Para recuperar la cuenta hacen falta {need} de {total} factores.",
+          "recoverySingle": "Para recuperar la cuenta basta cualquiera de sus {total} factores.",
+          "recoveryOne": "Para recuperar la cuenta basta un único factor.",
+          "singleOne": {
+            "title": "Un solo factor firma por esta cuenta",
+            "detail": "El escudo protege la cuenta con un único factor para firmar. Si quieres que un teléfono robado no baste, edítalo en la billetera para que la firma exija dos factores, por ejemplo el teléfono y una tarjeta Arculus."
+          }
+        }
+      },
+      "levelTitle": "Nivel de seguridad",
+      "levelHint": "Dónde queda la cuenta en una escala de cuatro niveles, según quién la controla en el ledger.",
+      "levelScale": "{current} de {max}",
+      "levels": {
+        "none": {
+          "label": "Nula",
+          "meaning": "El rol de dueño es AllowAll: cualquiera puede retirar los fondos y cambiar la cuenta."
+        },
+        "low": {
+          "label": "Baja",
+          "meaning": "Una insignia de dueño suelta, fuera de un Access Controller: es transferible y no tiene recuperación."
+        },
+        "basic": {
+          "label": "Básica",
+          "meaning": "Una sola clave, la de la frase semilla. Aguanta mientras la frase esté a salvo, pero no hay segundo factor ni recuperación."
+        },
+        "high": {
+          "label": "Alta",
+          "meaning": "La insignia de dueño vive en un Access Controller: varios factores, roles separados y recuperación si pierdes uno."
+        },
+        "unknown": {
+          "label": "Sin determinar",
+          "meaning": "Con lo que ha devuelto el ledger no se puede situar la cuenta en la escala."
+        }
+      },
+      "improveTitle": "Cómo mejorar la seguridad",
+      "improveHint": "Los pasos para subir de nivel, del más urgente al menos. Esta herramienta no envía nada: cada cambio lo firmas tú desde tu cartera.",
+      "improveHintShielded": "La cuenta ya está en el nivel más alto. Estos ajustes la refuerzan a partir de la configuración de su Access Controller.",
+      "improveBasics": "En cualquier nivel: no escribas la frase semilla en ninguna web ni se la des a nadie, lee el manifiesto antes de firmar y rechaza las transacciones que no hayas iniciado tú.",
+      "improvements": {
+        "abandonOpenAccount": {
+          "title": "No uses esta cuenta",
+          "detail": "Con AllowAll cualquiera puede retirar sus fondos y cambiar su configuración. No envíes nada a esta dirección y, si algo tuyo depende de ella, muévelo a una cuenta que controles."
+        },
+        "backupSeedPhrase": {
+          "title": "Guarda la frase semilla sin conexión",
+          "detail": "Hoy la frase semilla es la cuenta. Apúntala en papel o metal y guárdala en un lugar seguro, nunca en capturas, notas del móvil ni la nube. Confirma en la Radix Wallet que la copia de seguridad está hecha."
+        },
+        "applyShield": {
+          "title": "Aplica un escudo de seguridad",
+          "detail": "En la Radix Wallet, crea un escudo de seguridad con varios factores (este dispositivo, una tarjeta Arculus, un Ledger, una contraseña) y aplícalo a la cuenta. La insignia de dueño pasa a un Access Controller y la cuenta sube a nivel alto: si pierdes un factor, la recuperas con los demás. Aplicarlo es una transacción con una pequeña fee en XRD."
+        },
+        "guardBadgeHolder": {
+          "title": "Protege a quien tiene la insignia",
+          "detail": "Mientras la insignia de dueño esté suelta, esta cuenta es tan segura como la entidad que la guarda. Asegura esa entidad y no firmes nada que mueva la insignia."
+        },
+        "moveBadgeToController": {
+          "title": "Mete la insignia en un Access Controller",
+          "detail": "Crea un Access Controller con la insignia de dueño dentro y roles primario, de recuperación y de confirmación basados en factores distintos. Así deja de ser un NFT que controla la cuenta quien lo reciba."
+        },
+        "reviewRule": {
+          "title": "Lee la regla de dueño",
+          "detail": "Esta regla no es de las que esta comprobación sabe valorar. Revísala en el explorador antes de enviar fondos: qué insignias exige y quién las tiene."
+        },
+        "retryCheck": {
+          "title": "Vuelve a comprobarla",
+          "detail": "Puede ser un fallo puntual del Gateway o una cuenta que aún no existe en esta red. Repite la comprobación en un rato y confirma que la consola está en la red de la dirección."
+        },
+        "answerRecovery": {
+          "title": "Revisa lo que está en marcha",
+          "detail": "Si la propuesta de recuperación o el intento de sacar la insignia no los has iniciado tú, actúa ya: cancélalos o bloquéalos desde tu cartera con los factores que conserves antes de que venza el retraso."
+        },
+        "addPrimaryFactors": {
+          "title": "Exige más de un factor para firmar",
+          "detail": "Hoy basta un único factor para actuar como dueño. Pedir al menos dos en el rol primario hace que un dispositivo robado no alcance para vaciar la cuenta."
+        },
+        "enableTimedRecovery": {
+          "title": "Activa la recuperación temporizada",
+          "detail": "Con un retraso configurado, el rol de recuperación puede completar una recuperación sin el de confirmación cuando pasa ese tiempo, y mientras tanto el rol primario puede cancelarla. Ahora está desactivada."
+        },
+        "fundFeeVault": {
+          "title": "Deposita XRD en el controller",
+          "detail": "El controller no tiene bóveda de fees. Con XRD en ella puede pagar su propia recuperación aunque la cuenta no tenga fondos o no puedas usarla."
+        },
+        "keepFactorsApart": {
+          "title": "Guarda los factores por separado",
+          "detail": "Un escudo vale lo que la distancia entre sus factores: no guardes la tarjeta, el Ledger y la contraseña en el mismo sitio, y comprueba de vez en cuando que siguen funcionando."
+        }
+      },
+      "multiSigner": {
+        "title": "¿Y una cuenta con varias firmas?",
+        "hint": "Lo que se puede hacer hoy con la Radix Wallet, y por qué esta consola no crea cuentas multifirma.",
+        "points": [
+          {
+            "title": "La billetera solo firma con sus propias claves",
+            "detail": "Para que dos personas aprueben la misma transacción, alguien tiene que juntar sus firmas y enviarla. Eso exige un servicio aparte que coordine a los firmantes; no es algo que una página pueda montar sin custodiar nada."
+          },
+          {
+            "title": "Montarlo a mano puede dejarte sin la cuenta",
+            "detail": "Los escudos de la Radix Wallet usan el mismo mecanismo (un Access Controller con la insignia de dueño). Si una web lo configura por su cuenta, la billetera puede dejar de saber firmar por esa cuenta, y eso no tiene vuelta atrás."
+          },
+          {
+            "title": "Lo que sí funciona: un escudo con varios factores",
+            "detail": "Crea un escudo en la billetera que exija dos factores para firmar, por ejemplo este teléfono y una tarjeta Arculus. Si la tarjeta la guarda otra persona, ninguna transacción sale sin las dos. Hace falta estar juntos para firmar, pero el control es compartido de verdad."
+          },
+          {
+            "title": "Para tesorerías de grupo",
+            "detail": "Un DAO o un equipo que necesite votar cada pago necesita un componente propio (un blueprint de multifirma) o una herramienta de gobernanza. Revisa su código o su auditoría antes de meter fondos."
+          }
+        ]
+      }
+    }
+  }
+}

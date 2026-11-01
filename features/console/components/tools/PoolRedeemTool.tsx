@@ -1,8 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+
+import { useLanguage } from '@/context/LanguageContext';
 
 import { usePoolFormContext } from '../../hooks/usePoolFormContext';
+import { usePrecisionPositions } from '../../hooks/usePrecisionPositions';
+import { toolQuery } from '../../lib/console-query';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { isPositiveDecimal, lteDecimal, normalizeDecimal } from '../../lib/decimal';
 import { redemptionValue } from '../../lib/pool-lookup';
@@ -23,6 +28,9 @@ export default function PoolRedeemTool({ t }: ConsoleToolProps) {
   const { state } = ctx;
   const names = useResourceLabels(state ? [...state.resources, state.poolUnit] : []);
   const [rawAmount, setAmount] = useState('');
+  // Ociswap Precision positions are NFTs, not pool units: they are withdrawn elsewhere.
+  const { language } = useLanguage();
+  const { positions: precision } = usePrecisionPositions(ctx.account, { withEstimates: false });
 
   const amount = normalizeDecimal(rawAmount);
   const held = String(ctx.heldUnits);
@@ -57,6 +65,14 @@ export default function PoolRedeemTool({ t }: ConsoleToolProps) {
 
   return (
     <PoolFormShell t={t} ctx={ctx} manifest={manifest} title={form.title} hint={form.hint} blockedReason={blockedReason} sendLabel={form.sendButton}>
+      {precision.length > 0 && (
+        <p className="mb-4 rounded-lg p-3 text-xs leading-relaxed" style={{ background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', color: 'var(--color-text-main)' }}>
+          {form.precisionNote.replace('{count}', String(precision.reduce((n, p) => n + p.ids.length, 0)))}{' '}
+          <Link href={`/${language}/console/pool-positions?${toolQuery({ account: ctx.account })}`} className="font-bold" style={{ color: 'var(--color-primary)' }}>
+            {form.precisionLink} →
+          </Link>
+        </p>
+      )}
       {state && (
         <div className="space-y-4">
           <PoolAmountField

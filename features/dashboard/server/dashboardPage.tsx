@@ -51,6 +51,8 @@ const DASHBOARD_NAMESPACES = [
   'dashboardExplorador',
   // The explorer's governance vote card shares its strings with /governance.
   'governance',
+  // The account cards' Security tab draws the console's account-security report.
+  'consoleSecurity',
 ] as const;
 
 export function getDashboardDictionary(locale: string) {
@@ -353,6 +355,7 @@ export async function DashboardPageShell({
         initialActiveTag={
           c.ids(COOKIE_KEYS.activeTag).length > 0 ? c.ids(COOKIE_KEYS.activeTag) : ['All']
         }
+        initialFilterFavorites={c.ids(COOKIE_KEYS.filterFavorites)}
         initialTransactionActiveTag={activeTxTag}
         initialValSortMode={c.sort(COOKIE_KEYS.valSortMode)}
         initialTxSortMode={c.sort(COOKIE_KEYS.txSortMode)}

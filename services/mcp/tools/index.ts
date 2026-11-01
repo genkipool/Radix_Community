@@ -10,6 +10,8 @@ import { ledgerTools } from './ledger';
 import { consoleTools } from './console';
 import { validatorTools } from './validator';
 import { poolTools } from './pool';
+import { dexTools } from './dex';
+import { componentTools } from './component';
 import { distributionTools } from './distribution';
 import { depositTools } from './deposits';
 import { signTools } from './sign';
@@ -30,6 +32,8 @@ export function getMcpRegistry(): McpToolRegistry {
     ...consoleTools,
     ...validatorTools,
     ...poolTools,
+    ...dexTools,
+    ...componentTools,
     ...distributionTools,
     ...depositTools,
     ...signTools,

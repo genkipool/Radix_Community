@@ -7,7 +7,7 @@
  */
 
 export const TRANSACTION_TAGS = [
-  'All', 'Success', 'Failed', 'With Message', 'With NFTs',
+  'All', 'Staking', 'Unstaking', 'Claim', 'Success', 'Failed', 'With NFTs', 'With Message',
 ] as const;
 
 export type TransactionTag = typeof TRANSACTION_TAGS[number];

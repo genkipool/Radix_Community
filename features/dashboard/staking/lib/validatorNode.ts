@@ -24,6 +24,11 @@ export function validatorLocation(validator: Validator, locale = 'en'): Validato
     return name ? { code: null, name } : null;
 }
 
+/** Who hosts the node: what our node worked out from its IP, else what the validator publishes. */
+export function validatorProvider(validator: Validator): string | null {
+    return sanitizeText(validator.node?.provider ?? validator.provider) || null;
+}
+
 export function validatorVersion(validator: Validator): string | null {
     return sanitizeText(validator.node?.version ?? validator.version) || null;
 }

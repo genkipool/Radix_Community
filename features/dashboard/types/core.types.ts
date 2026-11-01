@@ -44,6 +44,8 @@ export interface DashboardInitialProps {
   initialNetworkFromUrl?: boolean;
   initialNetwork: Network;
   initialActiveTag?: string[];
+  /** Starred filters, shown as buttons beside the filter select. */
+  initialFilterFavorites?: string[];
   initialTransactionActiveTag?: string;
   initialValSortMode?: SortMode;
   initialTxSortMode?: SortMode;

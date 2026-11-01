@@ -6,35 +6,11 @@ import { Hash, Layers, Plus } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import { SelectPopup, SelectPopupEmpty, SelectPopupRow } from '@/components/ui/SelectPopup';
-import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { gatewayPost } from '@/services/gateway/bases';
 import { usePickerPopup } from '../../hooks/usePickerPopup';
+import { useConsoleDictionary } from '../../hooks/useConsoleDictionary';
 
-const TEXT = {
-  es: {
-    pick: 'Elegir NFT',
-    any: 'Cualquiera de la colección',
-    anyHint: 'Vale cualquier NFT de este recurso',
-    search: 'Buscar ID…',
-    loading: 'Cargando los NFT…',
-    empty: 'Esta colección no tiene NFT.',
-    noMatch: 'Ningún ID coincide.',
-    more: 'Solo se muestran los primeros {count}: escribe el ID si no está.',
-    close: 'Cerrar',
-  },
-  en: {
-    pick: 'Pick NFT',
-    any: 'Any of the collection',
-    anyHint: 'Any NFT of this resource will do',
-    search: 'Search id…',
-    loading: 'Loading the NFTs…',
-    empty: 'This collection has no NFTs.',
-    noMatch: 'No id matches.',
-    more: 'Only the first {count} are listed: type the id if it is missing.',
-    close: 'Close',
-  },
-};
 
 /** Pages read at most: enough to pick from, without walking a huge collection. */
 const MAX_PAGES = 3;
@@ -49,8 +25,7 @@ interface IdsPage {
  * picker, so every "+" in the console behaves alike.
  */
 export function NftIdPickerButton({ resource, value, onSelect }: { resource: string; value: string; onSelect: (id: string) => void }) {
-  const { language } = useLanguage();
-  const L = language === 'es' ? TEXT.es : TEXT.en;
+  const L = useConsoleDictionary().nftIdPicker;
   const { activeNetwork } = useRadixWallet();
   const { open, show, close, buttonRef, popupRef, style, direction } = usePickerPopup();
   const [query, setQuery] = useState('');
@@ -113,7 +88,7 @@ export function NftIdPickerButton({ resource, value, onSelect }: { resource: str
                 onClose={close}
                 closeLabel={L.close}
                 title={L.pick}
-                search={{ value: query, onChange: setQuery, placeholder: L.search, autoFocus: true }}
+                search={{ value: query, onChange: setQuery, placeholder: L.search, clearLabel: L.clearSearch, autoFocus: true }}
               >
                 {!q && (
                   <SelectPopupRow

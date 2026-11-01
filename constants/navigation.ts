@@ -97,6 +97,7 @@ export const FOOTER_LINKS = {
     { key: 'docs', path: '/docs' },
     { key: 'academy', path: '/academy' },
     { key: 'console', path: '/console' },
+    { key: 'mcp', path: '/console/mcp' },
     { key: 'hyperscale', path: '/hyperscale' },
     { key: 'wiki', path: 'https://radix.wiki' },
   ],

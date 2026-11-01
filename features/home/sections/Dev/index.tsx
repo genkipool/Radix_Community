@@ -10,17 +10,17 @@
  *   │  └────────────────────────────────────────────────────────────────┘    │
  *   └────────────────────────────────────────────────────────────────────────┘
  *
- * The four tab panels (DevTab0–3) and DevConsole are rendered server-side and
+ * The five tab panels (DevTab0–4) are rendered server-side and
  * passed as children, so they never enter the client JS bundle.
  */
 import { Zap } from 'lucide-react';
 import { Suspense } from 'react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { DevShell } from './components/DevShell';
-import { DevTab0, DevTab1, DevTab2, DevTab3 } from './components/DevsContent';
-import type { BaseSectionProps } from '../../types';
+import { DevTab0, DevTab1, DevTab2, DevTab3, DevTab4 } from './components/DevsContent';
+import type { LocaleSectionProps } from '../../types';
 
-export default function DevSection({ t }: BaseSectionProps) {
+export default function DevSection({ t, locale }: LocaleSectionProps) {
   return (
     <section id="para-devs" className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
@@ -43,6 +43,7 @@ export default function DevSection({ t }: BaseSectionProps) {
             tab1={<DevTab1 t={t} />}
             tab2={<DevTab2 t={t} />}
             tab3={<DevTab3 t={t} />}
+            tab4={<DevTab4 t={t} locale={locale} />}
           />
         </Suspense>
       </div>

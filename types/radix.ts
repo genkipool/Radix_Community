@@ -110,6 +110,14 @@ export interface ValidatorNodeTelemetry {
     commit: string | null;
     /** Unix milliseconds it was last connected; 0 when only known by address. */
     lastSeen: number;
+    /**
+     * Who hosts the machine its IP belongs to ("Hetzner", "AWS", "OVH"…), worked out
+     * by our node from the IP, which is never published. Absent in views written
+     * before the script reported it, and null when the IP could not be placed.
+     */
+    provider?: string | null;
+    /** Whether that IP belongs to a datacenter / hosting network, as opposed to a home or office line. */
+    hosting?: boolean | null;
 }
 
 /**

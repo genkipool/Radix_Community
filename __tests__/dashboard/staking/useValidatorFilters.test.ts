@@ -90,6 +90,34 @@ describe('useValidatorFilters', () => {
     expect(result.current.filtered[0].id).toBe('2');
   });
 
+  describe('wallet stake-state tags', () => {
+    const stakeStates = {
+      validator_rdx1: { staking: true, unstaking: false, claim: false },
+      validator_rdx2: { staking: false, unstaking: true, claim: false },
+      validator_rdx3: { staking: true, unstaking: false, claim: true },
+    };
+
+    it('"Staking" keeps the validators the wallet holds LSUs of', () => {
+      const { result } = renderHook(() => useValidatorFilters({ ...baseOptions, activeTags: ['Staking'], stakeStates }));
+      expect(result.current.filtered.map(v => v.id).sort()).toEqual(['1', '3']);
+    });
+
+    it('combines the stake-state tags with OR logic', () => {
+      const { result } = renderHook(() => useValidatorFilters({ ...baseOptions, activeTags: ['Unstaking', 'Claim'], stakeStates }));
+      expect(result.current.filtered.map(v => v.id).sort()).toEqual(['2', '3']);
+    });
+
+    it('is AND-ed with the other tags', () => {
+      const { result } = renderHook(() => useValidatorFilters({ ...baseOptions, activeTags: ['Active', 'Unstaking'], stakeStates }));
+      expect(result.current.filtered).toHaveLength(0);
+    });
+
+    it('matches nothing without stake states, instead of treating the tag as a validator tag', () => {
+      const { result } = renderHook(() => useValidatorFilters({ ...baseOptions, activeTags: ['Claim'] }));
+      expect(result.current.filtered).toHaveLength(0);
+    });
+  });
+
   it('combines "Active" and "Inactive" using OR logic', () => {
     const { result } = renderHook(() => useValidatorFilters({
       ...baseOptions,

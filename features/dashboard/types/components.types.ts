@@ -12,6 +12,8 @@ export interface StatCardProps {
     fullValue?: string;
     copyText?: string;
     isLoading?: boolean;
+    /** Let the label and value wrap onto a second line instead of being cut with an ellipsis. */
+    wrap?: boolean;
 }
 
 export interface ExplorerStats {
@@ -59,8 +61,15 @@ export interface DashboardToolbarProps {
     calendarT?: CalendarTranslations;
     columns: number;
     onColumnsChange: (cols: number) => void;
+    /** Folds the network panel in and out. */
+    networkPanelOpen: boolean;
+    onNetworkPanelToggle: () => void;
+    /** The ranking shown in place of the transactions (null: none) and its setter. */
     activeRanking: string | null;
     onRankingChange: (ranking: string | null) => void;
+    /** Keys of the starred filters, and the toggle that stars / unstars one. */
+    filterFavorites: string[];
+    onFilterFavoriteToggle: (key: string) => void;
     isWalletFilterActive: boolean;
     onWalletFilterChange: (v: boolean) => void;
     dt?: Partial<TranslationsT['dashboard']>;
@@ -97,6 +106,11 @@ export interface DashboardCardGridProps {
     locale: string;
     /** Entity cards above the transactions, in order; each address picks its own card. */
     entitiesToShow?: string[];
+    /** A ranking is on: its entities stand in for the transaction list. */
+    rankingActive?: boolean;
+    loadingRanking?: boolean;
+    rankingFailed?: boolean;
+    onRetryRanking?: () => void;
     t?: Partial<TranslationsT>;
     dt?: Partial<TranslationsT['dashboard']>;
     onExpand: (id: string) => void;

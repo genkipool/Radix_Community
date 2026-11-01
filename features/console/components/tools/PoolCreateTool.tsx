@@ -1,21 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { BadgePlus, KeyRound, Plus, Sparkles, Tags, X } from 'lucide-react';
 
 import { useLanguage } from '@/context/LanguageContext';
+import { apiFetchEntityDetailsBatch } from '@/features/dashboard/services/apiClient';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { ConsoleToolLink } from '../../ConsoleNav';
 import { toolQuery } from '../../lib/console-query';
 import { useKnownAddresses } from '../../hooks/useKnownAddresses';
+import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { usePoolFormContext } from '../../hooks/usePoolFormContext';
 import {
   POOL_KINDS,
   createPoolManifest,
+  isManifestAddress,
   poolResourceCount,
   type PoolKind,
 } from '../../lib/pool-manifests';
+import { badgeProblems, reserveRisks } from '../../lib/pool-safety';
 import type { ConsoleToolProps } from '../ConsoleToolView';
+import { Note } from '../shared/InfoParts';
 import { OptionButtons } from '../shared/OptionButtons';
 import { ResourceCard } from '../shared/ResourceCard';
 import { AddressField, SearchField, TextField } from '../shared/fields';
@@ -33,6 +40,10 @@ const SLOTS: Record<PoolKind, number> = { one: 1, two: 2, multi: 3 };
  * minted in the same transaction, or the pool is tied to a badge the account
  * already holds. The owner role (metadata of the pool and its pool unit) goes
  * to the same badge.
+ *
+ * An existing badge must be the account's alone: the rule accepts any amount
+ * of the resource, so the account has to hold its whole supply and nobody may
+ * be able to mint more. Anything else (XRD, a shared token) is refused.
  */
 export default function PoolCreateTool({ t }: ConsoleToolProps) {
   const labels = t.pool;
@@ -40,6 +51,7 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
   const ctx = usePoolFormContext();
   const { data: known } = useKnownAddresses();
   const { language } = useLanguage();
+  const { activeNetwork } = useRadixWallet();
 
   const [kind, setKind] = useState<PoolKind>('two');
   const [resources, setResources] = useState<string[]>(['', '', '']);
@@ -77,7 +89,32 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
   const slots = kind === 'multi' ? Math.max(SLOTS.multi, resources.length) : SLOTS[kind];
   const chosen = resources.slice(0, slots).map((r) => r.trim()).filter(Boolean);
   const duplicated = new Set(chosen).size !== chosen.length;
-  const malformed = chosen.some((r) => !r.startsWith('resource_'));
+  const sameNetwork = (address: string) =>
+    !ctx.account || address.split('1')[0].replace(/^resource_/, '') === ctx.account.split('1')[0].replace(/^account_/, '');
+  const isResource = (address: string) => isManifestAddress(address, 'resource_') && sameNetwork(address);
+  const malformed = chosen.some((r) => !isResource(r));
+  const badge = badgeResource.trim();
+
+  const fungibles = ctx.holdings?.fungibles ?? [];
+  const nonFungibles = ctx.holdings?.nonFungibles ?? [];
+  // Every resource the account holds is a badge candidate; the ledger says which are its alone.
+  const candidates = mode === 'existingBadge'
+    ? [...nonFungibles.map((nf) => nf.resourceAddress), ...fungibles.filter((f) => Number(f.amount) > 0).map((f) => f.resourceAddress)]
+    : [];
+  const lookups = [...new Set([...candidates, ...(mode === 'existingBadge' && isResource(badge) ? [badge] : []), ...chosen.filter(isResource)])].sort();
+  const { data: details, isLoading: checking } = useQuery({
+    queryKey: ['console-pool-create-safety', activeNetwork, lookups],
+    queryFn: () => apiFetchEntityDetailsBatch(lookups, activeNetwork),
+    enabled: lookups.length > 0,
+    staleTime: 60_000,
+  });
+  const problemsOf = (resource: string) =>
+    details ? badgeProblems({ resource, details: details[resource] ?? null, fungibles, nonFungibles }) : null;
+  const badgeIssues = mode === 'existingBadge' && isResource(badge) ? problemsOf(badge) : null;
+  const reserveNames = useResourceLabels(chosen.filter(isResource));
+  const reserveWarnings = chosen.filter(isResource).flatMap((r) =>
+    reserveRisks(details?.[r]).map((risk) => ({ resource: r, risk })),
+  );
 
   // Nothing typed yet is a prompt, not an error: the send button just stays off.
   const blockedReason = chosen.length === 0
@@ -88,8 +125,12 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
       ? form.duplicateError
       : malformed
         ? form.resourceError
-        : mode === 'existingBadge' && !badgeResource.trim().startsWith('resource_')
+        : mode === 'existingBadge' && !isResource(badge)
           ? form.badgeError
+          : mode === 'existingBadge' && !badgeIssues
+            ? form.badgeChecking
+            : badgeIssues?.length
+              ? form.badgeProblems[badgeIssues[0]]
           : mode === 'newBadge' && !badgeName.trim()
             ? form.badgeNameError
             : badUrl
@@ -106,7 +147,7 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
           manager:
             mode === 'newBadge'
               ? { mode: 'newBadge', badgeName: badgeName.trim(), badgeSymbol, badgeDescription, badgeIconUrl }
-              : { mode: 'existingBadge', resource: badgeResource.trim() },
+              : { mode: 'existingBadge', resource: badge },
           packages,
           profile,
         })
@@ -126,14 +167,14 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
       return next;
     });
 
-  // Anything the account holds can serve as the badge; the rule asks for the resource.
-  const holdingsBadges = [
-    ...(ctx.holdings?.nonFungibles ?? []).map((nf) => ({
+  // Only what the account holds whole, with no minting left, can serve as the badge.
+  const allBadges = [
+    ...nonFungibles.map((nf) => ({
       resourceAddress: nf.resourceAddress,
       name: nf.name || truncateAddress(nf.resourceAddress, 8, 6),
       iconUrl: nf.iconUrl,
     })),
-    ...(ctx.holdings?.fungibles ?? [])
+    ...fungibles
       .filter((f) => Number(f.amount) > 0)
       .map((f) => ({
         resourceAddress: f.resourceAddress,
@@ -141,6 +182,8 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
         iconUrl: f.iconUrl,
       })),
   ];
+  const holdingsBadges = allBadges.filter((b) => problemsOf(b.resourceAddress)?.length === 0);
+  const hiddenBadges = details ? allBadges.length - holdingsBadges.length : 0;
   const query = badgeQuery.trim().toLowerCase();
   const shownBadges = holdingsBadges.filter(
     (b) => !query || b.name.toLowerCase().includes(query) || b.resourceAddress.toLowerCase().includes(query),
@@ -245,6 +288,14 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
               {form.addResource}
             </button>
           )}
+          {reserveWarnings.map(({ resource, risk }) => (
+            <Note key={`${resource}-${risk}`} tone="warning">
+              {(risk === 'recallable' ? form.reserveRecallable : form.reserveFreezable).replace(
+                '{token}',
+                reserveNames[resource] ?? truncateAddress(resource, 10, 6),
+              )}
+            </Note>
+          ))}
         </div>
 
         <div className="space-y-3">
@@ -296,6 +347,13 @@ export default function PoolCreateTool({ t }: ConsoleToolProps) {
                   </div>
                 </>
               )}
+              {ctx.account && (checking ? (
+                <Note tone="muted">{form.badgeChecking}</Note>
+              ) : details && holdingsBadges.length === 0 ? (
+                <Note tone="muted">{form.noSafeBadges}</Note>
+              ) : hiddenBadges > 0 ? (
+                <Note tone="muted">{form.badgesHidden.replace('{count}', String(hiddenBadges))}</Note>
+              ) : null)}
               <AddressField
                 categories={['resource']}
                 label={form.badgeResourceLabel}

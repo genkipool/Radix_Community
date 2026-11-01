@@ -4,7 +4,6 @@ import { useState, type ReactNode } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 
-import { useLanguage } from '@/context/LanguageContext';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import type { AddressCategory } from '@/features/wallet/hooks/useAddressBook';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -14,6 +13,7 @@ import { truncateAddress } from '@/utils/formatters';
 import { consoleQueryParam } from '../../lib/console-query';
 import { OptionButtons } from './OptionButtons';
 import { AddressField } from './fields';
+import { useConsoleDictionary } from '../../hooks/useConsoleDictionary';
 
 /** Most entities one view loads at once: each is a few Gateway requests. */
 export const MAX_SELECTED = 10;
@@ -26,23 +26,11 @@ export const addressesFromUrl = (param: string): string[] =>
 const isComplete = (address: string, kind: string) =>
   new RegExp(`^${kind}_(rdx|tdx_2_)1[02-9ac-hj-np-z]{54}$`).test(address);
 
-const TEXT = {
-  es: {
-    hint: 'Pega una dirección o pulsa + para elegir varias.',
-    full: 'Ya hay {max} seleccionados: quita alguno para añadir más.',
-    remove: 'Quitar',
-  },
-  en: {
-    hint: 'Paste an address or press + to pick several.',
-    full: '{max} are already selected: remove one to add more.',
-    remove: 'Remove',
-  },
-};
 
 interface MultiAddressSelectProps {
   label: ReactNode;
   /** One address family, e.g. `pool`: its prefix is how a pasted address is recognised. */
-  kind: Extract<AddressCategory, 'pool' | 'locker' | 'validator'>;
+  kind: Extract<AddressCategory, 'pool' | 'locker' | 'validator' | 'component'>;
   values: string[];
   onChange: (values: string[]) => void;
   /** The account's own entities, offered as one-tap toggles above the input. */
@@ -62,10 +50,9 @@ interface MultiAddressSelectProps {
  * every pick is a card in the view, removable from there too.
  */
 export function MultiAddressSelect({ label, kind, values, onChange, suggestions = [], suggestionsLoading = false, placeholder, disabled }: MultiAddressSelectProps) {
-  const { language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
   const [draft, setDraft] = useState('');
-  const L = language === 'es' ? TEXT.es : TEXT.en;
+  const L = useConsoleDictionary().multiAddressSelect;
   const full = values.length >= MAX_SELECTED;
 
 
@@ -87,6 +74,8 @@ export function MultiAddressSelect({ label, kind, values, onChange, suggestions 
   const nameQueries = useQueries({
     queries: others.map((address) => ({
       queryKey: ['console-entity-name', activeNetwork, address],
+      // The other network's Gateway answers its addresses with a 400: the chip just shows the address.
+      enabled: networkOfAddress(address) === activeNetwork,
       staleTime: 5 * 60_000,
       retry: false,
       queryFn: async () => {

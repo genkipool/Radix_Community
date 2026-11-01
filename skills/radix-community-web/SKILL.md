@@ -45,6 +45,8 @@ Generic JSON client config:
 
 8. **Native pools**: when the user names a pool instead of giving its address, resolve it with `find_pools` (it also finds Account Lockers); read with `get_pool_state` first; build with `build_pool_manifest`. The engine fixes who can do what: `contribute`, `protected_deposit` and `protected_withdraw` need the **pool manager role**, `redeem` is public, and the owner role writes the metadata of the pool and of its pool unit. So the manager rule is the pool's whole security: **never create a pool whose manager is AllowAll** (anyone could drain it with protected_withdraw; real mainnet pools have been created that way). `build_pool_manifest` with `operation: "create"` always guards the pool with a badge, minted in the same transaction unless you pass `managerBadge`. When `get_pool_state` reports `drainable: true`, tell the user to redeem their pool units right away and move to a new, badge-guarded pool. **One pool operation per transaction**: send each manifest `build_pool_manifest` returns on its own. Never concatenate two of them (for instance two contributions to different pools) into one transaction: the ledger accepts it and the preview passes, but the Radix Wallet for Android fails while signing it (it inserts each guarantee twice; fix proposed in radixdlt/babylon-wallet-android#1449), so the user gets an error and nothing is submitted. A native pool cannot be deleted; to retire one use `operation: "manage"` with any of `emptyReserves`, `markRetired` and `freezeProfile`, all in one transaction. `freezeProfile` is irreversible (it locks the profile metadata and the owner role), so ask the user to confirm it first; the manager role of a native pool can never be locked.
 
+8b. **Liquidity in DEX pools**: a native pool a DEX runs (Ociswap Basic or Flex, DefiPlaza, Reddicks) answers only to the DEX component, so `build_pool_manifest` "contribute" fails there: add liquidity with `build_dex_manifest {"operation": "add"}`, which reads the DEX from the ledger, checks the component really runs the pool and simulates what the account receives. Ociswap Precision pools are concentrated liquidity: each position is an NFT, not pool units; claim its fees with `"claim_fees"` (the position stays) or close it with `"withdraw_positions"`. A position out of range (the price has left its tick bounds) earns no fees until the price comes back: `get_pool_positions` flags it; tell the user, and to move it, withdraw it and add again with a range around the current price. Start with `get_pool_positions` to see what an account has in pools, with values, the DEX's APR and how a unit's value moved over 7 and 30 days. On mainnet each DEX's own API is asked whether it lists the component: when it does not, say so plainly and let the user decide before signing; on Stokenet nothing can be checked that way.
+
 9. **Distributions and airdrops**: `get_resource_holders` (`all: true` for every holder) → `plan_holder_distribution` (equal or pro rata, truncated to the token's divisibility) → **`build_locker_manifest`** (`create` once, then `airdrop` with the CSV) or `build_bulk_send_manifests`. Prefer the **AccountLocker**: accounts that accept deposits get the tokens at once and the rest stay claimable at the claim page the tool returns, instead of being lost or bounced. Both tools return **several transactions**: sign them one at a time, in order. A transaction holds at most 40 recipients because the engine caps a transaction at 256 events and each new account emits several. Recipients claim with `build_locker_manifest { operation: "claim" }`; only their own account can.
 
 7. **Transient Gateway errors**: a tool failing with `NotSyncedUpError` means the Gateway is over a minute behind the ledger. Wait about 20 seconds and call it again unchanged; nothing about the request is wrong.
@@ -79,14 +81,19 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"What can I claim from my unstakes?"* → `list_claimable_stake_nfts {"account": "account_…"}` → feed the matured ids to `build_validator_manifest` as `claim-xrd` → sign. Console: https://radix-community.genkipool.com/en/console/validator-staking.
 - *"Create a validator"* → `build_validator_manifest` with a single `create-validator` operation (it cannot share a transaction with anything) → `preview_transaction` → sign → then `profile` + `register` + `accept-delegated-stake` in one transaction → set `consensus.validator_address` on the node → `stake-as-owner` once the node is synced. Console: https://radix-community.genkipool.com/en/console/validator-create.
 - *"Create a liquidity pool for XRD and my token"* → `build_pool_manifest {"operation": "create", "account": "account_…", "kind": "two", "resources": ["resource_…xrd", "resource_…"]}` → sign → `build_pool_manifest {"operation": "contribute", "pool": "pool_…", "amounts": {…}}`. Console: https://radix-community.genkipool.com/en/console/pool-create.
-- *"Is this pool safe?"* → `get_pool_state {"pool": "pool_…"}`: a manager of AllowAll means anyone can drain it.
+- *"Is this pool safe?"* → `get_pool_state {"pool": "pool_…"}`: its security findings (worst first) and every role. A manager of AllowAll, or an XRD manager badge, means anyone can drain it; these check permissions, not code.
+- *"Is component_rdx1… safe? Who controls it?"* → `get_component_info {"component": "component_…"}`: owner, royalties, verified dApp, what it controls, every role and its security findings. Console: https://radix-community.genkipool.com/en/console/component-info.
 - *"Which of these validators should I stake with?"* → `get_validator_state {"validator": ["validator_…", "validator_…"], "account": "account_…"}`: fee and pending fee changes, uptime, APY, warnings, and what the account already has with each. Console equivalent: https://radix-community.genkipool.com/en/console/validator-info.
 - *"Is this airdrop locker safe, and what is waiting for me?"* → `get_locker_claims {"locker": "locker_…", "account": "account_…"}`: whether the recoverer can take tokens back before they are claimed, and the claim link.
+- *"What do I have in pools?"* → `get_pool_positions {"account": "account_…"}`. Console: https://radix-community.genkipool.com/en/console/pool-positions.
+- *"Add liquidity to the Ociswap XRD/HUG pool"* → `find_pools {"query": "HUG"}` → `build_dex_manifest {"operation": "add", "pool": "pool_…", "amounts": {…}}`. Console: https://radix-community.genkipool.com/en/console/pool-dex-add.
+- *"Claim my Ociswap fees"* → `get_pool_positions` → `build_dex_manifest {"operation": "claim_fees", "pool": "component_…"}`.
 - *"Find the XRD/HUG pool"* → `find_pools {"query": "HUG"}` → `get_pool_state` on the address it returns.
 - *"Airdrop 10,000 of my token to everyone holding X"* → `plan_holder_distribution {"holdersOf": "resource_…X", "sendResource": "resource_…", "total": "10000"}` → `build_locker_manifest {"operation": "create"}` (once) → `build_locker_manifest {"operation": "airdrop", "locker": "locker_…", "recipients": <csv>}` → sign each batch → share the claim link. Console: https://radix-community.genkipool.com/en/console/locker-airdrop (list source: holders of a token).
 - *"Pay these 300 people from a spreadsheet"* → `build_bulk_send_manifests {"account": "account_…", "recipients": <csv>}` → sign each batch in order. Console: https://radix-community.genkipool.com/en/console/bulk-send.
 - *"Which validator should I stake with?"* → `list_validators` → compare fee/uptime/APY → staking page https://radix-community.genkipool.com/en/console/staking.
 - *"What is this manifest going to do?"* → `explain_manifest` (plain-language steps) + `preview_transaction` (fees, balance changes).
+- *"Is account_rdx1… my old Olympia account? / What was its Olympia address?"* → `find_olympia_address {"babylonAddress": "account_rdx1…"}` (only once the account has signed a Babylon withdrawal) → `convert_olympia_address` on the rdx1… it returns for the wallet-import QR. The other way round (rdx1… → account_…) is `convert_olympia_address` alone, offline.
 - *"What's the XRD price / network status?"* → `get_xrd_price`, `get_network_status`.
 - *"Log me in / prove who I am"* → the local connector's `request_login {network, dapp_definition, origin}` (the persona signs; add `accounts: {quantity: 1, with_proof: true}` to prove an account in the same approval) → then `request_ownership_proof {identity_address, accounts}` whenever exact accounts must be proven again.
 - *"A request never showed on my phone / nothing gets through"* → `pending_requests` → `check_wallet_connection` → `connector_log`; answer or force-close the wallet, then `await_response` or `cancel_request`. Never resend a request whose failure says `retry_safe: NO` If the log shows it never got a turn or a channel, look for other connector processes on the machine (an older version, or a session started before an update) and update/restart them.
@@ -329,6 +336,13 @@ Converts a legacy Olympia address (rdx1… account or _rr1… resource) into its
 - `accountName` (string; required, default: "") — Display name shown in the mobile wallet during import (max 30 chars).
 - `wordCount` (any; required, default: 12) — Seed-phrase word count of the original Olympia wallet (12, 15, 18, 21 or 24).
 
+### `find_olympia_address` — Find the Olympia address of a Babylon account
+
+Reverse of convert_olympia_address: finds the legacy Olympia address (rdx1…) behind a Babylon account. A Babylon address is a hash of the key, so this recovers the secp256k1 public key from the account's own signatures on the ledger (its last 10 withdrawals) and keeps the one that derives the address. It only works once the account has signed a Babylon transaction: "found: false" with reason "no-transactions" means no signature yet, NOT that the account is not a legacy one; "not-found" means its keys are not secp256k1 (Radix Wallet accounts use Ed25519). Read-only, reads the Gateway.
+
+- `babylonAddress` (string; required) — Babylon account address (account_rdx1… / account_tdx_2_1…)
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
 ### `resolve_vault_address` — Resolve a vault address
 
 Resolves the internal vault address holding a resource in an account (the target a recall/freeze needs). An account holds a resource in exactly one vault. For non-fungibles it also returns the NFT ids in that vault. Feed the vault into the recall-token / recall-nft / freeze-vault / unfreeze-vault manifest templates.
@@ -387,7 +401,7 @@ Builds one transaction manifest out of one or more validator operations, resolvi
 
 ### `get_pool_state` — Read native pool info
 
-Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console's "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool's history). Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.
+Reads one or several native Radix pools (OneResourcePool, TwoResourcePool, MultiResourcePool), the same profile the console's "Pool info" section shows: name, description and link, whether it is retired, resources, reserves, pool unit and its supply, what one unit is worth, who holds the manager and owner roles, and its largest participants (units, share, what each put in and took out, from the pool's history). Includes the console's security analysis (findings worst first: AllowAll or XRD manager, a badge that can be minted or has several units, reserve tokens that imitate a known token or that their issuer can recall, freeze or restrict, whether the managing component belongs to a verified dApp and who controls it, reserves moved by a manager badge, whether the profile can change) and every role of the pool with whether it can change. These check permissions, not code. Flags pools whose manager role is AllowAll: anyone can drain those with protected_withdraw. With an account, also its position (units, share of the pool, what redeeming would return, what it put in and took out, and the result) and whether it holds the manager / owner badge. Use it before build_pool_manifest.
 
 - `pool` (any; required) — Pool component (pool_…) address, or a list of up to 10 to read them all at once
 - `account` (string; optional) — Optional account: its position and badge ownership
@@ -419,12 +433,40 @@ Builds one native pool transaction. Operations: "create" (new pool, ALWAYS guard
 
 ### `find_pools` — Find native pools and lockers
 
-Finds native pools (pool_…) and Account Lockers (locker_…) by name or address, from the same sources as the console pickers: the ones the given accounts have touched, the native pools Ociswap and DefiPlaza publish (mainnet only, largest first) and pools with recent network activity. No API lists every pool or locker on Radix, so a missing one can still be used by address. Use it to resolve "the XRD/HUG pool" into an address before get_pool_state.
+Finds native pools (pool_…) and Account Lockers (locker_…) by name or address, from the same sources as the console pickers: the ones the given accounts have touched, the native pools Ociswap, DefiPlaza and Reddicks publish (mainnet only, largest first) and pools with recent network activity. No API lists every pool or locker on Radix, so a missing one can still be used by address. Use it to resolve "the XRD/HUG pool" into an address before get_pool_state.
 
 - `query` (string; optional) — Text to match against the name or the address (case insensitive)
 - `kind` ("pool" | "locker" | "both"; required, default: "pool") — What to look for
 - `accounts` (array; optional) — Accounts whose recent transactions are searched too
 - `limit` (integer; required, default: 25) — Maximum results
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `get_pool_positions` — Read pool positions
+
+Everything an account has in pools, as the console's "Your pool positions" section shows it: every native pool unit it holds (only when the unit and its pool name each other on the ledger) with what the units redeem for now, the share of the pool, which DEX lists the pool and the APR it reports, and how one unit's value changed over 7 and 30 days (geometric mean of its tokens, read from the ledger as it was then); and every Ociswap Precision position (concentrated-liquidity NFTs, only collections minted by a real PrecisionPool that names them) with the fees it can claim now and what withdrawing returns, both simulated with the real transactions, and whether each position is in range (out of range — price below or above its tick bounds — it earns no fees until the price comes back; withdrawing and adding with a new range is the fix). Use build_dex_manifest to act on them, build_pool_manifest "redeem" for native units.
+
+- `account` (string; required) — Account address (account_…)
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+
+### `build_dex_manifest` — Build DEX liquidity manifest
+
+Builds one transaction on a pool a DEX runs. "add": liquidity through the DEX component, for Ociswap Basic and Flex (both tokens, in the reserves' ratio; the excess comes back), DefiPlaza (one token, its "side"; the other token too only when that side is in shortage) and Ociswap Precision (a price range: "range" full, or minPrice/maxPrice in y per x; you receive a position NFT). A DEX-run native pool refuses build_pool_manifest "contribute" (only its component may contribute), so use this. "claim_fees": the fees of Precision positions, keeping them. "withdraw_positions": closes Precision positions (liquidity + pending fees, the NFTs burn). The DEX is read from the ledger and the component must really run the pool; whether the DEX itself lists it is checked on mainnet (no DEX has a Stokenet API): if it is NOT listed, tell the user plainly before they sign. Returns the manifest and what the account would receive, simulated.
+
+- `operation` ("add" | "claim_fees" | "withdraw_positions"; required) — What to do
+- `account` (string; required) — Account that signs and receives
+- `pool` (string; required) — Native pool (pool_…) a DEX runs, or the DEX component (component_…), e.g. a Precision pool
+- `amounts` (object; optional) — add: { resource: amount }. Ociswap Basic/Flex: both tokens. DefiPlaza: the side's token (+ the other in shortage). Precision: the tokens the range takes.
+- `side` ("base" | "quote"; optional) — add, DefiPlaza only: the side the liquidity goes to (default base)
+- `range` (any; optional) — add, Precision only: "full" (default) or a price range in y per x
+- `ids` (array; optional) — claim_fees / withdraw_positions: position NFT ids; default every position the account holds in that pool
+- `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
+- `locale` ("en" | "es"; required, default: "en") — Language of the console links: "en" or "es"
+
+### `get_component_info` — Read component info
+
+Reads one or several Radix components (component_…), the same card the console's "Component info" section shows: name, description and link, blueprint and package (a package's code can never change), who owns the component and the package, its royalties, how many tokens and NFT collections it holds, when it was created and last used, every role with whether it can change, and a security analysis (findings worst first: an owner anyone or an XRD badge can act as, an owner badge that can be minted or has several units, roles open to everyone, held tokens their issuer can recall or freeze, royalties and who can change them, whether a verified dApp claims it, whether its name can change, the entities created with it that answer to it, whether it is new). These check permissions, not code: nothing here says the code is safe.
+
+- `component` (any; required) — Component address (component_…), or a list of up to 10 to read them all at once
 - `network` ("mainnet" | "stokenet"; required, default: "mainnet") — Radix network: "mainnet" (production) or "stokenet" (testnet)
 
 ### `plan_holder_distribution` — Plan a distribution to holders

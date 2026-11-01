@@ -176,4 +176,96 @@ describe('the validator logo route', () => {
         expect(res.status).toBe(404);
         expect(fetch).not.toHaveBeenCalled();
     });
+
+    describe('does not trust the host serving the logo', () => {
+        const reencode = () => mockSharp('png', new Uint8Array([1, 2, 3]));
+        const get = async () => {
+            const { GET } = await loadRoute();
+            const { req, context } = request(ICON_URL);
+            return GET(req, context);
+        };
+
+        it('asks for the logo uncompressed and does not follow redirects on its own', async () => {
+            reencode();
+            await get();
+            const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+            expect(init.redirect).toBe('manual');
+            expect(init.headers).toMatchObject({ 'Accept-Encoding': 'identity' });
+        });
+
+        it('refuses a body that arrives compressed, Brotli included', async () => {
+            reencode();
+            vi.mocked(fetch).mockResolvedValue(new Response(PNG, { headers: { 'content-type': 'image/png', 'content-encoding': 'br' } }));
+            expect((await get()).status).toBe(404);
+        });
+
+        it('follows a redirect to another public https host', async () => {
+            reencode();
+            vi.mocked(fetch)
+                .mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: 'https://cdn.example/logo.png' } }))
+                .mockResolvedValueOnce(new Response(PNG, { headers: { 'content-type': 'image/png' } }));
+            const res = await get();
+            expect(res.status).toBe(200);
+            expect(vi.mocked(fetch).mock.calls[1][0].toString()).toBe('https://cdn.example/logo.png');
+        });
+
+        it.each([
+            'http://cdn.example/logo.png',
+            'https://127.0.0.1/logo.png',
+            'https://169.254.169.254/latest/meta-data',
+            'https://[::1]/logo.png',
+            'https://[fd00::1]/logo.png',
+            'https://[::ffff:10.0.0.5]/logo.png',
+            'https://100.64.0.1/logo.png',
+            'https://0.0.0.0/logo.png',
+        ])('refuses a redirect to %s', async (location) => {
+            reencode();
+            const real = await vi.importActual<typeof import('@/lib/publicAddress')>('@/lib/publicAddress');
+            isPublicHost.mockImplementation((host: string) => (host === 'logos.example' ? true : real.isPublicHost(host)));
+            vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 302, headers: { location } }));
+            expect((await get()).status).toBe(404);
+            expect(fetch).toHaveBeenCalledTimes(1);
+        });
+
+        it('gives up on a redirect loop', async () => {
+            reencode();
+            vi.mocked(fetch).mockImplementation(async () => new Response(null, { status: 302, headers: { location: 'https://cdn.example/again' } }));
+            expect((await get()).status).toBe(404);
+            expect(fetch).toHaveBeenCalledTimes(4);
+        });
+
+        it('stops reading a body that grows past the cap, even without a Content-Length', async () => {
+            reencode();
+            const chunk = new Uint8Array(1024 * 1024);
+            let sent = 0;
+            const body = new ReadableStream<Uint8Array>({
+                pull(controller) { sent += 1; controller.enqueue(chunk); },
+            });
+            vi.mocked(fetch).mockResolvedValue(new Response(body, { headers: { 'content-type': 'image/png' } }));
+            expect((await get()).status).toBe(404);
+            expect(sent).toBeLessThan(10); // 3 MB cap: it was not read to the end
+        });
+
+        it('never serves an SVG sharp cannot read as it came', async () => {
+            vi.doMock('sharp', () => ({
+                default: () => ({ metadata: async () => { throw new Error('unreadable'); } }),
+            }));
+            vi.mocked(fetch).mockResolvedValue(new Response('<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>', { headers: { 'content-type': 'image/svg+xml' } }));
+            expect((await get()).status).toBe(404);
+        });
+
+        it('still refuses what is not a picture, whatever it calls itself', async () => {
+            reencode();
+            vi.mocked(fetch).mockResolvedValue(new Response('<html>', { headers: { 'content-type': 'text/html' } }));
+            expect((await get()).status).toBe(404);
+        });
+
+        it('serves a raster logo re-encoded, never untouched, with nosniff', async () => {
+            reencode();
+            const res = await get();
+            expect(res.status).toBe(200);
+            expect(res.headers.get('content-type')).toBe('image/webp');
+            expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+        });
+    });
 });

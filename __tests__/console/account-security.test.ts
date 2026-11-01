@@ -23,6 +23,8 @@ import { CONSOLE_GROUPS, CONSOLE_TOOLS } from '@/features/console/data/consoleTo
 import { getMcpRegistry } from '@/services/mcp/tools';
 import enLocale from '@/features/console/locales/en.json';
 import esLocale from '@/features/console/locales/es.json';
+import enSecurityLocale from '@/features/console/locales/accountSecurity.en.json';
+import esSecurityLocale from '@/features/console/locales/accountSecurity.es.json';
 import {
   CONTROLLER_DETAILS,
   KEY_CONTROLLED,
@@ -366,7 +368,7 @@ describe('account security section wiring', () => {
       'olympiaDerived',
       'holderUnresolved',
     ];
-    for (const locale of [enLocale, esLocale]) {
+    for (const locale of [enSecurityLocale, esSecurityLocale]) {
       const section = locale.console.accountSecurity;
       for (const verdict of verdicts) {
         const entry = (section.verdicts as Record<string, { label: string; meaning: string }>)[verdict];

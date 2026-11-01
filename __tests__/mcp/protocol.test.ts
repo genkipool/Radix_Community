@@ -102,6 +102,7 @@ describe('MCP tools/list', () => {
         'explain_manifest',
         'decode_sbor',
         'convert_olympia_address',
+        'find_olympia_address',
         'inspect_address',
         'get_known_addresses',
         'setup_wallet_connector',

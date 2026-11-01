@@ -23,7 +23,7 @@ const formatCompact = (value: number, locale: string): string => {
 };
 
 /** Both views lay six cards out the same way. */
-const GRID = 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8';
+export const STATS_GRID = 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3';
 
 type SharedStatProps = Pick<DashboardStatsRowProps, 'stats' | 'dt' | 'locale' | 'isLoading'>;
 
@@ -59,14 +59,14 @@ const ActiveStakeStat = ({ stats, dt, locale, isLoading }: SharedStatProps) => {
     );
 };
 
-export const DashboardStatsRow = ({
+const StatsCards = ({
     activeView, stats, marketData, isLoading = false, dt, locale,
 }: DashboardStatsRowProps) => {
     const shared = { stats, dt, locale, isLoading };
 
     if (activeView === 'staking') {
         return (
-            <div className={GRID}>
+            <div className={STATS_GRID}>
                 <StatCard
                     icon={<Coins className="size-5" />}
                     label={dt?.network?.total_staked ?? ''}
@@ -111,7 +111,7 @@ export const DashboardStatsRow = ({
     const tvl = isEur ? (marketData?.totalValueLockedEur ?? 0) : (marketData?.totalValueLockedUsd ?? 0);
 
     return (
-        <div className={GRID}>
+        <div className={STATS_GRID}>
             <StatCard
                 icon={<Activity className="size-5" />}
                 label={dt?.explorer?.ledger_txs || 'Total Transactions'}
@@ -178,3 +178,14 @@ export const DashboardStatsRow = ({
         </div>
     );
 };
+
+/**
+ * The network cards, with room under them for more (`extra`): the staking-flow
+ * panel unfolds here, as a second row of cards, so the two read as one block.
+ */
+export const DashboardStatsRow = ({ extra, ...props }: DashboardStatsRowProps & { extra?: React.ReactNode }) => (
+    <div className="mb-8">
+        <StatsCards {...props} />
+        {extra}
+    </div>
+);

@@ -18,6 +18,9 @@ import cipherEs from '@/features/cipher/locales/es.json';
 
 import consoleEn from '@/features/console/locales/en.json';
 import consoleEs from '@/features/console/locales/es.json';
+// The account-security labels are their own file: the console and the dashboard's account cards both draw them.
+import consoleSecurityEn from '@/features/console/locales/accountSecurity.en.json';
+import consoleSecurityEs from '@/features/console/locales/accountSecurity.es.json';
 
 import dappsEn from '@/features/dapps/locales/en.json';
 import dappsEs from '@/features/dapps/locales/es.json';
@@ -102,6 +105,7 @@ const en = mergeTranslations(commonEn, [
   cipherEn,
   communityEn,
   consoleEn,
+  consoleSecurityEn,
   dappsEn,
   dashboardEn,
   dashboardStakingEn,
@@ -125,6 +129,7 @@ const es = mergeTranslations(commonEs, [
   cipherEs,
   communityEs,
   consoleEs,
+  consoleSecurityEs,
   dappsEs,
   dashboardEs,
   dashboardStakingEs,
@@ -148,6 +153,7 @@ export type Dictionary = typeof commonEn &
   typeof cipherEn &
   typeof communityEn &
   typeof consoleEn &
+  typeof consoleSecurityEn &
   typeof dappsEn &
   typeof dashboardEn &
   typeof dashboardStakingEn &
@@ -169,7 +175,7 @@ export const translations = {
 };
 
 export type FeatureKey =
-  | 'academy' | 'blog' | 'chat' | 'cipher' | 'community' | 'console' | 'dapps' | 'dashboard'
+  | 'academy' | 'blog' | 'chat' | 'cipher' | 'community' | 'console' | 'consoleSecurity' | 'dapps' | 'dashboard'
   | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
   | 'games' | 'googleWallet' | 'governance' | 'home' | 'hyperscale' | 'infrastructure'
   | 'seal' | 'sign';
@@ -182,6 +188,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     cipher: () => import('@/features/cipher/locales/en.json'),
     community: () => import('@/features/community/locales/en.json'),
     console: () => import('@/features/console/locales/en.json'),
+    consoleSecurity: () => import('@/features/console/locales/accountSecurity.en.json'),
     dapps: () => import('@/features/dapps/locales/en.json'),
     dashboard: () => import('@/features/dashboard/locales/en.json'),
     dashboardStaking: () => import('@/features/dashboard/staking/locales/en.json'),
@@ -204,6 +211,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     cipher: () => import('@/features/cipher/locales/es.json'),
     community: () => import('@/features/community/locales/es.json'),
     console: () => import('@/features/console/locales/es.json'),
+    consoleSecurity: () => import('@/features/console/locales/accountSecurity.es.json'),
     dapps: () => import('@/features/dapps/locales/es.json'),
     dashboard: () => import('@/features/dashboard/locales/es.json'),
     dashboardStaking: () => import('@/features/dashboard/staking/locales/es.json'),

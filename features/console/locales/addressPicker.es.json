@@ -1,0 +1,45 @@
+{
+  "search": "Buscar por nombre o dirección…",
+  "clearSearch": "Borrar la búsqueda",
+  "empty": "No hay direcciones de este tipo. Guárdalas en la agenda.",
+  "noMatch": "Nada coincide con la búsqueda.",
+  "pick": "Elegir dirección",
+  "pickBy": {
+    "account": "Elegir cuenta",
+    "resource": "Elegir recurso",
+    "validator": "Elegir validador",
+    "pool": "Elegir pool",
+    "locker": "Elegir locker",
+    "component": "Elegir componente",
+    "package": "Elegir paquete"
+  },
+  "loading": "Buscando…",
+  "more": "Hay {count} más: usa el buscador.",
+  "typedLabel": "Usar esta dirección",
+  "fee": "Comisión",
+  "add": "Añadir",
+  "addCount": "Añadir ({count})",
+  "close": "Cerrar",
+  "ownBadge": "Tienes su insignia",
+  "tabs": {
+    "all": "Todas",
+    "allResources": "Todos",
+    "tokens": "Tokens",
+    "nfts": "NFTs",
+    "wallet": "Tu billetera",
+    "myValidators": "Tuyos",
+    "agenda": "Agenda",
+    "mine": "Usados por ti",
+    "ociswap": "Ociswap",
+    "defiplaza": "DefiPlaza",
+    "reddicks": "Reddicks",
+    "network": "Actividad reciente",
+    "validators": "Validadores"
+  },
+  "unnamed": {
+    "pool": "Pool sin nombre",
+    "locker": "Locker sin nombre",
+    "resource": "Recurso sin nombre",
+    "other": "Sin nombre"
+  }
+}

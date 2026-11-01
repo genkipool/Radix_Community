@@ -14,7 +14,7 @@ import { StatDivider, StatCell, BizRow } from './ValidatorLayoutPrimitives';
 import { ValidatorShareActions } from './ValidatorShareActions';
 import { validatorIconSrc } from '../lib/validatorIcon';
 import { buildValidatorStats } from '../lib/validatorStats';
-import { validatorLocation } from '../lib/validatorNode';
+import { validatorLocation, validatorProvider } from '../lib/validatorNode';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { StakingPopup } from './StakingPopup';
@@ -79,6 +79,7 @@ export const Layout1Col = ({
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale);
     const location = validatorLocation(validator, locale);
+    const provider = validatorProvider(validator);
 
     return (
         <div className="flex flex-col h-full">
@@ -134,14 +135,16 @@ export const Layout1Col = ({
                                     <span className="truncate text-box-cap" title={sanitizeText(validator.website)}>{formatDisplayUrl(validator.website)}</span>
                                 </a>
                             )}
-                            <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.provider)} (${validator.providerPercent}%)`}>
-                                <Server className="size-3.5 shrink-0" />
-                                <span className="text-box-cap">{sanitizeText(validator.provider)} ({validator.providerPercent}%)</span>
-                            </span>
                             {location && (
                                 <span className="flex items-center gap-1 cursor-default" title={`${location.name} (${validator.countryPercent}%)`}>
                                     <Globe className="size-3.5 shrink-0" />
                                     <span className="text-box-cap">{location.name} ({validator.countryPercent}%)</span>
+                                </span>
+                            )}
+                            {provider && (
+                                <span className="flex items-center gap-1 cursor-default" title={`${provider} (${validator.providerPercent}%)`}>
+                                    <Server className="size-3.5 shrink-0" />
+                                    <span className="text-box-cap">{provider} ({validator.providerPercent}%)</span>
                                 </span>
                             )}
                             <div className="flex items-center gap-2 min-w-0">

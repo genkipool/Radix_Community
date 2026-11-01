@@ -3,12 +3,11 @@
 import { ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { AddressPickerButton } from './AddressPickerButton';
-import { useLanguage } from '@/context/LanguageContext';
+import { useConsoleDictionary } from '../../hooks/useConsoleDictionary';
 import type { AddressCategory } from '@/features/wallet/hooks/useAddressBook';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { otherNetworkOf } from '../../lib/address-network';
+import { NETWORK_NAME, otherNetworkOf } from '../../lib/address-network';
 
-const NETWORK_NAME = { mainnet: 'Mainnet', stokenet: 'Stokenet' } as const;
 
 /** Every on-ledger address family — for inputs that accept any address. */
 export const ALL_ADDRESS_CATEGORIES: AddressCategory[] = [
@@ -146,16 +145,11 @@ interface AddressFieldProps extends Omit<TextFieldProps, 'type' | 'trailing' | '
  * error shows when the network is right.
  */
 export function AddressField({ categories, pickerSelected, onPickerConfirm, pickerSendableOnly, ...props }: AddressFieldProps) {
-  const { language } = useLanguage();
+  const t = useConsoleDictionary();
   const { activeNetwork } = useRadixWallet();
   const other = otherNetworkOf(props.value, activeNetwork);
   const networkError = other
-    ? (language === 'es'
-        ? 'Esta dirección es de {other} y estás en {active}. Cambia de red o usa una dirección de {active}.'
-        : 'This address is on {other} and you are on {active}. Switch networks or use a {active} address.'
-      )
-        .replace('{other}', NETWORK_NAME[other])
-        .replaceAll('{active}', NETWORK_NAME[activeNetwork])
+    ? t.common.otherNetworkField.replace('{other}', NETWORK_NAME[other]).replaceAll('{active}', NETWORK_NAME[activeNetwork])
     : undefined;
   return (
     <TextField

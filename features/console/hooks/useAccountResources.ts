@@ -4,19 +4,24 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { mapHoldings } from '../lib/account-holdings';
+import { browserCopyOptions, writeBrowserCopy } from '../lib/browser-copy';
 import type { AccountHoldings } from '../types/console.types';
 
 /**
  * Loads the fungible and non-fungible holdings of one or more accounts, with metadata,
  * from the Radix Gateway. Used by the console tools to offer resource pickers.
+ * The last answer is kept in the browser and shown at once on the next visit,
+ * then replaced by the live one (see `browser-copy`).
  */
 export function useAccountResources(accountAddresses: string[] | string | null) {
   const { activeNetwork } = useRadixWallet();
 
   const addresses = Array.isArray(accountAddresses) ? accountAddresses : (accountAddresses ? [accountAddresses] : []);
 
+  const queryKey = ['console-account-resources', activeNetwork, addresses.join(',')];
   return useQuery({
-    queryKey: ['console-account-resources', activeNetwork, addresses.join(',')],
+    queryKey,
+    ...browserCopyOptions<AccountHoldings>(queryKey),
     queryFn: async () => {
       const mergedHoldings: AccountHoldings = { fungibles: [], nonFungibles: [] };
       if (addresses.length === 0) return mergedHoldings;
@@ -48,6 +53,7 @@ export function useAccountResources(accountAddresses: string[] | string | null) 
         }
       }
 
+      writeBrowserCopy(queryKey, mergedHoldings);
       return mergedHoldings;
     },
     enabled: addresses.length > 0,

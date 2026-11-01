@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 const MAX_HEIGHT = 420;
+const DEFAULT_WIDTH = 440;
 
 /**
  * The floating popup behind the console's "+" picker buttons: drawn through a
@@ -10,6 +11,10 @@ const MAX_HEIGHT = 420;
  * above otherwise), following it on scroll and resize, and closing on a click
  * outside or Escape. The address picker and the NFT id picker share it, so
  * every "+" opens and behaves the same.
+ *
+ * `style` is 440 px wide; `layoutFor(width)` gives the same placement at
+ * another width, for a popup that sizes itself after it renders (the address
+ * picker, from its tabs). A narrower screen shrinks either.
  */
 export function usePickerPopup() {
   const [open, setOpen] = useState(false);
@@ -47,13 +52,17 @@ export function usePickerPopup() {
     };
   }, [open]);
 
-  const style: CSSProperties = (() => {
+  const layoutFor = (wanted: number) => {
+    const style = place(wanted);
+    return { style, direction: style.bottom !== undefined ? ('up' as const) : ('down' as const) };
+  };
+  const place = (wanted: number): CSSProperties => {
     if (typeof window === 'undefined' || !rect) {
       return { position: 'fixed', left: 12, top: 72, width: 320, zIndex: 9999 };
     }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const width = Math.min(440, vw - 24);
+    const width = Math.min(wanted, vw - 24);
     const left = Math.min(Math.max(12, rect.right - width), Math.max(12, vw - width - 12));
     const spaceBelow = vh - rect.bottom;
     const spaceAbove = rect.top;
@@ -62,7 +71,7 @@ export function usePickerPopup() {
     return below
       ? { position: 'fixed', left, top: rect.bottom + 6, width, height: room(spaceBelow), zIndex: 9999 }
       : { position: 'fixed', left, bottom: vh - rect.top + 6, width, height: room(spaceAbove), zIndex: 9999 };
-  })();
+  };
 
-  return { open, show, close, buttonRef, popupRef, style, direction: style.bottom !== undefined ? ('up' as const) : ('down' as const) };
+  return { open, show, close, buttonRef, popupRef, layoutFor, ...layoutFor(DEFAULT_WIDTH) };
 }

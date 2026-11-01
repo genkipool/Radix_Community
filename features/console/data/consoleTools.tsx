@@ -143,6 +143,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     requiresWallet: true,
     wide: true,
   },
+  'pool-dex-add': {
+    slug: 'pool-dex-add',
+    icon: <Droplets className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '6,182,212',
+    requiresWallet: true,
+    wide: true,
+  },
   'pool-reserves': {
     slug: 'pool-reserves',
     icon: <HandCoins className="size-5" />,
@@ -154,6 +162,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
   'pool-redeem': {
     slug: 'pool-redeem',
     icon: <ArrowUpFromLine className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '6,182,212',
+    requiresWallet: true,
+    wide: true,
+  },
+  'pool-positions': {
+    slug: 'pool-positions',
+    icon: <HandCoins className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '6,182,212',
     requiresWallet: true,
@@ -254,6 +270,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '139,92,246',
     requiresWallet: true,
+  },
+  'component-info': {
+    slug: 'component-info',
+    icon: <Info className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '6,182,212',
+    requiresWallet: true,
+    wide: true,
   },
   'component-panel': {
     slug: 'component-panel',
@@ -424,7 +448,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'pools',
     icon: <Waves className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['pool-info', 'pool-create', 'pool-contribute', 'pool-reserves', 'pool-redeem', 'pool-profile', 'pool-manage'],
+    tools: ['pool-info', 'pool-positions', 'pool-dex-add', 'pool-create', 'pool-contribute', 'pool-reserves', 'pool-redeem', 'pool-profile', 'pool-manage'],
   },
   {
     // Locker: the native AccountLocker, from both sides. The badge holder
@@ -438,7 +462,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'deploy',
     icon: <Rocket className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
+    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-info', 'component-panel'],
   },
   {
     // Radix Seal: the self-custody suite (sign, encrypt, chat) that all share

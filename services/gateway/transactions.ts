@@ -90,6 +90,25 @@ const STREAM_OPT_INS = {
     receipt_fee_destination: true,
 } as const;
 
+/**
+ * Explorer tags the Gateway can answer itself, through the stream's manifest
+ * class filter. Scanning recent transactions for them instead found next to
+ * nothing: stakes, unstakes and claims are a sliver of the ledger, so a handful
+ * of pages rarely held one.
+ */
+type StakingManifestClass = 'ValidatorStake' | 'ValidatorUnstake' | 'ValidatorClaim';
+
+const MANIFEST_CLASS_BY_TAG: Record<string, StakingManifestClass | undefined> = {
+    Staking: 'ValidatorStake',
+    Unstaking: 'ValidatorUnstake',
+    Claim: 'ValidatorClaim',
+};
+
+const manifestClassFilter = (manifestClass?: StakingManifestClass) =>
+    manifestClass
+        ? { manifest_class_filter: { _class: manifestClass, match_only_most_specific: false } }
+        : {};
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // localToUTC
@@ -496,6 +515,7 @@ export async function fetchRecentTransactions(
     limit = 15,
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; timezone?: string },
+    manifestClass?: StakingManifestClass,
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     const gateway = getGateway(network);
     const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.timezone);
@@ -508,6 +528,7 @@ export async function fetchRecentTransactions(
                     cursor,
                     opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
                     ...dateParams,
+                    ...manifestClassFilter(manifestClass),
                 },
             }),
         );
@@ -756,6 +777,7 @@ export async function searchTransactionsByAddress(
     limit = 15,
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; timezone?: string },
+    manifestClass?: StakingManifestClass,
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     // Defensive network check: Prevent 400 errors by identifying mismatch before calling Gateway
     const addressToValidate = Array.isArray(address) ? address[0] : address;
@@ -800,6 +822,7 @@ export async function searchTransactionsByAddress(
                     cursor: cursors[addr],
                     opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
                     ...dateParams,
+                    ...manifestClassFilter(manifestClass),
                 };
                 if (isResource) {
                     streamTransactionsRequest.balance_change_resources_filter = [addr];
@@ -871,6 +894,7 @@ export async function searchTransactionsByAddress(
             cursor,
             opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
             ...dateParams,
+            ...manifestClassFilter(manifestClass),
         };
         
         if (resources.length > 0) {
@@ -938,6 +962,7 @@ async function fetchFilteredTransactionsRaw(options: {
     const { tag, start, end, cursor: initialCursor, limit, address, network, timezone } = options;
 
     const dateRange = { start, end, timezone };
+    const manifestClass = MANIFEST_CLASS_BY_TAG[tag];
     const results: TransactionInfo[] = [];
     let currentCursor = initialCursor;
     let pageCount = 0;
@@ -950,12 +975,13 @@ async function fetchFilteredTransactionsRaw(options: {
         pageCount++;
 
         const page = address
-            ? await searchTransactionsByAddress(address, currentCursor, 30, network, dateRange)
-            : await fetchRecentTransactions(currentCursor, 30, network, dateRange);
+            ? await searchTransactionsByAddress(address, currentCursor, 30, network, dateRange, manifestClass)
+            : await fetchRecentTransactions(currentCursor, 30, network, dateRange, manifestClass);
 
         if (page.transactions.length === 0) break;
 
-        const filtered = page.transactions.filter(tx => matchesTransactionTag(tx, tag));
+        // The Gateway already kept only the class; nothing left to match.
+        const filtered = manifestClass ? page.transactions : page.transactions.filter(tx => matchesTransactionTag(tx, tag));
         results.push(...filtered);
 
         if (!page.nextCursor) {

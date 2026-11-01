@@ -10,6 +10,9 @@ export interface MarketData {
     circulatingSupply: number;
     totalValueLockedUsd: number;
     totalValueLockedEur: number;
+    /** Traded in the last 24 h, in USD. Absent in copies cached before it was read. */
+    totalVolumeUsd?: number;
+    priceChange7d?: number;
 }
 
 const REDIS_KEY = 'radix_market_data';
@@ -52,6 +55,8 @@ const fetchMarketData = async (): Promise<MarketData | null> => {
             circulatingSupply: data.market_data.circulating_supply ?? 0,
             totalValueLockedUsd: tvlUsd,
             totalValueLockedEur: tvlUsd * eurUsdRate,
+            totalVolumeUsd: data.market_data.total_volume?.usd ?? 0,
+            priceChange7d: data.market_data.price_change_percentage_7d ?? 0,
         };
     } catch (error) {
         logger.error({ error }, '[MarketData] Exception fetching from CoinGecko');
