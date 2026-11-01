@@ -116,6 +116,14 @@ Generic JSON client config:
 
 7. **Transient Gateway errors**: a tool failing with \`NotSyncedUpError\` means the Gateway is over a minute behind the ledger. Wait about 20 seconds and call it again unchanged; nothing about the request is wrong.
 
+10. **Known Radix Wallet bugs** (fixes proposed upstream, not released yet). Recognise the symptom and give the user the workaround instead of resending:
+   - **Requests reach the phone but are never shown** (Android, radixdlt/babylon-wallet-android#1451): every request or reconnection opens a WebRTC data channel, and after 16 since the wallet app started the wallet stops reading new ones. \`connector_log\` reaches \`delivered\`, the phone shows nothing, the request ends \`NO_ANSWER\`, and it only happens after the app has been open for a while. Ask the user to force-close and reopen the wallet app, then \`cancel_request\` and send again. Connectors ≥ 0.9.3 close every channel they open, but only the wallet fix ends it.
+   - **Sharing a persona without the data asked for closes the wallet** (Android, #1452): on a one-time persona data request (\`request_data\` with names, emails or phone numbers) Continue is enabled for any persona, and pressing it with one that lacks a field closes the app and the dApp gets no answer. Ask only for the data you need, and before sending tell the user to pick a persona that has it, or to add it first (Personas → the persona → Edit).
+   - **Proof of ownership of the persona alone never completes** (Android, #1448): a request whose \`proofOfOwnership\` names only the persona (no accounts) keeps showing "Verify Persona" after it is signed and never answers. Until it is fixed, include an account in the proof, or use a login with a challenge (\`request_login\`), which works.
+   - **Two pool operations in one transaction fail while signing** (Android, #1449): see Native pools — one pool manifest per transaction.
+   - **Cancelling in a web page leaves the request pending in the browser extension** (radixdlt/radix-dapp-toolkit#327): with dApp Toolkit 2.3.0, \`rdt.disconnect()\` (and any dApp cancel built on it, including this site's "Cancel connection") does not tell the Radix Connector extension, so its pending card stays and the wallet can still show the request. Tell the user to cancel it from the card in the extension, or to answer it on the phone.
+   - **A link removed in the wallet** (Settings → Linked Connectors) is forgotten at once by connectors ≥ 0.9.3; older ones keep trying it until restarted. If the user removed the link, pair again with \`pair_wallet\`.
+
 ## Output format
 
 Every tool returns pre-formatted plain text (banner, aligned key/value rows,
