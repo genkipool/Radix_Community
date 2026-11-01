@@ -196,6 +196,7 @@
         "failedToSubmitTransaction": "Failed to submit transaction. Please try again.",
         "failedToCompileTransaction": "Failed to compile transaction.",
         "rejectedByUser": "Transaction rejected by user.",
+        "timeout": "The wallet did not answer in time. Please try again.",
         "insufficient_balance": "Insufficient balance for this action.",
         "superior_to_both": "The entered amount exceeds both the available balance and the staked amount, so neither stake nor unstake operations can be performed."
       }

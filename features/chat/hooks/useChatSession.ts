@@ -58,6 +58,8 @@ import {
   sanitizeDeclaredName,
   verifyPeerHandshake,
 } from '../lib/identity';
+import { cancelWalletRequests } from '@/features/wallet/lib/wallet-requests';
+import { isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 
 type ChatPeer = Peer<ChatWireMessage>;
 type HandshakeMessage = Extract<ChatWireMessage, { t: 'handshake' }>;
@@ -199,6 +201,8 @@ export function useChatSession() {
     void cleanupExpired().catch(() => undefined);
     const urls = objectUrlsRef.current;
     return () => {
+      // Leaving while the wallet is asked to sign cancels that request too.
+      if (phaseRef.current === 'signing') cancelWalletRequests();
       if (handshakeTimerRef.current) clearTimeout(handshakeTimerRef.current);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       peerRef.current?.close();
@@ -213,6 +217,8 @@ export function useChatSession() {
   }, []);
 
   function fail(e: unknown): void {
+    // Cancelled on purpose (the view is being left): nothing to report.
+    if (isWalletCancellation(e)) return;
     setError(toChatErrorCode(e));
     moveTo('error');
     teardown();

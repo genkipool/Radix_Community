@@ -13,6 +13,7 @@ import type { ValidatorEntityState } from '@/features/dashboard/staking/hooks/us
 import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
 import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
+import { stakingErrorMessage } from '@/features/dashboard/staking/lib/stakingErrorMessage';
 export type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
 
 const EMPTY_SELECTIONS: ValidatorSelections = {};
@@ -142,15 +143,11 @@ export const AccountValidatorStakeAction = ({
 
     const hasTxError = !!error || !!actionError;
 
-    const renderError = (err: string) => {
-        const lower = err.toLowerCase();
-        if (lower.includes('failed to prepare') || lower.includes('failedtoprepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || 'Failed to prepare transaction. Check your manifest.';
-        if (lower.includes('rejected') || lower.includes('rejectedbyuser')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || 'Transaction rejected by user.';
-        if (lower.includes('failed to sign') || lower.includes('failedtosign')) return stakingErrors?.failedToSignTransaction || 'Failed to sign transaction.';
-        if (lower.includes('failed to submit') || lower.includes('failedtosubmit')) return stakingErrors?.failedToSubmitTransaction || 'Failed to submit transaction.';
-        if (lower.includes('failed to compile') || lower.includes('failedtocompile')) return stakingErrors?.failedToCompileTransaction || 'Failed to compile transaction.';
-        return err;
-    };
+    const renderError = (err: string) => stakingErrorMessage(err, {
+        ...stakingErrors,
+        failedToPrepareTransaction: stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare,
+        rejectedByUser: stakingErrors?.rejectedByUser || accT?.rejected_by_user,
+    });
 
     // Update activeTab when selections are completely cleared (e.g. from Reset button)
     const [prevSelectionsLength, setPrevSelectionsLength] = useState(Object.keys(selections).length);

@@ -23,7 +23,7 @@ const PANEL_WIDTH = 280;
  * the cursor can travel from the trigger into the panel).
  */
 export function ConnectWalletPopover({ children }: { children: ReactNode }) {
-  const { connect, sessions, switchNetwork, isLoading, disconnect } = useRadixWallet();
+  const { connect, sessions, switchNetwork, isLoading, cancelConnection } = useRadixWallet();
   const { t } = useLanguage();
 
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -115,7 +115,7 @@ export function ConnectWalletPopover({ children }: { children: ReactNode }) {
               sessions={sessions}
               switchNetwork={switchNetwork}
               isLoading={isLoading}
-              disconnect={disconnect}
+              cancelConnection={cancelConnection}
             />
           </div>,
           document.body,

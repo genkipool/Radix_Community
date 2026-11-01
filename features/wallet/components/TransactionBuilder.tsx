@@ -8,6 +8,7 @@ import { SelectPopup, SelectPopupRow, SelectPopupTabs } from '@/components/ui/Se
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
+import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { buildMultiTransferManifest, TransferGroup, TransferItem } from '@/features/wallet/lib/manifest-builders';
@@ -824,14 +825,17 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 return;
             }
 
-            const result = await toolkit.walletApi.sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-                ...(showMessageInput && messageText.trim() ? { message: messageText.trim() } : {}),
-            });
+            const result = await sendToWallet(toolkit, 'transaction', () =>
+                toolkit.walletApi.sendTransaction({
+                    transactionManifest: manifest,
+                    version: 1,
+                    ...(showMessageInput && messageText.trim() ? { message: messageText.trim() } : {}),
+                }),
+            );
 
-            if (result.isErr()) {
-                setError('Transacciones rechazadas o fallidas.');
+            if (!result.ok) {
+                // A cancel the person asked for is not an error to show.
+                setError(result.failure.reason === 'cancelled' ? null : 'Transacciones rechazadas o fallidas.');
                 setIsTransacting(false);
             } else {
                 setDestinationAddress('');

@@ -1,5 +1,6 @@
 import { RadixDappToolkit, DataRequestBuilder } from '@radixdlt/radix-dapp-toolkit';
 import { NETWORKS, RadixNetworkId } from '../constants/network';
+import { mountConnectButton } from './connect-button';
 
 /**
  * Map of RDT instances keyed by network ID.
@@ -38,6 +39,8 @@ export const getOrCreateToolkit = (networkId: RadixNetworkId) => {
   );
 
   rdtInstances.set(networkId, rdt);
+  // Lets the new instance cancel requests in the wallet (see connect-button.ts).
+  mountConnectButton();
   return rdt;
 };
 

@@ -15,6 +15,7 @@ import { useReceiveSession } from '../hooks/useReceiveSession';
 import { ContainerMetaCard } from './ContainerMetaCard';
 import { ReceiverNameField, usePersonaName } from './ReceiverNameField';
 import { TransferProgress } from './TransferProgress';
+import { isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 
 /**
  * Flow A guest view (opened via a `#m=receive` share URL): receive the
@@ -71,6 +72,8 @@ export function ReceiveView({
         curve: proof.curve,
       });
     } catch (e) {
+      // Cancelled on purpose: nothing to report.
+      if (isWalletCancellation(e)) return;
       setProofError(
         e instanceof Error && e.message === 'wallet_rejected'
           ? 'wallet_rejected'

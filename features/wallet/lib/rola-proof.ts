@@ -5,10 +5,13 @@
  * every feature that binds cryptography to a wallet signature (cipher, chat).
  *
  * Throws Error(<code>) with codes: 'wallet_rejected', 'no_proof',
- * 'challenge_mismatch' — callers map them to their own i18n error keys.
+ * 'challenge_mismatch' — callers map them to their own i18n error keys — and
+ * `WalletCancelledError` when the request was cancelled here.
  */
 import { DataRequestBuilder } from '@radixdlt/radix-dapp-toolkit';
 import { getOrCreateToolkit } from './radix-toolkit';
+import { sendToWallet } from './wallet-requests';
+import { WalletCancelledError } from './wallet-errors';
 
 type Rdt = NonNullable<ReturnType<typeof getOrCreateToolkit>>;
 
@@ -40,10 +43,13 @@ export function requestAccountProof(
   const run = async (): Promise<RolaAccountProof> => {
     // Bind the wallet signature to THIS request by feeding our challenge.
     rdt.walletApi.provideChallengeGenerator(async () => challenge);
-    const response = await rdt.walletApi.sendOneTimeRequest(
-      DataRequestBuilder.accounts().exactly(1).withProof(),
+    const response = await sendToWallet(rdt, 'proof', () =>
+      rdt.walletApi.sendOneTimeRequest(DataRequestBuilder.accounts().exactly(1).withProof()),
     );
-    if (response.isErr()) throw new Error('wallet_rejected');
+    if (!response.ok) {
+      if (response.failure.reason === 'cancelled') throw new WalletCancelledError();
+      throw new Error('wallet_rejected');
+    }
 
     const walletData = response.value;
     const account = walletData.accounts?.[0];

@@ -15,14 +15,15 @@ export function WalletNetworkPopoverContent({
   sessions,
   switchNetwork,
   isLoading,
-  disconnect,
+  cancelConnection,
 }: {
   connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void;
   t: Dictionary;
   sessions: Record<'mainnet' | 'stokenet', unknown>;
   switchNetwork: (network: 'mainnet' | 'stokenet') => void;
   isLoading: boolean;
-  disconnect: () => void;
+  /** Cancels the connection waiting for the wallet; open sessions stay. */
+  cancelConnection: () => void;
 }) {
   const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
     if (sessions[netName]) {
@@ -60,7 +61,7 @@ export function WalletNetworkPopoverContent({
       {isLoading && (
         <button
           type="button"
-          onClick={() => disconnect()}
+          onClick={cancelConnection}
           className="mt-4 w-full py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-red-500 transition-colors text-center"
         >
           {t.nav?.wallet_cancel_connection ?? 'Cancelar conexión'}

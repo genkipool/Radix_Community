@@ -8,6 +8,8 @@ import type {
   NetworkSession,
 } from '../types/wallet';
 import { getOrCreateToolkit, disconnectToolkit } from '../lib/radix-toolkit';
+import { cancelWalletRequests, sendToWallet } from '../lib/wallet-requests';
+import type { WalletFailure } from '../lib/wallet-errors';
 import { RadixNetworkId } from '../constants/network';
 import type { SessionPayload } from '@/lib/auth/session';
 import { setCookie as writeCookie, getCookie } from '@/utils/cookies';
@@ -17,6 +19,16 @@ import { setCookie as writeCookie, getCookie } from '@/utils/cookies';
 export const RadixWalletContext = createContext<RadixWalletContextValue | undefined>(undefined);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
+
+/** How long the wallet has to answer a connection before it is cancelled. */
+const CONNECT_TIMEOUT_MS = 60_000;
+
+/** What to tell the person when a connection did not go through; nothing when they cancelled it. */
+function connectErrorMessage({ reason }: WalletFailure): string | null {
+  if (reason === 'cancelled') return null;
+  if (reason === 'timeout') return 'Connection timed out. Please try again.';
+  return 'Connection rejected or failed.';
+}
 
 function networkIdFromName(name: 'mainnet' | 'stokenet'): RadixNetworkId {
   return name === 'mainnet' ? RadixNetworkId.Mainnet : RadixNetworkId.Stokenet;
@@ -189,8 +201,8 @@ export function RadixWalletProvider({
   const [error, setError] = useState<string | null>(null);
   const [selectedAccountAddresses, setSelectedAccountAddresses] = useState<string[]>([]);
 
-  // ── Connection Timeout Ref ──
-  const connectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  // ── The connection attempt in progress: a newer one makes older outcomes stale ──
+  const connectAttemptRef = React.useRef(0);
 
   // ── Sync with RDT updates ──
   const subscriptionsRef = React.useRef(new Map<string, { unsubscribe: () => void }>());
@@ -220,13 +232,9 @@ export function RadixWalletProvider({
   // ── Connect flow ──────────────────────────────────────────────────────────
 
   function connect(networkId: RadixNetworkId, isUpdate: boolean = false) {
-    // If a connection is already in progress, cancel the previous one
-    if (isLoading) {
-      disconnectToolkit(networkId);
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current);
-      }
-    }
+    // One connection at a time: a new one replaces the one still waiting.
+    if (isLoading) cancelWalletRequests();
+    const attempt = ++connectAttemptRef.current;
 
     setIsLoading(true);
     setError(null);
@@ -235,7 +243,7 @@ export function RadixWalletProvider({
     setActiveNetwork(netName);
 
     // Small delay to allow React state to settle before RDT init
-    setTimeout(() => {
+    setTimeout(async () => {
       const rdt = getOrCreateToolkit(networkId);
       if (!rdt) {
         setIsLoading(false);
@@ -252,106 +260,82 @@ export function RadixWalletProvider({
         return data.challenge;
       });
 
-      // The callback that processes wallet responses
+      const outcome = await sendToWallet(
+        rdt,
+        'connect',
+        () => (isUpdate ? rdt.walletApi.updateSharedAccounts() : rdt.walletApi.sendRequest()),
+        { timeoutMs: CONNECT_TIMEOUT_MS },
+      );
+      if (attempt !== connectAttemptRef.current) return;
+
+      if (!outcome.ok) {
+        setIsLoading(false);
+        setError(connectErrorMessage(outcome.failure));
+        return;
+      }
+
+      // ROLA verification happens on the server.
+      const walletData = outcome.value;
+      const proofs = walletData.proofs;
+
+      let endpoint = '/api/auth/radix/verify';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const handleWalletResponse = async (result: any) => {
-        if (result.isErr()) {
-          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
+      let requestBody: any = {
+        identityAddress: walletData.persona?.identityAddress,
+        networkId,
+        accounts: walletData.accounts,
+        personaLabel: walletData.persona?.label,
+      };
+
+      if (!proofs || proofs.length === 0) {
+        // If no proof is provided (e.g. during an update flow), try hitting the update endpoint
+        // instead of verify. The update endpoint relies on the existing secure cookie.
+        endpoint = '/api/auth/radix/update';
+      } else {
+        // If proof is provided, hit verify
+        requestBody.challenge = proofs[0].challenge;
+        requestBody.proof = proofs[0].proof;
+      }
+
+      try {
+        const verifyResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!verifyResponse.ok) {
+          const errBody = await verifyResponse.json().catch(() => ({}));
           setIsLoading(false);
-          setError('Connection rejected or failed.');
+          setError((errBody as Record<string, string>).error || (endpoint === '/api/auth/radix/update' ? 'Update failed' : 'Verification failed'));
           return;
         }
 
-        const walletData = result.value;
-        const proofs = walletData.proofs;
-
-        let endpoint = '/api/auth/radix/verify';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let requestBody: any = {
-          identityAddress: walletData.persona?.identityAddress,
-          networkId,
+        const newSession: NetworkSession = {
+          identityAddress: walletData.persona?.identityAddress || '',
+          personaLabel: walletData.persona?.label || '',
           accounts: walletData.accounts,
-          personaLabel: walletData.persona?.label,
         };
 
-        if (!proofs || proofs.length === 0) {
-          // If no proof is provided (e.g. during an update flow), try hitting the update endpoint
-          // instead of verify. The update endpoint relies on the existing secure cookie.
-          endpoint = '/api/auth/radix/update';
-        } else {
-          // If proof is provided, hit verify
-          requestBody.challenge = proofs[0].challenge;
-          requestBody.proof = proofs[0].proof;
-        }
+        setSessions(prev => ({
+          ...prev,
+          [netName]: newSession,
+        }));
 
-        try {
-          const verifyResponse = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-          });
-
-          if (!verifyResponse.ok) {
-            const errBody = await verifyResponse.json().catch(() => ({}));
-            if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
-            setIsLoading(false);
-            setError((errBody as Record<string, string>).error || (endpoint === '/api/auth/radix/update' ? 'Update failed' : 'Verification failed'));
-            return;
-          }
-
-          const newSession: NetworkSession = {
-            identityAddress: walletData.persona?.identityAddress || '',
-            personaLabel: walletData.persona?.label || '',
-            accounts: walletData.accounts,
-          };
-
-          setSessions(prev => ({
-            ...prev,
-            [netName]: newSession,
-          }));
-
-          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
-          setIsLoading(false);
-          setError(null);
-        } catch (err) {
-          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
-          setIsLoading(false);
-          setError(err instanceof Error ? err.message : 'Identity verification failed.');
-        }
-      };
-
-      // Provide connect response callback — this is where ROLA verification happens
-      rdt.walletApi.provideConnectResponseCallback(handleWalletResponse);
-
-      // Fire the wallet connection request
-      if (isUpdate) {
-        rdt.walletApi.updateSharedAccounts().map(walletData => ({
-          isErr: () => false,
-          value: walletData
-        })).mapErr(err => ({
-          isErr: () => true,
-          error: err
-        })).then(handleWalletResponse);
-      } else {
-        rdt.walletApi.sendRequest();
+        setIsLoading(false);
+        setError(null);
+      } catch (err) {
+        setIsLoading(false);
+        setError(err instanceof Error ? err.message : 'Identity verification failed.');
       }
-
-      // Timeout after 60 seconds
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current);
-      }
-      
-      connectionTimeoutRef.current = setTimeout(() => {
-        setIsLoading(prev => {
-          if (prev) {
-            setError('Connection timed out. Please try again.');
-            disconnectToolkit(networkId); // Cancel the pending request in the wallet
-            return false;
-          }
-          return prev;
-        });
-      }, 60000);
     }, 100);
+  }
+
+  /** Cancels the connection waiting for the wallet; the sessions already open stay. */
+  function cancelConnection() {
+    cancelWalletRequests();
+    setIsLoading(false);
+    setError(null);
   }
 
   // ── Disconnect flow ───────────────────────────────────────────────────────
@@ -435,6 +419,7 @@ export function RadixWalletProvider({
 
     // Actions
     connect,
+    cancelConnection,
     disconnect,
     switchNetwork,
     setSelectedAccountAddresses,
