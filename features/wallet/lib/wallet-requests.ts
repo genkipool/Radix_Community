@@ -48,6 +48,8 @@ export interface PendingWalletRequest {
   id: number;
   kind: WalletRequestKind;
   startedAt: number;
+  /** The wallet has it: from here it is answered, or rejected, in the wallet. */
+  inWallet: boolean;
 }
 
 interface Entry extends PendingWalletRequest {
@@ -61,7 +63,7 @@ let snapshot: readonly PendingWalletRequest[] = [];
 let lastId = 0;
 
 function changed() {
-  snapshot = [...pending.values()].map(({ id, kind, startedAt }) => ({ id, kind, startedAt }));
+  snapshot = [...pending.values()].map(({ id, kind, startedAt, inWallet }) => ({ id, kind, startedAt, inWallet }));
   listeners.forEach((listener) => listener());
 }
 
@@ -100,7 +102,8 @@ export function sendToWallet<T>(
       resolve(outcome);
     };
 
-    pending.set(id, { id, kind, startedAt: Date.now(), toolkit, settle });
+    pending.set(id, { id, kind, startedAt: Date.now(), inWallet: false, toolkit, settle });
+    watchDelivery();
     changed();
 
     if (timeoutMs) {
@@ -146,4 +149,26 @@ function cancelInWallet(...toolkits: CancellableToolkit[]) {
   }
   // One button serves every toolkit, so it is asked once.
   if (throughButton) cancelThroughConnectButton();
+}
+
+/**
+ * The Radix Connector extension tells the page when the wallet has received a
+ * request (`receivedByWallet`, on the same window event the toolkit listens
+ * to). The wallet shows one request at a time, so what is waiting here is
+ * what it received.
+ */
+const EXTENSION_EVENT = 'radix#chromeExtension#receive';
+let watchingDelivery = false;
+
+function watchDelivery() {
+  if (watchingDelivery || typeof window === 'undefined') return;
+  watchingDelivery = true;
+  window.addEventListener(EXTENSION_EVENT, (event) => {
+    const detail = (event as CustomEvent<{ eventType?: string }>).detail;
+    if (detail?.eventType !== 'receivedByWallet') return;
+    const waiting = [...pending.values()].filter((entry) => !entry.inWallet);
+    if (waiting.length === 0) return;
+    waiting.forEach((entry) => (entry.inWallet = true));
+    changed();
+  });
 }

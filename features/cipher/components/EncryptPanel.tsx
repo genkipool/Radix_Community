@@ -23,6 +23,7 @@ import type { CipherDictionary } from '../types/dictionary';
 import { useEncryptFlow } from '../hooks/useEncryptFlow';
 import { formatBytes } from '../lib/format';
 import { TransferProgress } from './TransferProgress';
+import { useWalletRequests } from '@/features/wallet/hooks/useWalletRequests';
 
 type MintState = 'idle' | 'minting' | 'done' | 'error';
 
@@ -47,7 +48,7 @@ interface EncryptPanelProps {
 export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, actingAccount, onReset }: EncryptPanelProps) {
   const flow = useEncryptFlow();
   const preview = useTransactionPreview();
-  const { language } = useLanguage();
+  const { language, t: common } = useLanguage();
   const [txHash, setTxHash] = useState<string | null>(null);
   const busy = flow.phase === 'signing' || flow.phase === 'encrypting';
 
@@ -144,6 +145,9 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
     );
   };
 
+  // Once the wallet has the signature request, only the wallet can reject it.
+  const { inWallet: walletHasIt } = useWalletRequests();
+
   // Cancel the pending ROLA signature (keeps the selected file so it can retry).
   const cancelSigning = () => {
     void flow.reset();
@@ -217,7 +221,9 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
             <button
               type="button"
               onClick={cancelSigning}
-              className="flex items-center gap-2 text-xs font-semibold transition-opacity hover:opacity-80"
+              disabled={walletHasIt}
+              title={walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
+              className="flex items-center gap-2 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ color: 'var(--color-text-muted)' }}
             >
               <XCircle className="size-3.5" />

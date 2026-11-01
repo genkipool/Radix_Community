@@ -3,6 +3,7 @@
 import { Globe, Server } from 'lucide-react';
 import type { Dictionary } from '@/i18n';
 import { RadixNetworkId } from '../constants/network';
+import { useWalletRequests } from '../hooks/useWalletRequests';
 
 /**
  * Network-select content shared by the Navbar wallet button and the inline
@@ -25,6 +26,7 @@ export function WalletNetworkPopoverContent({
   /** Cancels the connection waiting for the wallet; open sessions stay. */
   cancelConnection: () => void;
 }) {
+  const { inWallet } = useWalletRequests();
   const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
     if (sessions[netName]) {
       switchNetwork(netName);
@@ -62,7 +64,9 @@ export function WalletNetworkPopoverContent({
         <button
           type="button"
           onClick={cancelConnection}
-          className="mt-4 w-full py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-red-500 transition-colors text-center"
+          disabled={inWallet}
+          title={inWallet ? t.nav?.wallet_request_in_wallet : undefined}
+          className="mt-4 w-full py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-red-500 transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)]"
         >
           {t.nav?.wallet_cancel_connection ?? 'Cancelar conexión'}
         </button>

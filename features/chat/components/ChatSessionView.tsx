@@ -8,15 +8,27 @@ import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import type { ChatDictionary } from '../types/dictionary';
 import { useChatSession } from '../hooks/useChatSession';
 import { ChatRoom } from './ChatRoom';
+import { useWalletRequests } from '@/features/wallet/hooks/useWalletRequests';
+import { useLanguage } from '@/context/LanguageContext';
 
 /** Abandons whatever step is in progress and returns to the start. */
-function CancelButton({ label, onClick }: { label: string; onClick: () => void }) {
+function CancelButton({
+  label,
+  onClick,
+  disabledReason,
+}: {
+  label: string;
+  onClick: () => void;
+  /** Set when it cannot be used, and says why. */
+  disabledReason?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={label}
-      className="text-xs font-semibold transition-opacity hover:opacity-80"
+      disabled={Boolean(disabledReason)}
+      title={disabledReason ?? label}
+      className="text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
       style={{ color: 'var(--color-text-muted)' }}
     >
       {label}
@@ -39,6 +51,8 @@ export function ChatSessionView({
   onRestart: () => void;
 }) {
   const session = useChatSession();
+  const { inWallet: walletHasIt } = useWalletRequests();
+  const { t: common } = useLanguage();
   const isGuest = roomId != null;
   useLeaveWarning(session.phase === 'secure' || session.phase === 'waiting');
 
@@ -141,7 +155,12 @@ export function ChatSessionView({
         session.phase === 'creating' ||
         session.phase === 'connecting' ||
         session.phase === 'handshaking') && (
-        <CancelButton label={t.status.cancel} onClick={onRestart} />
+        <CancelButton
+          label={t.status.cancel}
+          onClick={onRestart}
+          // Once the wallet has the signature request, only the wallet can reject it.
+          disabledReason={session.phase === 'signing' && walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
+        />
       )}
 
       {session.phase === 'waiting' && session.shareUrl && (

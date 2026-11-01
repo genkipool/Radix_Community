@@ -128,3 +128,28 @@ describe('classifyWalletError', () => {
     expect(classifyWalletError(error).reason).toBe(reason);
   });
 });
+
+describe('a request reaching the wallet', () => {
+  const extensionSays = (eventType: string) =>
+    window.dispatchEvent(new CustomEvent('radix#chromeExtension#receive', { detail: { eventType } }));
+
+  it('is marked in the wallet when the extension says the wallet received it', () => {
+    sendToWallet(toolkit(), 'transaction', waitingWallet().send);
+    expect(pendingWalletRequests()[0].inWallet).toBe(false);
+
+    extensionSays('receivedByExtension');
+    expect(pendingWalletRequests()[0].inWallet).toBe(false);
+
+    extensionSays('receivedByWallet');
+    expect(pendingWalletRequests()[0].inWallet).toBe(true);
+  });
+
+  it('starts every new request outside the wallet', () => {
+    sendToWallet(toolkit(), 'transaction', waitingWallet().send);
+    extensionSays('receivedByWallet');
+    cancelWalletRequests();
+
+    sendToWallet(toolkit(), 'proof', waitingWallet().send);
+    expect(pendingWalletRequests()[0].inWallet).toBe(false);
+  });
+});
