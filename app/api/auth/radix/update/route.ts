@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { supabaseAdmin } from '@/lib/supabase';
+import { isValidChallenge } from '@/lib/auth/challenges';
+import { verifyWalletProofs, walletProofsBodySchema } from '@/lib/auth/walletProofs';
+import { RATE_LIMITS, clientIp, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 import {
   createSessionJWT,
   verifySessionJWT,
@@ -17,16 +20,23 @@ function networkLabel(id: number): 'mainnet' | 'stokenet' {
   return id === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
 }
 
-// ─── POST /api/auth/radix/verify ────────────────────────────────────────────────
+// ─── POST /api/auth/radix/update ────────────────────────────────────────────────
 
+/**
+ * Replaces the accounts a logged-in persona shares. Each account signed this
+ * site's one-time challenge; only those whose proof checks out are kept.
+ */
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { identityAddress, networkId, accounts = [] } = body;
+  const rate = await rateLimit(RATE_LIMITS.auth, clientIp(req.headers));
+  if (!rate.allowed) return tooManyRequests(rate);
 
-    if (!identityAddress || !networkId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  try {
+    const parsed = walletProofsBodySchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
+    const body = parsed.data;
+    const { identityAddress, networkId } = body;
 
     // 1. Validate the current session cookie
     const token = req.cookies.get('radix-session')?.value;
@@ -41,6 +51,11 @@ export async function POST(req: NextRequest) {
     if (!existingNetworkData || existingNetworkData.identityAddress !== identityAddress) {
       return NextResponse.json({ error: 'Session mismatch' }, { status: 401 });
     }
+
+    if (!(await isValidChallenge(body.challenge))) {
+      return NextResponse.json({ error: 'Invalid or expired challenge' }, { status: 401 });
+    }
+    const { accounts } = await verifyWalletProofs(body);
 
     // 2. Update the session in the database
     const { error: updateError } = await supabaseAdmin

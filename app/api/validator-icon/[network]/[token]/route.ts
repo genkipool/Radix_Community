@@ -3,6 +3,7 @@ import { getValidatorsCached } from '@/services/radixApi';
 import logger from '@/lib/logger';
 import { validateNetwork } from '@/utils/apiValidation';
 import { decodeIconToken } from '@/features/dashboard/staking/lib/validatorIcon';
+import { isPublicHost } from '@/lib/publicAddress';
 
 /**
  * GET /api/validator-icon/<network>/<token>
@@ -24,8 +25,14 @@ import { decodeIconToken } from '@/features/dashboard/staking/lib/validatorIcon'
  *
  * It is NOT an open proxy. The only URLs it will fetch are the ones the
  * validators themselves published on-ledger, read from the same cached set the
- * dashboard renders, over https, on a public host. Anything else is a 404 and
+ * dashboard renders, over https, on a public host — checked again at every
+ * redirect, on the addresses the name resolves to. Anything else is a 404 and
  * the card falls back to its initials, exactly as it does for a broken logo.
+ *
+ * Whoever runs a validator chooses that file, so it is untrusted: what goes
+ * out is always re-encoded here as WebP, from the raster and vector formats a
+ * logo comes in, and never the bytes as they came. An SVG served from this
+ * origin as it was published would run its scripts here.
  */
 
 /** Enough for any avatar; something larger than this is not a logo. */
@@ -35,6 +42,10 @@ const FETCH_TIMEOUT_MS = 8_000;
 const MAX_DIMENSION = 384;
 /** Encoded logos held between requests, so a cold browser cache is not a cold fetch. */
 const MEMORY_LIMIT = 200;
+/** Redirects followed to reach a logo; each hop is checked like the first. */
+const MAX_REDIRECTS = 3;
+/** What sharp is asked to read. HEIF/AVIF are left out: their decoder has had the most holes. */
+const READABLE_FORMATS = new Set(['png', 'jpeg', 'webp', 'gif', 'svg']);
 
 interface CachedIcon {
     body: Buffer;
@@ -53,9 +64,7 @@ let shrinker: Shrinker | null | undefined;
  * It is a native module, and whether its binary survives into a deployment is
  * the host's business, not ours. Imported at the top of the file a host without
  * it takes the whole route down and every card loses its logo to a 500; loaded
- * here, the worst case is the branch this route already had for an image sharp
- * cannot read — the original bytes, served from our origin with the same
- * immutable cache header. Bigger, but on screen.
+ * here, a host without it answers 404 and the cards show their initials.
  */
 async function loadShrinker(): Promise<Shrinker | null> {
     if (shrinker !== undefined) return shrinker;
@@ -88,19 +97,31 @@ function respond({ body, type }: CachedIcon) {
             // with it this path, so this answer never becomes the wrong one.
             'Cache-Control': 'public, max-age=31536000, immutable',
             'X-Content-Type-Options': 'nosniff',
+            // Opened on its own, it is an inert image whatever it contains.
+            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            'Content-Disposition': 'inline',
         },
     });
 }
 
-/** Rejects loopback, link-local and private literals: this fetch runs on our network. */
-function isPublicHost(hostname: string): boolean {
-    const host = hostname.toLowerCase();
-    if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal')) return false;
-    if (/^\[?::1\]?$/.test(host)) return false;
-    if (/^127\./.test(host) || /^10\./.test(host) || /^169\.254\./.test(host)) return false;
-    if (/^192\.168\./.test(host)) return false;
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
-    return true;
+/**
+ * Fetches a logo, following redirects by hand so every hop is held to the
+ * same rules as the published URL: https, and a public host.
+ */
+async function fetchPublic(url: URL): Promise<Response | null> {
+    let target = url;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+        if (target.protocol !== 'https:' || !(await isPublicHost(target.hostname))) return null;
+        const response = await fetch(target, {
+            redirect: 'manual',
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+            headers: { Accept: 'image/*' },
+        });
+        const location = response.headers.get('location');
+        if (response.status < 300 || response.status >= 400 || !location) return response;
+        target = new URL(location, target);
+    }
+    return null;
 }
 
 /**
@@ -140,7 +161,7 @@ async function serveIcon(
     } catch {
         return notFound();
     }
-    if (target.protocol !== 'https:' || !isPublicHost(target.hostname)) return notFound();
+    if (target.protocol !== 'https:') return notFound();
 
     // The allowlist: what the validators actually published.
     try {
@@ -153,14 +174,10 @@ async function serveIcon(
     }
 
     let original: Buffer;
-    let originalType: string;
     try {
-        const upstream = await fetch(target, {
-            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-            headers: { Accept: 'image/*' },
-        });
-        originalType = upstream.headers.get('content-type') ?? '';
-        if (!upstream.ok || !originalType.startsWith('image/')) return notFound();
+        const upstream = await fetchPublic(target);
+        const originalType = upstream?.headers.get('content-type') ?? '';
+        if (!upstream?.ok || !originalType.startsWith('image/')) return notFound();
 
         const bytes = await upstream.arrayBuffer();
         if (bytes.byteLength > MAX_BYTES) return notFound();
@@ -170,21 +187,23 @@ async function serveIcon(
         return notFound();
     }
 
-    let icon: CachedIcon = { body: original, type: originalType };
     const sharp = await loadShrinker();
-    if (sharp) {
-        try {
-            const body = await sharp(original)
-                .rotate() // honour the EXIF orientation before it is stripped
-                .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
-                .webp({ quality: 80 })
-                .toBuffer();
-            icon = { body, type: 'image/webp' };
-        } catch (error) {
-            // Something sharp will not read — an animated format, an odd SVG. The
-            // original still works, and is still worth serving with a cache header.
-            logger.warn({ err: error, host: target.hostname }, '[ValidatorIcon] Serving the original');
-        }
+    if (!sharp) return notFound();
+    let icon: CachedIcon;
+    try {
+        // The format is read from the bytes, not from what the host claimed.
+        const { format } = await sharp(original).metadata();
+        if (!format || !READABLE_FORMATS.has(format)) return notFound();
+        const body = await sharp(original)
+            .rotate() // honour the EXIF orientation before it is stripped
+            .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toBuffer();
+        icon = { body, type: 'image/webp' };
+    } catch (error) {
+        // Something sharp will not read: the card shows its initials instead.
+        logger.warn({ err: error, host: target.hostname }, '[ValidatorIcon] Unreadable logo');
+        return notFound();
     }
 
     remember(token, icon);

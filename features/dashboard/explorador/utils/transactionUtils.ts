@@ -9,6 +9,17 @@ import type { TranslationsT, GatewayEvent, GatewayField, FeeDestination, Fungibl
 import type { BalanceChanges } from '../types';
 import { sanitizeText } from '@/utils/sanitize';
 
+/** Text from the ledger made safe for a Mermaid HTML label: no markup, no line breaks. */
+function escapeLabel(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/[\r\n]+/g, ' ');
+}
+
 /** A single hop in the DEX routing path */
 export interface SwapHop {
     component: string;
@@ -287,16 +298,18 @@ export function buildSwapRoutingChart(
         return ids.get(key)!;
     };
 
+    // Names, symbols and blueprints are whatever their owners wrote on-ledger,
+    // and they go into HTML labels: always escaped.
     const label = (a: string) => {
         const c = sanitizeText(a);
         const raw = names.get(c) || short(c);
-        return raw.replace(/\s*\(.*?\)\s*/g, '').trim();
+        return escapeLabel(raw.replace(/\s*\(.*?\)\s*/g, '').trim());
     };
 
     const getSymbol = (r: string) => {
         const c = sanitizeText(r);
         if (c.includes('radxrd')) return 'XRD';
-        if (symbols.has(c)) return symbols.get(c)!;
+        if (symbols.has(c)) return escapeLabel(symbols.get(c)!);
 
         const name = names.get(c)?.toLowerCase() || '';
         if (name.includes('liquid stake') || name.includes('lsu')) return 'LSU';
@@ -469,7 +482,8 @@ export function buildSwapRoutingChart(
     const buildNodeHtml = (addr: string, mode: 'sender' | 'receiver' | 'other' = 'other') => {
         const c = sanitizeText(addr);
         const name = names.get(c);
-        const bp = blueprintNames.get(c);
+        const blueprint = blueprintNames.get(c);
+        const bp = blueprint && escapeLabel(blueprint);
         const isAccount = addr.startsWith('account_');
         const minWidth = Math.round((isAccount ? 260 : 120) * scale);
         const padX = Math.round(12 * scale);

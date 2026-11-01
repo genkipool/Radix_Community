@@ -46,16 +46,33 @@ export const SESSION_DURATION_SECONDS = 180 * DAY_SECONDS;
  */
 export const SESSION_RENEW_AFTER_SECONDS = DAY_SECONDS;
 
+/** Who signs session tokens, and for what: a token signed for anything else is not a session. */
+const SESSION_ISSUER = 'radix-community';
+const SESSION_AUDIENCE = 'radix-community:session';
+
 /**
  * Lazily encode the JWT secret. Throws at call-time if missing,
  * so the module can still be imported safely in edge/build.
+ *
+ * `SESSION_JWT_SECRET` is the session's own key. Until it is set, the
+ * Supabase JWT secret is used as before; Supabase signs its own tokens with
+ * that key, which is why a session must also carry this site's issuer,
+ * audience and shape (see `verifySessionJWT`).
  */
 function getSecret(): Uint8Array {
-  const raw = process.env.SUPABASE_JWT_SECRET;
+  const raw = process.env.SESSION_JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
   if (!raw) {
-    throw new Error('SUPABASE_JWT_SECRET is not set');
+    throw new Error('SESSION_JWT_SECRET is not set');
   }
   return new TextEncoder().encode(raw);
+}
+
+/** Whether a verified payload has the shape of a session, and nothing claims it is something else. */
+function isSessionPayload(payload: JWTPayload): payload is SessionPayload {
+  const isNetwork = (value: unknown) => value === null || (typeof value === 'object' && value !== null);
+  return 'mainnet' in payload && 'stokenet' in payload
+    && isNetwork(payload.mainnet) && isNetwork(payload.stokenet)
+    && !('role' in payload);
 }
 
 // ─── JWT Helpers ────────────────────────────────────────────────────────────────
@@ -68,7 +85,9 @@ export async function createSessionJWT(
   payload: Pick<SessionPayload, 'mainnet' | 'stokenet'>,
 ): Promise<string> {
   return new SignJWT({ mainnet: payload.mainnet, stokenet: payload.stokenet })
-    .setProtectedHeader({ alg: 'HS256' })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setIssuer(SESSION_ISSUER)
+    .setAudience(SESSION_AUDIENCE)
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
     .sign(getSecret());
@@ -76,13 +95,19 @@ export async function createSessionJWT(
 
 /**
  * Verify and decode a JWT token. Returns `null` on any failure.
+ *
+ * Tokens issued before sessions carried an issuer and audience are still
+ * accepted when they have a session's shape; renewal re-issues them with both
+ * within a day of use, so they disappear as sessions are used.
  */
 export async function verifySessionJWT(
   token: string,
 ): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
-    return payload as SessionPayload;
+    const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] });
+    const legacy = payload.iss === undefined && payload.aud === undefined;
+    if (!legacy && (payload.iss !== SESSION_ISSUER || payload.aud !== SESSION_AUDIENCE)) return null;
+    return isSessionPayload(payload) ? payload : null;
   } catch {
     return null;
   }
@@ -104,7 +129,8 @@ export async function renewSessionToken(
   if (!session || (!session.mainnet && !session.stokenet)) return null;
 
   const issuedAt = typeof session.iat === 'number' ? session.iat : 0;
-  if (nowSeconds - issuedAt < SESSION_RENEW_AFTER_SECONDS) return null;
+  const legacy = session.iss === undefined;
+  if (!legacy && nowSeconds - issuedAt < SESSION_RENEW_AFTER_SECONDS) return null;
 
   return createSessionJWT({ mainnet: session.mainnet, stokenet: session.stokenet });
 }

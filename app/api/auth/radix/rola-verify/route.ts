@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { RATE_LIMITS, clientIp, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 import { z } from 'zod';
 import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
 import { verifyRolaProofs } from '@/services/rola/verify';
@@ -26,6 +27,9 @@ const bodySchema = z.object({
  * explains every failure.
  */
 export async function POST(req: NextRequest) {
+  const rate = await rateLimit(RATE_LIMITS.auth, clientIp(req.headers));
+  if (!rate.allowed) return tooManyRequests(rate);
+
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

@@ -32,10 +32,11 @@ export const getOrCreateToolkit = (networkId: RadixNetworkId) => {
     applicationVersion: '1.0.0',
   });
 
-  // Request at least 1 account and Persona Name (with ROLA proof)
+  // At least one account, and the persona, each signing the server's
+  // challenge (ROLA): the session holds only what was proven.
   rdt.walletApi.setRequestData(
     DataRequestBuilder.persona().withProof(),
-    DataRequestBuilder.accounts().atLeast(1),
+    DataRequestBuilder.accounts().atLeast(1).withProof(),
   );
 
   rdtInstances.set(networkId, rdt);

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { RATE_LIMITS, clientIp, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 import {
   verifySessionJWT,
   createSessionJWT,
@@ -16,6 +17,9 @@ interface LogoutRequestBody {
 // ─── POST /api/auth/radix/logout ────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const rate = await rateLimit(RATE_LIMITS.auth, clientIp(req.headers));
+  if (!rate.allowed) return tooManyRequests(rate);
+
   try {
     const body: LogoutRequestBody = await req.json();
     const network = body.network || 'all';

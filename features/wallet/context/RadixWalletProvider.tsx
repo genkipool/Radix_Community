@@ -274,28 +274,21 @@ export function RadixWalletProvider({
         return;
       }
 
-      // ROLA verification happens on the server.
+      // ROLA verification happens on the server: a login proves the persona
+      // and its accounts, an update (no persona proof) the accounts it shares.
       const walletData = outcome.value;
-      const proofs = walletData.proofs;
-
-      let endpoint = '/api/auth/radix/verify';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let requestBody: any = {
+      const proofs = walletData.proofs ?? [];
+      const endpoint = proofs.some((p) => p.type === 'persona')
+        ? '/api/auth/radix/verify'
+        : '/api/auth/radix/update';
+      const requestBody = {
         identityAddress: walletData.persona?.identityAddress,
         networkId,
         accounts: walletData.accounts,
         personaLabel: walletData.persona?.label,
+        challenge: proofs[0]?.challenge,
+        proofs: proofs.map(({ type, address, proof }) => ({ type, address, proof })),
       };
-
-      if (!proofs || proofs.length === 0) {
-        // If no proof is provided (e.g. during an update flow), try hitting the update endpoint
-        // instead of verify. The update endpoint relies on the existing secure cookie.
-        endpoint = '/api/auth/radix/update';
-      } else {
-        // If proof is provided, hit verify
-        requestBody.challenge = proofs[0].challenge;
-        requestBody.proof = proofs[0].proof;
-      }
 
       try {
         const verifyResponse = await fetch(endpoint, {

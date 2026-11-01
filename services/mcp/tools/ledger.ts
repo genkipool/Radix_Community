@@ -510,7 +510,7 @@ export const getResourceHoldersTool = defineMcpTool({
       .optional()
       .describe('Keep only these holder kinds (default: all)'),
     minAmount: z.number().nonnegative().optional().describe('Drop holders below this amount'),
-    exclude: z.array(z.string()).optional().describe('Addresses to leave out'),
+    exclude: z.array(z.string().max(200)).max(1000).optional().describe('Addresses to leave out'),
     network: networkSchema,
   }),
   handler: async ({ resourceAddress, all, kinds, minAmount, exclude, network }) => {

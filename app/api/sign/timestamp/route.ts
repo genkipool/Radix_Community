@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { checkRateLimit, clientIp } from '@/services/mcp/rate-limit';
+import { RATE_LIMITS, clientIp, rateLimit } from '@/lib/rateLimit';
 import { fetchTimeStampToken } from '@/features/sign/lib/tsa';
 import { verifyTimeStampToken } from '@/features/sign/lib/tsa-verify';
 
@@ -26,7 +26,7 @@ const bodySchema = z
   .strict();
 
 export async function POST(req: NextRequest) {
-  const rl = checkRateLimit(clientIp(req.headers));
+  const rl = await rateLimit(RATE_LIMITS.sign, clientIp(req.headers));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'rate_limited' },

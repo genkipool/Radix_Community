@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 
 // Usamos placeholders si las variables no existen (ej: durante el build en GitHub Actions)

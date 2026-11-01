@@ -60,12 +60,59 @@ describe('renewSessionToken', () => {
   });
 
   it('does not re-sign a token renewed less than a day ago', async () => {
-    expect(await renewSessionToken(await tokenIssued(0.5, 180))).toBeNull();
+    expect(await renewSessionToken(await createSessionJWT(session))).toBeNull();
+  });
+
+  it('re-issues a token from before sessions had an issuer, whatever its age', async () => {
+    const renewed = await renewSessionToken(await tokenIssued(0.5, 180));
+    expect(decodeJwt(renewed!)).toMatchObject({ iss: 'radix-community', aud: 'radix-community:session' });
   });
 
   it('never renews what is not a live session', async () => {
     expect(await renewSessionToken('not-a-token')).toBeNull();
     expect(await renewSessionToken(await tokenIssued(40, 30))).toBeNull(); // expired
     expect(await renewSessionToken(await tokenIssued(3, 180, { mainnet: null, stokenet: null }))).toBeNull();
+  });
+});
+
+describe('verifySessionJWT', () => {
+  const sign = (payload: object, header: { alg: string } = { alg: 'HS256' }) =>
+    new SignJWT({ ...payload })
+      .setProtectedHeader(header)
+      .setIssuedAt()
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode(SECRET));
+
+  it('accepts the sessions it signs', async () => {
+    expect(await verifySessionJWT(await createSessionJWT(session))).toMatchObject(session);
+  });
+
+  it('refuses a token signed with the same key for something else, as Supabase signs its own', async () => {
+    const supabaseLike = await new SignJWT({ role: 'anon', mainnet: null, stokenet: null })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('supabase')
+      .setAudience('authenticated')
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode(SECRET));
+    expect(await verifySessionJWT(supabaseLike)).toBeNull();
+    expect(await verifySessionJWT(await sign({ role: 'anon', iss: 'supabase' }))).toBeNull();
+  });
+
+  it('refuses a token without the shape of a session', async () => {
+    expect(await verifySessionJWT(await sign({ sub: 'someone' }))).toBeNull();
+  });
+
+  it('refuses another issuer or audience', async () => {
+    const other = await new SignJWT({ ...session })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('elsewhere')
+      .setAudience('radix-community:session')
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode(SECRET));
+    expect(await verifySessionJWT(other)).toBeNull();
+  });
+
+  it('refuses any algorithm but HS256', async () => {
+    expect(await verifySessionJWT(await sign(session, { alg: 'HS512' }))).toBeNull();
   });
 });

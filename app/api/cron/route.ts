@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { advanceVoteTail } from '@/services/gateway/protocolVotes';
+import crypto from 'crypto';
+
+function sameSecret(given: string | null, expected: string): boolean {
+  if (given === null) return false;
+  const a = crypto.createHash('sha256').update(given).digest();
+  const b = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(a, b);
+}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -16,7 +24,8 @@ export async function GET(request: Request) {
   // Allows two authentication methods:
   // 1. Native Vercel sending "Bearer <CRON_SECRET>"
   // 2. UptimeRobot and cron-job.org using the secure URL parameter "?secret=<CRON_SECRET>"
-  const isValidCron = authHeader === `Bearer ${expectedSecret}` || secretFromUrl === expectedSecret;
+  // Compared in constant time, so the answer's timing tells nothing about the secret.
+  const isValidCron = sameSecret(authHeader, `Bearer ${expectedSecret}`) || sameSecret(secretFromUrl, expectedSecret);
 
   if (!isValidCron) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
