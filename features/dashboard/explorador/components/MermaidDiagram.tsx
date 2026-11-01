@@ -32,7 +32,8 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 m.initialize({
                     startOnLoad: false,
                     theme: 'base',
-                    securityLevel: 'loose',
+                    // HTML labels stay; any script in them is removed.
+                    securityLevel: 'antiscript',
                     themeVariables: {
                         darkMode: isDark,
                         background: 'transparent',

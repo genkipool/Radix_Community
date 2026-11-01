@@ -20,6 +20,8 @@ import {
 } from '../lib/idb';
 import { importAesKey, randomBaseIvHex, randomFileSaltHex } from '../lib/keys';
 import { useCipherKey } from './useCipherKey';
+import { cancelWalletRequests } from '@/features/wallet/lib/wallet-requests';
+import { isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 
 export type EncryptPhase = 'idle' | 'signing' | 'encrypting' | 'ready' | 'error';
 
@@ -113,6 +115,11 @@ export function useEncryptFlow() {
       setPhase('ready');
     } catch (e) {
       await deleteFile(fileId).catch(() => undefined);
+      if (isWalletCancellation(e)) {
+        // Cancelled on purpose: back to the start, unless reset got there first.
+        setPhase((current) => (current === 'signing' ? 'idle' : current));
+        return;
+      }
       setError(toCipherErrorCode(e));
       setPhase('error');
     }
@@ -129,6 +136,8 @@ export function useEncryptFlow() {
   }
 
   async function reset(): Promise<void> {
+    // Resetting while the wallet is asked to sign cancels that request too.
+    if (phase === 'signing') cancelWalletRequests();
     if (result) await deleteFile(result.fileId).catch(() => undefined);
     setPhase('idle');
     setProgress(0);

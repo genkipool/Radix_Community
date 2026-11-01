@@ -367,7 +367,7 @@ export const buildValidatorManifestTool = defineMcpTool({
   category: 'console',
   inputSchema: z.object({
     account: z.string().describe('Account that signs, pays the fee and presents the owner badges'),
-    operations: z.array(operationSchema).min(1).describe('Operations to combine in one transaction'),
+    operations: z.array(operationSchema).min(1).max(20).describe('Operations to combine in one transaction'),
     network: networkSchema,
   }),
   handler: async ({ account, operations, network }, ctx) => {

@@ -149,7 +149,7 @@ export const planHolderDistributionTool = defineMcpTool({
       .default(['account'])
       .describe('Holder kinds to include (default: accounts only; pools and components usually cannot receive airdrops)'),
     minAmount: z.number().nonnegative().optional(),
-    exclude: z.array(z.string()).optional().describe('Addresses to leave out (treasury, exchanges, the sender)'),
+    exclude: z.array(z.string().max(200)).max(1000).optional().describe('Addresses to leave out (treasury, exchanges, the sender)'),
     network: networkSchema,
   }),
   handler: async ({ holdersOf, sendResource, total, mode, kinds, minAmount, exclude, network }) => {
@@ -418,7 +418,7 @@ export const buildLockerManifestTool = defineMcpTool({
     claimant: z.string().optional().describe('recover only: the account the tokens were stored for'),
     resource: z.string().optional().describe('recover only: resource to take back'),
     amount: z.string().optional().describe('recover only: fungible amount'),
-    nftIds: z.array(z.string()).optional().describe('recover only: NFT ids'),
+    nftIds: z.array(z.string().max(200)).max(1000).optional().describe('recover only: NFT ids'),
     network: networkSchema,
     locale: localeSchema,
   }),

@@ -94,6 +94,7 @@
     "wallet_connected": "Connected",
     "wallet_disconnect": "Disconnect",
     "wallet_cancel_connection": "Cancel connection",
+    "wallet_request_in_wallet": "It is already in your wallet: reject it there.",
     "update_wallet": "Update",
     "profile": "Profile",
     "accounts": "Accounts",
@@ -317,6 +318,7 @@
     "errorGeneric": "An unexpected error occurred. Please try again.",
     "errorApi": "Email service connection error. Verify that the API Key is configured.",
     "errorInvalidInput": "The provided data is invalid.",
+    "errorRateLimited": "You have sent several messages in a row. Please try again in an hour.",
     "emailSubject": "Institutional Pilot Request from",
     "senderEmail": "Sender email"
   },

@@ -45,7 +45,7 @@
     "marked": "^17.0.6",
     "mermaid": "^11.16.1",
     "motion": "^12.40.0",
-    "next": "16.4.2",
+    "next": "16.4.3",
     "node-forge": "^1.4.0",
     "pdf-lib": "^1.17.1",
     "pino": "^10.3.1",
@@ -61,7 +61,7 @@
     "shiki": "^2.5.0",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
@@ -83,7 +83,7 @@
     "autoprefixer": "^10.5.0",
     "babel-plugin-react-compiler": "19.0.0-beta-ebf51a3-20250411",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.4.1",
+    "eslint-config-next": "16.4.3",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "jsdom": "^28.1.0",
     "msw": "^2.14.6",

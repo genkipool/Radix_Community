@@ -30,6 +30,7 @@ import type { StakingAction } from '../types/staking-operations.types';
 import type { BatchStakeItem, BatchUnstakeItem, BatchClaimItem, MixedBatchItem } from '@/features/wallet/lib/manifest-builders';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { stakingErrorMessage } from '@/features/dashboard/staking/lib/stakingErrorMessage';
 
 type StakingTranslations = Partial<TranslationsT['dashboard']['transactions']> & {
     account_summary?: AccountRewardsCsvModalDict;
@@ -168,15 +169,11 @@ export function AccountStakingSection({
         });
     };
 
-    const getStakingError = (err: string) => {
-        const lower = err.toLowerCase();
-        if (lower.includes('failed to prepare') || lower.includes('failedtoprepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || err;
-        if (lower.includes('rejected') || lower.includes('rejectedbyuser')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || err;
-        if (lower.includes('failed to sign') || lower.includes('failedtosign')) return stakingErrors?.failedToSignTransaction || err;
-        if (lower.includes('failed to submit') || lower.includes('failedtosubmit')) return stakingErrors?.failedToSubmitTransaction || err;
-        if (lower.includes('failed to compile') || lower.includes('failedtocompile')) return stakingErrors?.failedToCompileTransaction || err;
-        return err;
-    };
+    const getStakingError = (err: string) => stakingErrorMessage(err, {
+        ...stakingErrors,
+        failedToPrepareTransaction: stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare,
+        rejectedByUser: stakingErrors?.rejectedByUser || accT?.rejected_by_user,
+    });
 
     // Show all staked validators always, plus any additionally selected ones
     const displayRows: StakingEntry[] = [...new Set([

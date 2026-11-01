@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { SubintentRequestBuilder } from '@radixdlt/radix-dapp-toolkit';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
+import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
 
 export interface SubintentResult {
   subintentHash: string;
@@ -42,16 +43,18 @@ export function useSubintentRequest() {
     }
 
     setState({ isSending: true, result: null, error: null });
-    const response = await rdt.walletApi.sendPreAuthorizationRequest(
-      SubintentRequestBuilder()
-        .manifest(manifest)
-        .setExpiration('afterDelay', expireAfterSeconds)
-        .addBlobs(),
+    const response = await sendToWallet(rdt, 'preAuthorization', () =>
+      rdt.walletApi.sendPreAuthorizationRequest(
+        SubintentRequestBuilder()
+          .manifest(manifest)
+          .setExpiration('afterDelay', expireAfterSeconds)
+          .addBlobs(),
+      ),
     );
 
-    if (response.isErr()) {
-      const err = response.error as { error?: string; message?: string };
-      setState({ isSending: false, result: null, error: err.error || err.message || 'rejected' });
+    if (!response.ok) {
+      const { reason, code } = response.failure;
+      setState({ ...INITIAL, error: reason === 'cancelled' ? null : code });
       return;
     }
     setState({ isSending: false, result: response.value, error: null });

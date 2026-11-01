@@ -322,7 +322,7 @@ export const buildPoolManifestTool = defineMcpTool({
     account: z.string().describe('Account that signs, pays and presents the badges'),
     pool: z.string().optional().describe('Pool address (every operation except create)'),
     kind: z.enum(POOL_KINDS).optional().describe('create only: "one", "two" or "multi" resources'),
-    resources: z.array(z.string()).optional().describe('create only: resource addresses the pool holds'),
+    resources: z.array(z.string().max(200)).max(20).optional().describe('create only: resource addresses the pool holds'),
     managerBadge: z
       .string()
       .optional()

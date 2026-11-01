@@ -17,6 +17,9 @@ import path from 'path';
  * │ logic lives there. skipProxyUrlNormalize replaces skipMiddlewareUrl...    │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
+/** Development only: Next's HMR needs eval. */
+const isDev = process.env.NODE_ENV !== 'production';
+
 const nextConfig: NextConfig = {
 
   // ── React Compiler (stable in Next.js 16) ─────────────────────────────────
@@ -83,18 +86,23 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            // 'unsafe-eval' is required by animation libraries (motion/react)
-            // and Next.js internals (HMR, webpack runtime).
-            // 'unsafe-inline' covers inline scripts/styles used for theme init.
+            // 'unsafe-eval' only in development, for Next's HMR; in production
+            // 'wasm-unsafe-eval' lets WebAssembly compile and nothing else.
+            // 'unsafe-inline' covers the inline scripts Next renders into
+            // static pages (RSC payload, theme init): a nonce instead would
+            // make every page dynamic.
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.cloudflareinsights.com https://vercel.live",
+              `script-src 'self' ${isDev ? "'unsafe-eval'" : "'wasm-unsafe-eval'"} 'unsafe-inline' https://static.cloudflareinsights.com https://vercel.live`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com https://vercel.live",
               "img-src 'self' data: https: https://vercel.com",
               "connect-src 'self' https: wss: https://cloudflareinsights.com https://vercel.live",
               "frame-src https://vercel.live https://ramp.alchemypay.org https://ramptest.alchemypay.org https://static.alchemypay.org",
               "frame-ancestors 'none'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
             ].join('; '),
           },
           {
@@ -123,6 +131,14 @@ const nextConfig: NextConfig = {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains',
           },
+        ],
+      },
+      {
+        // API answers are data, never documents: opened on their own they
+        // run nothing, whatever they contain.
+        source: '/api/(.*)',
+        headers: [
+          { key: 'Content-Security-Policy', value: "default-src 'none'; frame-ancestors 'none'; sandbox" },
         ],
       },
     ];

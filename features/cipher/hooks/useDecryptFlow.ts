@@ -9,6 +9,8 @@ import { parseContainerHead } from '../lib/container';
 import { createBlobSink, decryptContainer } from '../lib/decrypt';
 import { toCipherErrorCode } from '../lib/errors';
 import { useCipherKey } from './useCipherKey';
+import { cancelWalletRequests } from '@/features/wallet/lib/wallet-requests';
+import { isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 
 export type DecryptPhase =
   | 'idle'
@@ -93,6 +95,11 @@ export function useDecryptFlow() {
       downloadBytes(sink.result(), head.header.fileName, head.header.mimeType);
       setPhase('done');
     } catch (e) {
+      if (isWalletCancellation(e)) {
+        // Cancelled on purpose: the file stays loaded, unless reset cleared it first.
+        setPhase((current) => (current === 'signing' ? 'loaded' : current));
+        return;
+      }
       setError(toCipherErrorCode(e));
       // Keep the parsed container so the user can retry after a wallet hiccup.
       setPhase('loaded');
@@ -100,6 +107,8 @@ export function useDecryptFlow() {
   }
 
   function reset(): void {
+    // Resetting while the wallet is asked to sign cancels that request too.
+    if (phase === 'signing') cancelWalletRequests();
     setFile(null);
     setHead(null);
     setPhase('idle');

@@ -6,6 +6,7 @@ import {
 } from '@radixdlt/radix-engine-toolkit';
 import { z } from 'zod';
 import { networkIdFromName, retRequestSchema } from '../validation';
+import { RATE_LIMITS, clientIp, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 
 const HEX_RE = /^[0-9a-fA-F]+$/;
 
@@ -22,6 +23,9 @@ const SCRYPTO_SBOR_PREFIX = 0x5c;
 const MANIFEST_SBOR_PREFIX = 0x4d;
 
 export async function POST(request: NextRequest) {
+  const rate = await rateLimit(RATE_LIMITS.engine, clientIp(request.headers));
+  if (!rate.allowed) return tooManyRequests(rate);
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

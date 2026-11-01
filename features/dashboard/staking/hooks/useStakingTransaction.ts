@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
+import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import {
     buildStakeManifest,
@@ -21,24 +22,33 @@ import {
 } from '@/features/wallet/lib/manifest-builders';
 import { StakingAction, StakingTab } from '../types/staking-operations.types';
 
+/** How long the wallet has to answer before the request is cancelled. */
+const TX_TIMEOUT_MS = 60_000;
+
 export const useStakingTransaction = () => {
     const { activeNetworkId } = useRadixWallet();
     const [isTransacting, setIsTransacting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sendWithTimeout = async (rdt: any, manifest: string) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const timeoutPromise = new Promise<any>((_, reject) =>
-            setTimeout(() => reject(new Error('Tiempo de espera agotado tras 60 segundos.')), 60000)
+    /**
+     * Sends a manifest to the wallet and returns its transaction id, or null
+     * with the error set. A cancel the person asked for leaves no error.
+     */
+    const sendManifest = async (
+        rdt: NonNullable<ReturnType<typeof getOrCreateToolkit>>,
+        manifest: string,
+    ): Promise<string | null> => {
+        const outcome = await sendToWallet(
+            rdt,
+            'transaction',
+            () => rdt.walletApi.sendTransaction({ transactionManifest: manifest, version: 1 }),
+            { timeoutMs: TX_TIMEOUT_MS },
         );
-        return Promise.race([
-            rdt.walletApi.sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-            }),
-            timeoutPromise
-        ]);
+        if (outcome.ok) return outcome.value.transactionIntentHash;
+        const { reason, code } = outcome.failure;
+        if (reason !== 'cancelled') console.error('Staking transaction error:', outcome.failure);
+        setError(reason === 'cancelled' ? null : code);
+        return null;
     };
 
     const submitTransaction = async (
@@ -105,17 +115,9 @@ export const useStakingTransaction = () => {
                     return null;
                 }
 
-                const result = await sendWithTimeout(rdt, manifest);
-
-                if (result.isErr()) {
-                    const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
-                    setError(errMsg);
-                    setIsTransacting(false);
-                    return null;
-                }
-
+                const hash = await sendManifest(rdt, manifest);
                 setIsTransacting(false);
-                return result.value.transactionIntentHash;
+                return hash;
             } catch (err: unknown) {
                 console.error('Staking transaction error:', err);
                 setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
@@ -163,17 +165,9 @@ export const useStakingTransaction = () => {
                 protocolVersionName
             );
 
-            const result = await sendWithTimeout(rdt, manifest);
-
-            if (result.isErr()) {
-                const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
-                setError(errMsg);
-                setIsTransacting(false);
-                return null;
-            }
-
+            const hash = await sendManifest(rdt, manifest);
             setIsTransacting(false);
-            return result.value.transactionIntentHash;
+            return hash;
         } catch (err: unknown) {
             console.error('Protocol vote transaction error:', err);
             setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
@@ -229,17 +223,9 @@ export const useStakingTransaction = () => {
                 return null;
             }
 
-            const result = await sendWithTimeout(rdt, manifest);
-
-            if (result.isErr()) {
-                const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
-                setError(errMsg);
-                setIsTransacting(false);
-                return null;
-            }
-
+            const hash = await sendManifest(rdt, manifest);
             setIsTransacting(false);
-            return result.value.transactionIntentHash;
+            return hash;
         } catch (err: unknown) {
             console.error('Batch staking transaction error:', err);
             setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
@@ -280,18 +266,9 @@ export const useStakingTransaction = () => {
         try {
             const manifest = buildMixedBatchManifest(accountAddress, items, xrdAddress);
 
-            const result = await sendWithTimeout(rdt, manifest);
-
-            if (result.isErr()) {
-                console.error('Mixed Batch Transaction error:', result.error);
-                const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
-                setError(errMsg);
-                setIsTransacting(false);
-                return null;
-            }
-
+            const hash = await sendManifest(rdt, manifest);
             setIsTransacting(false);
-            return result.value.transactionIntentHash;
+            return hash;
         } catch (err: unknown) {
             console.error('Mixed Batch Transaction error:', err);
             setError(err instanceof Error ? err.message : 'An error occurred during the transaction');

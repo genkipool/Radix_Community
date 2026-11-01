@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RadixEngineToolkit } from '@radixdlt/radix-engine-toolkit';
 import { z } from 'zod';
+import { RATE_LIMITS, clientIp, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 
 const bodySchema = z.object({
   payload: z.string().min(1).max(4_000_000),
@@ -8,6 +9,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const rate = await rateLimit(RATE_LIMITS.engine, clientIp(request.headers));
+  if (!rate.allowed) return tooManyRequests(rate);
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

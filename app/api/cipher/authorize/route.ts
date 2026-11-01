@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Rola } from '@radixdlt/rola';
 import { RadixNetworkId, NETWORKS } from '@/features/wallet/constants/network';
-import { checkRateLimit, clientIp } from '@/services/mcp/rate-limit';
+import { RATE_LIMITS, clientIp, rateLimit } from '@/lib/rateLimit';
 import type { Network } from '@/services/gateway/client';
 import { deriveUnlockChallenge } from '@/features/cipher/lib/keys';
 import {
@@ -57,7 +57,7 @@ const bodySchema = z
 const MAX_INVITE_IDS = 60;
 
 export async function POST(req: NextRequest) {
-  const rl = checkRateLimit(clientIp(req.headers));
+  const rl = await rateLimit(RATE_LIMITS.sign, clientIp(req.headers));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'rate_limited' },

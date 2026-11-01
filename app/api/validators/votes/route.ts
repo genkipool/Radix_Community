@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchProtocolVotes, forgetProtocolVote, advanceVoteTail } from '@/services/gateway/protocolVotes';
 import { validateAddress, validateNetwork } from '@/utils/apiValidation';
 import logger from '@/lib/logger';
+import { RATE_LIMITS, clientIp, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 
 /**
  * The protocol-update signal each of these validators has cast, read from the
@@ -57,6 +58,11 @@ export async function GET(request: Request) {
  * instead of waiting out the cache.
  */
 export async function DELETE(request: Request) {
+    // Anyone may ask (the vote is public), but not often: each call writes to
+    // the shared store and reads the Gateway.
+    const rate = await rateLimit(RATE_LIMITS.cacheRefresh, clientIp(request.headers));
+    if (!rate.allowed) return tooManyRequests(rate);
+
     const { searchParams } = new URL(request.url);
     const network = validateNetwork(searchParams.get('network'));
     const address = validateAddress(searchParams.get('address'));

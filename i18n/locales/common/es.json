@@ -94,6 +94,7 @@
     "wallet_connected": "Conectado",
     "wallet_disconnect": "Desconectar",
     "wallet_cancel_connection": "Cancelar conexión",
+    "wallet_request_in_wallet": "Ya está en tu billetera: recházala allí.",
     "update_wallet": "Actualizar",
     "profile": "Perfil",
     "accounts": "Cuentas",
@@ -317,6 +318,7 @@
     "errorGeneric": "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo.",
     "errorApi": "Error de conexión con el servicio de correo. Verifica que la API Key esté configurada.",
     "errorInvalidInput": "Los datos introducidos no son válidos.",
+    "errorRateLimited": "Has enviado varios mensajes seguidos. Inténtalo de nuevo en una hora.",
     "emailSubject": "Solicitud de Piloto Institucional de",
     "senderEmail": "Correo del remitente"
   },

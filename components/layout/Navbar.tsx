@@ -662,7 +662,7 @@ const INITIAL_UI: UiState = {
 
 export default function Navbar() {
   const { theaterMode } = useLayout();
-  const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
+  const { isConnected, isLoading, persona, accounts, connect, cancelConnection, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
   const [ui, dispatch] = useReducer(uiReducer, INITIAL_UI);
   const { isOpen, isWalletProfileModalOpen, isUnderConstructionModalOpen, isBuyModalOpen, mobileSheet, optimisticLang } = ui;
   const setIsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
@@ -975,7 +975,7 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <WalletNetworkPopoverContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
+                    <WalletNetworkPopoverContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} cancelConnection={cancelConnection} />
                   </NavPopup>
                 )}
               </div>
@@ -1105,7 +1105,7 @@ export default function Navbar() {
                     </button>
                   }
                 >
-                  <WalletNetworkPopoverContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
+                  <WalletNetworkPopoverContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} cancelConnection={cancelConnection} />
                 </NavPopup>
               )}
               <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-center p-2 text-[var(--color-text-main)] ml-1 sm:ml-2 hover:text-[var(--color-primary)] transition-colors" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
@@ -1277,7 +1277,7 @@ export default function Navbar() {
                       sessions={sessions}
                       switchNetwork={switchNetwork}
                       isLoading={isLoading}
-                      disconnect={disconnect}
+                      cancelConnection={cancelConnection}
                     />
                   </NavPopup>
                 )}

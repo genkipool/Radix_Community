@@ -1,5 +1,6 @@
 import { RadixDappToolkit, DataRequestBuilder } from '@radixdlt/radix-dapp-toolkit';
 import { NETWORKS, RadixNetworkId } from '../constants/network';
+import { mountConnectButton } from './connect-button';
 
 /**
  * Map of RDT instances keyed by network ID.
@@ -31,13 +32,16 @@ export const getOrCreateToolkit = (networkId: RadixNetworkId) => {
     applicationVersion: '1.0.0',
   });
 
-  // Request at least 1 account and Persona Name (with ROLA proof)
+  // At least one account, and the persona, each signing the server's
+  // challenge (ROLA): the session holds only what was proven.
   rdt.walletApi.setRequestData(
     DataRequestBuilder.persona().withProof(),
-    DataRequestBuilder.accounts().atLeast(1),
+    DataRequestBuilder.accounts().atLeast(1).withProof(),
   );
 
   rdtInstances.set(networkId, rdt);
+  // Lets the new instance cancel requests in the wallet (see connect-button.ts).
+  mountConnectButton();
   return rdt;
 };
 

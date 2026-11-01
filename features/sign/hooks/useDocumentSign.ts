@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { DataRequestBuilder } from '@radixdlt/radix-dapp-toolkit';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
+import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
+import { WalletCancelledError, isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
 import { deriveChallenge, randomNonceHex } from '../lib/hash';
 import {
@@ -87,21 +89,19 @@ async function requestWalletSignature(
   rdt.walletApi.provideChallengeGenerator(async () => challenge);
 
   const wantsName = disclosure !== 'none';
-  let response;
-  if (wantsName || includeEmail) {
-    let personaData = DataRequestBuilder.personaData();
-    if (wantsName) personaData = personaData.fullName();
-    if (includeEmail) personaData = personaData.emailAddresses();
-    response = await rdt.walletApi.sendOneTimeRequest(
-      DataRequestBuilder.accounts().exactly(1).withProof(),
-      personaData,
-    );
-  } else {
-    response = await rdt.walletApi.sendOneTimeRequest(
-      DataRequestBuilder.accounts().exactly(1).withProof(),
-    );
+  const accounts = DataRequestBuilder.accounts().exactly(1).withProof();
+  let personaData = DataRequestBuilder.personaData();
+  if (wantsName) personaData = personaData.fullName();
+  if (includeEmail) personaData = personaData.emailAddresses();
+  const response = await sendToWallet(rdt, 'proof', () =>
+    wantsName || includeEmail
+      ? rdt.walletApi.sendOneTimeRequest(accounts, personaData)
+      : rdt.walletApi.sendOneTimeRequest(accounts),
+  );
+  if (!response.ok) {
+    if (response.failure.reason === 'cancelled') throw new WalletCancelledError();
+    throw new Error('wallet_rejected');
   }
-  if (response.isErr()) throw new Error('wallet_rejected');
 
   const walletData = response.value;
   const account = walletData.accounts?.[0];
@@ -177,6 +177,17 @@ export function useDocumentSign() {
   const reset = () => {
     setPhase('idle');
     setError(null);
+  };
+
+  /** Ends a flow that threw: back to the start when the person cancelled, an error otherwise. */
+  const failed = (err: unknown): null => {
+    if (isWalletCancellation(err)) {
+      reset();
+      return null;
+    }
+    setPhase('error');
+    setError(err instanceof Error ? err.message : 'unknown');
+    return null;
   };
 
   /**
@@ -358,9 +369,7 @@ export function useDocumentSign() {
         fileType: input.fileType,
       };
     } catch (err) {
-      setPhase('error');
-      setError(err instanceof Error ? err.message : 'unknown');
-      return null;
+      return failed(err);
     }
   };
 
@@ -418,9 +427,7 @@ export function useDocumentSign() {
         fileType,
       };
     } catch (err) {
-      setPhase('error');
-      setError(err instanceof Error ? err.message : 'unknown');
-      return null;
+      return failed(err);
     }
   };
 
@@ -480,9 +487,7 @@ export function useDocumentSign() {
         fileType,
       };
     } catch (err) {
-      setPhase('error');
-      setError(err instanceof Error ? err.message : 'unknown');
-      return null;
+      return failed(err);
     }
   };
 

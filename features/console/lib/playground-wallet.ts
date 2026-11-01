@@ -28,6 +28,8 @@ import {
 } from '@radixdlt/radix-dapp-toolkit';
 import { NETWORKS, type RadixNetworkId } from '@/features/wallet/constants/network';
 import type { WalletInteraction, WalletRequestItems } from '@/features/wallet/lib/wallet-interaction';
+import { mountConnectButton } from '@/features/wallet/lib/connect-button';
+import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
 
 type Toolkit = ReturnType<typeof RadixDappToolkit>;
 
@@ -77,6 +79,8 @@ function getSandbox(networkId: RadixNetworkId): Sandbox | null {
   });
 
   sandboxes.set(networkId, sandbox);
+  // Lets this instance cancel requests in the wallet too (see connect-button.ts).
+  mountConnectButton();
   return sandbox;
 }
 
@@ -107,14 +111,15 @@ export async function sendPlaygroundRequest(
 
   sandbox.nextItems = items;
   sandbox.lastSent = null;
-  const result = await sandbox.rdt.walletApi.sendOneTimeRequest(
-    OneTimeDataRequestBuilder.accounts().atLeast(1),
+  const result = await sendToWallet(sandbox.rdt, 'data', () =>
+    sandbox.rdt.walletApi.sendOneTimeRequest(OneTimeDataRequestBuilder.accounts().atLeast(1)),
   );
   const sent = sandbox.lastSent as WalletInteraction | null;
   sandbox.nextItems = null;
 
-  if (result.isErr()) {
-    return { ok: false, sent, error: result.error.error, message: result.error.message };
+  // The lab shows the wallet's own error codes, a cancel included.
+  if (!result.ok) {
+    return { ok: false, sent, error: result.failure.code, message: result.failure.message };
   }
   return {
     ok: true,

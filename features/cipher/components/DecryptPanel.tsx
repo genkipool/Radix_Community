@@ -24,6 +24,7 @@ import { ContainerMetaCard } from './ContainerMetaCard';
 import { ReceiverNameField, usePersonaName } from './ReceiverNameField';
 import { SharePanel } from './SharePanel';
 import { TransferProgress } from './TransferProgress';
+import { isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 
 /**
  * Decrypt tab body. Two paths once a .radixseal.enc is loaded:
@@ -101,6 +102,8 @@ export function DecryptPanel({
         },
       });
     } catch (e) {
+      // Cancelled on purpose: nothing to report.
+      if (isWalletCancellation(e)) return;
       setProofError(
         e instanceof Error && e.message === 'wallet_rejected'
           ? 'wallet_rejected'

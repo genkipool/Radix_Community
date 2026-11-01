@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
+import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import type { ConsoleTxResult } from '../types/console.types';
 
@@ -79,17 +80,17 @@ export function useConsoleTransaction() {
     setState({ isSending: true, result: null, error: null });
 
     try {
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), TX_TIMEOUT_MS),
+      const response = await sendToWallet(
+        rdt,
+        'transaction',
+        () => rdt.walletApi.sendTransaction({ transactionManifest, blobs, version: 1 }),
+        { timeoutMs: TX_TIMEOUT_MS },
       );
-      const response = await Promise.race([
-        rdt.walletApi.sendTransaction({ transactionManifest, blobs, version: 1 }),
-        timeout,
-      ]);
 
-      if (response.isErr()) {
-        const err = response.error as { error?: string; message?: string };
-        setState({ isSending: false, result: null, error: err.error || err.message || 'rejected' });
+      if (!response.ok) {
+        // A cancel the person asked for is not an error to show.
+        const { reason, code } = response.failure;
+        setState({ ...INITIAL_STATE, error: reason === 'cancelled' ? null : code });
         return null;
       }
 

@@ -196,6 +196,7 @@
         "failedToSubmitTransaction": "Error al enviar la transacción. Por favor, inténtalo de nuevo.",
         "failedToCompileTransaction": "Error al compilar la transacción.",
         "rejectedByUser": "Transacción rechazada por el usuario.",
+        "timeout": "La billetera no respondió a tiempo. Inténtalo de nuevo.",
         "insufficient_balance": "Saldo insuficiente para esta acción.",
         "superior_to_both": "La cantidad ingresada supera la cantidad de saldo y de staking por lo que no puede realizar las operaciones de stake o unstake."
       }
