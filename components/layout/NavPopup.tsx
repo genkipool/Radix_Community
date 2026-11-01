@@ -1,6 +1,6 @@
 'use client';
 import { ReactNode, useRef, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const EMPTY_HREFS: string[] = [];
 
@@ -44,6 +44,12 @@ interface NavPopupProps {
  * 4. keepOpenOnTriggerClick: adds a React-controlled forceOpen state that
  *    keeps the popup visible for 600 ms after any click inside the trigger,
  *    preventing the CSS hover state from being lost mid-navigation.
+ *
+ * 5. A popup opened with a click (without keepOpenOnTriggerClick) stays open
+ *    when the pointer leaves: it closes with a click outside, Escape, or a new
+ *    page. Some popups are placed away from their trigger (the wallet popups
+ *    are centred on narrow screens), and the pointer can only reach them by
+ *    leaving the trigger: closing on leave made them unusable with a mouse.
  */
 export default function NavPopup({
   trigger,
@@ -77,12 +83,22 @@ export default function NavPopup({
     });
   };
 
+  // Only the short keep-open after a click on the trigger ends with the pointer
+  // leaving; a popup opened with a click stays open (see 5 above).
   const handleMouseLeave = () => {
-    if (forceOpen) {
+    if (forceOpen && keepOpenOnTriggerClick) {
       if (forceOpenTimerRef.current) clearTimeout(forceOpenTimerRef.current);
       setForceOpen(false);
     }
   };
+
+  // A new page closes a popup opened with a click.
+  const pathname = usePathname();
+  const [openedOn, setOpenedOn] = useState(pathname);
+  if (openedOn !== pathname) {
+    setOpenedOn(pathname);
+    if (forceOpen) setForceOpen(false);
+  }
 
   // Solución de raíz: capturamos los eventos de interacción a nivel del document (capture phase)
   // para evitar que lleguen a los elementos que están por debajo (ej. ValidatorCard)
@@ -99,13 +115,19 @@ export default function NavPopup({
       }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setForceOpen(false);
+    };
+
     // Usamos el parámetro `capture: true` para interceptar el evento bajando por el DOM
+    document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('pointerdown', handleOutsideInteraction, true);
     document.addEventListener('touchstart', handleOutsideInteraction, true);
     document.addEventListener('mousedown', handleOutsideInteraction, true);
     document.addEventListener('click', handleOutsideInteraction, true);
 
     return () => {
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('pointerdown', handleOutsideInteraction, true);
       document.removeEventListener('touchstart', handleOutsideInteraction, true);
       document.removeEventListener('mousedown', handleOutsideInteraction, true);
