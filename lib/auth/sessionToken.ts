@@ -51,20 +51,28 @@ const SESSION_ISSUER = 'radix-community';
 const SESSION_AUDIENCE = 'radix-community:session';
 
 /**
- * Lazily encode the JWT secret. Throws at call-time if missing,
- * so the module can still be imported safely in edge/build.
+ * The keys of session tokens, read lazily so the module can still be imported
+ * safely in edge/build.
  *
  * `SESSION_JWT_SECRET` is the session's own key. Until it is set, the
  * Supabase JWT secret is used as before; Supabase signs its own tokens with
  * that key, which is why a session must also carry this site's issuer,
  * audience and shape (see `verifySessionJWT`).
+ *
+ * Once it is set, sessions signed with the Supabase key are still accepted and
+ * signed again with the new one on their next request (see
+ * `renewSessionToken`), so nobody has to log in again.
  */
-function getSecret(): Uint8Array {
-  const raw = process.env.SESSION_JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
-  if (!raw) {
+function sessionKeys(): { signing: Uint8Array; verifying: Uint8Array[] } {
+  const own = process.env.SESSION_JWT_SECRET;
+  const supabase = process.env.SUPABASE_JWT_SECRET;
+  const signing = own || supabase;
+  if (!signing) {
     throw new Error('SESSION_JWT_SECRET is not set');
   }
-  return new TextEncoder().encode(raw);
+  const encode = (raw: string) => new TextEncoder().encode(raw);
+  const verifying = [signing, ...(own && supabase && supabase !== own ? [supabase] : [])];
+  return { signing: encode(signing), verifying: verifying.map(encode) };
 }
 
 /** Whether a verified payload has the shape of a session, and nothing claims it is something else. */
@@ -90,7 +98,7 @@ export async function createSessionJWT(
     .setAudience(SESSION_AUDIENCE)
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
-    .sign(getSecret());
+    .sign(sessionKeys().signing);
 }
 
 /**
@@ -103,14 +111,25 @@ export async function createSessionJWT(
 export async function verifySessionJWT(
   token: string,
 ): Promise<SessionPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] });
-    const legacy = payload.iss === undefined && payload.aud === undefined;
-    if (!legacy && (payload.iss !== SESSION_ISSUER || payload.aud !== SESSION_AUDIENCE)) return null;
-    return isSessionPayload(payload) ? payload : null;
-  } catch {
-    return null;
+  return (await readSession(token))?.session ?? null;
+}
+
+/** A valid session, and whether it is signed with the current key. */
+async function readSession(
+  token: string,
+): Promise<{ session: SessionPayload; currentKey: boolean } | null> {
+  const { verifying } = sessionKeys();
+  for (const [index, key] of verifying.entries()) {
+    try {
+      const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] });
+      const legacy = payload.iss === undefined && payload.aud === undefined;
+      if (!legacy && (payload.iss !== SESSION_ISSUER || payload.aud !== SESSION_AUDIENCE)) return null;
+      return isSessionPayload(payload) ? { session: payload, currentKey: index === 0 } : null;
+    } catch {
+      // Not this key (or not valid at all): the next one, if any, decides.
+    }
   }
+  return null;
 }
 
 /**
@@ -120,17 +139,21 @@ export async function verifySessionJWT(
  *
  * Tokens issued before the duration went from 30 days to six months are valid
  * sessions like any other, so their first renewal carries them to six months.
+ * A token signed with the previous key, or from before sessions had an issuer,
+ * is renewed at once, whatever its age.
  */
 export async function renewSessionToken(
   token: string,
   nowSeconds: number = Math.floor(Date.now() / 1000),
 ): Promise<string | null> {
-  const session = await verifySessionJWT(token);
-  if (!session || (!session.mainnet && !session.stokenet)) return null;
+  const read = await readSession(token);
+  if (!read) return null;
+  const { session, currentKey } = read;
+  if (!session.mainnet && !session.stokenet) return null;
 
   const issuedAt = typeof session.iat === 'number' ? session.iat : 0;
-  const legacy = session.iss === undefined;
-  if (!legacy && nowSeconds - issuedAt < SESSION_RENEW_AFTER_SECONDS) return null;
+  const outdated = !currentKey || session.iss === undefined;
+  if (!outdated && nowSeconds - issuedAt < SESSION_RENEW_AFTER_SECONDS) return null;
 
   return createSessionJWT({ mainnet: session.mainnet, stokenet: session.stokenet });
 }

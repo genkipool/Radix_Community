@@ -1,7 +1,7 @@
 // @vitest-environment node
 // jose needs Node's Uint8Array: under jsdom the key comes from another realm and is rejected.
-import { describe, it, expect, beforeAll } from 'vitest';
-import { SignJWT, decodeJwt } from 'jose';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
+import { SignJWT, decodeJwt, jwtVerify } from 'jose';
 
 const SECRET = 'test-secret-for-session-tokens-0123456789';
 
@@ -114,5 +114,40 @@ describe('verifySessionJWT', () => {
 
   it('refuses any algorithm but HS256', async () => {
     expect(await verifySessionJWT(await sign(session, { alg: 'HS512' }))).toBeNull();
+  });
+});
+
+describe('moving sessions to their own key', () => {
+  const NEW_SECRET = 'the-session-own-secret-9876543210-abcdef';
+  const verifyWith = (token: string, secret: string) =>
+    jwtVerify(token, new TextEncoder().encode(secret)).then(
+      () => true,
+      () => false,
+    );
+
+  afterEach(() => {
+    delete process.env.SESSION_JWT_SECRET;
+  });
+
+  it('keeps a session signed with the Supabase key, and signs it again with the new key at once', async () => {
+    const before = await createSessionJWT(session); // signed with the Supabase key
+    process.env.SESSION_JWT_SECRET = NEW_SECRET;
+
+    expect(await verifySessionJWT(before)).toMatchObject(session);
+    const renewed = await renewSessionToken(before);
+
+    expect(renewed).not.toBeNull();
+    expect(await verifyWith(renewed!, NEW_SECRET)).toBe(true);
+    expect(await verifyWith(renewed!, SECRET)).toBe(false);
+    expect(await verifySessionJWT(renewed!)).toMatchObject(session);
+  });
+
+  it('signs new sessions with the new key only', async () => {
+    process.env.SESSION_JWT_SECRET = NEW_SECRET;
+
+    const token = await createSessionJWT(session);
+
+    expect(await verifyWith(token, NEW_SECRET)).toBe(true);
+    expect(await renewSessionToken(token)).toBeNull(); // current key, issued now
   });
 });
