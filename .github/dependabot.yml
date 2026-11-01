@@ -1,7 +1,11 @@
 version: 2
 updates:
+  # "npm" is the ecosystem (the npmjs.com registry), not the npm client:
+  # Dependabot sees pnpm-lock.yaml and updates with pnpm.
   - package-ecosystem: npm
     directory: /
+    # Updates go through develop like the rest of the work, then on to main.
+    target-branch: develop
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -10,7 +14,15 @@ updates:
     groups:
       next:
         patterns: ['next', 'eslint-config-next', '@next/*']
+      # One weekly PR for everything that should not break anything.
+      # A major version still gets a PR of its own, to be looked at alone.
+      minor-and-patch:
+        update-types: ['minor', 'patch']
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
