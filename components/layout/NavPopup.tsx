@@ -1,8 +1,45 @@
 'use client';
-import { ReactNode, useRef, useState, useEffect } from 'react';
+import { ReactNode, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { placePopup, fixedOrigin } from '@/components/layout/placePopup';
 
 const EMPTY_HREFS: string[] = [];
+
+/** Places a popup next to its trigger (the wrapper's first child) in window coordinates. */
+function positionPopup(
+  wrapper: HTMLElement | null,
+  content: HTMLElement | null,
+  align: 'left' | 'center' | 'right',
+): void {
+  const trigger = wrapper?.firstElementChild as HTMLElement | null | undefined;
+  if (!content || !trigger) return;
+  const t = trigger.getBoundingClientRect();
+  if (!t.width && !t.height) return; // the button is not on screen at this width
+  // Measured at its natural size: the limits from a previous placement are
+  // lifted first, and it is moved to the left edge so a popup sized by its
+  // content is not squeezed by where it happened to sit last time.
+  content.style.left = '0px';
+  content.style.maxHeight = '';
+  content.style.maxWidth = '';
+  content.style.overflowY = '';
+  const spot = placePopup({
+    trigger: t,
+    width: content.offsetWidth,
+    height: content.offsetHeight,
+    viewportWidth: document.documentElement.clientWidth,
+    viewportHeight: window.innerHeight,
+    align,
+  });
+  const origin = fixedOrigin(content);
+  content.style.left = `${spot.left - origin.x}px`;
+  content.style.top = `${spot.top - origin.y}px`;
+  content.dataset.side = spot.side;
+  if (spot.maxWidth !== undefined) content.style.maxWidth = `${spot.maxWidth}px`;
+  if (spot.maxHeight !== undefined) {
+    content.style.maxHeight = `${spot.maxHeight}px`;
+    content.style.overflowY = 'auto';
+  }
+}
 
 interface NavPopupProps {
   trigger: ReactNode;
@@ -18,6 +55,19 @@ interface NavPopupProps {
    */
   keepOpenOnTriggerClick?: boolean;
   offsetClass?: string;
+  /**
+   * Placed from where the button really is (see placePopup): lined up with it
+   * by `align`, below it or above when below has no room, never over it, and
+   * always inside the window. `offsetClass` is ignored.
+   */
+  anchored?: boolean;
+  /**
+   * When false a click on the trigger does not open the popup: it only opens
+   * on hover, which Tailwind applies only where there is a real pointer. On a
+   * touch screen the button keeps doing just what it does (the language and
+   * theme buttons switch on a tap and open their sheet on a long press).
+   */
+  toggleOnClick?: boolean;
 }
 
 /**
@@ -47,9 +97,13 @@ interface NavPopupProps {
  *
  * 5. A popup opened with a click (without keepOpenOnTriggerClick) stays open
  *    when the pointer leaves: it closes with a click outside, Escape, or a new
- *    page. Some popups are placed away from their trigger (the wallet popups
- *    are centred on narrow screens), and the pointer can only reach them by
- *    leaving the trigger: closing on leave made them unusable with a mouse.
+ *    page. A popup can sit away from its trigger (clamped into a narrow
+ *    window, or above the button in the mobile menu), and the pointer can only
+ *    reach it by leaving the trigger: closing on leave made it unusable.
+ *
+ * 6. `anchored` popups are placed from the button's real position (see
+ *    placePopup) instead of fixed CSS offsets, so they are right at every
+ *    window size and never cover the button that opens them.
  */
 export default function NavPopup({
   trigger,
@@ -59,6 +113,8 @@ export default function NavPopup({
   prefetchHrefs = EMPTY_HREFS,
   keepOpenOnTriggerClick = false,
   offsetClass = 'absolute top-[calc(100%-12px)]',
+  anchored = false,
+  toggleOnClick = true,
 }: NavPopupProps) {
   const router = useRouter();
   const prefetchedRef = useRef(false);
@@ -74,7 +130,38 @@ export default function NavPopup({
         ? 'left-1/2 -translate-x-1/2'
         : 'left-0';
 
+  /** Puts an anchored popup next to its button; a no-op for the others. */
+  const place = () => {
+    if (anchored) positionPopup(wrapperRef.current, contentRef.current, align);
+  };
+
+  // Placed before it is first seen, and again whenever the window, the button
+  // or the popup's own content changes size.
+  useLayoutEffect(() => {
+    if (!anchored) return;
+    const onResize = () => positionPopup(wrapperRef.current, contentRef.current, align);
+    onResize();
+    window.addEventListener('resize', onResize);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
+    if (contentRef.current) observer?.observe(contentRef.current);
+    const trigger = wrapperRef.current?.firstElementChild;
+    if (trigger) observer?.observe(trigger);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      observer?.disconnect();
+    };
+  }, [anchored, align]);
+
+  // A popup opened inside something that scrolls (the mobile menu) follows its button.
+  useEffect(() => {
+    if (!anchored || !forceOpen) return;
+    const onScroll = () => positionPopup(wrapperRef.current, contentRef.current, align);
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [anchored, forceOpen, align]);
+
   const handleMouseEnter = () => {
+    place();
     if (prefetchedRef.current || prefetchHrefs.length === 0) return;
     prefetchedRef.current = true;
     const { prefetch } = router;
@@ -146,6 +233,8 @@ export default function NavPopup({
         if (contentRef.current?.contains(e.target as Node)) {
           return;
         }
+        if (!toggleOnClick) return;
+        place();
         // Allow mobile tap to toggle the popup visibility
         setForceOpen((prev) => !prev);
         if (keepOpenOnTriggerClick) {
@@ -167,8 +256,7 @@ export default function NavPopup({
       <div
         ref={contentRef}
         className={[
-          offsetClass,
-          alignClass,
+          anchored ? 'fixed left-0 top-0' : `${offsetClass} ${alignClass}`,
           width,
           'bg-[var(--color-card-bg)] border border-[var(--color-card-border)]',
           'rounded-2xl shadow-2xl shadow-black/20',
