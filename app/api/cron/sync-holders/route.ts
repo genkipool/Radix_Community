@@ -58,13 +58,11 @@ export async function GET(request: Request) {
             return NextResponse.json({ success: true, message: 'No active LSUs found' });
         }
 
-        // 3. Ensure all active LSUs are in the ZSET (with score 0 if missing, strictly to process them ASAP)
-        await Promise.all(activeLsuAddresses.map(async (address) => {
-            const score = await redis.zscore(HOLDER_ZSET, address);
-            if (score === null) {
-                await redis.zadd(HOLDER_ZSET, { score: 0, member: address });
-            }
-        }));
+        // 3. Ensure all active LSUs are in the ZSET (with score 0 if missing, strictly to process them ASAP).
+        // One ZADD NX for all of them: Upstash bills every command, and one per LSU
+        // was about a hundred commands on every run.
+        const [firstLsu, ...otherLsus] = activeLsuAddresses.map((member) => ({ score: 0, member }));
+        await redis.zadd(HOLDER_ZSET, { nx: true }, firstLsu, ...otherLsus);
 
         // 4. Fetch the N oldest updated LSUs from the Queue (score = timestamp)
         const oldestLsus = (await redis.zrange(HOLDER_ZSET, 0, BATCH_SIZE - 1)) as string[];
@@ -121,10 +119,8 @@ export async function GET(request: Request) {
             const now = Date.now();
 
             pipeline.hmset(HOLDER_HASH, updatedCounts);
-
-            for (const addr of Object.keys(updatedCounts)) {
-                pipeline.zadd(HOLDER_ZSET, { score: now, member: addr });
-            }
+            const [first, ...rest] = Object.keys(updatedCounts).map((member) => ({ score: now, member }));
+            pipeline.zadd(HOLDER_ZSET, first, ...rest);
 
             await pipeline.exec();
         }
