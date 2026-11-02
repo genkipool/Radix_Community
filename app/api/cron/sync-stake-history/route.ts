@@ -58,12 +58,10 @@ export async function GET(request: Request) {
         }
 
         // ── 2. Register new validators in the ZSET using ZADD NX ──────────────
-        // A single pipeline removes the N×ZSCORE + N×ZADD loop from the previous code.
-        const seedPipeline = redis.pipeline();
-        for (const address of activeArray) {
-            seedPipeline.zadd(HISTORY_ZSET, { nx: true }, { score: 0, member: address });
-        }
-        await seedPipeline.exec();
+        // One command for all of them: Upstash bills each command in a pipeline,
+        // so a ZADD per validator was about a hundred commands on every run.
+        const [firstSeed, ...otherSeeds] = activeArray.map((member) => ({ score: 0, member }));
+        await redis.zadd(HISTORY_ZSET, { nx: true }, firstSeed, ...otherSeeds);
 
         // ── 3. Select the batch of most outdated validators ───────────────────
         const oldestValidators = await redis.zrange(HISTORY_ZSET, 0, BATCH_SIZE - 1);
@@ -148,10 +146,8 @@ export async function GET(request: Request) {
             const now = Date.now();
 
             pipeline.hmset(HISTORY_HASH, updatedRecords);
-
-            for (const addr of Object.keys(updatedRecords)) {
-                pipeline.zadd(HISTORY_ZSET, { score: now, member: addr });
-            }
+            const [first, ...rest] = Object.keys(updatedRecords).map((member) => ({ score: now, member }));
+            pipeline.zadd(HISTORY_ZSET, first, ...rest);
 
             await pipeline.exec();
         }
