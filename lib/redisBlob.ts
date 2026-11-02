@@ -23,8 +23,28 @@ import type { Redis } from '@upstash/redis';
 
 const GZIP_PREFIX = 'gz:';
 
-/** The copy of each value this instance holds, with the stamp it was read at. */
-const held = new Map<string, { stamp: string; value: unknown }>();
+/** The copy of each value this instance holds, with the stamp it was read at and when that stamp was last confirmed. */
+const held = new Map<string, { stamp: string; value: unknown; checkedAt: number }>();
+
+/**
+ * The window for values that are only shown: well under how often any of them
+ * changes (the validator list every few minutes, rewards once per epoch), so
+ * nobody sees anything older than they already could.
+ */
+export const SHOWN_VALUE_MAX_AGE_MS = 15_000;
+
+export interface ReadBlobOptions {
+    /**
+     * How long, in ms, a copy this instance confirmed recently is answered
+     * without asking Redis again. Every read costs at least the stamp (one
+     * billed command), and a page asks for the same value several times
+     * within a second. Only for values that are shown to someone: state that
+     * a writer reads, changes and writes back must read Redis every time.
+     */
+    maxAgeMs?: number;
+    /** For tests. */
+    now?: number;
+}
 
 function stampKey(key: string) {
     return `${key}:stamp`;
@@ -51,10 +71,16 @@ export function decodeBlob<T>(stored: unknown): T | null {
  * The value under `key`, downloaded only when it changed since this instance
  * last read it. Errors are thrown to the caller, as a plain `get` would.
  */
-export async function readBlob<T>(redis: Redis, key: string): Promise<T | null> {
-    const stamp = await redis.get<string>(stampKey(key));
+export async function readBlob<T>(redis: Redis, key: string, options: ReadBlobOptions = {}): Promise<T | null> {
+    const now = options.now ?? Date.now();
     const mine = held.get(key);
-    if (stamp && mine?.stamp === stamp) return mine.value as T;
+    if (mine && options.maxAgeMs && now - mine.checkedAt < options.maxAgeMs) return mine.value as T;
+
+    const stamp = await redis.get<string>(stampKey(key));
+    if (stamp && mine?.stamp === stamp) {
+        mine.checkedAt = now;
+        return mine.value as T;
+    }
 
     const stored = await redis.get(key);
     const value = decodeBlob<T>(stored);
@@ -64,7 +90,7 @@ export async function readBlob<T>(redis: Redis, key: string): Promise<T | null> 
     }
 
     if (stamp) {
-        held.set(key, { stamp, value });
+        held.set(key, { stamp, value, checkedAt: now });
         return value;
     }
 
@@ -74,7 +100,7 @@ export async function readBlob<T>(redis: Redis, key: string): Promise<T | null> 
     const given = newStamp();
     const recompressed = typeof stored === 'string' && stored.startsWith(GZIP_PREFIX) ? '' : encodeBlob(value);
     const migrated = await redis.eval(MIGRATE, [key, stampKey(key)], [given, recompressed]);
-    if (migrated === 1) held.set(key, { stamp: given, value });
+    if (migrated === 1) held.set(key, { stamp: given, value, checkedAt: now });
     return value;
 }
 
@@ -92,7 +118,7 @@ export async function writeBlob(redis: Redis, key: string, value: unknown): Prom
     pipeline.set(key, encodeBlob(value));
     pipeline.set(stampKey(key), stamp);
     await pipeline.exec();
-    held.set(key, { stamp, value });
+    held.set(key, { stamp, value, checkedAt: Date.now() });
 }
 
 /**
@@ -107,7 +133,7 @@ export function queueBlobWrite(pipeline: ReturnType<Redis['pipeline']>, key: str
     const stamp = newStamp();
     pipeline.set(key, encodeBlob(value));
     pipeline.set(stampKey(key), stamp);
-    held.set(key, { stamp, value });
+    held.set(key, { stamp, value, checkedAt: Date.now() });
 }
 
 /** Forgets what this instance holds; for tests. */

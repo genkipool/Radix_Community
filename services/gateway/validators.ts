@@ -8,7 +8,7 @@
 
 import { getGateway, withRetry, runWithLimit, CONCURRENCY, type Network } from './client';
 import logger from '@/lib/logger';
-import { readBlob, writeBlob } from '@/lib/redisBlob';
+import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
 import { getVotesMap, advanceVoteTail } from './protocolVotes';
@@ -940,7 +940,7 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                 networkStats: NetworkStats | null;
                 fingerprint?: string;
                 updatedAt?: number;
-            }>(redis, backupKey);
+            }>(redis, backupKey, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
 
             if (staleData?.validators && staleData.validators.length > 0) {
                 // Not served stale: a copy old enough that its stake and
@@ -963,6 +963,13 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                     // ── Step 2: Background revalidation ────────────────────────
                     // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
                     after(async () => {
+                        // One refresh at a time across every instance, with the
+                        // rebuild's own lock: each reader of a stale copy used to
+                        // start a full refresh of its own, paying its Redis
+                        // commands and Gateway calls again for the same list.
+                        const lockKey = `radix_validators_${network}_rebuild_lock`;
+                        const claimed = await redis.set(lockKey, '1', { nx: true, ex: REBUILD_LOCK_TTL_S }).catch(() => null);
+                        if (!claimed) return;
                         try {
                             logger.info({ network }, '[ValidatorsService] Background revalidation started');
                             /*
@@ -985,6 +992,8 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                             logger.info({ network }, '[ValidatorsService] Background revalidation complete');
                         } catch (bgError) {
                             logger.error({ err: bgError, network }, '[ValidatorsService] Background revalidation failed');
+                        } finally {
+                            redis.del(lockKey).catch(() => undefined);
                         }
                     });
                 }

@@ -27,6 +27,26 @@ export const FINGERPRINT_TTL_S = 30;
 
 const fingerprintKey = (network: Network) => `validators_fingerprint_${network}`;
 
+/*
+ * The fingerprint is stored with the moment it expires (`<fingerprint>@<ms>`),
+ * so each instance keeps it in memory for exactly as long as Redis keeps it.
+ * Asking Redis on every read of the validator list cost a billed command per
+ * page view; this way it is one per instance every TTL, and never staler.
+ */
+const held = new Map<Network, { fingerprint: string; expiresAt: number }>();
+
+function parseStored(stored: string): { fingerprint: string; expiresAt: number | null } {
+    const at = stored.lastIndexOf('@');
+    if (at < 0) return { fingerprint: stored, expiresAt: null };
+    const expiresAt = Number(stored.slice(at + 1));
+    return { fingerprint: stored.slice(0, at), expiresAt: Number.isFinite(expiresAt) ? expiresAt : null };
+}
+
+/** Forgets what this instance holds; for tests. */
+export function forgetHeldFingerprints() {
+    held.clear();
+}
+
 /** Metadata that changes how a validator shows up in the list. */
 const IDENTITY_METADATA = ['name', 'icon_url', 'info_url', 'description'] as const;
 
@@ -75,10 +95,17 @@ export async function fetchLiveValidatorSetFingerprint(network: Network): Promis
     const redis = getRedis();
     const key = fingerprintKey(network);
 
+    const mine = held.get(network);
+    if (mine && Date.now() < mine.expiresAt) return mine.fingerprint;
+
     if (redis) {
         try {
             const cached = await redis.get<string>(key);
-            if (cached) return cached;
+            if (cached) {
+                const { fingerprint, expiresAt } = parseStored(String(cached));
+                if (expiresAt) held.set(network, { fingerprint, expiresAt });
+                return fingerprint;
+            }
         } catch (err) {
             logger.warn({ err, network }, '[ValidatorFingerprint] Redis read failed');
         }
@@ -88,7 +115,9 @@ export async function fetchLiveValidatorSetFingerprint(network: Network): Promis
         const validators = await fetchValidatorListRest<FingerprintSource>(network);
         if (validators.length === 0) return null;
         const fingerprint = validatorSetFingerprint(validators);
-        redis?.set(key, fingerprint, { ex: FINGERPRINT_TTL_S }).catch((err) =>
+        const expiresAt = Date.now() + FINGERPRINT_TTL_S * 1000;
+        held.set(network, { fingerprint, expiresAt });
+        redis?.set(key, `${fingerprint}@${expiresAt}`, { ex: FINGERPRINT_TTL_S }).catch((err) =>
             logger.warn({ err, network }, '[ValidatorFingerprint] Redis write failed'),
         );
         return fingerprint;

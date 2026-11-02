@@ -1,6 +1,6 @@
 import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
-import { queueBlobWrite, readBlob } from '@/lib/redisBlob';
+import { queueBlobWrite, readBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -459,7 +459,7 @@ export async function getAvailableYears(
 
         const checks = await Promise.all(
             candidateYears.map(async (yr) => {
-                const data = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`);
+                const data = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
                 if (data && data[validatorAddress]) return yr;
                 return null;
             })
@@ -471,7 +471,7 @@ export async function getAvailableYears(
         }
 
         // Fallback to legacy monolithic key
-        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL);
+        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
         const data = allData?.[validatorAddress];
         if (!data?.yearly) return [];
         return Object.keys(data.yearly).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
@@ -496,7 +496,7 @@ export async function generateRewardsCsv(
 
     try {
         // Try year-indexed key first (efficient)
-        const yearData = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`);
+        const yearData = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
         const yearEntry = yearData?.[validatorAddress];
         if (yearEntry?.daily) {
             const entries = Object.entries(yearEntry.daily)
@@ -516,7 +516,7 @@ export async function generateRewardsCsv(
         }
 
         // Fallback to legacy monolithic key
-        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL);
+        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
         const data = allData?.[validatorAddress];
         if (!data?.daily) return null;
 

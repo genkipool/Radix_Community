@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Redis } from '@upstash/redis';
-import { decodeBlob, encodeBlob, forgetHeldBlobs, readBlob, writeBlob } from '@/lib/redisBlob';
+import { decodeBlob, encodeBlob, forgetHeldBlobs, readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 
 /** An in-memory Redis that records every key read, the way Upstash bills them. */
 function fakeRedis() {
@@ -85,6 +85,37 @@ describe('redisBlob', () => {
         await readBlob(redis, 'race');
         expect(store.get('race')).toEqual({ legacy: true });
         expect(store.get('race:stamp')).toBe('writer');
+    });
+
+    it('answers a recently confirmed copy without asking Redis, only when asked to', async () => {
+        const { redis, reads } = fakeRedis();
+        await writeBlob(redis, 'list', { n: 1 });
+        forgetHeldBlobs();
+        const t0 = 1_000_000;
+
+        expect(await readBlob(redis, 'list', { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS, now: t0 })).toEqual({ n: 1 });
+        const afterFirst = reads.length;
+        expect(await readBlob(redis, 'list', { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS, now: t0 + 5_000 })).toEqual({ n: 1 });
+        expect(reads.length).toBe(afterFirst);
+
+        // Without the option every read still checks the stamp.
+        await readBlob(redis, 'list', { now: t0 + 5_000 });
+        expect(reads.length).toBe(afterFirst + 1);
+    });
+
+    it('checks the stamp again once the window is over, and sees a newer value', async () => {
+        const { redis, store } = fakeRedis();
+        await writeBlob(redis, 'list', { n: 1 });
+        forgetHeldBlobs();
+        const t0 = 2_000_000;
+        await readBlob(redis, 'list', { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS, now: t0 });
+
+        // Another instance writes a new value.
+        store.set('list', encodeBlob({ n: 2 }));
+        store.set('list:stamp', 'other-writer');
+
+        expect(await readBlob(redis, 'list', { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS, now: t0 + SHOWN_VALUE_MAX_AGE_MS - 1 })).toEqual({ n: 1 });
+        expect(await readBlob(redis, 'list', { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS, now: t0 + SHOWN_VALUE_MAX_AGE_MS })).toEqual({ n: 2 });
     });
 
     it('answers null for a missing value', async () => {

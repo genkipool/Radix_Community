@@ -67,7 +67,11 @@ async function countInRedis(key: string, cost: number, windowMs: number): Promis
     const redis = getRedis();
     if (!redis) return null;
     try {
-        const [count] = await redis.pipeline().incrby(key, cost).pexpire(key, windowMs).exec<[number, number]>();
+        // One billed command per request: the expiry only needs setting once,
+        // by the request that created the counter (the key names its window,
+        // so it is never reused even if that PEXPIRE were lost).
+        const count = await redis.incrby(key, cost);
+        if (count === cost) await redis.pexpire(key, windowMs);
         return count;
     } catch (error) {
         logger.warn({ err: error }, '[RateLimit] Redis unavailable; counting in memory');
