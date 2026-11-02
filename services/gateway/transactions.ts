@@ -18,7 +18,7 @@
 import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
-import { readBlob, writeBlob } from '@/lib/redisBlob';
+import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
@@ -658,7 +658,7 @@ export async function enrichTransactionsProposerInfo(
         const backupKey = `radix_validators_${network}_backup`;
         const validatorData = await readBlob<{
             validators: Validator[];
-        }>(redis, backupKey);
+        }>(redis, backupKey, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
 
         if (!validatorData?.validators?.length) return transactions;
 
