@@ -1,12 +1,33 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '../hooks/useRadixWallet';
 import { WalletNetworkPopoverContent } from './WalletNetworkPopoverContent';
+import { placePopup } from '@/components/layout/placePopup';
 
 const PANEL_WIDTH = 280;
+/** Until the panel has been measured once: about what the network picker is. */
+const PANEL_HEIGHT_GUESS = 140;
+
+/**
+ * Centred under the word, kept inside the window, and above it when there is
+ * no room below: the same rules as the navbar popups (see placePopup).
+ */
+function spotFor(trigger: HTMLElement | null, panel: HTMLElement | null): { top: number; left: number } | null {
+  const rect = trigger?.getBoundingClientRect();
+  if (!rect) return null;
+  const spot = placePopup({
+    trigger: rect,
+    width: panel?.offsetWidth || PANEL_WIDTH,
+    height: panel?.offsetHeight || PANEL_HEIGHT_GUESS,
+    viewportWidth: document.documentElement.clientWidth,
+    viewportHeight: window.innerHeight,
+    align: 'center',
+  });
+  return { top: spot.top, left: spot.left };
+}
 
 /**
  * Wraps an inline "connect wallet" trigger (a text-button living inside a
@@ -39,17 +60,16 @@ export function ConnectWalletPopover({ children }: { children: ReactNode }) {
   }, []);
 
   const computePos = () => {
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const half = PANEL_WIDTH / 2;
-    const margin = 8;
-    const centre = rect.left + rect.width / 2;
-    const clamped = Math.min(
-      Math.max(centre, half + margin),
-      window.innerWidth - half - margin,
-    );
-    setPos({ top: rect.bottom + margin, left: clamped });
+    const spot = spotFor(triggerRef.current, panelRef.current);
+    if (spot) setPos((prev) => (prev && prev.top === spot.top && prev.left === spot.left ? prev : spot));
   };
+
+  // Once the panel is on the page its real size is known: placed again with it.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const spot = spotFor(triggerRef.current, panelRef.current);
+    if (spot) setPos((prev) => (prev && prev.top === spot.top && prev.left === spot.left ? prev : spot));
+  }, [open]);
 
   const openPopover = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -104,7 +124,6 @@ export function ConnectWalletPopover({ children }: { children: ReactNode }) {
               position: 'fixed',
               top: pos.top,
               left: pos.left,
-              transform: 'translateX(-50%)',
               zIndex: 60,
             }}
             className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl shadow-2xl shadow-black/20"

@@ -673,6 +673,17 @@ export default function Navbar() {
     }
   };
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set once a long press has opened its sheet: the finger lifting then makes
+  // the browser send a click, which would land on the sheet's backdrop and
+  // close it straight away. That click is cancelled on touchend.
+  const longPressFiredRef = useRef(false);
+  const endLongPress = (e: React.TouchEvent) => {
+    if (longPressRef.current) clearTimeout(longPressRef.current);
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      e.preventDefault();
+    }
+  };
   const { theme, setTheme } = useTheme();
   const { language, t } = useLanguage();
   const pathname = usePathname();
@@ -865,7 +876,7 @@ export default function Navbar() {
             <div className="hidden xl:flex items-stretch gap-1">
 
               {/* Language: click = toggle, hover = popup */}
-              <NavPopup align="right" width="w-44" keepOpenOnTriggerClick offsetClass="absolute top-[calc(100%+4px)]" trigger={
+              <NavPopup align="right" width="w-44" keepOpenOnTriggerClick anchored trigger={
                 <button type="button" onClick={toggleLanguage} className={iconBtnClass} aria-label="Select language">
                   <Globe className="size-4" />
                   {currentLangDisplay.toUpperCase()}
@@ -875,7 +886,7 @@ export default function Navbar() {
               </NavPopup>
 
               {/* Theme: click = cycle, hover = popup */}
-              <NavPopup align="right" width="w-[440px]" offsetClass="absolute top-[calc(100%+4px)]" trigger={
+              <NavPopup align="right" width="w-[440px]" anchored trigger={
                 <button type="button" onClick={cycleTheme} className={iconBtnClass} aria-label="Select theme" suppressHydrationWarning>
                   <ThemeIcon theme={theme} isLightTheme={isLightTheme} />
                 </button>
@@ -889,7 +900,7 @@ export default function Navbar() {
                   <NavPopup
                     align="right"
                     width="w-auto"
-                    offsetClass="absolute top-full"
+                    anchored
                     trigger={
                       <button
                         type="button"
@@ -942,7 +953,7 @@ export default function Navbar() {
                   <NavPopup
                     align="right"
                     width="w-auto"
-                    offsetClass="absolute top-full"
+                    anchored
                     trigger={
                       <button
                         type="button"
@@ -983,42 +994,54 @@ export default function Navbar() {
 
             {/* Mobile/Tablet controls */}
             <div className="xl:hidden flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={toggleLanguage}
-                onTouchStart={(e) => {
-                  longPressRef.current = setTimeout(() => {
-                    e.preventDefault();
-                    dispatch({ type: 'SET_MOBILE_SHEET', value: 'lang' });
-                  }, 450);
-                }}
-                onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
-                onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
-                className={`${iconBtnClass} px-2.5 sm:px-3 h-10 sm:h-11 bg-[var(--color-surface)] sm:bg-transparent`} aria-label="Toggle language"
-              >
-                <Globe className="size-4 sm:size-5" />
-                <span className="hidden sm:inline">{currentLangDisplay.toUpperCase()}</span>
-              </button>
-              <button
-                type="button"
-                onClick={cycleTheme}
-                onTouchStart={(e) => {
-                  longPressRef.current = setTimeout(() => {
-                    e.preventDefault();
-                    dispatch({ type: 'SET_MOBILE_SHEET', value: 'theme' });
-                  }, 450);
-                }}
-                onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
-                onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
-                className={`${iconBtnClass} px-2.5 sm:px-3 h-10 sm:h-11 bg-[var(--color-surface)] sm:bg-transparent`} aria-label="Toggle theme" suppressHydrationWarning
-              >
-                <ThemeIcon theme={theme} isLightTheme={isLightTheme} />
-              </button>
+              {/* With a mouse, hovering opens the same popups as on wide screens.
+                  On a touch screen a tap still switches and a long press opens the sheet. */}
+              <NavPopup align="right" width="w-44" anchored toggleOnClick={false} trigger={
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  onTouchStart={() => {
+                    longPressFiredRef.current = false;
+                    longPressRef.current = setTimeout(() => {
+                      longPressFiredRef.current = true;
+                      dispatch({ type: 'SET_MOBILE_SHEET', value: 'lang' });
+                    }, 450);
+                  }}
+                  onTouchEnd={endLongPress}
+                  onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
+                  className={`${iconBtnClass} px-2.5 sm:px-3 h-10 sm:h-11 bg-[var(--color-surface)] sm:bg-transparent`} aria-label="Toggle language"
+                >
+                  <Globe className="size-4 sm:size-5" />
+                  <span className="hidden sm:inline">{currentLangDisplay.toUpperCase()}</span>
+                </button>
+              }>
+                <LanguagePopupContent currentLang={currentLangDisplay} onSwitch={switchToLanguage} t={t} />
+              </NavPopup>
+              <NavPopup align="right" width="w-[440px]" anchored toggleOnClick={false} trigger={
+                <button
+                  type="button"
+                  onClick={cycleTheme}
+                  onTouchStart={() => {
+                    longPressFiredRef.current = false;
+                    longPressRef.current = setTimeout(() => {
+                      longPressFiredRef.current = true;
+                      dispatch({ type: 'SET_MOBILE_SHEET', value: 'theme' });
+                    }, 450);
+                  }}
+                  onTouchEnd={endLongPress}
+                  onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
+                  className={`${iconBtnClass} px-2.5 sm:px-3 h-10 sm:h-11 bg-[var(--color-surface)] sm:bg-transparent`} aria-label="Toggle theme" suppressHydrationWarning
+                >
+                  <ThemeIcon theme={theme} isLightTheme={isLightTheme} />
+                </button>
+              }>
+                <ThemePopupContent currentTheme={theme} onSelect={setTheme} t={t} />
+              </NavPopup>
               {isConnected ? (
                 <NavPopup
                   align="right"
-                  width="w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px]"
-                  offsetClass="!fixed top-[70px] left-1/2 -translate-x-1/2 !right-auto"
+                  width="w-[calc(100vw-16px)] sm:w-[380px] max-w-[380px]"
+                  anchored
                   trigger={
                     <button
                       type="button"
@@ -1074,8 +1097,8 @@ export default function Navbar() {
               ) : (
                 <NavPopup
                   align="right"
-                  width="w-[calc(100vw-24px)] sm:w-[280px] max-w-[280px]"
-                  offsetClass="!fixed top-[70px] left-1/2 -translate-x-1/2 !right-auto"
+                  width="w-[calc(100vw-16px)] sm:w-[280px] max-w-[280px]"
+                  anchored
                   trigger={
                     <button
                       type="button"
@@ -1185,8 +1208,8 @@ export default function Navbar() {
                 {isConnected ? (
                   <NavPopup
                     align="center"
-                    width="w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px]"
-                    offsetClass="!fixed bottom-[24px] left-1/2 -translate-x-1/2 !right-auto"
+                    width="w-[calc(100vw-16px)] sm:w-[380px] max-w-[380px]"
+                    anchored
                     trigger={
                     <button
                       type="button"
@@ -1244,8 +1267,8 @@ export default function Navbar() {
                 ) : (
                   <NavPopup
                     align="center"
-                    width="w-[calc(100vw-24px)] sm:w-[280px] max-w-[280px]"
-                    offsetClass="!fixed bottom-[24px] left-1/2 -translate-x-1/2 !right-auto"
+                    width="w-[calc(100vw-16px)] sm:w-[280px] max-w-[280px]"
+                    anchored
                     trigger={
                       <button
                         type="button"
@@ -1304,7 +1327,7 @@ export default function Navbar() {
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}
       {mobileSheet && (
-        <div role="presentation" className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden w-full text-left" onClick={() => dispatch({ type: 'SET_MOBILE_SHEET', value: null })}>
+        <div role="presentation" className="fixed inset-0 z-[100] flex flex-col justify-start xl:hidden w-full text-left" onClick={() => dispatch({ type: 'SET_MOBILE_SHEET', value: null })}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
             className="relative bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-3xl shadow-2xl mt-[20vh] mx-4 overflow-hidden"
