@@ -17,6 +17,9 @@ import {
   type WalletRequestSpec,
 } from '@/features/wallet/lib/wallet-interaction';
 import { sendPlaygroundRequest } from '../../lib/playground-wallet';
+import { cancelWalletRequests } from '@/features/wallet/lib/wallet-requests';
+import { useWalletRequests } from '@/features/wallet/hooks/useWalletRequests';
+import { useLanguage } from '@/context/LanguageContext';
 import type { RolaProofResult } from '@/services/rola/verify';
 import { truncateAddress } from '@/utils/formatters';
 import type { ConsoleToolProps } from '../ConsoleToolView';
@@ -105,6 +108,8 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
   const [rolaError, setRolaError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const requestSeq = useRef(0);
+  const { inWallet: walletHasIt } = useWalletRequests();
+  const { t: common } = useLanguage();
 
   const identityAddress = persona?.identityAddress || undefined;
   const quantity = Number(accountCount[0] ?? 0);
@@ -193,8 +198,10 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
     }
   };
 
+  /** Cancels the request in the wallet too, through the Radix Connector extension. */
   const handleStopWaiting = () => {
     requestSeq.current += 1;
+    cancelWalletRequests();
     setOutcome({ status: 'idle' });
   };
 
@@ -473,7 +480,14 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
         {isWaiting && (
           <p role="status" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             <span>{labels.waitingHint}</span>
-            <button type="button" onClick={handleStopWaiting} className="font-semibold underline-offset-2 hover:underline cursor-pointer" style={{ color: 'var(--color-text-main)' }}>
+            <button
+              type="button"
+              onClick={handleStopWaiting}
+              disabled={walletHasIt}
+              title={walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
+              className="font-semibold underline-offset-2 enabled:hover:underline enabled:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ color: 'var(--color-text-main)' }}
+            >
               {labels.stopWaiting}
             </button>
           </p>
