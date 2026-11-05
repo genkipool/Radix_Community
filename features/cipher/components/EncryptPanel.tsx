@@ -221,9 +221,8 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
             <button
               type="button"
               onClick={cancelSigning}
-              disabled={walletHasIt}
               title={walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
-              className="flex items-center gap-2 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 text-xs font-semibold transition-opacity hover:opacity-80"
               style={{ color: 'var(--color-text-muted)' }}
             >
               <XCircle className="size-3.5" />

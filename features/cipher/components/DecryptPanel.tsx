@@ -8,6 +8,7 @@ import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGat
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { requestAccountProof } from '@/features/wallet/lib/rola-proof';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import { randomRoomId } from '@/features/p2p/lib/session-url';
 import { SealOnboarding } from '@/features/sign/components/SealOnboarding';
 import { useSealRequest, useSealSetup } from '@/features/sign/hooks/useSealRequest';
@@ -53,6 +54,8 @@ export function DecryptPanel({
   const { activeNetworkId } = useRadixWallet();
   const [proofError, setProofError] = useState<CipherErrorCode | null>(null);
   const [signingProof, setSigningProof] = useState(false);
+  // Another file, or leaving the tab, withdraws the proof still waiting.
+  const proofRequests = useWalletRequestScope();
   // The account that proved itself for a ROLA + Ledger request; the optional
   // decryption receipt mints from this same account.
   const [provenAccount, setProvenAccount] = useState<string | null>(null);
@@ -64,6 +67,7 @@ export function DecryptPanel({
   const busy = localBusy || remoteActive;
 
   const onFile = (candidate: File | null) => {
+    proofRequests.abandon();
     if (remoteActive) remote.reset();
     setProofError(null);
     setProvenAccount(null);
@@ -90,7 +94,7 @@ export function DecryptPanel({
         roomId,
         networkId: head.header.networkId,
       });
-      const proof = await requestAccountProof(rdt, challenge);
+      const proof = await requestAccountProof(rdt, challenge, { signal: proofRequests.signal() });
       setProvenAccount(proof.account);
       await remote.open(file, head, name.trim() || proof.account, {
         roomId,

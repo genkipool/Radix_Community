@@ -23,6 +23,7 @@ import { useTransactionPreview } from '@/features/console/hooks/useTransactionPr
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useWalletRequests } from '@/features/wallet/hooks/useWalletRequests';
 import { useDocumentSign } from '../hooks/useDocumentSign';
 import { useSealRequest, useSealSetup, useSealSetups } from '../hooks/useSealRequest';
 import { findSealAndCollection } from '../services/sealDiscovery';
@@ -1494,9 +1495,13 @@ export function ResultPanel({
   const [envelope, setEnvelope] = useState<AttestationEnvelope>(result.envelope);
   const { anchor, phase, error } = useDocumentSign();
   const preview = useTransactionPreview();
-  const { language } = useLanguage();
+  const { language, t: common } = useLanguage();
   const { activeNetworkId } = useRadixWallet();
   const anchoring = phase === 'anchoring';
+  const { inWallet } = useWalletRequests();
+  // Starting over unmounts this panel, which drops the anchoring from the
+  // extension (useWalletRequestScope); on the phone the person rejects it.
+  const anchorInWallet = anchoring && inWallet;
 
   // Without an on-ledger request the share link still exists: it delivers the
   // signed artifact itself over the P2P channel. For PDFs that is the signed
@@ -1866,6 +1871,7 @@ export function ResultPanel({
       <button
         type="button"
         onClick={onReset}
+        title={anchorInWallet ? common.nav?.wallet_request_in_wallet : undefined}
         className="flex items-center justify-center gap-2 mx-auto text-sm font-semibold"
         style={{ color: 'var(--color-text-muted)' }}
       >

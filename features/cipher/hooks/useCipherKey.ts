@@ -3,6 +3,7 @@
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { requestAccountProof } from '@/features/wallet/lib/rola-proof';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import {
   buildChallengePayload,
   deriveCipherChallenge,
@@ -26,6 +27,8 @@ export interface CipherKeyGrant {
  */
 export function useCipherKey() {
   const { activeNetworkId } = useRadixWallet();
+  // Leaving the view that asked cancels the signature in the wallet too.
+  const requests = useWalletRequestScope();
 
   async function requestKey(fileSalt: string): Promise<CipherKeyGrant> {
     if (activeNetworkId == null) throw new Error('wallet_rejected');
@@ -35,7 +38,7 @@ export function useCipherKey() {
     const challenge = deriveCipherChallenge(
       buildChallengePayload(fileSalt, activeNetworkId),
     );
-    const proof = await requestAccountProof(rdt, challenge);
+    const proof = await requestAccountProof(rdt, challenge, { signal: requests.signal() });
     if (proof.curve !== 'curve25519') throw new Error('secp256k1');
 
     return {
@@ -45,5 +48,6 @@ export function useCipherKey() {
     };
   }
 
-  return { requestKey };
+  /** `abandon` cancels a signature still waiting, in the wallet too. */
+  return { requestKey, abandon: requests.abandon };
 }

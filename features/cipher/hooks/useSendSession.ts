@@ -61,7 +61,7 @@ function delay(ms: number): Promise<void> {
  * cancelling, or the key being released, ends the loop.
  */
 export function useSendSession() {
-  const { requestKey } = useCipherKey();
+  const { requestKey, abandon: abandonKeyRequest } = useCipherKey();
   const [phase, setPhase] = useState<SendPhase>('idle');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -364,6 +364,8 @@ export function useSendSession() {
   }
 
   function reset(): void {
+    // Cancelling while the wallet is asked to approve withdraws that request too.
+    abandonKeyRequest();
     peerRef.current?.sendMessage({ t: 'bye' });
     close();
     resultRef.current = null;

@@ -36,7 +36,7 @@ describe('mountConnectButton', () => {
 });
 
 describe('cancelThroughConnectButton', () => {
-  it('cancels each pending request that shows a Cancel, as its card would', () => {
+  it('cancels each pending request with the extension, a transaction already in the wallet too', () => {
     const { cancelled } = buttonWith([
       { interactionId: 'waiting', status: 'pending', showCancel: true },
       { interactionId: 'in-the-wallet', status: 'pending', showCancel: false },
@@ -45,7 +45,7 @@ describe('cancelThroughConnectButton', () => {
 
     cancelThroughConnectButton();
 
-    expect(cancelled).toEqual(['waiting']);
+    expect(cancelled).toEqual(['waiting', 'in-the-wallet']);
   });
 
   it('does nothing without the button', () => {

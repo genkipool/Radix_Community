@@ -7,6 +7,7 @@ import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGat
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { requestAccountProof } from '@/features/wallet/lib/rola-proof';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import type { CipherDictionary } from '../types/dictionary';
 import type { CipherErrorCode } from '../types/cipher.types';
 import { deriveUnlockChallenge } from '../lib/keys';
@@ -41,6 +42,8 @@ export function ReceiveView({
   const { activeNetworkId } = useRadixWallet();
   const [proofError, setProofError] = useState<CipherErrorCode | null>(null);
   const [signingProof, setSigningProof] = useState(false);
+  // Leaving this view withdraws the proof still waiting in the wallet.
+  const proofRequests = useWalletRequestScope();
   const ledgerProtected = session.head?.header.access === 'rola-ledger';
 
   /** ROLA + Ledger: sign the session-bound challenge, then send the request. */
@@ -64,7 +67,7 @@ export function ReceiveView({
         roomId,
         networkId: head.header.networkId,
       });
-      const proof = await requestAccountProof(rdt, challenge);
+      const proof = await requestAccountProof(rdt, challenge, { signal: proofRequests.signal() });
       session.requestDecrypt(name.trim() || proof.account, {
         account: proof.account,
         publicKey: proof.publicKey,

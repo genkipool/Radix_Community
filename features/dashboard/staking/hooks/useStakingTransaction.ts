@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import {
     buildStakeManifest,
@@ -29,6 +30,8 @@ export const useStakingTransaction = () => {
     const { activeNetworkId } = useRadixWallet();
     const [isTransacting, setIsTransacting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Closing the popup or modal that sent it cancels it in the wallet too.
+    const requests = useWalletRequestScope();
 
     /**
      * Sends a manifest to the wallet and returns its transaction id, or null
@@ -42,7 +45,7 @@ export const useStakingTransaction = () => {
             rdt,
             'transaction',
             () => rdt.walletApi.sendTransaction({ transactionManifest: manifest, version: 1 }),
-            { timeoutMs: TX_TIMEOUT_MS },
+            { timeoutMs: TX_TIMEOUT_MS, signal: requests.signal() },
         );
         if (outcome.ok) return outcome.value.transactionIntentHash;
         const { reason, code } = outcome.failure;

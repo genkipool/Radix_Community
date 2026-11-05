@@ -8,8 +8,8 @@
  * toolkit has it (radixdlt/radix-dapp-toolkit#327), and through the toolkit's
  * connect button in 2.3.0, which has nothing else (see `connect-button.ts`).
  *
- * A transaction the wallet has already received cannot be taken back by
- * anyone but the person, in the wallet.
+ * A request the wallet has already received is still dropped from the
+ * extension; on the phone only the person can reject it.
  */
 import {
   CANCELLED_CODE,
@@ -82,21 +82,31 @@ export function pendingWalletRequests(): readonly PendingWalletRequest[] {
  *
  * `send` starts the request with the toolkit (`walletApi.sendTransaction`,
  * `sendOneTimeRequest`…). With `timeoutMs`, a request nobody answers in time
- * ends with `timeout` and is cancelled as if the person had.
+ * ends with `timeout` and is cancelled as if the person had. With `signal`,
+ * aborting it cancels the request in the wallet too and ends it with
+ * `cancelled`: what `useWalletRequestScope` does when the part of the page
+ * that sent it is reset or goes away.
  */
 export function sendToWallet<T>(
   toolkit: CancellableToolkit,
   kind: WalletRequestKind,
   send: () => ToolkitRequest<T>,
-  { timeoutMs }: { timeoutMs?: number } = {},
+  { timeoutMs, signal }: { timeoutMs?: number; signal?: AbortSignal } = {},
 ): Promise<WalletOutcome<T>> {
+  if (signal?.aborted) return Promise.resolve({ ok: false, failure: walletFailure(CANCELLED_CODE) });
   return new Promise((resolve) => {
     const id = ++lastId;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    const onAbort = () => {
+      cancelInWallet(toolkit);
+      settle({ ok: false, failure: walletFailure(CANCELLED_CODE) });
+    };
+
     const settle = (outcome: WalletOutcome<T>) => {
       if (!pending.has(id)) return;
       clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
       pending.delete(id);
       changed();
       resolve(outcome);
@@ -105,6 +115,8 @@ export function sendToWallet<T>(
     pending.set(id, { id, kind, startedAt: Date.now(), inWallet: false, toolkit, settle });
     watchDelivery();
     changed();
+
+    signal?.addEventListener('abort', onAbort, { once: true });
 
     if (timeoutMs) {
       timer = setTimeout(() => {

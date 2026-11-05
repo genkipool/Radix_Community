@@ -40,8 +40,10 @@ export function useCastVote(entry: GovernanceEntry, system: GovernanceSystem, no
     /** The ballot can be used right now by this reader. */
     const canVote = phase === 'open' && wallet.isConnected && onNetwork && available.length > 0;
 
+    // While the vote waits for the wallet the ballot stays as sent: changing it
+    // would reset the transaction and let a second vote go on top of the first.
     const toggle = (key: string) => {
-        if (!canVote) return;
+        if (!canVote || tx.isSending) return;
         tx.reset();
         setPicked(prev => {
             if (maxPick === 1) return [key];
@@ -50,7 +52,11 @@ export function useCastVote(entry: GovernanceEntry, system: GovernanceSystem, no
         });
     };
 
-    const setAccounts = (next: string[]) => { setChosen(next); tx.reset(); };
+    const setAccounts = (next: string[]) => {
+        if (tx.isSending) return;
+        setChosen(next);
+        tx.reset();
+    };
     const toggleAccount = (address: string) =>
         setAccounts(selectedAccounts.includes(address) ? selectedAccounts.filter(a => a !== address) : [...selectedAccounts, address]);
 

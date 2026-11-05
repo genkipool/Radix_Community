@@ -11,8 +11,8 @@ const NONE: readonly PendingWalletRequest[] = [];
 
 /**
  * The requests waiting for the wallet, and whether the wallet already has
- * one: a cancel button here is disabled then, as only the wallet can reject
- * it from that point.
+ * one: cancelling then still drops it from the extension, but on the phone
+ * the person has to reject it, which the cancel buttons say in their title.
  */
 export function useWalletRequests() {
   const pending = useSyncExternalStore(subscribeWalletRequests, pendingWalletRequests, () => NONE);

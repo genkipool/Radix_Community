@@ -17,7 +17,7 @@ import {
   type WalletRequestSpec,
 } from '@/features/wallet/lib/wallet-interaction';
 import { sendPlaygroundRequest } from '../../lib/playground-wallet';
-import { cancelWalletRequests } from '@/features/wallet/lib/wallet-requests';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import { useWalletRequests } from '@/features/wallet/hooks/useWalletRequests';
 import { useLanguage } from '@/context/LanguageContext';
 import type { RolaProofResult } from '@/services/rola/verify';
@@ -109,6 +109,8 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const requestSeq = useRef(0);
   const { inWallet: walletHasIt } = useWalletRequests();
+  // Stopping, or leaving the page, cancels the request in the wallet too.
+  const walletRequests = useWalletRequestScope();
   const { t: common } = useLanguage();
 
   const identityAddress = persona?.identityAddress || undefined;
@@ -188,7 +190,9 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
     setRolaError(null);
     setIsVerifying(false);
 
-    const result = await sendPlaygroundRequest(activeNetworkId as RadixNetworkId, items);
+    const result = await sendPlaygroundRequest(activeNetworkId as RadixNetworkId, items, {
+      signal: walletRequests.signal(),
+    });
     if (seq !== requestSeq.current) return;
     if (result.ok) {
       setOutcome({ status: 'ok', sent: result.sent, walletData: result.walletData, walletResponse: result.walletResponse, challenge });
@@ -201,7 +205,7 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
   /** Cancels the request in the wallet too, through the Radix Connector extension. */
   const handleStopWaiting = () => {
     requestSeq.current += 1;
-    cancelWalletRequests();
+    walletRequests.abandon();
     setOutcome({ status: 'idle' });
   };
 
@@ -483,9 +487,8 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
             <button
               type="button"
               onClick={handleStopWaiting}
-              disabled={walletHasIt}
               title={walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
-              className="font-semibold underline-offset-2 enabled:hover:underline enabled:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="font-semibold underline-offset-2 hover:underline cursor-pointer"
               style={{ color: 'var(--color-text-main)' }}
             >
               {labels.stopWaiting}

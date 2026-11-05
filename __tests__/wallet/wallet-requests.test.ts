@@ -153,3 +153,45 @@ describe('a request reaching the wallet', () => {
     expect(pendingWalletRequests()[0].inWallet).toBe(false);
   });
 });
+
+describe('sendToWallet with a signal', () => {
+  it('aborting cancels the request in the wallet and ends it as cancelled', async () => {
+    const cancelPendingRequests = vi.fn();
+    const controller = new AbortController();
+    const outcome = sendToWallet(toolkit(cancelPendingRequests), 'transaction', waitingWallet<string>().send, {
+      signal: controller.signal,
+    });
+
+    controller.abort();
+
+    expect(await outcome).toMatchObject({ ok: false, failure: { reason: 'cancelled' } });
+    expect(cancelPendingRequests).toHaveBeenCalledOnce();
+    expect(pendingWalletRequests()).toEqual([]);
+  });
+
+  it('never sends a request whose signal is already aborted', async () => {
+    const send = vi.fn();
+    const controller = new AbortController();
+    controller.abort();
+
+    const outcome = await sendToWallet(toolkit(), 'proof', send, { signal: controller.signal });
+
+    expect(outcome).toMatchObject({ ok: false, failure: { reason: 'cancelled' } });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('aborting after the wallet answered changes nothing', async () => {
+    const cancelPendingRequests = vi.fn();
+    const controller = new AbortController();
+    const wallet = waitingWallet<string>();
+    const outcome = sendToWallet(toolkit(cancelPendingRequests), 'data', wallet.send, {
+      signal: controller.signal,
+    });
+    wallet.answer(ok('answer'));
+    expect(await outcome).toEqual({ ok: true, value: 'answer' });
+
+    controller.abort();
+
+    expect(cancelPendingRequests).not.toHaveBeenCalled();
+  });
+});

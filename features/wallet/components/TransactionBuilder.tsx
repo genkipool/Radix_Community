@@ -9,6 +9,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { buildMultiTransferManifest, TransferGroup, TransferItem } from '@/features/wallet/lib/manifest-builders';
@@ -215,6 +216,8 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
     const [activeTab, setActiveTab] = useState<AssetType>('fungible');
 
     const [isTransacting, setIsTransacting] = useState(false);
+    // Closing the modal or chat that shows this builder cancels its transaction in the wallet too.
+    const walletRequests = useWalletRequestScope();
     const [error, setError] = useState<string | null>(null);
     const queryClient = useQueryClient();
 
@@ -831,6 +834,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                     version: 1,
                     ...(showMessageInput && messageText.trim() ? { message: messageText.trim() } : {}),
                 }),
+                { signal: walletRequests.signal() },
             );
 
             if (!result.ok) {

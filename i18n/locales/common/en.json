@@ -94,7 +94,7 @@
     "wallet_connected": "Connected",
     "wallet_disconnect": "Disconnect",
     "wallet_cancel_connection": "Cancel connection",
-    "wallet_request_in_wallet": "It is already in your wallet: reject it there.",
+    "wallet_request_in_wallet": "It is already in your wallet: it is removed from the extension, but you have to reject it on the phone.",
     "update_wallet": "Update",
     "profile": "Profile",
     "accounts": "Accounts",
