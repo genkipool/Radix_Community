@@ -6,14 +6,22 @@ import { gatewayOwnerKeys } from '@/services/rola/gateway';
 import type { SessionAccount } from './sessionToken';
 
 /**
- * What a login or an account update proves: the wallet signed this site's
- * one-time challenge with the persona and with every account it shares, and
- * only what was proven goes into the session.
+ * What a login proves: the wallet signed this site's one-time challenge with
+ * the persona. The accounts it shares sign nothing (a Ledger account would
+ * need the Ledger): the session uses them only to show them, and the tools
+ * that act on an account's ownership ask for their own proof.
  */
 
 const address = z.string().min(10).max(120);
 
+const sharedAccount = z.object({
+    address,
+    label: z.string().max(100),
+    appearanceId: z.number().int().min(0).max(100),
+});
+
 const proofSchema = z.object({
+    // Account proofs from an older client are accepted and ignored.
     type: z.enum(['persona', 'account']),
     address,
     proof: z.object({
@@ -29,22 +37,27 @@ export const walletProofsBodySchema = z.object({
     challenge: z.string().regex(/^[0-9a-f]{64}$/),
     identityAddress: address,
     personaLabel: z.string().max(100).optional(),
-    accounts: z
-        .array(z.object({ address, label: z.string().max(100), appearanceId: z.number().int().min(0).max(100) }))
-        .max(50),
+    accounts: z.array(sharedAccount).max(50),
     proofs: z.array(proofSchema).min(1).max(51),
 });
 
 export type WalletProofsBody = z.infer<typeof walletProofsBodySchema>;
 
+/** The body an account update posts: the accounts the logged-in persona now shares. */
+export const sharedAccountsBodySchema = z.object({
+    networkId: walletProofsBodySchema.shape.networkId,
+    identityAddress: address,
+    accounts: z.array(sharedAccount).max(50),
+});
+
 export interface ProvenWallet {
     /** Whether the persona signed the challenge. */
     personaProven: boolean;
-    /** The shared accounts that signed it; any other is left out. */
+    /** The accounts the wallet shared. */
     accounts: SessionAccount[];
 }
 
-/** Checks every proof against this site's origin and dApp definition on the body's network. */
+/** Checks the persona's proof against this site's origin and dApp definition on the body's network. */
 export async function verifyWalletProofs(body: WalletProofsBody): Promise<ProvenWallet> {
     const origin = process.env.NEXT_PUBLIC_APP_URL;
     if (!origin) throw new Error('NEXT_PUBLIC_APP_URL is not set');
@@ -55,14 +68,13 @@ export async function verifyWalletProofs(body: WalletProofsBody): Promise<Proven
         dAppDefinitionAddress: config.dAppDefinitionAddress,
         origin,
         challenge: body.challenge,
-        proofs: body.proofs as RolaProof[],
+        proofs: (body.proofs as RolaProof[]).filter((p) => p.type === 'persona'),
         ownerKeys: gatewayOwnerKeys(body.networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'),
     });
-    const proven = (type: RolaProof['type'], entity: string) =>
-        results.some((r) => r.verified && r.type === type && r.address === entity);
-
     return {
-        personaProven: proven('persona', body.identityAddress),
-        accounts: body.accounts.filter((account) => proven('account', account.address)),
+        personaProven: results.some(
+            (r) => r.verified && r.type === 'persona' && r.address === body.identityAddress,
+        ),
+        accounts: body.accounts,
     };
 }

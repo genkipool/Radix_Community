@@ -274,8 +274,8 @@ export function RadixWalletProvider({
         return;
       }
 
-      // ROLA verification happens on the server: a login proves the persona
-      // and its accounts, an update (no persona proof) the accounts it shares.
+      // ROLA verification happens on the server: a login proves the persona;
+      // an update (no persona proof) replaces the accounts it shares.
       const walletData = outcome.value;
       const proofs = walletData.proofs ?? [];
       const endpoint = proofs.some((p) => p.type === 'persona')

@@ -21,8 +21,7 @@ function networkLabel(id: number): 'mainnet' | 'stokenet' {
 
 /**
  * Logs a persona in on one network. The wallet signed this site's one-time
- * challenge with the persona and with each account it shares; the session
- * holds the persona and only the accounts whose proof checks out.
+ * challenge with the persona; the session holds it and the accounts shared.
  */
 export async function POST(req: NextRequest) {
   const rate = await rateLimit(RATE_LIMITS.auth, clientIp(req.headers));
@@ -45,7 +44,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. The persona, and each shared account, signed it
+    // 2. The persona signed it
     const proven = await verifyWalletProofs(body);
     if (!proven.personaProven) {
       return NextResponse.json(
@@ -107,7 +106,8 @@ export async function POST(req: NextRequest) {
     response.headers.set('Set-Cookie', buildSessionCookieHeader(token));
 
     return response;
-  } catch {
+  } catch (err) {
+    console.error('Login verification failed:', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
