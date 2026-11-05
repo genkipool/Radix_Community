@@ -3,6 +3,7 @@ import { Validator } from '@/types/radix';
 import { StakingPopupContent } from './StakingPopupContent';
 import { TranslationsT } from '@/features/dashboard/types';
 import { Portal } from '@/components/ui/Portal';
+import { pendingWalletRequests } from '@/features/wallet/lib/wallet-requests';
 
 interface StakingPopupProps {
     children: React.ReactNode;
@@ -59,10 +60,16 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
         setIsOpen(true);
     };
 
+    /**
+     * Closing unmounts the content, which cancels its transaction in the
+     * wallet: while one is waiting, the popup stays open.
+     */
+    const close = () => {
+        if (pendingWalletRequests().length === 0) setIsOpen(false);
+    };
+
     const handleMouseLeave = () => {
-        timeoutRef.current = setTimeout(() => {
-            setIsOpen(false);
-        }, 300); // 300ms delay to allow moving mouse into the popup
+        timeoutRef.current = setTimeout(close, 300); // 300ms delay to allow moving mouse into the popup
     };
 
     useEffect(() => {
@@ -111,7 +118,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
                         {/* Mobile Overlay (Invisible) to capture taps and close the popup */}
                         <div 
                             className="fixed inset-0 z-[9998] sm:hidden"
-                            onClick={() => setIsOpen(false)}
+                            onClick={close}
                             style={{ touchAction: 'none' }}
                         />
                         <div

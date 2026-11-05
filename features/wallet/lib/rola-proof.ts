@@ -39,12 +39,16 @@ function enqueueSigning<T>(run: () => Promise<T>): Promise<T> {
 export function requestAccountProof(
   rdt: Rdt,
   challenge: string,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<RolaAccountProof> {
   const run = async (): Promise<RolaAccountProof> => {
+    // Given up on while it waited in the queue: never shown in the wallet.
+    if (signal?.aborted) throw new WalletCancelledError();
     // Bind the wallet signature to THIS request by feeding our challenge.
     rdt.walletApi.provideChallengeGenerator(async () => challenge);
     const response = await sendToWallet(rdt, 'proof', () =>
       rdt.walletApi.sendOneTimeRequest(DataRequestBuilder.accounts().exactly(1).withProof()),
+      { signal },
     );
     if (!response.ok) {
       if (response.failure.reason === 'cancelled') throw new WalletCancelledError();

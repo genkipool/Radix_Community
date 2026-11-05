@@ -15,20 +15,19 @@ import { useLanguage } from '@/context/LanguageContext';
 function CancelButton({
   label,
   onClick,
-  disabledReason,
+  hint,
 }: {
   label: string;
   onClick: () => void;
-  /** Set when it cannot be used, and says why. */
-  disabledReason?: string;
+  /** Shown instead of the label as its title. */
+  hint?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={Boolean(disabledReason)}
-      title={disabledReason ?? label}
-      className="text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+      title={hint ?? label}
+      className="text-xs font-semibold transition-opacity hover:opacity-80"
       style={{ color: 'var(--color-text-muted)' }}
     >
       {label}
@@ -158,8 +157,8 @@ export function ChatSessionView({
         <CancelButton
           label={t.status.cancel}
           onClick={onRestart}
-          // Once the wallet has the signature request, only the wallet can reject it.
-          disabledReason={session.phase === 'signing' && walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
+          // Once the wallet has the signature request, it leaves the extension but not the phone.
+          hint={session.phase === 'signing' && walletHasIt ? common.nav?.wallet_request_in_wallet : undefined}
         />
       )}
 

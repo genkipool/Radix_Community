@@ -7,6 +7,7 @@ import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
 import { WalletCancelledError, isWalletCancellation } from '@/features/wallet/lib/wallet-errors';
 import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import { deriveChallenge, randomNonceHex } from '../lib/hash';
 import {
   appendSignature,
@@ -84,7 +85,9 @@ async function requestWalletSignature(
   disclosure: DisclosurePolicy,
   includeEmail: boolean,
   personaLabel?: string | null,
+  signal?: AbortSignal,
 ): Promise<WalletSignature> {
+  if (signal?.aborted) throw new WalletCancelledError();
   // Bind the wallet signature to THIS document by feeding our challenge.
   rdt.walletApi.provideChallengeGenerator(async () => challenge);
 
@@ -97,6 +100,7 @@ async function requestWalletSignature(
     wantsName || includeEmail
       ? rdt.walletApi.sendOneTimeRequest(accounts, personaData)
       : rdt.walletApi.sendOneTimeRequest(accounts),
+    { signal },
   );
   if (!response.ok) {
     if (response.failure.reason === 'cancelled') throw new WalletCancelledError();
@@ -170,11 +174,15 @@ async function timestampedEntry(
  */
 export function useDocumentSign() {
   const { activeNetworkId, persona } = useRadixWallet();
-  const { sendTransaction } = useConsoleTransaction();
+  const { sendTransaction, reset: resetTransaction } = useConsoleTransaction();
+  // Starting over, or leaving, cancels what is still waiting for the wallet.
+  const requests = useWalletRequestScope();
   const [phase, setPhase] = useState<SignPhase>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
+    requests.abandon();
+    resetTransaction();
     setPhase('idle');
     setError(null);
   };
@@ -320,6 +328,7 @@ export function useDocumentSign() {
         input.disclosure,
         input.includeEmail,
         persona?.label,
+        requests.signal(),
       );
 
       const entry = await timestampedEntry(sig, challenge);
@@ -404,6 +413,7 @@ export function useDocumentSign() {
         payload.disclosure,
         payload.email,
         persona?.label,
+        requests.signal(),
       );
 
       if (payload.signers.length > 0 && !payload.signers.includes(sig.account)) {
@@ -466,7 +476,7 @@ export function useDocumentSign() {
     try {
       // Identify the anchoring account (and its curve) via a fresh proof.
       setPhase('signing');
-      const who = await requestWalletSignature(rdt, randomNonceHex(), 'none', false);
+      const who = await requestWalletSignature(rdt, randomNonceHex(), 'none', false, null, requests.signal());
       if (!signers.includes(who.account)) {
         setPhase('error');
         setError('not_required_signer');

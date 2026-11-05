@@ -190,11 +190,13 @@ export type SealRequestPhase =
  */
 export function useSealRequest() {
   const { activeNetworkId } = useRadixWallet();
-  const { sendTransaction } = useConsoleTransaction();
+  const { sendTransaction, reset: resetTransaction } = useConsoleTransaction();
   const [phase, setPhase] = useState<SealRequestPhase>('idle');
   const [error, setError] = useState<string | null>(null);
 
+  /** Back to the start; a transaction still waiting is cancelled in the wallet too. */
   const reset = () => {
+    resetTransaction();
     setPhase('idle');
     setError(null);
   };

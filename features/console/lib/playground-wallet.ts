@@ -105,6 +105,7 @@ export type PlaygroundSendResult =
 export async function sendPlaygroundRequest(
   networkId: RadixNetworkId,
   items: WalletRequestItems,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<PlaygroundSendResult> {
   const sandbox = getSandbox(networkId);
   if (!sandbox) return { ok: false, sent: null, error: 'toolkitUnavailable' };
@@ -113,6 +114,7 @@ export async function sendPlaygroundRequest(
   sandbox.lastSent = null;
   const result = await sendToWallet(sandbox.rdt, 'data', () =>
     sandbox.rdt.walletApi.sendOneTimeRequest(OneTimeDataRequestBuilder.accounts().atLeast(1)),
+    { signal },
   );
   const sent = sandbox.lastSent as WalletInteraction | null;
   sandbox.nextItems = null;

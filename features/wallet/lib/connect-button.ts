@@ -38,15 +38,17 @@ export function mountConnectButton(): void {
 
 /**
  * Cancels, as each request card's Cancel does, every request the button
- * shows as pending and still cancellable. A transaction the wallet has
- * already received shows no Cancel, and is left alone.
+ * shows as pending, so the Radix Connector extension drops it. That includes
+ * a transaction the wallet has already received, whose card hides Cancel:
+ * the toolkit still cancels it with the extension, while on the phone only
+ * the person can reject it.
  */
 export function cancelThroughConnectButton(): void {
   if (typeof document === 'undefined') return;
   const button = document.querySelector<ConnectButtonElement>(TAG);
   if (!button) return;
   (button.requestItems ?? [])
-    .filter((item) => item.status === 'pending' && item.showCancel)
+    .filter((item) => item.status === 'pending')
     .forEach((item) =>
       button.dispatchEvent(
         new CustomEvent('onCancelRequestItem', { detail: { id: item.interactionId } }),

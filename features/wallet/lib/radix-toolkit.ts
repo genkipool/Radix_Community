@@ -32,11 +32,13 @@ export const getOrCreateToolkit = (networkId: RadixNetworkId) => {
     applicationVersion: '1.0.0',
   });
 
-  // At least one account, and the persona, each signing the server's
-  // challenge (ROLA): the session holds only what was proven.
+  // The persona signs the server's challenge (ROLA); the person still picks
+  // the accounts to share, which sign nothing: a Ledger account would need the
+  // Ledger to sign, and the session only uses the accounts to show them. The
+  // tools that act on an account's ownership ask for their own proof.
   rdt.walletApi.setRequestData(
     DataRequestBuilder.persona().withProof(),
-    DataRequestBuilder.accounts().atLeast(1).withProof(),
+    DataRequestBuilder.accounts().atLeast(1),
   );
 
   rdtInstances.set(networkId, rdt);

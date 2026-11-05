@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import type { ConsoleTxResult } from '../types/console.types';
 
@@ -60,8 +61,13 @@ function ledgerStatus(details: Record<string, unknown>): string {
 export function useConsoleTransaction() {
   const { activeNetworkId, activeNetwork } = useRadixWallet();
   const [state, setState] = useState<TxState>(INITIAL_STATE);
+  const requests = useWalletRequestScope();
 
-  const reset = () => setState(INITIAL_STATE);
+  /** Back to the start; a transaction still waiting is cancelled in the wallet too. */
+  const reset = () => {
+    requests.abandon();
+    setState(INITIAL_STATE);
+  };
 
   const sendTransaction = async (
     transactionManifest: string,
@@ -84,7 +90,7 @@ export function useConsoleTransaction() {
         rdt,
         'transaction',
         () => rdt.walletApi.sendTransaction({ transactionManifest, blobs, version: 1 }),
-        { timeoutMs: TX_TIMEOUT_MS },
+        { timeoutMs: TX_TIMEOUT_MS, signal: requests.signal() },
       );
 
       if (!response.ok) {

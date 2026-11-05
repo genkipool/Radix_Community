@@ -5,6 +5,7 @@ import { SubintentRequestBuilder } from '@radixdlt/radix-dapp-toolkit';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { sendToWallet } from '@/features/wallet/lib/wallet-requests';
+import { useWalletRequestScope } from '@/features/wallet/hooks/useWalletRequestScope';
 
 export interface SubintentResult {
   subintentHash: string;
@@ -28,8 +29,13 @@ const INITIAL: SubintentState = { isSending: false, result: null, error: null };
 export function useSubintentRequest() {
   const { activeNetworkId } = useRadixWallet();
   const [state, setState] = useState<SubintentState>(INITIAL);
+  const requests = useWalletRequestScope();
 
-  const reset = () => setState(INITIAL);
+  /** Back to the start; a request still waiting is cancelled in the wallet too. */
+  const reset = () => {
+    requests.abandon();
+    setState(INITIAL);
+  };
 
   const sendSubintent = async (manifest: string, expireAfterSeconds: number) => {
     if (!activeNetworkId) {
@@ -50,6 +56,7 @@ export function useSubintentRequest() {
           .setExpiration('afterDelay', expireAfterSeconds)
           .addBlobs(),
       ),
+      { signal: requests.signal() },
     );
 
     if (!response.ok) {
