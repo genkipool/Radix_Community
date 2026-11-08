@@ -3,7 +3,7 @@ import { Validator } from '@/types/radix';
 import { StakingPopupContent } from './StakingPopupContent';
 import { TranslationsT } from '@/features/dashboard/types';
 import { Portal } from '@/components/ui/Portal';
-import { pendingWalletRequests } from '@/features/wallet/lib/wallet-requests';
+import { pendingWalletRequests, subscribeWalletRequests } from '@/features/wallet/lib/wallet-requests';
 
 interface StakingPopupProps {
     children: React.ReactNode;
@@ -23,6 +23,8 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
     const [coords, setCoords] = useState<PopupCoords>({ top: 0, right: 0, isUp: false });
     const triggerRef = useRef<HTMLDivElement>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    /** The person asked to close while a request was waiting: close once nothing is. */
+    const wantsCloseRef = useRef(false);
 
     const calculateCoords = () => {
         if (!triggerRef.current) return;
@@ -55,6 +57,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
     };
 
     const handleMouseEnter = () => {
+        wantsCloseRef.current = false;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         calculateCoords();
         setIsOpen(true);
@@ -62,11 +65,25 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
 
     /**
      * Closing unmounts the content, which cancels its transaction in the
-     * wallet: while one is waiting, the popup stays open.
+     * wallet: while one is waiting, the popup stays open, and it closes by
+     * itself as soon as nothing is waiting any more (unless the pointer came
+     * back in the meantime).
      */
     const close = () => {
-        if (pendingWalletRequests().length === 0) setIsOpen(false);
+        if (pendingWalletRequests().length === 0) {
+            wantsCloseRef.current = false;
+            setIsOpen(false);
+        } else {
+            wantsCloseRef.current = true;
+        }
     };
+
+    useEffect(() => subscribeWalletRequests(() => {
+        if (wantsCloseRef.current && pendingWalletRequests().length === 0) {
+            wantsCloseRef.current = false;
+            setIsOpen(false);
+        }
+    }), []);
 
     const handleMouseLeave = () => {
         timeoutRef.current = setTimeout(close, 300); // 300ms delay to allow moving mouse into the popup
@@ -94,6 +111,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
     const handleMobileClickCapture = () => {
         const mobile = window.innerWidth < 640;
         if (mobile) {
+            wantsCloseRef.current = false;
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             calculateCoords();
             setIsOpen(true);
