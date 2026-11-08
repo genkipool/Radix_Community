@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { localDay, OLYMPIA_START_ISO } from '../lib/olympia';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { DashboardFilterSelect, type FilterSelectOption } from './DashboardFilterSelect';
@@ -49,6 +50,8 @@ export const DashboardToolbar = ({
     onPrefetchNetwork,
     dt,
 }: DashboardToolbarProps) => {
+    // The calendar's last day: today, read once when the toolbar mounts.
+    const [today] = React.useState(() => localDay(Date.now()));
     const queryClient = useQueryClient();
     const { isConnected } = useRadixWallet();
     const isSearchActive = searchQuery.trim().length > 0;
@@ -323,6 +326,9 @@ export const DashboardToolbar = ({
                             onSelectRange={onSelectRange}
                             onResetRange={onResetRange}
                             calendarT={calendarT}
+                            // From Olympia's first day (nothing on Radix is older) to today.
+                            calendarMinDate={localDay(OLYMPIA_START_ISO)}
+                            calendarMaxDate={today}
                             columns={columns}
                             showCalendar={activeView === 'transactions'}
                             calendarButtonTitle={dt?.toolbar?.search_by_date}

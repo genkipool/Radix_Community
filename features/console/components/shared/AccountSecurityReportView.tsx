@@ -1,5 +1,6 @@
 'use client';
 
+import type React from 'react';
 import { AlertTriangle, HelpCircle, Info, KeyRound, ShieldCheck, ShieldOff } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { truncateAddress } from '@/utils/formatters';
@@ -334,13 +335,19 @@ function ControllerPanel({ report, labels }: { report: AccountSecurityReport; la
  * One component for every surface: the console's tool and the account cards
  * in the dashboard draw the same report, from the same labels.
  */
-export function AccountSecurityReportView({ report, labels }: { report: AccountSecurityReport; labels: Labels }) {
+export function AccountSecurityReportView({ report, labels, controlExtra }: {
+  report: AccountSecurityReport;
+  labels: Labels;
+  /** More rows for "who controls it", drawn after the ledger's (e.g. the account's Olympia origin). */
+  controlExtra?: React.ReactNode;
+}) {
   return (
     <div className="space-y-5">
       <VerdictBanner report={report} labels={labels} />
 
       <ToolSection title={labels.controlTitle} hint={labels.controlHint}>
         <ControlDetails report={report} labels={labels} />
+        {controlExtra}
       </ToolSection>
 
       <LevelPanel report={report} labels={labels} />

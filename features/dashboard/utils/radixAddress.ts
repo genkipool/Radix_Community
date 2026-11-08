@@ -7,6 +7,7 @@
  */
 
 import { ENTITY_ADDRESS_PREFIXES } from '../lib/entityKinds';
+import { isOlympiaValue } from '../lib/olympia';
 
 const RADIX_ADDRESS_PREFIXES = [...ENTITY_ADDRESS_PREFIXES, 'txid_'];
 
@@ -15,5 +16,5 @@ const RADIX_ADDRESS_PREFIXES = [...ENTITY_ADDRESS_PREFIXES, 'txid_'];
  * (i.e. it starts with a known prefix and has a meaningful length).
  */
 export function isRadixAddress(q: string): boolean {
-    return q.length > 10 && RADIX_ADDRESS_PREFIXES.some(prefix => q.startsWith(prefix));
+    return (q.length > 10 && RADIX_ADDRESS_PREFIXES.some(prefix => q.startsWith(prefix))) || isOlympiaValue(q);
 }

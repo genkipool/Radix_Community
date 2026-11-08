@@ -59,6 +59,7 @@ import { useDashboardUrlSync, useDashboardUrlEffects } from './hooks/useDashboar
 import { useCommittedNetwork } from './hooks/useCommittedNetwork';
 import { useFocusedEntity, useReadyEntities } from './hooks/useEntityReadiness';
 import { entityKindOf, isCardEntity } from './lib/entityKinds';
+import { olympiaWindow } from './lib/olympia';
 import { setLiveNetwork } from '@/services/liveDataStore';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -509,6 +510,19 @@ export default function DashboardClient({
   });
 
   const txs = flattenTransactionPages(txPages?.pages);
+  // A calendar range that reaches before Babylon also lists Olympia's
+  // transactions, after Babylon's (all of them read, the list is newest first).
+  // Only the plain list: an address, a tag or the wallet filter narrow it to
+  // things the Olympia archive cannot answer that way.
+  const olympiaRange = activeView === 'transactions'
+    && deferredNetwork === 'mainnet'
+    && txStatus === 'success'
+    && !hasNextPage
+    && !deferredSearch.trim()
+    && deferredTransactionActiveTag === 'All'
+    && !txAddresses
+    ? olympiaWindow(deferredDateRange)
+    : null;
   const txsInitialized = txs.length > 0 || txStatus === 'success';
   // Use isLoading (status === 'pending', i.e. no data at all) rather than
   // isFetching (true even during background refetches) so the skeleton only
@@ -910,6 +924,7 @@ export default function DashboardClient({
             // grid does with visibleValCount. The full list stays available to
             // the expanded-card modal below.
             filteredTxs={visibleTxs}
+            olympiaRange={olympiaRange}
             loadingTxs={loadingTxs}
             txsInitialized={txsInitialized}
             loadingValidators={loadingValidators || (isStakeStatesLoading && filtered.length === 0)}

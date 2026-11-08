@@ -20,6 +20,7 @@
  */
 import type { DashboardView, Network } from '../types';
 import { entityKindOf, type ExplorerEntityKind } from './entityKinds';
+import { isOlympiaValue } from './olympia';
 
 /* ── Views ────────────────────────────────────────────────────────────────── */
 
@@ -49,7 +50,7 @@ export function segmentToView(segment: string): DashboardView | null {
 /* ── Entities ─────────────────────────────────────────────────────────────── */
 
 /** Entity kinds that get a route of their own. */
-export type EntityKind = 'tx' | 'resource' | 'account' | 'validator' | 'component';
+export type EntityKind = 'tx' | 'resource' | 'account' | 'validator' | 'component' | 'olympia';
 
 /**
  * URL segment per entity kind. `component` has no route of its own yet, so it
@@ -60,6 +61,9 @@ const ENTITY_SEGMENT: Partial<Record<EntityKind, string>> = {
   resource: 'resource',
   account: 'account',
   validator: 'validator',
+  // Every Olympia identifier (account, validator, token, transaction) shares one
+  // route: the archive card works out which kind it is.
+  olympia: 'olympia',
 };
 
 /** Transaction hashes; every other entity's kind comes from `entityKinds.ts`. */
@@ -75,6 +79,7 @@ const ROUTED_KINDS: Partial<Record<ExplorerEntityKind, EntityKind>> = {
 /** The entity kind a value refers to, or null when it is not an entity. */
 export function resolveEntityKind(value: string | null | undefined): EntityKind | null {
   if (!value || typeof value !== 'string') return null;
+  if (isOlympiaValue(value)) return 'olympia';
   if (TX_PREFIXES.some((prefix) => value.startsWith(prefix))) return 'tx';
   const kind = entityKindOf(value);
   return kind ? ROUTED_KINDS[kind] ?? 'component' : null;
@@ -95,6 +100,8 @@ export function networkOfAddress(value: string | null | undefined): Network | nu
   if (!value || typeof value !== 'string') return null;
   if (/^[a-z]+_rdx1/.test(value)) return 'mainnet';
   if (/^[a-z]+_tdx_2_1/.test(value)) return 'stokenet';
+  // Olympia only ever ran one public network that the archive holds: mainnet.
+  if (isOlympiaValue(value)) return 'mainnet';
   return null;
 }
 

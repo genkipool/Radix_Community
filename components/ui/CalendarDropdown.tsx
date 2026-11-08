@@ -27,6 +27,10 @@ interface CalendarDropdownProps {
     dateRange: DateRange;
     onSelectRange: (range: DateRange) => void;
     onReset: () => void;
+    /** First day that can be picked (YYYY-MM-DD); earlier days are shown disabled. */
+    minDate?: string;
+    /** Last day that can be picked (YYYY-MM-DD); later days are shown disabled. */
+    maxDate?: string;
 }
 
 // Helpers
@@ -56,12 +60,18 @@ export function CalendarDropdown({
     dateRange,
     onSelectRange,
     onReset,
+    minDate,
+    maxDate,
 }: CalendarDropdownProps) {
-    // Initialize viewDate to the start date if provided, otherwise today
+    // Initialize viewDate to the start date if provided, otherwise today (or the last day allowed)
     const [viewDate, setViewDate] = useState(() => {
         if (dateRange?.start) {
             const [y, m, d] = dateRange.start.split('-');
             if (y && m && d) return new Date(Number(y), Number(m) - 1, Number(d));
+        }
+        if (maxDate && toDateStr(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()) > maxDate) {
+            const [y, m] = maxDate.split('-');
+            return new Date(Number(y), Number(m) - 1, 1);
         }
         return new Date();
     });
@@ -75,10 +85,19 @@ export function CalendarDropdown({
     const rawFirstDay = new Date(currentYear, currentMonth, 1).getDay();
     const firstDayOfMonth = (rawFirstDay + 6) % 7; // Mon-first offset
 
-    const handlePrevMonth = () => setViewDate(new Date(currentYear, currentMonth - 1, 1));
-    const handleNextMonth = () => setViewDate(new Date(currentYear, currentMonth + 1, 1));
+    // A month can be shown when any of its days can be picked.
+    const canPrev = !minDate || toDateStr(currentYear, currentMonth, 1) > minDate;
+    const canNext = !maxDate || toDateStr(currentYear, currentMonth, daysInMonth) < maxDate;
+    const handlePrevMonth = () => { if (canPrev) setViewDate(new Date(currentYear, currentMonth - 1, 1)); };
+    const handleNextMonth = () => { if (canNext) setViewDate(new Date(currentYear, currentMonth + 1, 1)); };
+
+    const isDisabled = (day: number): boolean => {
+        const dateStr = toDateStr(currentYear, currentMonth, day);
+        return (!!minDate && dateStr < minDate) || (!!maxDate && dateStr > maxDate);
+    };
 
     const handleDayClick = (day: number) => {
+        if (isDisabled(day)) return;
         const dateStr = toDateStr(currentYear, currentMonth, day);
 
         if (!dateRange.start || (dateRange.start && dateRange.end)) {
@@ -139,7 +158,8 @@ export function CalendarDropdown({
                         <button
                             type="button"
                             onClick={handlePrevMonth}
-                            className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors text-lg font-bold"
+                            disabled={!canPrev}
+                            className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors text-lg font-bold disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-main)]"
                         >
                             &lt;
                         </button>
@@ -149,7 +169,8 @@ export function CalendarDropdown({
                         <button
                             type="button"
                             onClick={handleNextMonth}
-                            className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors text-lg font-bold"
+                            disabled={!canNext}
+                            className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors text-lg font-bold disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-main)]"
                         >
                             &gt;
                         </button>
@@ -173,15 +194,19 @@ export function CalendarDropdown({
                             const selected = isStartOrEnd(day);
                             const inRange = isInRange(day);
                             const today = isToday(day);
+                            const disabled = isDisabled(day);
 
                             return (
                                 <button
                                     type="button"
                                     key={day}
                                     onClick={() => handleDayClick(day)}
+                                    disabled={disabled}
                                     className={[
                                         'relative aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all duration-150',
-                                        selected
+                                        disabled
+                                            ? 'text-[var(--color-text-muted)] opacity-25 cursor-not-allowed'
+                                            : selected
                                             ? 'border border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/10 font-bold'
                                             : inRange
                                                 ? 'bg-[var(--color-primary)]/5 text-[var(--color-primary)]'

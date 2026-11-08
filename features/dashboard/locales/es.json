@@ -699,6 +699,8 @@
       "lsu_resource": "Recurso LSU",
       "public_key": "Clave Pública",
       "owner_address": "Dirección del Dueño",
+      "olympia_address": "Dirección del Validador en Olympia",
+      "olympia_address_tooltip": "La dirección que tuvo este validador en Olympia: su nodo usaba la misma clave pública.",
       "owner_badge": "Insignia del Dueño",
       "nft_claim": "NFT Claim",
       "epoch": "Época",
@@ -798,7 +800,17 @@
       "nft": "NFT",
       "supply": "Suministro",
       "minted": "Acuñados",
-      "decimals": "Decimales"
+      "decimals": "Decimales",
+      "olympia": "Olympia",
+      "olympia_account": "Cuenta de Olympia",
+      "olympia_validator": "Validador de Olympia",
+      "olympia_token": "Token de Olympia",
+      "olympia_tx": "Transacción de Olympia",
+      "staked": "En stake",
+      "transactions": "Transacciones",
+      "delegators": "Delegadores",
+      "holders": "Holders",
+      "uptime": "Uptime"
     }
   },
   "stakes": {

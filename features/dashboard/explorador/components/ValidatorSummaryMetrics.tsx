@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect } from 'react';
+import { useDashboardDictionary } from '@/features/dashboard/hooks/useDashboardDictionary';
+import { useOlympiaValidatorByKey } from '@/features/dashboard/services/olympiaApi';
 import { registerAddressForPolling, unregisterAddressForPolling } from '@/services/liveDataStore';
 import { Activity, ExternalLink } from 'lucide-react';
 import type { Validator } from '@/types/radix';
@@ -54,6 +56,16 @@ interface ValidatorMetricsProps {
 /**
  * Local Section Header (matches veb-label style)
  */
+/**
+ * The details words: the dictionary passed in, or the dashboard's own when a
+ * view renders these blocks without one (labels used to fall back to English
+ * there, and the ones with no fallback came out blank).
+ */
+function useDetailsDict(dt: Partial<DashboardDict> | undefined): Partial<DashboardDict['details']> {
+    const dict = useDashboardDictionary();
+    return dt?.details || (dict?.dashboard?.details as Partial<DashboardDict['details']> | undefined) || {};
+}
+
 function SectionHeader({ label, hide }: { label: string; hide?: boolean }) {
     if (hide) return null;
     return (
@@ -71,9 +83,11 @@ function SectionHeader({ label, hide }: { label: string; hide?: boolean }) {
 export function ValidatorAddressMetrics({
     validator, address, onCopy, copiedAddress, dt, renderRow, isModal
 }: ValidatorMetricsProps) {
-    const dd: Partial<DashboardDict['details']> = dt?.details || {};
+    const dd = useDetailsDict(dt);
 
     const Row = renderRow || SummaryInlineRow;
+    // Olympia only existed on mainnet.
+    const { data: olympia } = useOlympiaValidatorByKey(address.startsWith('validator_rdx1') ? validator.publicKey : null);
     const trunc = (a: string) => isModal
         ? (a.length > 20 ? `${a.slice(0, 12)}...${a.slice(-8)}` : a)
         : (a.length > 16 ? `${a.slice(0, 8)}...${a.slice(-6)}` : a);
@@ -90,6 +104,20 @@ export function ValidatorAddressMetrics({
                 isCopied={copiedAddress === address}
                 isModal={isModal}
             />
+            {/* The Olympia validator that ran with the same node key, when there was one. */}
+            {olympia?.address && olympia.address !== address && (
+                <Row
+                    label={dd.olympia_address ?? ''}
+                    value={trunc(olympia.address)}
+                    rawAddress={olympia.address}
+                    tooltip={dd.olympia_address_tooltip}
+                    mono
+                    copyable
+                    onCopy={() => onCopy(olympia.address)}
+                    isCopied={copiedAddress === olympia.address}
+                    isModal={isModal}
+                />
+            )}
             {validator.ownerAddress && (
                 <Row
                     label={dd.owner_address || 'Owner Address'}
@@ -239,8 +267,8 @@ function ValidatorPositionMetrics({
 export function ValidatorProfileMetrics({
     validator, dt, locale, className = ""
 }: Partial<ValidatorMetricsProps> & { className?: string }) {
+    const dd = useDetailsDict(dt);
     if (!validator) return null;
-    const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const st: Partial<DashboardDict['status']> = dt?.status || {};
 
     const profileLabel = dd.profile || 'Perfil de Staking';
@@ -303,8 +331,8 @@ export function ValidatorProfileMetrics({
 export function ValidatorDelegationMetrics({
     validator, locale, dt, renderRow, hideHeader
 }: Partial<ValidatorMetricsProps> & { hideHeader?: boolean }) {
+    const dd = useDetailsDict(dt);
     if (!validator) return null;
-    const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const tips = dt?.card?.tooltips;
     const Row = renderRow || SummaryInlineRow;
 
@@ -375,9 +403,9 @@ export function ValidatorPerformanceMetrics({
             return () => unregisterAddressForPolling(validator.address);
         }
     }, [validator?.address]);
+    const dd = useDetailsDict(dt);
 
     if (!validator) return null;
-    const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const Row = renderRow || SummaryInlineRow;
 
     const label14d = dd.validator_performance_14d || dd.performance_14d || 'Epoch Performance (14 days)';

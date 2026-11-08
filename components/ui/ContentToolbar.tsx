@@ -43,6 +43,9 @@ export interface ContentToolbarProps {
     onSelectRange?: (range: DateRange) => void;
     onResetRange?: () => void;
     calendarT?: CalendarTranslations;
+    /** Days the calendar allows (YYYY-MM-DD), both optional. */
+    calendarMinDate?: string;
+    calendarMaxDate?: string;
     columns: number;
     isReadingModeManual?: boolean;
     showCalendar?: boolean;
@@ -78,6 +81,8 @@ export function ContentToolbar({
     onSelectRange,
     onResetRange,
     calendarT,
+    calendarMinDate,
+    calendarMaxDate,
     columns,
     isReadingModeManual,
     showCalendar = true,
@@ -170,6 +175,8 @@ export function ContentToolbar({
                             calendarT={calendarT}
                             dateRange={dateRange ?? { start: null, end: null }}
                             onSelectRange={onSelectRange}
+                            minDate={calendarMinDate}
+                            maxDate={calendarMaxDate}
                             onReset={() => {
                                 onResetRange?.();
                                 setCalendarOpen?.(false);
