@@ -5,11 +5,10 @@
  * account card and the "Olympia" tab of a Babylon account.
  */
 import React, { useState } from 'react';
-import { AnimatePresence, m } from 'motion/react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { ENTITY_KINDS } from '@/features/dashboard/lib/entityKinds';
 import { AssetListSection, AssetRowCard } from '../components/AssetRowCard';
-import { ResourceCardHeader, StakeColumns, resourceCardFrameClass, type StakeColumn } from '../components/ResourceCardParts';
+import { ExpandedEntityPanel, ResourceCardHeader, StakeColumns, resourceCardFrameClass, type StakeColumn } from '../components/ResourceCardParts';
 import { OlympiaResourceInlinePanel } from './OlympiaResourcePanel';
 import { OlympiaValidatorCard } from './OlympiaValidatorCard';
 import type { OlympiaAccountSummary, OlympiaStake, OlympiaTokenAmount } from '@/types/olympia';
@@ -133,22 +132,9 @@ function OlympiaStakeCard({ s, o, locale, t, onCopy, copiedAddress }: { s: Olymp
         right={<StakeColumns columns={columns} locale={locale} />}
         copyLabel={tt?.copy_address}
       />
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <m.div
-            key="expanded-panel"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden bg-[var(--color-bg)]"
-          >
-            <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]" onClick={(e) => e.stopPropagation()} role="presentation">
-              <OlympiaValidatorCard address={address} columns={1} isExpanded headless onCopy={onCopy} copiedAddress={copiedAddress} t={t} network="mainnet" locale={locale} />
-            </div>
-          </m.div>
-        )}
-      </AnimatePresence>
+      <ExpandedEntityPanel expanded={expanded}>
+        <OlympiaValidatorCard address={address} columns={1} isExpanded headless onCopy={onCopy} copiedAddress={copiedAddress} t={t} network="mainnet" locale={locale} />
+      </ExpandedEntityPanel>
     </div>
   );
 }

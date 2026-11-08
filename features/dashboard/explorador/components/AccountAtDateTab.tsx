@@ -12,12 +12,12 @@ import type { DashboardDict, GatewayEntityDetails, MarketData, TranslationsT } f
 import { BABYLON_FIRST_DAY } from '@/features/dashboard/lib/olympia';
 import { getXrdAddress } from '../constants';
 import type { StakingEntry } from '../types/models.types';
-import { Stat, Section, Loading, ErrorText, Empty } from '../olympia/OlympiaParts';
-import { fill } from '../olympia/dict';
+import { holdingAmount, type Holding } from '../utils/holdings';
+import { Stat } from '../olympia/OlympiaParts';
 import { formatAmount } from '../olympia/format';
 import { AccountStakingTab } from './AccountStakingTab';
 import { AccountTokensTab } from './AccountAssetsTabs';
-import { DayPicker, dayLabel } from './DayPicker';
+import { AtDateView } from './AtDateView';
 
 interface AccountAtDay {
     day: string;
@@ -33,13 +33,9 @@ async function fetchAccountAt(address: string, day: string, network: 'mainnet' |
     return res.json() as Promise<AccountAtDay>;
 }
 
-type Vaulted = { resource_address: string; amount?: string; vaults?: { items?: { amount?: string }[] } };
-
 function xrdOf(entity: GatewayEntityDetails, network: string): number {
-    const items = (entity.fungible_resources?.items ?? []) as Vaulted[];
-    const xrd = items.find((i) => i.resource_address === getXrdAddress(network));
-    if (!xrd) return 0;
-    return Number(xrd.amount ?? (xrd.vaults?.items ?? []).reduce((s, v) => s + Number(v.amount ?? 0), 0));
+    const xrd = ((entity.fungible_resources?.items ?? []) as Holding[]).find((i) => i.resource_address === getXrdAddress(network));
+    return xrd ? holdingAmount(xrd) : 0;
 }
 
 export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAddress, marketData, calendarT }: {
@@ -73,31 +69,26 @@ export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAd
     const claim = sum((r) => r.xrdInClaim);
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-                <DayPicker day={day} onPick={setDay} calendarT={calendarT} placeholder={at?.pick ?? ''} locale={locale} minDate={BABYLON_FIRST_DAY} maxDate={today} />
-                <p className="text-[11px] text-[var(--color-text-muted)]">{fill(at?.desc, { from: dayLabel(BABYLON_FIRST_DAY, locale), to: dayLabel(today, locale) })}</p>
-            </div>
-            {!day ? (
-                <Empty text={at?.empty} />
-            ) : isLoading ? (
-                <Loading text={at?.loading} />
-            ) : isError || !data ? (
-                <ErrorText text={at?.error} />
-            ) : (
-                <div className="space-y-2">
-                    <Section
-                        title={fill(at?.state, { date: dayLabel(day, locale) })}
-                        aside={<span className="text-[10px] font-mono text-[var(--color-text-muted)]">{tt?.olympia?.state_version} {data.ledger.state_version.toLocaleString(locale)}</span>}
-                    >
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                            <Stat label={at?.total ?? ''} value={formatAmount(liquid + staked + unstaking + claim, locale)} tone="accent" />
-                            <Stat label={at?.liquid ?? ''} value={formatAmount(liquid, locale)} />
-                            <Stat label={at?.staked ?? ''} value={formatAmount(staked, locale)} tone="primary" />
-                            <Stat label={at?.unstaking ?? ''} value={formatAmount(unstaking, locale)} tone="secondary" />
-                            <Stat label={at?.claim ?? ''} value={formatAmount(claim, locale)} tone="secondary" />
-                        </div>
-                    </Section>
+        <AtDateView
+            day={day}
+            onPick={setDay}
+            calendarT={calendarT}
+            locale={locale}
+            minDate={BABYLON_FIRST_DAY}
+            maxDate={today}
+            text={{ ...at, stateVersion: tt?.olympia?.state_version }}
+            status={isLoading ? 'loading' : isError || !data ? 'error' : 'ready'}
+            stateVersion={data?.ledger.state_version}
+        >
+            {data && (
+                <>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <Stat label={at?.total ?? ''} value={formatAmount(liquid + staked + unstaking + claim, locale)} tone="accent" />
+                        <Stat label={at?.liquid ?? ''} value={formatAmount(liquid, locale)} />
+                        <Stat label={at?.staked ?? ''} value={formatAmount(staked, locale)} tone="primary" />
+                        <Stat label={at?.unstaking ?? ''} value={formatAmount(unstaking, locale)} tone="secondary" />
+                        <Stat label={at?.claim ?? ''} value={formatAmount(claim, locale)} tone="secondary" />
+                    </div>
                     <AccountStakingTab
                         stakingRows={data.stakingRows}
                         tt={tt}
@@ -116,8 +107,8 @@ export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAd
                         network={network}
                         locale={locale}
                     />
-                </div>
+                </>
             )}
-        </div>
+        </AtDateView>
     );
 }

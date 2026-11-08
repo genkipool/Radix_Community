@@ -7,6 +7,7 @@
  * share it.
  */
 import React from 'react';
+import { AnimatePresence, m } from 'motion/react';
 import { Check, ChevronDown, Copy } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { formatNumber } from '@/utils/formatters';
@@ -106,5 +107,27 @@ export function ResourceCardHeader({
                 <ChevronDown className={`size-4 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
             </div>
         </div>
+    );
+}
+
+/** What opens under an entity card's header, sliding open; rendered only while expanded. */
+export function ExpandedEntityPanel({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
+    return (
+        <AnimatePresence initial={false}>
+            {expanded && (
+                <m.div
+                    key="expanded-panel"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden bg-[var(--color-bg)]"
+                >
+                    <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]" onClick={(e) => e.stopPropagation()} role="presentation">
+                        {children}
+                    </div>
+                </m.div>
+            )}
+        </AnimatePresence>
     );
 }

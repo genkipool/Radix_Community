@@ -15,7 +15,8 @@ import 'server-only';
 import { BABYLON_FIRST_DAY } from '@/features/dashboard/lib/olympia';
 import { parseClaimNft } from '@/features/dashboard/staking/lib/claimNfts';
 import type { StakingEntry } from '@/features/dashboard/explorador/types/models.types';
-import { gatewayPost } from './bases';
+import { holdingAmount, holdingIds, type Holding } from '@/features/dashboard/explorador/utils/holdings';
+import { CARD_ENTITY_OPT_INS, gatewayPost } from './bases';
 import { withRetry, type Network } from './client';
 
 
@@ -33,24 +34,7 @@ export interface AccountAtDay {
   stakingRows: StakingEntry[];
 }
 
-/** The card's opt-ins (keep in step with fetchEntityDetailsForCard / apiFetchEntityDetails). */
-const CARD_OPT_INS = {
-  explicit_metadata: [
-    'name', 'symbol', 'icon_url', 'description', 'tags',
-    'info_url', 'validator_fee_factor', 'claim_epoch_delay',
-    'dapp_definition', 'dapp_definitions', 'pool', 'pool_address',
-    'validator', 'claim_nft',
-  ],
-  ancestor_identities: false,
-  component_royalty_vault_balance: false,
-  package_royalty_vault_balance: false,
-  non_fungible_include_nfids: true,
-  dapp_two_way_links: true,
-  native_resource_details: true,
-};
 
-type Vault = { amount?: string; items?: string[] };
-type Holding = { resource_address: string; amount?: string; vaults?: { items?: Vault[] } };
 interface EntityItem {
   fungible_resources?: { items?: Holding[] };
   non_fungible_resources?: { items?: Holding[] };
@@ -66,9 +50,6 @@ interface ValidatorItem {
 
 const post = <T>(network: Network, path: string, body: Record<string, unknown>) =>
   withRetry(() => gatewayPost<T>(network, path, body));
-
-const amountOf = (h: Holding): number =>
-  Number(h.amount ?? (h.vaults?.items ?? []).reduce((s, v) => s + Number(v.amount ?? 0), 0));
 
 const metaOf = (v: ValidatorItem, key: string): string => {
   const value = v.metadata?.items?.find((m) => m.key === key)?.value?.typed?.value;
@@ -109,7 +90,7 @@ export async function readAccountAtDay(address: string, day: string, network: Ne
   const res = await post<{ ledger_state: LedgerPoint; items?: EntityItem[] }>(network, '/state/entity/details', {
     addresses: [address],
     aggregation_level: 'Vault',
-    opt_ins: CARD_OPT_INS,
+    opt_ins: CARD_ENTITY_OPT_INS,
     ...(today ? {} : { at_ledger_state: { timestamp: `${day}T23:59:59.999Z` } }),
   });
   const ledger = res.ledger_state;
@@ -134,37 +115,37 @@ export async function readAccountAtDay(address: string, day: string, network: Ne
   };
 
   // LSUs, valued at the validator's XRD per unit at that state.
-  const lsus = fungibles.filter((h) => byLsu.has(h.resource_address) && amountOf(h) > 0);
-  const supply = new Map<string, number>();
-  for (const batch of chunks(lsus.map((h) => h.resource_address), 20)) {
-    const r = await post<{ items?: EntityItem[] }>(network, '/state/entity/details', { addresses: batch, at_ledger_state: at });
-    for (const e of r.items ?? []) supply.set(e.address, Number(e.details?.total_supply ?? 0));
-  }
+  const lsus = fungibles.filter((h) => byLsu.has(h.resource_address) && holdingAmount(h) > 0);
+  // The LSU supplies and the claim NFTs' data, all at that state, read at once.
+  const claimHoldings = nonFungibles.filter((h) => byClaim.has(h.resource_address));
+  const [supplyBatches, claimBatches] = await Promise.all([
+    Promise.all(chunks(lsus.map((h) => h.resource_address), 20).map((batch) =>
+      post<{ items?: EntityItem[] }>(network, '/state/entity/details', { addresses: batch, at_ledger_state: at }))),
+    Promise.all(claimHoldings.flatMap((h) => chunks(holdingIds(h), 100).map(async (batch) => ({
+      validator: byClaim.get(h.resource_address)!,
+      nfts: (await post<{ non_fungible_ids?: Record<string, unknown>[] }>(network, '/state/non-fungible/data', {
+        resource_address: h.resource_address, non_fungible_ids: batch, at_ledger_state: at,
+      })).non_fungible_ids ?? [],
+    })))),
+  ]);
+  const supply = new Map(supplyBatches.flatMap((r) => (r.items ?? []).map((e) => [e.address, Number(e.details?.total_supply ?? 0)] as const)));
   for (const h of lsus) {
     const v = byLsu.get(h.resource_address)!;
     const total = supply.get(h.resource_address) ?? 0;
     const rate = total > 0 ? Number(v.stake_vault?.balance ?? 0) / total : 0;
-    row(v).xrdInStake += amountOf(h) * rate;
+    row(v).xrdInStake += holdingAmount(h) * rate;
   }
 
   // Claim NFTs: unstaking until their claim epoch, claimable from it.
-  for (const h of nonFungibles) {
-    const v = byClaim.get(h.resource_address);
-    if (!v) continue;
-    const ids = (h.vaults?.items ?? []).flatMap((x) => x.items ?? []);
-    for (const batch of chunks(ids, 100)) {
-      const r = await post<{ non_fungible_ids?: Record<string, unknown>[] }>(network, '/state/non-fungible/data', {
-        resource_address: h.resource_address, non_fungible_ids: batch, at_ledger_state: at,
-      });
-      for (const nft of r.non_fungible_ids ?? []) {
-        const { amount, epoch } = parseClaimNft(nft);
-        const entry = row(v);
-        if (epoch > ledger.epoch) {
-          entry.xrdInUnstake += amount;
-          entry.unstakes.push({ amount, epoch });
-        } else {
-          entry.xrdInClaim += amount;
-        }
+  for (const { validator, nfts } of claimBatches) {
+    for (const nft of nfts) {
+      const { amount, epoch } = parseClaimNft(nft);
+      const entry = row(validator);
+      if (epoch > ledger.epoch) {
+        entry.xrdInUnstake += amount;
+        entry.unstakes.push({ amount, epoch });
+      } else {
+        entry.xrdInClaim += amount;
       }
     }
   }

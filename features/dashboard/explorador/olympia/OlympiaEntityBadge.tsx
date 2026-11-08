@@ -7,12 +7,12 @@
  * that entity's Olympia card.
  */
 import React, { useState } from 'react';
-import { AnimatePresence, m } from 'motion/react';
 import { Check, ChevronDown, Copy } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import type { MarketData } from '@/features/dashboard/types';
 import { ENTITY_KINDS } from '@/features/dashboard/lib/entityKinds';
 import { olympiaKindOf } from '@/features/dashboard/lib/olympia';
+import { ExpandedEntityPanel } from '../components/ResourceCardParts';
 import { OlympiaAccountCard } from './OlympiaAccountCard';
 import { OlympiaValidatorCard } from './OlympiaValidatorCard';
 import { OlympiaResourceCard } from './OlympiaResourceCard';
@@ -75,33 +75,20 @@ export function OlympiaEntityBadge({ address, name, t, locale, onCopy, copiedAdd
         </div>
       </div>
 
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <m.div
-            key="expanded-panel"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden bg-[var(--color-bg)]"
-          >
-            <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]" onClick={(e) => e.stopPropagation()} role="presentation">
-              <Panel
-                address={address}
-                columns={1}
-                isExpanded
-                headless
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                t={t}
-                network="mainnet"
-                locale={locale}
-                marketData={marketData}
-              />
-            </div>
-          </m.div>
-        )}
-      </AnimatePresence>
+      <ExpandedEntityPanel expanded={expanded}>
+        <Panel
+          address={address}
+          columns={1}
+          isExpanded
+          headless
+          onCopy={onCopy}
+          copiedAddress={copiedAddress}
+          t={t}
+          network="mainnet"
+          locale={locale}
+          marketData={marketData}
+        />
+      </ExpandedEntityPanel>
     </div>
   );
 }

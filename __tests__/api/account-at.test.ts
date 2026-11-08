@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const post = vi.hoisted(() => vi.fn());
-vi.mock('@/services/gateway/bases', () => ({ gatewayPost: post }));
+vi.mock('@/services/gateway/bases', async (orig) => ({ ...(await orig<typeof import('@/services/gateway/bases')>()), gatewayPost: post }));
 vi.mock('@/services/gateway/client', () => ({ withRetry: (f: () => unknown) => f() }));
 
 import { dayIsReadable, readAccountAtDay } from '@/services/gateway/accountAt';

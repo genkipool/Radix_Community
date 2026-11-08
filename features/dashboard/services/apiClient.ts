@@ -1,5 +1,6 @@
 import type { TransactionInfo, StakeHistoryEntry } from '@/types/radix';
 import type { GatewayEntityDetails } from '@/features/dashboard/types';
+import { CARD_ENTITY_OPT_INS } from '@/services/gateway/bases';
 
 /* ═══════ API ROUTE HELPERS (browser-side, all requests go through the server) ═══════ */
 
@@ -61,20 +62,7 @@ export async function apiFetchTransactionDetails(intentHash: string, network: 'm
 /** The entity/details request every explorer card makes, for one address or a batch. */
 const entityDetailsBody = (addresses: string[]) => JSON.stringify({
     addresses,
-    opt_ins: {
-        explicit_metadata: [
-            'name', 'symbol', 'icon_url', 'description', 'tags',
-            'info_url', 'validator_fee_factor', 'claim_epoch_delay',
-            'dapp_definition', 'dapp_definitions', 'pool', 'pool_address',
-            'validator', 'claim_nft'
-        ],
-        ancestor_identities: false,
-        component_royalty_vault_balance: false,
-        package_royalty_vault_balance: false,
-        non_fungible_include_nfids: true,
-        dapp_two_way_links: true,
-        native_resource_details: true,
-    },
+    opt_ins: CARD_ENTITY_OPT_INS,
     aggregation_level: 'Vault'
 });
 

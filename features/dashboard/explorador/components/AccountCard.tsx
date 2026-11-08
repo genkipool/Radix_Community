@@ -58,11 +58,11 @@ function FiatValueDisplay({ amount, marketData, statsLoading, locale }: { amount
     );
 }
 
-/** Rewards and then Olympia go right after Lockers (or at the end when there is no Lockers tab). */
-function withAfterLockers<T extends { key: EntityTab }>(tabs: T[], extra: (T | null)[]): T[] {
+/** `extra` (the nulls left out) right after the tab `after`, or at the end when there is no such tab. */
+function insertAfter<T extends { key: EntityTab }>(tabs: T[], after: EntityTab, extra: (T | null)[]): T[] {
     const added = extra.filter((tab): tab is T => !!tab);
     if (added.length === 0) return tabs;
-    const at = tabs.findIndex((tab) => tab.key === 'lockers');
+    const at = tabs.findIndex((tab) => tab.key === after);
     const index = at < 0 ? tabs.length : at + 1;
     return [...tabs.slice(0, index), ...added, ...tabs.slice(index)];
 }
@@ -163,16 +163,14 @@ export function AccountCard({
     const iconUrl = getMeta('icon_url');
 
     const o = olympiaDict(tt);
-    // Staking rewards are worked out for mainnet only, as the CSV button above does.
-    const withRewards = withAfterLockers(getTabsForEntity(address, tt), [
+    // Rewards and then Olympia right after Lockers; the account on a past day right
+    // after its transactions. Rewards and dates are worked out for mainnet only.
+    const tabsData = insertAfter(insertAfter(getTabsForEntity(address, tt), 'lockers', [
         network === 'mainnet' ? { key: 'rewards', label: accT?.rewards?.label ?? 'Rewards', tooltip: accT?.rewards?.tooltip } : null,
         olympiaLink ? { key: 'olympia', label: o.tab ?? 'Olympia', tooltip: o.tab_tooltip } : null,
+    ]), 'transactions', [
+        network === 'mainnet' ? { key: 'at_date', label: accT?.at_date?.label ?? '', tooltip: accT?.at_date?.tooltip } : null,
     ]);
-    // The account on a past day, right after its transactions (mainnet, as the rewards).
-    const txIndex = withRewards.findIndex((tab) => tab.key === 'transactions');
-    const tabsData = network === 'mainnet' && txIndex >= 0
-        ? [...withRewards.slice(0, txIndex + 1), { key: 'at_date' as EntityTab, label: accT?.at_date?.label ?? '', tooltip: accT?.at_date?.tooltip }, ...withRewards.slice(txIndex + 1)]
-        : withRewards;
 
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
     const configEntries = getConfigEntries(ra, tt);
