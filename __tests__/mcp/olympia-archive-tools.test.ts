@@ -14,6 +14,9 @@ const svc = vi.hoisted(() => ({
   findRriByBabylon: vi.fn(),
   findValidatorByPublicKey: vi.fn(),
   getAccountSummary: vi.fn(),
+  getAccountStateAt: vi.fn(),
+  versionAtDayEnd: vi.fn(),
+  olympiaDayRange: vi.fn(),
   getAccountTxPage: vi.fn(),
   getAccountRewards: vi.fn(),
   getResource: vi.fn(),
@@ -46,7 +49,29 @@ beforeEach(() => {
 describe('Olympia archive MCP tools', () => {
   it('lists every Olympia tool', () => {
     const names = registry.list().map((t) => t.name).filter((n) => n.startsWith('olympia_'));
-    expect(names).toHaveLength(13);
+    expect(names).toHaveLength(14);
+  });
+
+  it('olympia_get_account_at reads a day at its last state version, or an exact version', async () => {
+    svc.versionAtDayEnd.mockReturnValue(123);
+    svc.getAccountStateAt.mockImplementation(async (_r: unknown, sv: number, day: string | null) => ({
+      address: ACC, babylonAddress: BAB, stateVersion: sv, day, xrd: null, tokens: [], stakes: [],
+      totals: { liquidXrd: 0, stakedXrd: 0, pendingStakeXrd: 0, unstakingXrd: 0, totalXrd: 0 },
+    }));
+    const byDay = await call('olympia_get_account_at', { address: ACC, day: '2022-06-30' });
+    expect(svc.getAccountStateAt).toHaveBeenLastCalledWith(ref, 123, '2022-06-30');
+    expect(byDay.structuredContent).toMatchObject({ stateVersion: 123, day: '2022-06-30' });
+    await call('olympia_get_account_at', { address: ACC, stateVersion: 456 });
+    expect(svc.getAccountStateAt).toHaveBeenLastCalledWith(ref, 456, null);
+  });
+
+  it('olympia_get_account_at refuses a day outside Olympia and asks for exactly one point', async () => {
+    svc.versionAtDayEnd.mockReturnValue(null);
+    svc.olympiaDayRange.mockReturnValue({ first: '2021-07-26', last: '2023-09-28' });
+    expect((await call('olympia_get_account_at', { address: ACC, day: '2024-01-01' })).isError).toBe(true);
+    expect((await call('olympia_get_account_at', { address: ACC })).isError).toBe(true);
+    expect((await call('olympia_get_account_at', { address: ACC, day: '2022-01-01', stateVersion: 5 })).isError).toBe(true);
+    expect(svc.getAccountStateAt).not.toHaveBeenCalled();
   });
 
   it('olympia_from_babylon finds the Olympia account of any migrated Babylon account', async () => {

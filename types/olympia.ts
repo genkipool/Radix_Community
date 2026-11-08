@@ -57,6 +57,22 @@ export interface OlympiaAccountSummary {
   };
 }
 
+/** What an Olympia account held at one state version (a day's end or an exact version). */
+export interface OlympiaAccountStateAt {
+  address: string;
+  babylonAddress: string;
+  /** The state version the balances are read at. */
+  stateVersion: number;
+  /** The UTC day asked for, when the request named a day (its last state version). */
+  day: string | null;
+  xrd: OlympiaTokenAmount | null;
+  /** Tokens other than XRD with a balance at that version. */
+  tokens: OlympiaTokenAmount[];
+  /** Stakes valued at that version, as the official Olympia Gateway values them. */
+  stakes: OlympiaStake[];
+  totals: OlympiaAccountSummary['totals'];
+}
+
 export interface OlympiaAction {
   index: number;
   type: string | null;

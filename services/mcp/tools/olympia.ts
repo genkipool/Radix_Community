@@ -11,13 +11,14 @@
  */
 
 import { z } from 'zod';
-import { olympiaKindOf, OLYMPIA_END_ISO, OLYMPIA_START_ISO } from '@/features/dashboard/lib/olympia';
+import { olympiaKindOf, OLYMPIA_END_ISO, OLYMPIA_FINAL_STATE_VERSION, OLYMPIA_START_ISO } from '@/features/dashboard/lib/olympia';
 import {
   findAccountByBabylon,
   findAccountByOlympia,
   findRriByBabylon,
   findValidatorByPublicKey,
   getAccountRewards,
+  getAccountStateAt,
   getAccountSummary,
   getAccountTxPage,
   getResource,
@@ -25,7 +26,9 @@ import {
   getValidator,
   getValidatorDelegators,
   getValidatorRewards,
+  olympiaDayRange,
   readOlympiaFunds,
+  versionAtDayEnd,
   type OlympiaAccountRef,
 } from '@/services/olympia';
 import { getTransactionsByDate } from '@/services/olympia/byDate';
@@ -155,6 +158,45 @@ export const olympiaGetAccountTool = defineMcpTool({
         tokens.length > 0 && `${cliSection(`Balances (${tokens.length})`)}\n${cliTable(['Symbol', 'Amount', 'rri'], tokens.slice(0, 40).map((t) => [t.symbol, t.amount, t.rri]))}`,
         a.stakes.length > 0 && `${cliSection(`Stakes (${a.stakes.length})`)}\n${cliTable(['Validator', 'Staked', 'Unstaking', 'Address'], a.stakes.map((s) => [s.validatorName ?? '-', xrd(s.stakedXrd), xrd(s.pendingUnstakeXrd + s.exitingXrd), s.validatorAddress]))}`,
         cliNext(['olympia_get_account_transactions → its history.', 'olympia_get_account_funds_flow → who it traded XRD with.', 'olympia_get_account_rewards → daily staking rewards of a year.']),
+      ),
+      structured: { ...a } as unknown as Record<string, unknown>,
+    };
+  },
+});
+
+export const olympiaGetAccountAtTool = defineMcpTool({
+  name: 'olympia_get_account_at',
+  title: 'Get an Olympia account at a past date',
+  description:
+    'What an Olympia account held at one point of Olympia, not only at its end: liquid XRD, every token balance and its stakes per validator (staked, pending stake, unstaking), valued as the official Olympia Gateway values them at that state version. Give a UTC day (read at its last state version) or an exact state version. Accepts the rdx1… address or the account_rdx1… it became. Read-only.',
+  category: 'ledger',
+  inputSchema: z.object({
+    address: accountSchema,
+    day: daySchema.optional().describe('UTC day of Olympia, YYYY-MM-DD (2021-07-26 to 2023-09-28); read at its last state version'),
+    stateVersion: z.number().int().min(1).max(OLYMPIA_FINAL_STATE_VERSION).optional().describe('Exact Olympia state version, instead of a day'),
+  }),
+  handler: async ({ address, day, stateVersion }, ctx) => {
+    if ((day === undefined) === (stateVersion === undefined)) throw new Error('Give either `day` or `stateVersion`.');
+    const sv = stateVersion ?? versionAtDayEnd(day as string);
+    if (sv === null) {
+      const { first, last } = olympiaDayRange();
+      throw new Error(`${day} is not a day of Olympia (${first} to ${last}).`);
+    }
+    const ref = await accountRef(address);
+    const a = await getAccountStateAt(ref, sv, day ?? null);
+    const tokens = [...(a.xrd ? [a.xrd] : []), ...a.tokens];
+    return {
+      text: cliRender(
+        cliBanner(`Olympia account · ${a.address} · ${day ? `end of ${day} (UTC)` : `state version ${sv.toLocaleString('en-US')}`}`),
+        cliKeyValues([
+          ['State version', sv.toLocaleString('en-US')],
+          ['Total XRD', xrd(a.totals.totalXrd)],
+          ['Liquid / staked / pending stake / unstaking', `${xrd(a.totals.liquidXrd)} / ${xrd(a.totals.stakedXrd)} / ${xrd(a.totals.pendingStakeXrd)} / ${xrd(a.totals.unstakingXrd)}`],
+          ['Explorer', page(ctx.origin, a.address)],
+        ]),
+        tokens.length > 0 ? `${cliSection(`Balances (${tokens.length})`)}\n${cliTable(['Symbol', 'Amount', 'rri'], tokens.slice(0, 40).map((t) => [t.symbol, t.amount, t.rri]))}` : 'No token balances at that point.',
+        a.stakes.length > 0 && `${cliSection(`Stakes (${a.stakes.length})`)}\n${cliTable(['Validator', 'Staked', 'Pending stake', 'Unstaking', 'Address'], a.stakes.map((s) => [s.validatorName ?? '-', xrd(s.stakedXrd), xrd(s.pendingStakeXrd), xrd(s.pendingUnstakeXrd + s.exitingXrd), s.validatorAddress]))}`,
+        cliNext(['olympia_get_account → the same account when Olympia ended.', 'olympia_get_account_transactions → what changed it.']),
       ),
       structured: { ...a } as unknown as Record<string, unknown>,
     };
@@ -499,6 +541,7 @@ export const olympiaFromBabylonTool = defineMcpTool({
 export const olympiaTools = [
   olympiaLookupTool,
   olympiaGetAccountTool,
+  olympiaGetAccountAtTool,
   olympiaGetAccountTransactionsTool,
   olympiaGetAccountFundsFlowTool,
   olympiaGetAccountRewardsTool,

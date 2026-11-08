@@ -11,4 +11,5 @@ export { getValidator, getValidatorDelegators } from './validators';
 export { getAccountRewards, getValidatorRewards, toValidatorRewardData, OLYMPIA_REWARD_YEARS } from './rewards';
 export { readOlympiaFunds, type OlympiaFunds } from './flows';
 export { olympiaBaseUrl } from './parquet';
+export { getAccountStateAt, versionAtDayEnd, olympiaDayRange } from './history';
 export { findValidatorByPublicKey } from './catalog';

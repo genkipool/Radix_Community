@@ -179,21 +179,55 @@ export async function readEqWithin(
     hi: bigint,
 ): Promise<Row[]> {
     const of = await openCached(path);
-    const oi = columnIndex(of.metadata, orderColumn);
-    const groups = groupsInRange(of, keyColumn, key, key).filter((g) => {
-        const st = of.metadata.row_groups[g].columns[oi]?.meta_data?.statistics;
-        const min = asKey(st?.min_value ?? st?.min);
-        const max = asKey(st?.max_value ?? st?.max);
-        if (min === undefined || max === undefined) return true;
-        // The order statistics bound every row of the group, whatever its key.
-        return cmp(max, lo) >= 0 && cmp(min, hi) <= 0;
-    });
+    // The order statistics bound every row of a group, whatever its key.
+    const groups = groupsWithin(of, keyColumn, key, orderColumn, lo, hi);
     if (groups.length === 0) return [];
     const rows = await readGroups(of, groups);
     return rows.filter((r) => {
         if (cmp(keyOf(r, keyColumn) ?? '', key) !== 0) return false;
         const o = keyOf(r, orderColumn);
         return o !== undefined && cmp(o, lo) >= 0 && cmp(o, hi) <= 0;
+    });
+}
+
+/** Row groups of a file sorted by (keyColumn, orderColumn) that can hold `key` with an order value in [lo, hi]. */
+function groupsWithin(of: OpenFile, keyColumn: string, key: Key, orderColumn: string, lo: bigint, hi: bigint): number[] {
+    const oi = columnIndex(of.metadata, orderColumn);
+    return groupsInRange(of, keyColumn, key, key).filter((g) => {
+        const st = of.metadata.row_groups[g].columns[oi]?.meta_data?.statistics;
+        const min = asKey(st?.min_value ?? st?.min);
+        const max = asKey(st?.max_value ?? st?.max);
+        if (min === undefined || max === undefined) return true;
+        return cmp(max, lo) >= 0 && cmp(min, hi) <= 0;
+    });
+}
+
+/** How many row groups `readEqWithin` would read for the same arguments (footer only, no data). */
+export async function countEqWithin(path: string, keyColumn: string, key: Key, orderColumn: string, lo: bigint, hi: bigint): Promise<number> {
+    return groupsWithin(await openCached(path), keyColumn, key, orderColumn, lo, hi).length;
+}
+
+/**
+ * Rows of a history file whose `keyColumn` equals `key` and whose
+ * [fromColumn, toColumn] range (inclusive) covers `at`: what was in effect at
+ * that state version. The file must be sorted by (keyColumn, fromColumn); row
+ * groups are pruned on the key, on from <= at and on to >= at.
+ */
+export async function readEqCovering(path: string, keyColumn: string, key: Key, fromColumn: string, toColumn: string, at: bigint): Promise<Row[]> {
+    const of = await openCached(path);
+    const ti = columnIndex(of.metadata, toColumn);
+    const groups = groupsWithin(of, keyColumn, key, fromColumn, 0n, at).filter((g) => {
+        const st = of.metadata.row_groups[g].columns[ti]?.meta_data?.statistics;
+        const max = asKey(st?.max_value ?? st?.max);
+        return max === undefined || cmp(max, at) >= 0;
+    });
+    if (groups.length === 0) return [];
+    const rows = await readGroups(of, groups);
+    return rows.filter((r) => {
+        if (cmp(keyOf(r, keyColumn) ?? '', key) !== 0) return false;
+        const from = keyOf(r, fromColumn);
+        const to = keyOf(r, toColumn);
+        return from !== undefined && to !== undefined && cmp(from, at) <= 0 && cmp(to, at) >= 0;
     });
 }
 
