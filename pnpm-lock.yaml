@@ -49,8 +49,8 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0
       '@signpdf/placeholder-pdf-lib':
-        specifier: ^3.3.0
-        version: 3.3.0(pdf-lib@1.17.1)
+        specifier: ^4.0.0
+        version: 4.0.0(pdf-lib@1.17.1)
       '@signpdf/signer-p12':
         specifier: ^3.3.0
         version: 3.3.0(node-forge@1.4.0)
@@ -1450,9 +1450,9 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@signpdf/placeholder-pdf-lib@3.3.0':
-    resolution: {integrity: sha512-DT1s617z88NvvCmo+z8jaz7lNzy7b7/fwo/movJGukpfSkl4FaLNRXIHNBCTRCP9TUb6F/axK1JulES/jY7mLQ==}
-    engines: {node: '>=12', yarn: '>=1.22.18'}
+  '@signpdf/placeholder-pdf-lib@4.0.0':
+    resolution: {integrity: sha512-5EGTe4RVulLaxDi1ta2v42+M3rhy55LmgpSZUWTTspUpXAfhsjyhE+dUINXz6wYKtjDoY+Qz2yR9kD2xOPSTCw==}
+    engines: {node: '>=22', yarn: '>=1.22.18'}
     peerDependencies:
       pdf-lib: ^1.17.1
 
@@ -1469,6 +1469,10 @@ packages:
   '@signpdf/utils@3.3.0':
     resolution: {integrity: sha512-ArOP0MIhCfdChh1oZkog81TPeSY2e5TvHQmXJ682T4+SKb6Z609uAZhqMQZ9xm+YenEf/eNMSE5KVwU+EudXug==}
     engines: {node: '>=12', yarn: '>=1.22.18'}
+
+  '@signpdf/utils@4.0.0':
+    resolution: {integrity: sha512-4uiNqyHTVnXGYK+zhwLKrsykX3d4f0mlbzykyI0BGiNVIZssHo61KmwWzUEbAcE//TpheUd2xD7yA8mjxIpaZg==}
+    engines: {node: '>=22', yarn: '>=1.22.18'}
 
   '@sinclair/typebox@0.25.24':
     resolution: {integrity: sha512-XJfwUVUKDHF5ugKwIcxEgc9k8b7HbznCp6eUfWgu710hMPNIO4aw4/zB5RogDQz8nd6gyCDpU9O/m6qYEWY6yQ==}
@@ -6347,9 +6351,9 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@signpdf/placeholder-pdf-lib@3.3.0(pdf-lib@1.17.1)':
+  '@signpdf/placeholder-pdf-lib@4.0.0(pdf-lib@1.17.1)':
     dependencies:
-      '@signpdf/utils': 3.3.0
+      '@signpdf/utils': 4.0.0
       pdf-lib: 1.17.1
 
   '@signpdf/signer-p12@3.3.0(node-forge@1.4.0)':
@@ -6362,6 +6366,8 @@ snapshots:
       '@signpdf/utils': 3.3.0
 
   '@signpdf/utils@3.3.0': {}
+
+  '@signpdf/utils@4.0.0': {}
 
   '@sinclair/typebox@0.25.24': {}
 
