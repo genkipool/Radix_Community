@@ -74,7 +74,28 @@ const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
  * 3. If found but stale, serve immediately AND refresh in background.
  * 4. If not found, fetch fresh, store in Redis, and return.
  */
+/**
+ * What this instance read last, kept a minute: every dashboard view asks for
+ * the price, and Redis is asked once a minute per instance instead of once
+ * per view. Reads that arrive together share one.
+ */
+const MEMORY_MS = 60_000;
+let memo: { value: MarketData | null; at: number } | null = null;
+let memoInflight: Promise<MarketData | null> | null = null;
+
 export const getMarketDataCached = async (): Promise<MarketData | null> => {
+    if (memo && memo.value && Date.now() - memo.at < MEMORY_MS) return memo.value;
+    if (memoInflight) return memoInflight;
+    memoInflight = readMarketData()
+        .then((value) => {
+            memo = { value, at: Date.now() };
+            return value;
+        })
+        .finally(() => { memoInflight = null; });
+    return memoInflight;
+};
+
+const readMarketData = async (): Promise<MarketData | null> => {
     const redis = getRedis();
 
     // ── Step 1: Redis fast hit ─────────────────────────────────────────
@@ -87,8 +108,9 @@ export const getMarketDataCached = async (): Promise<MarketData | null> => {
 
                 if (isStale) {
                     logger.info({}, '[MarketData] Serving stale from Redis — refreshing in background');
-                    // Background refresh: do NOT await
-                    fetchMarketData().then(async (fresh) => {
+                    // Background refresh: do NOT await. One at a time across
+                    // every instance, or each stale read would start its own.
+                    redis.set(`${REDIS_KEY}:refresh_lock`, '1', { nx: true, ex: 60 }).then((claimed) => claimed ? fetchMarketData() : null).then(async (fresh) => {
                         if (fresh) {
                             await redis.set(REDIS_KEY, { ...fresh, updatedAt: Date.now() });
                             logger.info({}, '[MarketData] Redis cache updated with fresh CoinGecko data');

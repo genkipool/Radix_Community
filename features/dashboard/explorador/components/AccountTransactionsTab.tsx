@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { m } from "motion/react";
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -16,6 +16,10 @@ import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import { formatNumber } from '@/utils/formatters';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/types/shared.types';
+import { NetworkScopePills, type NetworkScope } from '../olympia/OlympiaParts';
+import { OlympiaTxBabylonRows, OlympiaTxTable } from '../olympia/OlympiaTxTable';
+import { olympiaDict } from '../olympia/dict';
+import { useOlympiaLink, useOlympiaTransactions } from '@/features/dashboard/services/olympiaApi';
 
 interface AccountTransactionsTabProps {
     accountAddress: string;
@@ -145,6 +149,7 @@ export function AccountTransactionsTab({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        isPending,
         isError,
         error
     } = useInfiniteQuery({
@@ -159,6 +164,22 @@ export function AccountTransactionsTab({
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
         staleTime: CACHE_TIMES.SHORT });
+
+    // An account that existed on Olympia (same key) shows its Olympia history
+    // here too. In "All" it follows the Babylon one in the same table: once the
+    // Babylon pages run out, "Load more" goes on with the Olympia ones.
+    const [scope, setScope] = useState<NetworkScope>('all');
+    const [olympiaStarted, setOlympiaStarted] = useState(false);
+    const { data: olympiaLink } = useOlympiaLink(accountAddress, network);
+    const o = olympiaDict(tt);
+    const olympiaInline = !!olympiaLink && scope === 'all';
+    // An account with no Babylon history at all goes straight to its Olympia
+    // one: there is nothing to scroll past, and an empty table with only
+    // "Load more" reads as broken.
+    const noBabylonHistory = !isPending && !hasNextPage && !(data?.pages.some((p) => (p.transactions?.length ?? 0) > 0));
+    const olympiaOn = olympiaStarted || (olympiaInline && noBabylonHistory);
+    const olympiaPages = useOlympiaTransactions(olympiaLink?.olympiaAddress, olympiaInline && olympiaOn);
+    const olympiaTxs = olympiaInline && olympiaOn ? olympiaPages.data?.pages.flatMap((p) => p?.items ?? []) ?? [] : [];
 
     const { data: entityDetails } = useQuery({
         queryKey: dashboardKeys.entities.detail(accountAddress, network),
@@ -278,26 +299,66 @@ export function AccountTransactionsTab({
         return rawMsg;
     };
 
-    if (isError) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
+    const pills = olympiaLink ? <NetworkScopePills o={o} value={scope} onChange={setScope} className="mb-3" /> : null;
+
+    if (olympiaLink && scope === 'olympia') {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-red-400 gap-3">
-                <AlertCircle className="size-6" />
-                <span className="text-sm font-medium">{getTranslatedError(errorMsg)}</span>
+            <div className="w-full flex flex-col">
+                {pills}
+                <OlympiaTxTable address={olympiaLink.olympiaAddress} o={o} locale={locale} />
             </div>
         );
     }
 
-    if (transactions.length === 0) {
+    if (isError) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)]">
-                <span className="text-sm font-medium">{txNoTransactionsText}</span>
+            <div className="w-full flex flex-col">
+                {pills}
+                <div className="flex flex-col items-center justify-center py-12 text-red-400 gap-3">
+                    <AlertCircle className="size-6" />
+                    <span className="text-sm font-medium">{getTranslatedError(errorMsg)}</span>
+                </div>
+            </div>
+        );
+    }
+
+    // Babylon pages first; after the last one, the Olympia pages, newest first.
+    const olympiaMore = olympiaInline && (!olympiaOn || olympiaPages.hasNextPage);
+    const showLoadMore = hasNextPage || olympiaMore;
+    const loadingMore = isFetchingNextPage || olympiaPages.isFetching;
+    const loadMore = () => {
+        if (hasNextPage) void fetchNextPage();
+        else if (!olympiaOn) setOlympiaStarted(true);
+        else void olympiaPages.fetchNextPage();
+    };
+
+    if (isPending) {
+        return (
+            <div className="w-full flex flex-col">
+                {pills}
+                <p className="flex items-center gap-2 py-12 justify-center text-xs text-[var(--color-text-muted)]">
+                    <span className="size-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    {accT?.funds?.loading ?? ''}
+                </p>
+            </div>
+        );
+    }
+
+    if (transactions.length === 0 && !olympiaInline) {
+        return (
+            <div className="w-full flex flex-col">
+                {pills}
+                <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)]">
+                    <span className="text-sm font-medium">{txNoTransactionsText}</span>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="w-full flex flex-col">
+            {pills}
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
@@ -440,17 +501,20 @@ export function AccountTransactionsTab({
                             </tbody>
                         );
                     })}
+                    {olympiaTxs.map((tx) => (
+                        <OlympiaTxBabylonRows key={tx.transactionId} tx={tx} o={o} locale={locale} successLabel={accT?.tx_success || 'Success'} />
+                    ))}
                 </table>
             </div>
 
-            {hasNextPage && (
+            {showLoadMore && (
                 <div className="flex justify-center mt-8 mb-4">
                     <m.button
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
+                        onClick={loadMore}
+                        disabled={loadingMore}
                         className="px-8 py-2.5 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                        {isFetchingNextPage ? (
+                        {loadingMore ? (
                             <>
                                 {accT?.tx_loading || 'Loading...'}
                             </>

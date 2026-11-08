@@ -1,88 +1,31 @@
 import { NextResponse } from 'next/server';
-import { getRedis } from '@/lib/redis';
+import { candidateYears, getAccountRewardsYearData } from '@/services/accountRewards';
 import logger from '@/lib/logger';
 
-const REDIS_REWARDS_YEAR_PREFIX = 'validator_rewards_';
-const REDIS_REWARDS_ALL = 'validator_rewards_all';
+/** Shared by every account and fresh enough for a day: the CDN answers most requests. */
+const CACHE_HEADERS = { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' };
 
-interface ValidatorRewardData {
-    dailyDelegants?: Record<string, number>;
-    dailyStake?: Record<string, number>;
-}
-
+/**
+ * GET /api/account-rewards-data?year=YYYY
+ *
+ * One year of every validator's delegator rewards and daily stake, which the
+ * browser combines with an account's history to work out its rewards CSV.
+ * Only the years Redis can hold are accepted, so no query reaches Redis for
+ * a key that cannot exist; the read itself is bounded per instance and hour
+ * (services/accountRewards.ts).
+ */
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const year = searchParams.get('year');
-
-    if (!year || !/^\d{4}$/.test(year)) {
-        return NextResponse.json({ error: 'Year parameter is required (YYYY format)' }, { status: 400 });
-    }
-
-    const redis = getRedis();
-    if (!redis) {
-        return NextResponse.json({ error: 'Redis client not available' }, { status: 500 });
+    const year = new URL(request.url).searchParams.get('year');
+    if (!year || !candidateYears().includes(year)) {
+        return NextResponse.json({ error: 'Unknown year' }, { status: 400 });
     }
 
     try {
-        // Try year-indexed key first (small payload, no filtering needed)
-        const yearData = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${year}`);
-        if (yearData && Object.keys(yearData).length > 0) {
-            return NextResponse.json({ rewardsData: yearData }, {
-                headers: {
-                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-                },
-            });
-        }
-
-        // Fallback to legacy monolithic key (will be removed after full migration)
-        const allDataRaw = await redis.get(REDIS_REWARDS_ALL);
-        if (!allDataRaw) {
-            return NextResponse.json({ error: 'No rewards data found' }, { status: 404 });
-        }
-
-        const allData = (typeof allDataRaw === 'string' ? JSON.parse(allDataRaw) : allDataRaw) as Record<string, ValidatorRewardData>;
-        
-        // Filter data to only include the requested year
-        const filteredData: Record<string, ValidatorRewardData> = {};
-        
-        for (const [valAddr, valData] of Object.entries(allData)) {
-            const dailyDelegants: Record<string, number> = {};
-            const dailyStake: Record<string, number> = {};
-            
-            let hasData = false;
-            
-            if (valData.dailyDelegants) {
-                for (const [date, reward] of Object.entries(valData.dailyDelegants)) {
-                    if (date.startsWith(year)) {
-                        dailyDelegants[date] = reward;
-                        hasData = true;
-                    }
-                }
-            }
-            
-            if (valData.dailyStake) {
-                for (const [date, stake] of Object.entries(valData.dailyStake)) {
-                    if (date.startsWith(year)) {
-                        dailyStake[date] = stake;
-                    }
-                }
-            }
-            
-            if (hasData) {
-                filteredData[valAddr] = {
-                    dailyDelegants,
-                    dailyStake
-                };
-            }
-        }
-
-        return NextResponse.json({ rewardsData: filteredData }, {
-            headers: {
-                'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-            },
-        });
+        const rewardsData = await getAccountRewardsYearData(year);
+        if (!rewardsData) return NextResponse.json({ error: 'No rewards data found' }, { status: 404, headers: CACHE_HEADERS });
+        return NextResponse.json({ rewardsData }, { headers: CACHE_HEADERS });
     } catch (error) {
-        logger.error({ err: error, year }, '[AccountRewardsData] Error fetching from Redis');
+        logger.error({ err: error, year }, '[AccountRewardsData] Error reading rewards');
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

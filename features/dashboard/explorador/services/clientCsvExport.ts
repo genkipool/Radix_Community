@@ -1,5 +1,6 @@
 
 import Big from 'big.js';
+import { csvRow, rowsToCsv } from '../utils/coinTrackingCsv';
 
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const XRD_ADDR = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
@@ -582,31 +583,6 @@ async function computeStakingRewardsMath(
 
 // ── Build CoinTracking CSV rows ────────────────────────────────────────────────
 
-const CT_HEADER = [
-    'Type', 'Buy Amount', 'Buy Currency', 'Sell Amount', 'Sell Currency',
-    'Fee Amount', 'Fee Currency', 'Exchange', 'Trade-Group', 'Comment', 'Date', 'Tx-ID'
-];
-
-function csvRow(
-    ctType: string, buyAmt: number, buyCur: string, sellAmt: number, sellCur: string,
-    feeAmt: number, feeCur: string, group: string, comment: string, dateTime: string, txId = ''
-): string[] {
-    return [
-        ctType,
-        buyAmt > 0 ? buyAmt.toFixed(8) : '',
-        buyAmt > 0 ? buyCur : '',
-        sellAmt > 0 ? sellAmt.toFixed(8) : '',
-        sellAmt > 0 ? sellCur : '',
-        feeAmt > 0 ? feeAmt.toFixed(8) : '',
-        feeAmt > 0 ? feeCur : '',
-        'Radix Network',
-        group,
-        comment,
-        dateTime,
-        txId,
-    ];
-}
-
 function buildCsvRows(
     stakingRewards: StakingRewardRecord[],
     accountTxs: AccountTx[],
@@ -693,12 +669,6 @@ function buildCsvRows(
     return rows;
 }
 
-function rowsToCsv(rows: string[][]): string {
-    const quote = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const headerLine = CT_HEADER.map(quote).join(',');
-    const dataLines = rows.map((row) => row.map(quote).join(','));
-    return [headerLine, ...dataLines].join('\n');
-}
 
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 

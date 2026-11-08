@@ -62,7 +62,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'transactions' | 'deposits' | 'funds' | 'security' | 'metadata' | 'configuration' | 'raw';
+export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'rewards' | 'transactions' | 'deposits' | 'funds' | 'security' | 'olympia' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;

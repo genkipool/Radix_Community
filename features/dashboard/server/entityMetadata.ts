@@ -18,6 +18,8 @@
  * does not add a round trip per request.
  */
 import type { Metadata } from 'next';
+import { olympiaKindOf } from '../lib/olympia';
+import { tokenCatalog, validatorCatalog } from '@/services/olympia/catalog';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { fetchEntityDetailsForCard } from '@/services/gateway/entities';
@@ -103,6 +105,7 @@ const KIND_LABEL: Record<EntityKind, string> = {
   account: 'Account',
   validator: 'Validator',
   component: 'Component',
+  olympia: 'Olympia',
 };
 
 export interface EntityMetadataInput {
@@ -131,11 +134,13 @@ export async function buildEntityMetadata({
 }: EntityMetadataInput): Promise<Metadata> {
   const label = KIND_LABEL[kind];
   let title = `${label} ${shorten(address)}`;
-  let description = `${label} ${address} on the Radix Network.`;
+  let description = kind === 'olympia'
+    ? `${address} on Radix Olympia, the mainnet before Babylon (archive).`
+    : `${label} ${address} on the Radix Network.`;
 
   // A transaction hash carries no metadata; everything else may have a name.
   let entity: EntityDetailsLike | null = null;
-  if (kind !== 'tx') {
+  if (kind !== 'tx' && kind !== 'olympia') {
     entity = (await fetchEntityDetailsForCard(address, network).catch(() => null)) as EntityDetailsLike | null;
     const name = metadataValue(entity, 'name');
     const symbol = metadataValue(entity, 'symbol');
@@ -149,6 +154,15 @@ export async function buildEntityMetadata({
     }
   }
 
+  // Olympia validators and tokens have names in the archive.
+  if (kind === 'olympia') {
+    const named = await olympiaName(address).catch(() => null);
+    if (named) {
+      title = named.title;
+      description = named.description;
+    }
+  }
+
   const indexable = isEntityIndexable(kind, network, address, entity);
 
   return buildMetadata({
@@ -158,4 +172,24 @@ export async function buildEntityMetadata({
     description,
     noIndex: !indexable,
   });
+}
+
+/**
+ * The name an Olympia validator or token had, for its page title. From the
+ * in-memory catalogs (one small read per instance, then none): a page title
+ * must not read a token's holders or a validator's delegators.
+ */
+async function olympiaName(address: string): Promise<{ title: string; description: string } | null> {
+  const kind = olympiaKindOf(address);
+  if (kind === 'validator') {
+    const v = (await validatorCatalog()).get(address);
+    return v?.name ? { title: v.name, description: `Olympia validator ${v.name} (${address}), from the archive of Radix Olympia, the mainnet before Babylon.` } : null;
+  }
+  if (kind === 'resource') {
+    const r = (await tokenCatalog()).get(address);
+    if (!r) return null;
+    const title = r.name ? `${r.name} (${r.symbol})` : r.symbol;
+    return { title, description: `Olympia token ${title} (${address}), from the archive of Radix Olympia, the mainnet before Babylon.` };
+  }
+  return null;
 }

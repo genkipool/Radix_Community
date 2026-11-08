@@ -699,6 +699,8 @@
       "lsu_resource": "LSU Resource",
       "public_key": "Public Key",
       "owner_address": "Owner Address",
+      "olympia_address": "Olympia Validator Address",
+      "olympia_address_tooltip": "The address this validator had on Olympia: its node used the same public key.",
       "owner_badge": "Owner Badge",
       "nft_claim": "NFT Claim",
       "epoch": "Epoch",
@@ -798,7 +800,17 @@
       "nft": "NFT",
       "supply": "Supply",
       "minted": "Minted",
-      "decimals": "Decimals"
+      "decimals": "Decimals",
+      "olympia": "Olympia",
+      "olympia_account": "Olympia account",
+      "olympia_validator": "Olympia validator",
+      "olympia_token": "Olympia token",
+      "olympia_tx": "Olympia transaction",
+      "staked": "Staked",
+      "transactions": "Transactions",
+      "delegators": "Delegators",
+      "holders": "Holders",
+      "uptime": "Uptime"
     }
   },
   "stakes": {

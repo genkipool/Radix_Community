@@ -4,14 +4,7 @@ import { advanceVoteTail } from '@/services/gateway/protocolVotes';
 import { advanceTopLsu } from '@/services/gateway/rankings';
 import { advanceAccessControllers } from '@/services/gateway/accessControllers';
 import { refreshNetworkUnstaking } from '@/services/gateway/networkUnstaking';
-import crypto from 'crypto';
-
-function sameSecret(given: string | null, expected: string): boolean {
-  if (given === null) return false;
-  const a = crypto.createHash('sha256').update(given).digest();
-  const b = crypto.createHash('sha256').update(expected).digest();
-  return crypto.timingSafeEqual(a, b);
-}
+import { sameSecret } from '@/lib/cronAuth';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');

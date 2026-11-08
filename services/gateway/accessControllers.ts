@@ -84,7 +84,7 @@ const needsWork = (state: State | null, now = Date.now()) =>
 
 /** What to show now, and whether a further step should be asked for. Never calls the Gateway. */
 export async function readAccessControllers(network: Network): Promise<AccessControllerList & { wantsStep: boolean }> {
-    const state = await store.read(network);
+    const state = await store.readShown(network);
     const wantsStep = needsWork(state);
     if (state?.updatedAt) return { accounts: state.accounts, partial: false, wantsStep };
     return { accounts: newestFirst(state?.scan?.found ?? []), partial: true, wantsStep };
@@ -142,6 +142,10 @@ async function locate(network: Network, badge: string, addresses: string[]): Pro
  * interval, and a fresh list costs one Redis read.
  */
 export async function advanceAccessControllers(network: Network): Promise<'fresh' | 'busy' | 'advanced' | 'finished' | 'rate-limited' | 'failed'> {
+    // Fresh as far as this instance knows: nothing to do, and no Redis read.
+    if (!needsWork(await store.readShown(network))) return 'fresh';
+    // Asked for on page views: this instance tries once per interval at most.
+    if (!store.shouldTry(network, STEP_INTERVAL_S)) return 'busy';
     const before = await store.read(network);
     if (!needsWork(before)) return 'fresh';
     if (!(await store.takeLock(network, STEP_INTERVAL_S))) return 'busy';

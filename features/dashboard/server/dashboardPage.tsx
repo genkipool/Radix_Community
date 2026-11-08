@@ -34,6 +34,7 @@ import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
 import { networkOfAddress, parseDashboardQuery, type RawSearchParams } from '../lib/routes';
+import { isOlympiaValue } from '../lib/olympia';
 import { fetchEntityDetailsForCard } from '@/services/gateway/entities';
 import { dashboardKeys, entityKeys } from '@/features/dashboard/utils/entityCache';
 
@@ -181,6 +182,9 @@ export async function DashboardPageShell({
   const entity = query.entity
     ? (validateAddress(query.entity) ?? validateTxHash(query.entity))
     : null;
+  // An Olympia identifier is shown by the archive card on the client; the
+  // Gateway knows nothing of it, so it is only handed over as the search.
+  const olympiaEntity = query.entity && isOlympiaValue(query.entity) ? query.entity.trim() : null;
 
   const dateRange = { start: query.start ?? null, end: query.end ?? null };
   const serverQueryClient = makeQueryClient();
@@ -372,7 +376,7 @@ export async function DashboardPageShell({
           // once the user has chosen, their cookie decides.
           cookieStore.get(COOKIE_KEYS.walletFilter)?.value !== 'false'
         }
-        initialSearchQuery={entity ?? ''}
+        initialSearchQuery={entity ?? olympiaEntity ?? ''}
         initialDateRange={dateRange}
         randomSeed={randomSeed}
         initialMarketData={marketData}

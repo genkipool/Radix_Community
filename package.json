@@ -40,6 +40,8 @@
     "big.js": "^7.0.1",
     "blakejs": "^1.2.1",
     "buffer": "^6.0.3",
+    "hyparquet": "1.32.0",
+    "hyparquet-compressors": "1.1.2",
     "jose": "^6.2.3",
     "lucide-react": "^0.546.0",
     "marked": "^18.1.1",

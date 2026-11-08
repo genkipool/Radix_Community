@@ -82,6 +82,8 @@ export interface DashboardCardGridProps {
     visibleValCount: number;
     sentinelRef: React.RefObject<HTMLDivElement | null>;
     filteredTxs: TransactionInfo[];
+    /** A calendar range that reaches before Babylon: its Olympia transactions follow the Babylon ones. */
+    olympiaRange?: { from: number; to: number } | null;
     loadingTxs: boolean;
     txsInitialized: boolean;
     /** No validator list yet and one is on its way (first load, or a retry). */

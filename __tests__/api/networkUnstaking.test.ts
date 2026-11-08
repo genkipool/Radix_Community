@@ -16,6 +16,7 @@ vi.mock('@/lib/redis', () => ({
 vi.mock('@/lib/redisBlob', () => ({
     readBlob: async (_r: unknown, key: string) => store.get(key) ?? null,
     writeBlob: async (_r: unknown, key: string, value: unknown) => { store.set(key, value); },
+    SHOWN_VALUE_MAX_AGE_MS: 15_000,
 }));
 
 const makeValidators = (n: number) => Array.from({ length: n }, (_, i) => ({ address: `validator_rdx1v${i}` }));

@@ -84,7 +84,7 @@ const needsWork = (state: RankingState | null, now = Date.now()) =>
 
 /** What to show now, and whether a further step should be asked for. Never calls the Gateway. */
 export async function readTopLsu(network: Network): Promise<TopLsu & { wantsStep: boolean }> {
-    const state = await readState(network);
+    const state = await store.readShown(network);
     const wantsStep = needsWork(state);
     if (state?.updatedAt) return { positions: state.positions, partial: false, wantsStep };
     const partial = [...(state?.scan?.best ?? [])].toSorted((a, b) => b.xrd - a.xrd);
@@ -119,6 +119,10 @@ const topOf = (best: Map<string, LsuPosition>) =>
  * per interval, and a fresh ranking costs one Redis read.
  */
 export async function advanceTopLsu(network: Network): Promise<'fresh' | 'busy' | 'advanced' | 'finished' | 'rate-limited' | 'failed'> {
+    // Fresh as far as this instance knows: nothing to do, and no Redis read.
+    if (!needsWork(await store.readShown(network))) return 'fresh';
+    // Asked for on page views: this instance tries once per interval at most.
+    if (!store.shouldTry(network, STEP_INTERVAL_S)) return 'busy';
     const before = await readState(network);
     if (!needsWork(before)) return 'fresh';
     if (!(await takeLock(network, STEP_INTERVAL_S))) return 'busy';

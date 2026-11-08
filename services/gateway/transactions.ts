@@ -19,6 +19,7 @@ import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
 import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
+import { TX_TAGS, type TxTag } from '@/features/dashboard/lib/routes';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
@@ -1092,6 +1093,10 @@ export async function fetchFilteredTransactions(options: {
         return getFilteredTransactionsFromDataCache(opParams, '');
     }
 
+    // Only the explorer's tags get a shared cache entry: the key is built from
+    // the tag, and anything else would add a new one to Redis per request.
+    if (!TX_TAGS.includes(tag as TxTag)) return getFilteredTransactionsFromDataCache(opParams, '');
+
     const tagSlug = tag.replace(/\s+/g, '_').toLowerCase();
     const backupKey = `radix_txs_filtered_${network}_${tagSlug}`;
 
@@ -1100,7 +1105,7 @@ export async function fetchFilteredTransactions(options: {
     // ── Step 1: Redis Fast Hit ───────────────────────────────────────────────
     if (redis) {
         try {
-            const stale = await readBlob<{ transactions: TransactionInfo[]; nextCursor: string; updatedAt?: number }>(redis, backupKey);
+            const stale = await readBlob<{ transactions: TransactionInfo[]; nextCursor: string; updatedAt?: number }>(redis, backupKey, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
             if (stale?.transactions && stale.transactions.length > 0) {
                 logger.info({ tag, address, count: stale.transactions.length }, '[TransactionsService] Serving filtered transactions from Redis');
 
@@ -1110,6 +1115,9 @@ export async function fetchFilteredTransactions(options: {
                 if (isStale) {
                     // ── Step 2: Background Revalidation ──────────────────────────
                     after(async () => {
+                        // One refresh at a time across every instance.
+                        const claimed = await redis.set(`${backupKey}:refresh_lock`, '1', { nx: true, ex: REFRESH_LOCK_TTL_S }).catch(() => null);
+                        if (!claimed) return;
                         try {
                             const fresh = await fetchFilteredTransactionsRaw(opParams);
                             if (fresh.transactions && fresh.transactions.length > 0) {
@@ -1378,6 +1386,26 @@ export async function fetchStakeHistoryCached(
 
     if (!redis) return [];
 
+    // Daily figures: this instance answers from what it read in the last few
+    // minutes, so a page view (or a flood of them) costs Redis nothing.
+    const memoKey = `${network}:${validatorAddress}`;
+    const hit = stakeHistoryMemo.get(memoKey);
+    if (hit && Date.now() - hit.at < STAKE_HISTORY_MEMO_MS) return hit.value;
+    const value = await readStakeHistory(redis, historyMap, validatorAddress, network);
+    if (stakeHistoryMemo.size > 2_000) stakeHistoryMemo.clear();
+    stakeHistoryMemo.set(memoKey, { value, at: Date.now() });
+    return value;
+}
+
+const STAKE_HISTORY_MEMO_MS = 5 * 60_000;
+const stakeHistoryMemo = new Map<string, { value: StakeHistoryEntry[]; at: number }>();
+
+async function readStakeHistory(
+    redis: NonNullable<ReturnType<typeof getRedis>>,
+    historyMap: string,
+    validatorAddress: string,
+    network: Network,
+): Promise<StakeHistoryEntry[]> {
     try {
         const raw = await redis.hget<StakeHistoryRecord>(historyMap, validatorAddress);
 
@@ -1443,6 +1471,8 @@ export async function fetchRoundProposer(
 // Cache Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const REVALIDATION_THRESHOLD = 1 * 60 * 1000; // 1 minute
+/** How long a background refresh holds its lock: longer than a refresh takes, shorter than the threshold. */
+const REFRESH_LOCK_TTL_S = 45;
 
 
 
@@ -1521,7 +1551,7 @@ export async function getRecentTransactionsCached(
                 transactions: TransactionInfo[];
                 nextCursor: string | undefined;
                 updatedAt?: number;
-            }>(redis, backupKey);
+            }>(redis, backupKey, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
 
             if (staleData?.transactions && staleData.transactions.length > 0) {
                 logger.info(
@@ -1536,6 +1566,10 @@ export async function getRecentTransactionsCached(
                     // ── Step 2: Background revalidation ────────────────────────
                     // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
                     after(async () => {
+                        // One refresh at a time across every instance: each
+                        // reader of a stale tip used to start its own.
+                        const claimed = await redis.set(`${backupKey}:refresh_lock`, '1', { nx: true, ex: REFRESH_LOCK_TTL_S }).catch(() => null);
+                        if (!claimed) return;
                         try {
                             logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
                             const rawResult = await fetchRecentTransactions(cursor, actualLimit, network);

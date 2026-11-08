@@ -7,7 +7,12 @@ import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import { formatPercent, formatXRD } from '@/utils/formatters';
 import { useDestinationHints, useFundsFlow } from '../hooks/useFundsFlow';
-import { buildFundsFlowExport, type Counterparty, type DestinationHint } from '../utils/fundsFlow';
+import { buildFundsFlowExport, type Counterparty, type DestinationHint, type FundsFlow } from '../utils/fundsFlow';
+import { mergeFunds } from '../utils/olympiaFlow';
+import { useOlympiaFunds, useOlympiaLink } from '@/features/dashboard/services/olympiaApi';
+import { olympiaDict } from '../olympia/dict';
+import { NetworkScopePills, OlympiaBadge, type NetworkScope } from '../olympia/OlympiaParts';
+import { OlympiaCsvButton } from '../olympia/OlympiaCsvButton';
 import { AddressChip, CopyButton } from './SummaryCardKit';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
@@ -42,7 +47,10 @@ function Row({ row, side, max, total, hint, network, locale, text, copiedAddress
                     {meta?.iconUrl && <SafeImage src={meta.iconUrl} alt={meta.name ?? row.address} fallbackName={meta.name ?? row.address} className="size-5 rounded-full shrink-0 object-cover" />}
                     <span className="flex flex-col min-w-0">
                         {meta?.name && <span className="text-xs font-semibold text-[var(--color-text-main)] truncate">{meta.name}</span>}
-                        <AddressChip address={row.address} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={text?.copy ?? 'Copy'} />
+                        <span className="flex items-center gap-0.5 min-w-0">
+                            <AddressChip address={row.address} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={text?.copy ?? 'Copy'} />
+                            <OlympiaCsvButton address={row.address} />
+                        </span>
                     </span>
                 </span>
                 <span className="text-right shrink-0">
@@ -113,31 +121,23 @@ function Side({ title, icon, total, totalLabel, rows, side, hints, network, loca
     );
 }
 
+type FundsText = NonNullable<NonNullable<Tt['account_summary']>['funds']>;
+/** A flow and whether the account has older activity the flow did not read. */
+type AccountFunds = FundsFlow & { more: boolean };
+
 /**
- * Where an account's XRD comes from and where it goes: its biggest
- * counterparties over the latest 300 transactions. For the biggest places it sent
- * XRD to, a second read says whether they pass it on to one wallet many others
- * also feed — the way a deposit address behaves, shown as a pattern and not as a fact.
+ * The funds flow drawn: window, JSON export, the two columns of counterparties
+ * and the notes. Knows nothing of where the flow was read, so a Babylon flow,
+ * an Olympia one or both merged look the same.
  */
-export function AccountFundsFlowTab({ address, network, locale, copiedAddress, onCopy, tt }: {
-    address: string; network: Network; locale: string; copiedAddress: string | null; onCopy: (v: string) => void; tt?: Tt;
+export function FundsFlowView({ flow, hints, hintsLoading = false, exportFor, network, locale, text, copiedAddress, onCopy, extraNote }: {
+    flow: AccountFunds; hints?: Record<string, DestinationHint>; hintsLoading?: boolean;
+    /** Address and network the JSON export is labelled with. */
+    exportFor: string; network: Network; locale: string; text: FundsText | undefined;
+    copiedAddress: string | null; onCopy: (v: string) => void; extraNote?: React.ReactNode;
 }) {
-    const text = tt?.account_summary?.funds;
     const [copied, setCopied] = useState(false);
-    const { data: flow, isLoading, isError } = useFundsFlow(address, network);
-    const { data: hints, isLoading: hintsLoading } = useDestinationHints(address, network, !!flow && flow.sent > 0);
-
-    if (isLoading) {
-        return (
-            <p className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                <span className="size-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                {text?.loading ?? 'Reading the latest transactions…'}
-            </p>
-        );
-    }
-    if (isError || !flow) return <p className="text-xs font-semibold text-[var(--color-danger)]">{text?.error ?? 'Could not read the transactions.'}</p>;
-
-    const exported = () => JSON.stringify(buildFundsFlowExport(address, network, flow, hints, new Date()), null, 2);
+    const exported = () => JSON.stringify(buildFundsFlowExport(exportFor, network, flow, hints, new Date()), null, 2);
     const copyJson = async () => {
         try {
             await navigator.clipboard.writeText(exported());
@@ -151,7 +151,7 @@ export function AccountFundsFlowTab({ address, network, locale, copiedAddress, o
         const url = URL.createObjectURL(new Blob([exported()], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url;
-        link.download = `funds-flow-${address.slice(-8)}-${new Date().toISOString().slice(0, 10)}.json`;
+        link.download = `funds-flow-${exportFor.slice(-8)}-${new Date().toISOString().slice(0, 10)}.json`;
         link.click();
         URL.revokeObjectURL(url);
     };
@@ -172,6 +172,7 @@ export function AccountFundsFlowTab({ address, network, locale, copiedAddress, o
                     </button>
                 </div>
             </div>
+            {extraNote}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
                 <Side title={text?.received_title ?? 'Received from'} icon={<ArrowDownLeft className="size-3.5 text-[var(--color-accent)]" />} total={flow.received} totalLabel={text?.total_received} rows={flow.counterparties} side="in" network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
                 <Side title={text?.sent_title ?? 'Sent to'} icon={<ArrowUpRight className="size-3.5 text-[var(--color-danger)]" />} total={flow.sent} totalLabel={text?.total_sent} rows={flow.counterparties} side="out" hints={hints} network={network} locale={locale} text={text} copiedAddress={copiedAddress} onCopy={onCopy} />
@@ -182,5 +183,86 @@ export function AccountFundsFlowTab({ address, network, locale, copiedAddress, o
                 <span>{text?.note}</span>
             </p>
         </div>
+    );
+}
+
+export function FundsFlowLoading({ text }: { text: FundsText | undefined }) {
+    return (
+        <p className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+            <span className="size-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            {text?.loading ?? 'Reading the latest transactions…'}
+        </p>
+    );
+}
+
+/**
+ * Where an account's XRD comes from and where it goes: its biggest
+ * counterparties over the latest 300 transactions. For the biggest places it sent
+ * XRD to, a second read says whether they pass it on to one wallet many others
+ * also feed — the way a deposit address behaves, shown as a pattern and not as a fact.
+ *
+ * An account that existed on Olympia (same key) also counts its Olympia
+ * transfers: both histories are merged into one flow.
+ */
+export function AccountFundsFlowTab({ address, network, locale, copiedAddress, onCopy, tt }: {
+    address: string; network: Network; locale: string; copiedAddress: string | null; onCopy: (v: string) => void; tt?: Tt;
+}) {
+    const text = tt?.account_summary?.funds;
+    const o = olympiaDict(tt);
+    const [scope, setScope] = useState<NetworkScope>('all');
+    const { data: flow, isLoading, isError } = useFundsFlow(address, network);
+    const { data: hints, isLoading: hintsLoading } = useDestinationHints(address, network, !!flow && flow.sent > 0);
+    const { data: link } = useOlympiaLink(address, network);
+    const { data: olympia, isLoading: olympiaLoading } = useOlympiaFunds(link ? address : null);
+
+    const pills = link ? <NetworkScopePills o={o} value={scope} onChange={setScope} /> : null;
+    const wrap = (body: React.ReactNode) => <div className="space-y-4">{pills}{body}</div>;
+
+    const showOlympia = !!link && scope !== 'babylon';
+    const showBabylon = !link || scope !== 'olympia';
+    if ((showBabylon && isLoading) || (showOlympia && olympiaLoading)) return wrap(<FundsFlowLoading text={text} />);
+
+    if (scope === 'olympia' && link) {
+        if (!olympia) return wrap(<p className="text-xs font-semibold text-[var(--color-danger)]">{o.error ?? text?.error ?? ''}</p>);
+        return wrap(
+            <FundsFlowView
+                flow={olympia}
+                exportFor={olympia.olympiaAddress}
+                network={network}
+                locale={locale}
+                text={text}
+                copiedAddress={copiedAddress}
+                onCopy={onCopy}
+                extraNote={(
+                    <p className="flex items-start gap-2 text-[11px] text-[var(--color-text-muted)]">
+                        <OlympiaBadge o={o} />
+                        <span>{fill(o.funds_desc, { address: `${olympia.olympiaAddress.slice(0, 14)}…`, n: 5000 })}</span>
+                    </p>
+                )}
+            />
+        );
+    }
+
+    if (isError || !flow) return wrap(<p className="text-xs font-semibold text-[var(--color-danger)]">{text?.error ?? 'Could not read the transactions.'}</p>);
+
+    const merged = scope === 'all' && olympia && olympia.txs > 0 ? { ...mergeFunds(flow, olympia), more: flow.more || olympia.more } : flow;
+    return wrap(
+        <FundsFlowView
+            flow={merged}
+            hints={hints}
+            hintsLoading={hintsLoading}
+            exportFor={address}
+            network={network}
+            locale={locale}
+            text={text}
+            copiedAddress={copiedAddress}
+            onCopy={onCopy}
+            extraNote={merged !== flow && (
+                <p className="flex items-start gap-2 text-[11px] text-[var(--color-text-muted)]">
+                    <OlympiaBadge o={o} />
+                    <span>{o.funds_merged_note}</span>
+                </p>
+            )}
+        />
     );
 }

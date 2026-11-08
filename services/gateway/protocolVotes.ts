@@ -296,36 +296,24 @@ async function scanForSignal(validatorAddress: string, network: Network): Promis
     return latest;
 }
 
+/** What this instance read lately, by network and validator: a reload within the window costs Redis nothing. */
+const recent = new Map<string, { signal: string; at: number }>();
+const RECENT_MS = 30_000;
+/** Cap on `recent`, so it can never grow without bound. */
+const RECENT_MAX = 2_000;
+
 /**
- * The signal this validator has cast, from the shared store when it is already
- * known and from a scan of its own history otherwise. Returns '' when it has
- * not voted, and on failure, because "we could not read it" must not be shown
- * as a vote the validator never made.
+ * The signal one validator has cast, scanned from its own history. Returns ''
+ * when it has not voted, and on failure, because "we could not read it" must
+ * not be shown as a vote the validator never made.
  */
-export async function fetchValidatorProtocolVote(
-    validatorAddress: string,
-    network: Network = 'mainnet',
-): Promise<string> {
-    const redis = getRedis();
-    const key = scanKey(network, validatorAddress);
-
-    if (redis) {
-        try {
-            const known = await redis.hget<string>(votesKey(network), validatorAddress);
-            if (typeof known === 'string' && known) return known;
-
-            const cached = await redis.get<string>(key);
-            if (typeof cached === 'string') return cached;
-        } catch (err) {
-            logger.error({ err, network, validatorAddress }, '[ProtocolVotes] Cache read failed');
-        }
-    }
-
+async function scanAndRemember(validatorAddress: string, network: Network): Promise<string> {
     try {
         const signal = await scanForSignal(validatorAddress, network);
+        const redis = getRedis();
         if (redis) {
             redis
-                .set(key, signal, { ex: signal ? TTL_VOTED_S : TTL_NOT_VOTED_S })
+                .set(scanKey(network, validatorAddress), signal, { ex: signal ? TTL_VOTED_S : TTL_NOT_VOTED_S })
                 .catch((err) => logger.error({ err, network }, '[ProtocolVotes] Cache write failed'));
         }
         if (signal) await recordVote(network, validatorAddress, signal);
@@ -336,16 +324,58 @@ export async function fetchValidatorProtocolVote(
     }
 }
 
-/** The same read for a small set of validators, one entry per address. */
+/**
+ * The signal each of these validators has cast, one entry per address: from
+ * this instance's memory when read lately, then from the shared store in two
+ * commands whatever the number of validators (one HMGET of the known votes, one
+ * MGET of the scanned answers), and only the rest from a scan of their history.
+ */
 export async function fetchProtocolVotes(
     validatorAddresses: string[],
     network: Network = 'mainnet',
 ): Promise<Record<string, string>> {
     const unique = Array.from(new Set(validatorAddresses)).filter(Boolean);
-    const signals = await Promise.all(
-        unique.map((address) => fetchValidatorProtocolVote(address, network)),
-    );
-    return Object.fromEntries(unique.map((address, i) => [address, signals[i]]));
+    const now = Date.now();
+    const out: Record<string, string> = {};
+    let missing: string[] = [];
+    for (const address of unique) {
+        const hit = recent.get(`${network}:${address}`);
+        if (hit && now - hit.at < RECENT_MS) out[address] = hit.signal;
+        else missing.push(address);
+    }
+
+    const redis = getRedis();
+    if (redis && missing.length > 0) {
+        try {
+            const known = (await redis.hmget<Record<string, string>>(votesKey(network), ...missing)) ?? {};
+            for (const address of missing) {
+                const signal = known[address];
+                if (typeof signal === 'string' && signal) out[address] = signal;
+            }
+            missing = missing.filter((a) => out[a] === undefined);
+            if (missing.length > 0) {
+                const scanned = await redis.mget<(string | null)[]>(...missing.map((a) => scanKey(network, a)));
+                missing.forEach((address, i) => {
+                    if (typeof scanned[i] === 'string') out[address] = scanned[i] as string;
+                });
+                missing = missing.filter((a) => out[a] === undefined);
+            }
+        } catch (err) {
+            logger.error({ err, network }, '[ProtocolVotes] Cache read failed');
+        }
+    }
+
+    const scanned = await Promise.all(missing.map((address) => scanAndRemember(address, network)));
+    missing.forEach((address, i) => { out[address] = scanned[i]; });
+
+    if (recent.size > RECENT_MAX) recent.clear();
+    for (const address of unique) recent.set(`${network}:${address}`, { signal: out[address] ?? '', at: now });
+    return Object.fromEntries(unique.map((address) => [address, out[address] ?? '']));
+}
+
+/** The same read for one validator. */
+export async function fetchValidatorProtocolVote(validatorAddress: string, network: Network = 'mainnet'): Promise<string> {
+    return (await fetchProtocolVotes([validatorAddress], network))[validatorAddress] ?? '';
 }
 
 /**
@@ -356,6 +386,7 @@ export async function forgetProtocolVote(
     validatorAddress: string,
     network: Network = 'mainnet',
 ): Promise<void> {
+    recent.delete(`${network}:${validatorAddress}`);
     const redis = getRedis();
     if (!redis) return;
     try {

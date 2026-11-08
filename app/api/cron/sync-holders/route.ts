@@ -1,4 +1,5 @@
 
+import { sameSecret } from '@/lib/cronAuth';
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 import { getValidatorsCached } from '@/services/gateway/validators';
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
     }
 
-    const isValidCron = authHeader === `Bearer ${expectedSecret}` || secretFromUrl === expectedSecret;
+    const isValidCron = sameSecret(authHeader, `Bearer ${expectedSecret}`) || sameSecret(secretFromUrl, expectedSecret);
     if (!isValidCron) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -22,6 +22,10 @@ import { AccountLockersTab } from './AccountLockersTab';
 import { getTabsForEntity, type EntityTab } from './ExpandableEntityBadge';
 import { AccountStakingTab } from './AccountStakingTab';
 import { AccountTransactionsTab } from './AccountTransactionsTab';
+import { AccountOlympiaTab } from '../olympia/AccountOlympiaTab';
+import { AccountRewardsTab } from './AccountRewardsTab';
+import { olympiaDict } from '../olympia/dict';
+import { useOlympiaLink } from '@/features/dashboard/services/olympiaApi';
 import { apiFetchEntityDetails, apiFetchTransactions } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
@@ -51,6 +55,15 @@ function FiatValueDisplay({ amount, marketData, statsLoading, locale }: { amount
             ({formatCurrency(amount * price, currency, locale)})
         </span>
     );
+}
+
+/** Rewards and then Olympia go right after Lockers (or at the end when there is no Lockers tab). */
+function withAfterLockers<T extends { key: EntityTab }>(tabs: T[], extra: (T | null)[]): T[] {
+    const added = extra.filter((tab): tab is T => !!tab);
+    if (added.length === 0) return tabs;
+    const at = tabs.findIndex((tab) => tab.key === 'lockers');
+    const index = at < 0 ? tabs.length : at + 1;
+    return [...tabs.slice(0, index), ...added, ...tabs.slice(index)];
 }
 
 export function AccountCard({
@@ -99,6 +112,9 @@ export function AccountCard({
         currentEpoch,
     } = useAccountStats(address, network as 'mainnet' | 'stokenet', entityData || null);
 
+    // Accounts that existed on Olympia (same key) get an Olympia tab.
+    const { data: olympiaLink } = useOlympiaLink(address, network);
+
     const { prefetchAccountRewards } = usePrefetchRewards();
     const { data: validatorsData } = useValidatorsQuery(network);
 
@@ -145,7 +161,12 @@ export function AccountCard({
     const entityName = getMeta('name');
     const iconUrl = getMeta('icon_url');
 
-    const tabsData = getTabsForEntity(address, tt);
+    const o = olympiaDict(tt);
+    // Staking rewards are worked out for mainnet only, as the CSV button above does.
+    const tabsData = withAfterLockers(getTabsForEntity(address, tt), [
+        network === 'mainnet' ? { key: 'rewards', label: accT?.rewards?.label ?? 'Rewards', tooltip: accT?.rewards?.tooltip } : null,
+        olympiaLink ? { key: 'olympia', label: o.tab ?? 'Olympia', tooltip: o.tab_tooltip } : null,
+    ]);
 
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
     const configEntries = getConfigEntries(ra, tt);
@@ -417,7 +438,15 @@ export function AccountCard({
                                         )}
 
                                         {activeTab === 'security' && (
-                                            <AccountSecurityTab address={address} network={network} tt={tt} />
+                                            <AccountSecurityTab address={address} network={network} tt={tt} locale={locale} />
+                                        )}
+
+                                        {activeTab === 'rewards' && (
+                                            <AccountRewardsTab address={address} tt={tt} locale={locale ?? 'en'} marketData={marketData} />
+                                        )}
+
+                                        {activeTab === 'olympia' && olympiaLink && (
+                                            <AccountOlympiaTab babylonAddress={address} tt={tt} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} />
                                         )}
 
                                         {/* ── POOL UNITS ── */}

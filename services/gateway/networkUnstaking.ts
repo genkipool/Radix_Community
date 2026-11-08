@@ -1,6 +1,6 @@
 import logger from '@/lib/logger';
 import { getRedis } from '@/lib/redis';
-import { readBlob, writeBlob } from '@/lib/redisBlob';
+import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 import { gatewayPost } from './bases';
 import { getValidatorsCached } from './validators';
 import type { Network } from './client';
@@ -130,6 +130,16 @@ async function readState(network: Network): Promise<UnstakingState | null> {
     return readBlob<UnstakingState>(redis, stateKey(network));
 }
 
+/** The state for showing it: answered from this instance's copy for a few seconds. */
+async function readShownState(network: Network): Promise<UnstakingState | null> {
+    const redis = getRedis();
+    if (!redis) return memory.get(stateKey(network)) ?? null;
+    return readBlob<UnstakingState>(redis, stateKey(network), { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
+}
+
+/** When this instance may next try a refresh, by network: readers ask on every view. */
+const triedUntil = new Map<Network, number>();
+
 async function writeState(network: Network, state: UnstakingState) {
     const redis = getRedis();
     if (!redis) {
@@ -222,7 +232,7 @@ function accountsFrom(unstakes: Unstake[], at: number): { accounts: AccountUnloc
 
 /** What Redis holds, worked out as of now, and whether a refresh should be asked for. Never calls the Gateway. */
 export async function readNetworkUnstaking(network: Network): Promise<NetworkUnstaking & { wantsRefresh: boolean }> {
-    const state = await readState(network);
+    const state = await readShownState(network);
     const now = Date.now();
     const unstakes = state?.unstakes ?? [];
     const covered = state?.coveredFrom ?? Infinity;
@@ -396,6 +406,11 @@ async function readUnstakes(network: Network, state: UnstakingState, now: number
  * last figures keep being served.
  */
 export async function refreshNetworkUnstaking(network: Network): Promise<'fresh' | 'busy' | 'refreshed' | 'rate-limited' | 'failed'> {
+    // Fresh as far as this instance knows: nothing to do, and no Redis read.
+    if (!isStale(await readShownState(network))) return 'fresh';
+    // At most one try per instance and lock period, decided in memory.
+    if ((triedUntil.get(network) ?? 0) > Date.now()) return 'busy';
+    triedUntil.set(network, Date.now() + LOCK_SECONDS * 1000);
     const before = await readState(network);
     if (!isStale(before)) return 'fresh';
     if (!(await takeLock(network, LOCK_SECONDS))) return 'busy';

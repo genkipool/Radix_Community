@@ -14,6 +14,10 @@ import { RefreshCw, Shield, TriangleAlert } from 'lucide-react';
 import { ValidatorCard } from '../staking/components/ValidatorCard';
 import { TransactionCard } from '../explorador/components/TransactionCard';
 import { EntityCard } from '../explorador/components/entityCards';
+import { OlympiaEntityCard } from '../explorador/olympia/OlympiaEntityCard';
+import { isOlympiaValue, olympiaKindOf } from '../lib/olympia';
+import { OlympiaAccountTxResults } from '../explorador/olympia/OlympiaAccountTxResults';
+import { OlympiaDateResults } from '../explorador/olympia/OlympiaDateResults';
 
 import type { DashboardCardGridProps } from '../types';
 
@@ -56,6 +60,7 @@ export const DashboardCardGrid = ({
   visibleValCount,
   sentinelRef,
   filteredTxs,
+  olympiaRange = null,
   loadingTxs,
   txsInitialized,
   loadingValidators = false,
@@ -83,6 +88,9 @@ export const DashboardCardGrid = ({
   rankingFailed = false,
   onRetryRanking,
 }: DashboardCardGridProps) => {
+  // An Olympia identifier is answered by the archive card alone: the Babylon
+  // list below it would be unrelated.
+  const olympiaQuery = activeView === 'transactions' && isOlympiaValue(searchQuery) ? searchQuery.trim() : null;
   return (
     <>
       <div className={`grid gap-4 w-full mb-8 ${gridClass}`}>
@@ -121,6 +129,40 @@ export const DashboardCardGrid = ({
               >
                 <div className="size-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin opacity-50" />
               </div>
+            )}
+          </>
+        ) : olympiaQuery ? (
+          <>
+            <OlympiaEntityCard
+              key={olympiaQuery}
+              address={olympiaQuery}
+              columns={columns}
+              isExpanded={expandedPosts.has(olympiaQuery) && !readingMode}
+              onExpand={onExpand}
+              onCopy={onCopy}
+              copiedAddress={copiedAddress}
+              t={t}
+              network={network}
+              locale={locale}
+              marketData={marketData}
+              readingMode={readingMode}
+            />
+            {/* An account's transactions follow its card, as on Babylon. */}
+            {olympiaKindOf(olympiaQuery) === 'account' && (
+              <OlympiaAccountTxResults
+                key={`txs-${olympiaQuery}`}
+                address={olympiaQuery}
+                expandedPosts={expandedPosts}
+                readingMode={readingMode}
+                columns={columns}
+                onExpand={onExpand}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+              />
             )}
           </>
         ) : (
@@ -173,6 +215,24 @@ export const DashboardCardGrid = ({
                   marketData={marketData}
                 />
               ))}
+            {!rankingActive && olympiaRange && (
+              <OlympiaDateResults
+                key={`${olympiaRange.from}-${olympiaRange.to}`}
+                range={olympiaRange}
+                expandedPosts={expandedPosts}
+                readingMode={readingMode}
+                columns={columns}
+                onExpand={onExpand}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                emptyText={dt?.transactions?.no_transactions ?? ''}
+                showEmpty={filteredTxs.length === 0}
+              />
+            )}
           </>
         )}
       </div>
@@ -220,7 +280,7 @@ export const DashboardCardGrid = ({
         />
       )}
 
-      {activeView === 'transactions' && !rankingActive && txsFailed && (
+      {activeView === 'transactions' && !olympiaQuery && !rankingActive && txsFailed && (
         <UnavailableState
           message={dt?.error?.unavailable_title ?? 'Could not read the network'}
           hint={dt?.error?.unavailable_hint}
@@ -230,6 +290,8 @@ export const DashboardCardGrid = ({
       )}
 
       {activeView === 'transactions' &&
+        !olympiaQuery &&
+        !olympiaRange &&
         !rankingActive &&
         !txsFailed &&
         txsInitialized &&
