@@ -4,12 +4,17 @@
  * stakes it held when Olympia ended, and its activity. Shared by the Olympia
  * account card and the "Olympia" tab of a Babylon account.
  */
-import React from 'react';
-import { SafeImage } from '@/components/ui/SafeImage';
-import type { OlympiaAccountSummary } from '@/types/olympia';
+import React, { useState } from 'react';
+import type { TranslationsT } from '@/features/dashboard/types';
+import { ENTITY_KINDS } from '@/features/dashboard/lib/entityKinds';
+import { AssetListSection, AssetRowCard } from '../components/AssetRowCard';
+import { ExpandedEntityPanel, ResourceCardHeader, StakeColumns, resourceCardFrameClass, type StakeColumn } from '../components/ResourceCardParts';
+import { OlympiaResourceInlinePanel } from './OlympiaResourcePanel';
+import { OlympiaValidatorCard } from './OlympiaValidatorCard';
+import type { OlympiaAccountSummary, OlympiaStake, OlympiaTokenAmount } from '@/types/olympia';
 import { endOfOlympia, type OlympiaDict } from './dict';
 import { formatAmount, formatDate, formatDecimal } from './format';
-import { BabylonRef, Empty, OlympiaRef, Section, Stat, TokenRef } from './OlympiaParts';
+import { BabylonRef, OlympiaRef, Section, Stat } from './OlympiaParts';
 
 export function OlympiaAccountStats({ a, o, locale }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string }) {
   // Balances are what the account held when Olympia ended; counts and rewards
@@ -49,59 +54,105 @@ export function OlympiaIdentity({ a, o, locale }: { a: OlympiaAccountSummary; o:
   );
 }
 
-export function OlympiaTokensList({ a, o, locale }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string }) {
-  const all = [...(a.xrd ? [a.xrd] : []), ...a.tokens];
-  if (all.length === 0) return <Empty text={o.no_tokens} />;
+/** Shared by the token and stake lists: what opening an entity in place needs. */
+interface EntityListProps {
+  o: OlympiaDict;
+  locale: string;
+  t?: Partial<TranslationsT>;
+  onCopy: (v: string) => void;
+  copiedAddress: string | null;
+  emptyText?: string;
+}
+
+function EmptyList({ text }: { text?: string }) {
+  // As the Babylon account card says an empty tab.
+  return <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">{text}</p>;
+}
+
+function OlympiaTokenRow({ token, locale, t, onCopy, copiedAddress }: { token: OlympiaTokenAmount } & Omit<EntityListProps, 'o' | 'emptyText'>) {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-      {all.map((t) => (
-        <li key={t.rri} className="flex items-center gap-3 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] px-3 py-2 min-w-0">
-          {t.iconUrl
-            ? <SafeImage src={t.iconUrl} alt={t.symbol} fallbackName={t.symbol} className="size-7 rounded-full object-cover shrink-0" />
-            : <span className="size-7 rounded-full bg-[var(--color-card-border)] shrink-0 grid place-items-center text-[9px] font-black">{t.symbol.slice(0, 3)}</span>}
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1.5 min-w-0">
-              <TokenRef rri={t.rri} symbol={t.symbol} locale={locale} />
-              {t.name && <span className="text-[10px] text-[var(--color-text-muted)] truncate">{t.name}</span>}
-            </span>
-            <span className="block text-sm font-mono font-bold text-[var(--color-text-main)] truncate" title={t.amount}>{formatDecimal(t.amount, locale, 4)}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
+    <AssetRowCard
+      address={token.rri}
+      name={token.name || token.symbol}
+      symbol={token.symbol}
+      iconUrl={token.iconUrl}
+      amountText={formatDecimal(token.amount, locale, 4)}
+      expanded={expanded}
+      onToggle={() => setExpanded((v) => !v)}
+      onCopy={onCopy}
+      copiedAddress={copiedAddress}
+    >
+      <OlympiaResourceInlinePanel rri={token.rri} t={t} locale={locale} onCopy={onCopy} copiedAddress={copiedAddress} />
+    </AssetRowCard>
   );
 }
 
-export function OlympiaStakesList({ a, o, locale }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string }) {
-  if (a.stakes.length === 0) return <Empty text={o.no_stakes} />;
-  const th = 'py-2 px-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap';
+/** The tokens an Olympia account held, drawn as the Babylon account card's Tokens tab. */
+export function OlympiaTokensList({ a, o, locale, t, onCopy, copiedAddress, emptyText }: { a: Pick<OlympiaAccountSummary, 'xrd' | 'tokens'> } & EntityListProps) {
+  const all = [...(a.xrd ? [a.xrd] : []), ...a.tokens];
+  const tt = t?.dashboard?.transactions;
+  if (all.length === 0) return <EmptyList text={emptyText ?? o.no_tokens} />;
   return (
-    <div className="overflow-x-auto custom-scrollbar rounded-xl border border-[var(--color-card-border)]">
-      <table className="w-full text-left text-xs">
-        <thead className="bg-[var(--color-surface)] border-b border-[var(--color-card-border)]">
-          <tr>
-            <th className={th}>{o.validator}</th>
-            <th className={`${th} text-right`}>{o.staked_xrd}</th>
-            <th className={`${th} text-right`}>{o.pending_stake_xrd}</th>
-            <th className={`${th} text-right`}>{o.unstaking_xrd}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {a.stakes.map((s) => (
-            <tr key={s.validatorAddress} className="border-b border-[var(--color-card-border)]/50 last:border-b-0">
-              <td className="py-2 px-3">
-                <span className="flex flex-col min-w-0">
-                  {s.validatorName && <span className="font-semibold text-[var(--color-text-main)] truncate">{s.validatorName}</span>}
-                  <OlympiaRef value={s.validatorAddress} locale={locale} />
-                </span>
-              </td>
-              <td className="py-2 px-3 text-right font-mono font-bold text-[var(--color-primary)]">{formatAmount(s.stakedXrd, locale)}</td>
-              <td className="py-2 px-3 text-right font-mono">{formatAmount(s.pendingStakeXrd, locale)}</td>
-              <td className="py-2 px-3 text-right font-mono">{formatAmount(s.pendingUnstakeXrd + s.exitingXrd, locale)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <AssetListSection title={`${tt?.account_summary?.tokens_tab || o.tokens_tab} (${all.length})`}>
+      {all.map((token) => (
+        <OlympiaTokenRow key={token.rri} token={token} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />
+      ))}
+    </AssetListSection>
+  );
+}
+
+function OlympiaStakeCard({ s, o, locale, t, onCopy, copiedAddress }: { s: OlympiaStake } & Omit<EntityListProps, 'emptyText'>) {
+  const [expanded, setExpanded] = useState(false);
+  const tt = t?.dashboard?.transactions;
+  const unstaking = s.pendingUnstakeXrd + s.exitingXrd;
+  // The Babylon stake columns; pending stake is Olympia's (XRD staked this epoch), shown when there is some.
+  const columns: StakeColumn[] = [
+    { label: tt?.stake_history?.stake || tt?.account_summary?.stake_xrd || o.staked_xrd, amount: s.stakedXrd, unit: 'XRD' },
+    ...(s.pendingStakeXrd > 0 ? [{ label: o.pending_stake_xrd, amount: s.pendingStakeXrd, tone: 'text-[var(--color-primary)]', unit: 'XRD' }] : []),
+    { label: tt?.stake_history?.unstake || tt?.account_summary?.unstake_xrd || o.unstaking_xrd, amount: unstaking, tone: 'text-[var(--color-warning)]', unit: 'XRD' },
+  ];
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.getSelection()?.toString()) return;
+    setExpanded((v) => !v);
+  };
+  const address = s.validatorAddress;
+  return (
+    <div className={`flex flex-col ${resourceCardFrameClass(expanded)} rounded-xl`}>
+      <ResourceCardHeader
+        address={address}
+        shortAddress={address.length > 20 ? `${address.slice(0, 10)}...${address.slice(-6)}` : address}
+        name={s.validatorName}
+        nameColor={ENTITY_KINDS.validator.color}
+        onToggle={toggle}
+        onCopy={onCopy}
+        copiedAddress={copiedAddress}
+        expanded={expanded}
+        right={<StakeColumns columns={columns} locale={locale} />}
+        copyLabel={tt?.copy_address}
+      />
+      <ExpandedEntityPanel expanded={expanded}>
+        <OlympiaValidatorCard address={address} columns={1} isExpanded headless onCopy={onCopy} copiedAddress={copiedAddress} t={t} network="mainnet" locale={locale} />
+      </ExpandedEntityPanel>
+    </div>
+  );
+}
+
+/** The stakes of an Olympia account, drawn as the Babylon account card's Staking tab. */
+export function OlympiaStakesList({ a, o, locale, t, onCopy, copiedAddress, emptyText }: { a: Pick<OlympiaAccountSummary, 'stakes'> } & EntityListProps) {
+  const tt = t?.dashboard?.transactions;
+  if (a.stakes.length === 0) return <EmptyList text={emptyText ?? o.no_stakes} />;
+  return (
+    <div className="space-y-4">
+      <h4 className="text-[11px] font-black uppercase mb-3 tracking-wider text-[var(--color-text-muted)] mt-4">
+        {tt?.account_summary?.staking_validators_title || o.validator} <span className="ml-1 opacity-50">({a.stakes.length})</span>
+      </h4>
+      <div className="grid grid-cols-1 gap-2 items-start">
+        {a.stakes.map((s) => (
+          <OlympiaStakeCard key={s.validatorAddress} s={s} o={o} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -127,13 +178,16 @@ export function OlympiaAccountSecurity({ a, o, locale }: { a: OlympiaAccountSumm
 }
 
 /** Everything above, stacked: the body of the "Olympia" tab and of the account card's summary. */
-export function OlympiaAccountOverview({ a, o, locale, showIdentity = true }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string; showIdentity?: boolean }) {
+export function OlympiaAccountOverview({ a, o, locale, showIdentity = true, t, onCopy, copiedAddress }: {
+  a: OlympiaAccountSummary; o: OlympiaDict; locale: string; showIdentity?: boolean;
+  t?: Partial<TranslationsT>; onCopy: (v: string) => void; copiedAddress: string | null;
+}) {
   return (
     <div className="space-y-5">
       <Section title={o.final_state}><OlympiaAccountStats a={a} o={o} locale={locale} /></Section>
       {showIdentity && <OlympiaIdentity a={a} o={o} locale={locale} />}
-      <Section title={o.tokens_tab}><OlympiaTokensList a={a} o={o} locale={locale} /></Section>
-      <Section title={o.stakes_tab}><OlympiaStakesList a={a} o={o} locale={locale} /></Section>
+      <OlympiaTokensList a={a} o={o} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />
+      <OlympiaStakesList a={a} o={o} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />
     </div>
   );
 }

@@ -47,6 +47,8 @@ export const RATE_LIMITS = {
     sign: { name: 'sign', limit: 120, windowMs: MINUTE },
     /** Olympia archive reads: each one is several range requests to the dataset host. */
     olympia: { name: 'olympia', limit: 300, windowMs: MINUTE },
+    /** An account at the end of a past day: several Gateway reads pinned to one ledger state. */
+    accountAt: { name: 'account-at', limit: 60, windowMs: MINUTE },
     /** Live protocol-vote reads of a wallet's own validators. */
     votes: { name: 'votes', limit: 30, windowMs: MINUTE },
     /** Endpoints that refresh shared caches on a reader's request. */

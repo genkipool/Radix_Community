@@ -14,6 +14,8 @@ export const OLYMPIA_FILES = {
   accountBalanceChanges: { path: 'index/account_balance_changes.parquet', key: 'account_id', order: 'state_version' },
   accountFinalBalances: { path: 'index/account_final_balances.parquet', key: 'account_id' },
   accountFinalStakes: { path: 'index/account_final_stakes.parquet', key: 'account_id' },
+  accountStakeHistory: { path: 'index/account_stake_history.parquet', key: 'account_id', order: 'from_state_version' },
+  validatorStakeHistory: { path: 'index/validator_stake_history.parquet', key: 'validator_id', order: 'from_state_version' },
   accountRewardsDaily: { path: 'index/account_staking_rewards_daily.parquet', key: 'account_id', order: 'day' },
   txById: { path: 'index/tx_by_id.parquet', key: 'transaction_id' },
   txByVersion: { path: 'index/user_tx_by_version.parquet', key: 'state_version' },

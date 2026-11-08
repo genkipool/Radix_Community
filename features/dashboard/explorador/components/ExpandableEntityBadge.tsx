@@ -34,6 +34,7 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 import { ValidatorSummaryMetrics } from './ValidatorSummaryMetrics';
+import { ResourceCardHeader, StakeColumns, resourceCardFrameClass, type StakeColumn } from './ResourceCardParts';
 import { formatNumber } from '@/utils/formatters';
 import { AccountSummaryTab } from './AccountSummaryTab';
 import {
@@ -62,7 +63,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'rewards' | 'transactions' | 'deposits' | 'funds' | 'security' | 'olympia' | 'metadata' | 'configuration' | 'raw';
+export type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'lockers' | 'rewards' | 'transactions' | 'at_date' | 'deposits' | 'funds' | 'security' | 'olympia' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -258,6 +259,23 @@ export function ExpandableEntityBadge({
 
     const { stakingRows } = useAccountStats(clean, network as 'mainnet' | 'stokenet', isAccountAddr ? (entityData ?? null) : null);
 
+    const stakeColumns: StakeColumn[] = [
+        ...(stakeAmount !== undefined ? [{ label: tt?.stake_history?.stake || tt?.account_summary?.stake_xrd || 'Stake', amount: stakeAmount, unit: 'XRD' }] : []),
+        ...(unstakeAmount !== undefined ? [{ label: tt?.stake_history?.unstake || tt?.account_summary?.unstake_xrd || 'Unstake', amount: unstakeAmount, tone: 'text-[var(--color-warning)]', unit: 'XRD' }] : []),
+        ...(claimAmount !== undefined ? [{ label: tt?.stake_history?.claim || tt?.account_summary?.claim_xrd || 'Claim', amount: claimAmount, tone: 'text-[var(--color-success)]', unit: 'XRD' }] : []),
+    ];
+    const csvButton = isAccountAddr && network === 'mainnet' ? (
+        <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+            onPointerEnter={() => prefetchAccountRewards(clean)}
+            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+            title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards}
+        >
+            <Download className="size-3" />
+        </button>
+    ) : null;
+
     /* ── Click handler (prevents text selection from collapsing) ── */
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -266,7 +284,7 @@ export function ExpandableEntityBadge({
     };
 
     return (
-        <div className={`flex flex-col ${isTransferCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] overflow-hidden' : isResourceCard ? `bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-all duration-300 overflow-hidden ${expanded ? 'ring-2 ring-[var(--color-primary)] shadow-md' : 'shadow-md hover:shadow-lg'}` : `border ${bg} overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`} rounded-xl`}>
+        <div className={`flex flex-col ${isTransferCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] overflow-hidden' : isResourceCard ? resourceCardFrameClass(expanded) : `border ${bg} overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`} rounded-xl`}>
             {/* ── Clickable header ─────────────────────── */}
             {isTransferCard ? (
                 // Same markup and spacing as an asset row (BalanceChangeRow), so both columns read alike.
@@ -300,6 +318,22 @@ export function ExpandableEntityBadge({
                         </div>
                     </div>
                 </div>
+            ) : isResourceCard ? (
+                <ResourceCardHeader
+                    address={clean}
+                    shortAddress={short}
+                    name={clean.startsWith('pool_') && blueprintName ? blueprintName : entityName}
+                    nameColor={color}
+                    iconUrl={iconUrl}
+                    addressTitle={wellKnownTip || clean}
+                    onToggle={handleToggle}
+                    onCopy={onCopy}
+                    copiedAddress={copiedAddress}
+                    expanded={expanded}
+                    right={<StakeColumns columns={stakeColumns} locale={locale} />}
+                    actions={csvButton}
+                    copyLabel={tt?.copy_address}
+                />
             ) : (
             <div
                 className={`flex-1 flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5 hover:bg-white/5'} min-h-[52px] cursor-pointer transition-colors group/entity`}
@@ -361,49 +395,7 @@ export function ExpandableEntityBadge({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                    {(stakeAmount !== undefined || unstakeAmount !== undefined || claimAmount !== undefined) && (
-                        <div className="flex items-center gap-4 mr-3">
-                            {stakeAmount !== undefined && (
-                                <div className="flex flex-col items-end">
-                                    <span className={`${isResourceCard ? 'text-[9px] tracking-wider' : 'text-[8px] tracking-tighter'} text-[var(--color-text-muted)] uppercase font-black leading-none opacity-60`}>
-                                        {tt?.stake_history?.stake || tt?.account_summary?.stake_xrd || 'Stake'}
-                                    </span>
-                                    <div className={`flex items-baseline gap-1 ${isResourceCard ? 'mt-1' : 'mt-0.5'}`}>
-                                        <span className={`${isResourceCard ? 'text-xs' : 'text-[11px]'} font-mono font-black text-[var(--color-text-main)] leading-none tracking-tight`}>
-                                            {formatNumber(stakeAmount, 2, locale)}
-                                        </span>
-                                        {isResourceCard && <span className="text-[9px] font-bold text-[var(--color-text-muted)]">XRD</span>}
-                                    </div>
-                                </div>
-                            )}
-                            {unstakeAmount !== undefined && (
-                                <div className={`flex flex-col items-end border-l ${isResourceCard ? 'border-[var(--color-card-border)]' : 'border-white/10'} pl-3`}>
-                                    <span className={`${isResourceCard ? 'text-[9px] tracking-wider' : 'text-[8px] tracking-tighter'} text-[var(--color-text-muted)] uppercase font-black leading-none opacity-60`}>
-                                        {tt?.stake_history?.unstake || tt?.account_summary?.unstake_xrd || 'Unstake'}
-                                    </span>
-                                    <div className={`flex items-baseline gap-1 ${isResourceCard ? 'mt-1' : 'mt-0.5'}`}>
-                                        <span className={`${isResourceCard ? 'text-xs' : 'text-[11px]'} font-mono font-black text-[var(--color-warning)] leading-none tracking-tight`}>
-                                            {formatNumber(unstakeAmount, 2, locale)}
-                                        </span>
-                                        {isResourceCard && <span className="text-[9px] font-bold text-[var(--color-text-muted)]">XRD</span>}
-                                    </div>
-                                </div>
-                            )}
-                            {claimAmount !== undefined && (
-                                <div className={`flex flex-col items-end border-l ${isResourceCard ? 'border-[var(--color-card-border)]' : 'border-white/10'} pl-3`}>
-                                    <span className={`${isResourceCard ? 'text-[9px] tracking-wider' : 'text-[8px] tracking-tighter'} text-[var(--color-text-muted)] uppercase font-black leading-none opacity-60`}>
-                                        {tt?.stake_history?.claim || tt?.account_summary?.claim_xrd || 'Claim'}
-                                    </span>
-                                    <div className={`flex items-baseline gap-1 ${isResourceCard ? 'mt-1' : 'mt-0.5'}`}>
-                                        <span className={`${isResourceCard ? 'text-xs' : 'text-[11px]'} font-mono font-black text-[var(--color-success)] leading-none tracking-tight`}>
-                                            {formatNumber(claimAmount, 2, locale)}
-                                        </span>
-                                        {isResourceCard && <span className="text-[9px] font-bold text-[var(--color-text-muted)]">XRD</span>}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <StakeColumns columns={stakeColumns} locale={locale} compact />
                     {!isResourceCard && (
                         <button
                             type="button"
@@ -419,17 +411,7 @@ export function ExpandableEntityBadge({
                                 : <Copy className="size-3" />}
                         </button>
                     )}
-                    {isAccountAddr && network === 'mainnet' && (
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
-                            onPointerEnter={() => prefetchAccountRewards(clean)}
-                            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                            title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards}
-                        >
-                            <Download className="size-3" />
-                        </button>
-                    )}
+                    {csvButton}
                     <ChevronDown
                         className={`${isResourceCard ? 'size-4' : 'size-3.5'} text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
                     />

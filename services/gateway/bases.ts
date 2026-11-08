@@ -13,6 +13,26 @@ export const GATEWAY_BASES: Record<Network, string> = {
   stokenet: 'https://gateway-stokenet.radix.community',
 };
 
+/**
+ * The entity/details opt-ins every explorer card reads with (aggregation
+ * 'Vault'). One list for the client fetcher, the server prefetch and the
+ * account-on-a-date read, so the three payloads never diverge.
+ */
+export const CARD_ENTITY_OPT_INS = {
+  explicit_metadata: [
+    'name', 'symbol', 'icon_url', 'description', 'tags',
+    'info_url', 'validator_fee_factor', 'claim_epoch_delay',
+    'dapp_definition', 'dapp_definitions', 'pool', 'pool_address',
+    'validator', 'claim_nft',
+  ],
+  ancestor_identities: false,
+  component_royalty_vault_balance: false,
+  package_royalty_vault_balance: false,
+  non_fungible_include_nfids: true,
+  dapp_two_way_links: true,
+  native_resource_details: true,
+};
+
 /** POST helper for Gateway REST endpoints not wrapped by the SDK. */
 export async function gatewayPost<T>(
   network: Network,

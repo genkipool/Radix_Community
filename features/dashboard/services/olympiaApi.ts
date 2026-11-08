@@ -7,6 +7,7 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FundsFlow } from '@/features/dashboard/explorador/utils/fundsFlow';
 import type {
+  OlympiaAccountStateAt,
   OlympiaAccountSummary,
   OlympiaDailyReward,
   OlympiaLink,
@@ -34,6 +35,8 @@ async function getOrNull<T>(path: string, params: Record<string, string | number
 export const olympiaApi = {
   link: (babylonAddress: string) => getOrNull<OlympiaLink>('account/link', { address: babylonAddress }),
   account: (address: string) => getOrNull<OlympiaAccountSummary>('account', { address }),
+  /** `at`: a UTC day YYYY-MM-DD of Olympia (its last state version) or a state version. */
+  accountAt: (address: string, at: string) => getOrNull<OlympiaAccountStateAt>('account/at', { address, at }),
   transactions: (address: string, before?: string, limit = 15) =>
     getOrNull<OlympiaTxPage>('account/transactions', { address, before, limit }),
   funds: (address: string) => getOrNull<OlympiaFundsResponse>('account/funds', { address }),
@@ -55,6 +58,7 @@ export const olympiaKeys = {
   all: ['olympia'] as const,
   link: (a: string) => ['olympia', 'link', a] as const,
   account: (a: string) => ['olympia', 'account', a] as const,
+  accountAt: (a: string, at: string) => ['olympia', 'account-at', a, at] as const,
   transactions: (a: string) => ['olympia', 'transactions', a] as const,
   funds: (a: string) => ['olympia', 'funds', a] as const,
   tx: (id: string) => ['olympia', 'tx', id.toLowerCase()] as const,
@@ -80,6 +84,16 @@ export function useOlympiaAccount(address: string | null | undefined) {
     queryKey: olympiaKeys.account(address ?? ''),
     queryFn: () => olympiaApi.account(address!),
     enabled: !!address,
+    ...FINAL,
+  });
+}
+
+/** What an Olympia account held at the end of a UTC day of Olympia (or at a state version). */
+export function useOlympiaAccountAt(address: string | null | undefined, at: string | null | undefined) {
+  return useQuery({
+    queryKey: olympiaKeys.accountAt(address ?? '', at ?? ''),
+    queryFn: () => olympiaApi.accountAt(address!, at!),
+    enabled: !!address && !!at,
     ...FINAL,
   });
 }

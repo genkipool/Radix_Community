@@ -6,6 +6,7 @@
  */
 
 import { getGateway, withRetry, type Network } from './client';
+import { CARD_ENTITY_OPT_INS } from './bases';
 import logger from '@/lib/logger';
 import { cacheTag, cacheLife } from 'next/cache';
 
@@ -143,20 +144,7 @@ export async function fetchEntityDetailsForCard(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           addresses: [address],
-          opt_ins: {
-            explicit_metadata: [
-              'name', 'symbol', 'icon_url', 'description', 'tags',
-              'info_url', 'validator_fee_factor', 'claim_epoch_delay',
-              'dapp_definition', 'dapp_definitions', 'pool', 'pool_address',
-              'validator', 'claim_nft',
-            ],
-            ancestor_identities: false,
-            component_royalty_vault_balance: false,
-            package_royalty_vault_balance: false,
-            non_fungible_include_nfids: true,
-            dapp_two_way_links: true,
-            native_resource_details: true,
-          },
+          opt_ins: CARD_ENTITY_OPT_INS,
           aggregation_level: 'Vault',
         }),
       }),

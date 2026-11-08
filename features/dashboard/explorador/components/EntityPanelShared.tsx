@@ -170,12 +170,14 @@ function PanelRoleRow({
    in all inline entity panels.
 ───────────────────────────────────────── */
 export function PanelTabBar<T extends string>({
-    tabs, activeTab, onTabChange, onTabHover, layoutId = 'activeTabUnderline' }: {
+    tabs, activeTab, onTabChange, onTabHover, layoutId = 'activeTabUnderline', dense = false }: {
     tabs: { key: T; label: string; tooltip?: string }[];
     activeTab: T;
     onTabChange: (tab: T) => void;
     onTabHover?: (tab: T) => void;
     layoutId?: string;
+    /** Tighter tabs, for a bar with many of them (the account card) to fit in one row. */
+    dense?: boolean;
 }) {
     return (
         <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar shrink-0">
@@ -187,7 +189,7 @@ export function PanelTabBar<T extends string>({
                     onClick={e => { e.stopPropagation(); onTabChange(tab.key); }}
                     onMouseEnter={() => onTabHover?.(tab.key)}
                     title={tab.tooltip}
-                    className={`px-4 py-2.5 text-[10px] font-bold transition-all relative whitespace-nowrap tracking-wide ${activeTab === tab.key
+                    className={`${dense ? 'px-3' : 'px-4'} py-2.5 text-[10px] font-bold transition-all relative whitespace-nowrap tracking-wide ${activeTab === tab.key
                         ? 'text-[var(--color-primary)]'
                         : 'text-[var(--color-text-muted)]'
                         }`}

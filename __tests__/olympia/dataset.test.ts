@@ -43,6 +43,23 @@ describe.skipIf(!HAS_DATA)('Olympia dataset services', () => {
     expect(s.totals.totalXrd).toBeCloseTo(s.totals.liquidXrd + s.totals.stakedXrd + s.totals.pendingStakeXrd + s.totals.unstakingXrd);
   });
 
+  it('reads an account at the last state version exactly as its final summary', async () => {
+    const ref = (await O.findAccountByOlympia(OWNER_OLYMPIA))!;
+    const [end, final] = await Promise.all([O.getAccountStateAt(ref, 337_759_839), O.getAccountSummary(ref)]);
+    expect(end.xrd?.amount).toBe(final.xrd?.amount);
+    expect(end.tokens.map((t) => [t.rri, t.amount])).toEqual(final.tokens.map((t) => [t.rri, t.amount]));
+    expect(end.stakes.map((s) => s.validatorAddress)).toEqual(final.stakes.map((s) => s.validatorAddress));
+    end.stakes.forEach((s, i) => expect(s.stakedXrd).toBeCloseTo(final.stakes[i].stakedXrd, 6));
+  });
+
+  it('reads an account at a past day: nothing before it existed, something in between', async () => {
+    const ref = (await O.findAccountByOlympia(OWNER_OLYMPIA))!;
+    const before = await O.getAccountStateAt(ref, ref.firstSeenStateVersion - 1);
+    expect(before.totals.totalXrd).toBe(0);
+    const mid = await O.getAccountStateAt(ref, O.versionAtDayEnd('2022-06-30')!, '2022-06-30');
+    expect(mid.totals.totalXrd).toBeGreaterThan(0);
+  });
+
   it('pages transactions newest first without gaps or repeats', async () => {
     const ref = (await O.findAccountByOlympia(OWNER_OLYMPIA))!;
     const p1 = await O.getAccountTxPage(ref, null, 5);
