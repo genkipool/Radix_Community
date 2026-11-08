@@ -46,7 +46,7 @@ export interface ReadBlobOptions {
     now?: number;
 }
 
-function stampKey(key: string) {
+export function stampKey(key: string) {
     return `${key}:stamp`;
 }
 
@@ -75,6 +75,27 @@ export async function readBlob<T>(redis: Redis, key: string, options: ReadBlobOp
     const now = options.now ?? Date.now();
     const mine = held.get(key);
     if (mine && options.maxAgeMs && now - mine.checkedAt < options.maxAgeMs) return mine.value as T;
+    if (!options.maxAgeMs) return readFromRedis<T>(redis, key, now, mine);
+
+    // Shown values: requests that arrive together on this instance share one
+    // read, so a burst costs Redis what a single request does.
+    const pending = inflight.get(key);
+    if (pending) return pending as Promise<T | null>;
+    const read = readFromRedis<T>(redis, key, now, mine, true).finally(() => inflight.delete(key));
+    inflight.set(key, read);
+    return read;
+}
+
+/** Reads of shown values already on their way to Redis, by key. */
+const inflight = new Map<string, Promise<unknown>>();
+
+async function readFromRedis<T>(
+    redis: Redis,
+    key: string,
+    now: number,
+    mine: { stamp: string; value: unknown; checkedAt: number } | undefined,
+    shown = false,
+): Promise<T | null> {
 
     const stamp = await redis.get<string>(stampKey(key));
     if (stamp && mine?.stamp === stamp) {
@@ -85,7 +106,10 @@ export async function readBlob<T>(redis: Redis, key: string, options: ReadBlobOp
     const stored = await redis.get(key);
     const value = decodeBlob<T>(stored);
     if (value === null) {
-        held.delete(key);
+        // A missing shown value is remembered too, for the same window as a
+        // present one: otherwise every request for it pays two commands.
+        if (shown) held.set(key, { stamp: '', value: null, checkedAt: now });
+        else held.delete(key);
         return null;
     }
 

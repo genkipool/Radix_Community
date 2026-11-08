@@ -69,9 +69,12 @@ export async function POST(request: NextRequest) {
     if (body.length > MAX_BATCH) {
       return rpcError(JSON_RPC_ERRORS.INVALID_REQUEST, `At most ${MAX_BATCH} messages per batch`, 400);
     }
-    // The request already counted once; the rest of the batch counts too.
-    const batch = await rateLimit(RATE_LIMITS.mcp, ip, body.length - 1);
-    if (body.length > 1 && !batch.allowed) return rateLimited(batch);
+    // The request already counted once; the rest of the batch counts too
+    // (a batch of one has nothing more to count, and no command is spent on it).
+    if (body.length > 1) {
+      const batch = await rateLimit(RATE_LIMITS.mcp, ip, body.length - 1);
+      if (!batch.allowed) return rateLimited(batch);
+    }
   }
 
   const result = await handleMcpBody(body, getMcpRegistry(), {

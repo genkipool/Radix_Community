@@ -1,7 +1,21 @@
+/**
+ * services/accountRewards.ts
+ *
+ * What a Babylon account's rewards CSV needs from the server: which years have
+ * validator reward data, and one year of it. The account's own figures are
+ * worked out in the browser from its history (clientCsvExport.ts).
+ *
+ * Both answers are the same for every account and change at most once per
+ * epoch, so they are bounded by time, never by traffic: each instance asks
+ * Redis at most once per window, and requests that arrive together share that
+ * one read. The years come from the yearly keys' stamps (a few bytes each, one
+ * MGET); a year's data is read through readBlob, compressed, and downloaded
+ * only when its stamp changed.
+ */
+import 'server-only';
 import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
-
-// ── Types ──────────────────────────────────────────────────────────────────────
+import { readBlob, stampKey } from '@/lib/redisBlob';
 
 interface ValidatorRewardData {
     lastSyncedEpoch: number;
@@ -12,78 +26,78 @@ interface ValidatorRewardData {
     dailyStake?: Record<string, number>;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+/** What the browser uses of each validator's data: its delegators' daily reward and its daily stake. */
+export type AccountRewardsYearData = Record<string, { dailyDelegants: Record<string, number>; dailyStake: Record<string, number> }>;
 
 const REDIS_REWARDS_YEAR_PREFIX = 'validator_rewards_';
-const REDIS_REWARDS_ALL = 'validator_rewards_all';
+/** Same window the sync keeps (services/validatorRewards.ts). */
 const MAX_YEARS_TO_KEEP = 5;
+/** Babylon's first year. */
+const FIRST_YEAR = 2023;
+/** How long an instance answers from what it read: rewards are daily figures. */
+export const ACCOUNT_REWARDS_MAX_AGE_MS = 60 * 60_000;
 
-// ── Public API ─────────────────────────────────────────────────────────────────
+/** The years an account rewards CSV can be asked for, newest first, before anything is read. */
+export function candidateYears(now = new Date()): string[] {
+    const current = now.getUTCFullYear();
+    const out: string[] = [];
+    for (let y = current; y >= Math.max(FIRST_YEAR, current - MAX_YEARS_TO_KEEP); y--) out.push(String(y));
+    return out;
+}
+
+let yearsCache: { years: string[]; at: number } | null = null;
+let yearsInflight: Promise<string[]> | null = null;
 
 /**
- * Returns the list of years that have reward data in the system.
- * Prefers year-indexed keys for efficiency; falls back to legacy monolithic key.
+ * The years with reward data, newest first. One MGET of the yearly stamps per
+ * instance and hour, whatever the traffic.
  */
-export async function getAvailableYearsForAccount(_accountAddress: string): Promise<string[]> {
+export async function getAvailableRewardYears(): Promise<string[]> {
+    const now = Date.now();
+    if (yearsCache && now - yearsCache.at < ACCOUNT_REWARDS_MAX_AGE_MS) return yearsCache.years;
+    if (yearsInflight) return yearsInflight;
+
     const redis = getRedis();
     if (!redis) {
-        logger.error({ _accountAddress }, '[AccountRewards] Redis client not available');
+        logger.error('[AccountRewards] Redis client not available');
         return [];
     }
+    const candidates = candidateYears();
+    yearsInflight = redis
+        .mget<(string | null)[]>(...candidates.map((y) => stampKey(`${REDIS_REWARDS_YEAR_PREFIX}${y}`)))
+        .then((stamps) => {
+            const years = candidates.filter((_, i) => !!stamps[i]);
+            yearsCache = { years, at: Date.now() };
+            return years;
+        })
+        .catch((err) => {
+            logger.error({ err }, '[AccountRewards] Failed to read the available years');
+            return yearsCache?.years ?? [];
+        })
+        .finally(() => { yearsInflight = null; });
+    return yearsInflight;
+}
 
-    try {
-        // Try year-indexed keys first (much smaller payloads)
-        const currentYear = new Date().getFullYear();
-        const candidateYears: string[] = [];
-        for (let y = currentYear; y >= currentYear - MAX_YEARS_TO_KEEP; y--) {
-            candidateYears.push(y.toString());
-        }
+const trimmed = new Map<string, { source: unknown; data: AccountRewardsYearData }>();
 
-        const checks = await Promise.all(
-            candidateYears.map(async (yr) => {
-                const data = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${yr}`);
-                // If the year bucket exists and has at least one validator, it's available
-                return data && Object.keys(data).length > 0 ? yr : null;
-            })
-        );
+/**
+ * One year of every validator's delegator rewards and stake, or null when the
+ * year is not kept. The year must already be one of `candidateYears()`.
+ */
+export async function getAccountRewardsYearData(year: string): Promise<AccountRewardsYearData | null> {
+    const redis = getRedis();
+    if (!redis) return null;
+    const source = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`, { maxAgeMs: ACCOUNT_REWARDS_MAX_AGE_MS });
+    if (!source) return null;
 
-        const years = checks.filter((yr): yr is string => yr !== null);
-        if (years.length > 0) {
-            logger.info({ _accountAddress, count: years.length, years }, '[AccountRewards] Found available years via indexed keys');
-            return years.sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-        }
-
-        // Fallback to legacy monolithic key
-        const allDataRaw = await redis.get(REDIS_REWARDS_ALL);
-        if (!allDataRaw) {
-            logger.warn({ _accountAddress }, '[AccountRewards] No rewards data found in Redis');
-            return [];
-        }
-
-        const allData = (typeof allDataRaw === 'string' ? JSON.parse(allDataRaw) : allDataRaw) as Record<string, ValidatorRewardData>;
-        
-        const systemYears = new Set<string>();
-        for (const valAddr of Object.keys(allData)) {
-            const valData = allData[valAddr];
-            if (valData.yearly) {
-                for (const yr of Object.keys(valData.yearly)) {
-                    if (yr.length === 4) systemYears.add(yr);
-                }
-            }
-            if (valData.yearlyDelegants) {
-                for (const yr of Object.keys(valData.yearlyDelegants)) {
-                    if (yr.length === 4) systemYears.add(yr);
-                }
-            }
-        }
-
-        const sortedYears = [...systemYears]
-            .toSorted((a, b) => parseInt(b, 10) - parseInt(a, 10));
-
-        logger.info({ _accountAddress, count: sortedYears.length, years: sortedYears }, '[AccountRewards] Found available years via legacy key');
-        return sortedYears;
-    } catch (e) {
-        logger.error({ err: e, _accountAddress }, '[AccountRewards] Failed to get available years');
-        return [];
+    // Only the two series the browser reads: about half of the stored value.
+    const hit = trimmed.get(year);
+    if (hit?.source === source) return hit.data;
+    const data: AccountRewardsYearData = {};
+    for (const [validator, v] of Object.entries(source)) {
+        if (!v.dailyDelegants || Object.keys(v.dailyDelegants).length === 0) continue;
+        data[validator] = { dailyDelegants: v.dailyDelegants, dailyStake: v.dailyStake ?? {} };
     }
+    trimmed.set(year, { source, data });
+    return data;
 }

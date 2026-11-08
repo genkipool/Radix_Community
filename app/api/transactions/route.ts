@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { TX_TAGS, type TxTag } from '@/features/dashboard/lib/routes';
 import logger from '@/lib/logger';
 import { validateAddress, validateNetwork, validateCursor, validateLimit } from '@/utils/apiValidation';
 import {
@@ -36,6 +37,11 @@ export async function GET(request: NextRequest) {
     }
     const network = validateNetwork(searchParams.get('network'));
     const tag = searchParams.get('tag') || 'All';
+    // Only the explorer's own tags: each one names a shared cache entry, so an
+    // invented tag would otherwise create a new one per request.
+    if (!TX_TAGS.includes(tag as TxTag)) {
+        return NextResponse.json({ error: 'Unknown tag' }, { status: 400 });
+    }
     const start = searchParams.get('start') || undefined;
     const end = searchParams.get('end') || undefined;
     const timezone = searchParams.get('tz') || 'UTC';

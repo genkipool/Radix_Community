@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchStakeHistoryCached } from '@/services/radixApi';
 import logger from '@/lib/logger';
+import { getValidatorsCached } from '@/services/gateway/validators';
 import { validateAddress, validateNetwork } from '@/utils/apiValidation';
 
 export async function GET(request: NextRequest) {
@@ -13,6 +14,12 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        // Only validators that exist: an invented address would otherwise cost
+        // a Redis read and a full Gateway scan.
+        const { validators } = await getValidatorsCached(network);
+        if (!validators.some((v) => v.address === address)) {
+            return NextResponse.json({ error: 'Unknown validator' }, { status: 400 });
+        }
         const history = await fetchStakeHistoryCached(address, network);
         
         return NextResponse.json(history, {

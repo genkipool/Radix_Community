@@ -1,6 +1,6 @@
 import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
-import { queueBlobWrite, readBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
+import { queueBlobWrite, readBlob } from '@/lib/redisBlob';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,12 @@ interface RewardsSyncMeta {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const REDIS_REWARDS_ALL = 'validator_rewards_all';
+/**
+ * How long an instance shows reward figures it already read. They change once
+ * per epoch and are daily sums, so a few minutes behind is invisible, and the
+ * Redis spend of every public read is bounded by time, not by traffic.
+ */
+const REWARDS_SHOWN_MAX_AGE_MS = 5 * 60_000;
 const REDIS_REWARDS_YEAR_PREFIX = 'validator_rewards_';
 const REDIS_REWARDS_META = 'validator_rewards_meta';
 const REDIS_EPOCH_REWARDS = 'validator_epoch_rewards';
@@ -206,7 +211,7 @@ export async function fetchEpochRewardEvents(
  * The totals live in one key per year. Every event of a run is booked on
  * today's date, so a run only ever touches the current year's key: the past
  * years are never read or rewritten, and neither is the legacy all-years key
- * (`validator_rewards_all`, kept only as a read fallback), which at 5.8 MB
+ * (`validator_rewards_all`, no longer read or written), which at 5.8 MB
  * rewritten every epoch was what exhausted the Redis monthly bandwidth.
  */
 export async function syncRewardsToRedis(
@@ -412,7 +417,10 @@ async function getCachedAllEpochRewards() {
     const redis = getRedis();
     if (!redis) return null;
     try {
-        return await readBlob<Record<string, Record<string, { fee: number; pool: number }>>>(redis, REDIS_EPOCH_REWARDS);
+        // A window as well as 'use cache': on serverless that cache is per
+        // instance and often not reused, and this read must cost Redis the same
+        // whatever the traffic (one stamp per instance every few minutes).
+        return await readBlob<Record<string, Record<string, { fee: number; pool: number }>>>(redis, REDIS_EPOCH_REWARDS, { maxAgeMs: REWARDS_SHOWN_MAX_AGE_MS });
     } catch (e) {
         logger.error({ err: e }, '[ValidatorRewards] Failed to read epoch rewards from Redis');
         return null;
@@ -459,22 +467,15 @@ export async function getAvailableYears(
 
         const checks = await Promise.all(
             candidateYears.map(async (yr) => {
-                const data = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
+                const data = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`, { maxAgeMs: REWARDS_SHOWN_MAX_AGE_MS });
                 if (data && data[validatorAddress]) return yr;
                 return null;
             })
         );
 
-        const years = checks.filter((yr): yr is string => yr !== null);
-        if (years.length > 0) {
-            return years.sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-        }
-
-        // Fallback to legacy monolithic key
-        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
-        const data = allData?.[validatorAddress];
-        if (!data?.yearly) return [];
-        return Object.keys(data.yearly).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+        return checks
+            .filter((yr): yr is string => yr !== null)
+            .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
     } catch (e) {
         logger.error({ err: e }, '[ValidatorRewards] Failed to read available years');
         return [];
@@ -496,7 +497,7 @@ export async function generateRewardsCsv(
 
     try {
         // Try year-indexed key first (efficient)
-        const yearData = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
+        const yearData = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`, { maxAgeMs: REWARDS_SHOWN_MAX_AGE_MS });
         const yearEntry = yearData?.[validatorAddress];
         if (yearEntry?.daily) {
             const entries = Object.entries(yearEntry.daily)
@@ -515,30 +516,7 @@ export async function generateRewardsCsv(
             }
         }
 
-        // Fallback to legacy monolithic key
-        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL, { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
-        const data = allData?.[validatorAddress];
-        if (!data?.daily) return null;
-
-        const entries = Object.entries(data.daily)
-            .filter(([date]) => date.startsWith(year))
-            .sort(([a], [b]) => a.localeCompare(b));
-
-        if (entries.length === 0) return null;
-
-        const header = '"Type","Buy","Cur.","Sell","Cur.","Fee","Cur.","Exchange","Group","Comment","Date"';
-        const rows = entries.map(([date, xrd]) => {
-            const formattedDate = `${date} 00:00:00`;
-            const shortAddr = `${validatorAddress.substring(0, 20)}...`;
-            return `"Staking","${xrd.toFixed(8)}","XRD","","","","","Radix Network","Staking","Daily reward - ${shortAddr}","${formattedDate}"`;
-        });
-
-        const totalXrd = entries.reduce((acc, [_, xrd]) => acc + xrd, 0);
-
-        return {
-            csv: [header, ...rows].join('\n'),
-            totalXrd
-        };
+        return null;
     } catch (e) {
         logger.error({ err: e }, '[ValidatorRewards] Failed to generate CSV');
         return null;

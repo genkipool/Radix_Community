@@ -1,5 +1,5 @@
 import { getRedis } from '@/lib/redis';
-import { readBlob, writeBlob } from '@/lib/redisBlob';
+import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 import type { Network } from './client';
 
 /*
@@ -29,12 +29,36 @@ export function createScanStore<S>(name: string) {
     const lockKey = (network: Network) => `ranking_${name}_lock_${network}`;
     const memory = new Map<string, S>();
     const memoryLocks = new Map<string, number>();
+    const tried = new Map<Network, number>();
 
     return {
         async read(network: Network): Promise<S | null> {
             const redis = getRedis();
             if (!redis) return memory.get(stateKey(network)) ?? null;
             return readBlob<S>(redis, stateKey(network));
+        },
+
+        /**
+         * The state for showing it: this instance answers from what it read in
+         * the last few seconds, so a page view costs Redis nothing most of the
+         * time. A step must use `read`, which always asks Redis.
+         */
+        async readShown(network: Network): Promise<S | null> {
+            const redis = getRedis();
+            if (!redis) return memory.get(stateKey(network)) ?? null;
+            return readBlob<S>(redis, stateKey(network), { maxAgeMs: SHOWN_VALUE_MAX_AGE_MS });
+        },
+
+        /**
+         * Whether this instance should try a step now: at most once per
+         * `seconds`, decided in memory, so readers asking for steps on every
+         * view do not each pay a Redis read and a lock attempt.
+         */
+        shouldTry(network: Network, seconds: number): boolean {
+            const now = Date.now();
+            if ((tried.get(network) ?? 0) > now) return false;
+            tried.set(network, now + seconds * 1000);
+            return true;
         },
 
         async write(network: Network, state: S) {

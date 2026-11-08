@@ -8,6 +8,14 @@
  * every serverless instance; in memory otherwise (one instance only, which
  * still blunts a single abusive caller). A Redis failure falls back to memory
  * rather than letting everything through.
+ *
+ * The limiter must not be the way to run Redis dry: every request is counted
+ * in this instance's memory first, and a caller already over the limit here is
+ * turned away without a Redis command. On top of that each instance spends at
+ * most REDIS_BUDGET_PER_MINUTE commands a minute on each policy; past it (a
+ * flood from many addresses) that policy counts in memory only until the next
+ * minute. The budget is per policy, so a busy MCP client never leaves the
+ * login or contact limits without their shared count.
  */
 
 import { getRedis } from '@/lib/redis';
@@ -37,6 +45,10 @@ export const RATE_LIMITS = {
     engine: { name: 'engine', limit: 60, windowMs: MINUTE },
     /** Signing, timestamps and verification. */
     sign: { name: 'sign', limit: 120, windowMs: MINUTE },
+    /** Olympia archive reads: each one is several range requests to the dataset host. */
+    olympia: { name: 'olympia', limit: 300, windowMs: MINUTE },
+    /** Live protocol-vote reads of a wallet's own validators. */
+    votes: { name: 'votes', limit: 30, windowMs: MINUTE },
     /** Endpoints that refresh shared caches on a reader's request. */
     cacheRefresh: { name: 'cache-refresh', limit: 10, windowMs: MINUTE },
     /** Forms that send email to the team. */
@@ -57,7 +69,11 @@ export async function rateLimit(
     const windowStart = now - (now % policy.windowMs);
     const resetAt = windowStart + policy.windowMs;
     const key = `rl:${policy.name}:${ip}:${windowStart}`;
-    const count = (await countInRedis(key, cost, policy.windowMs)) ?? countInMemory(key, cost, resetAt, now);
+    const local = countInMemory(key, cost, resetAt, now);
+    // Over the limit on this instance alone: no need to ask Redis.
+    const count = local > policy.limit || !spendRedisBudget(policy.name, now)
+        ? local
+        : (await countInRedis(key, cost, policy.windowMs)) ?? local;
     return count <= policy.limit
         ? { allowed: true, retryAfterSeconds: 0 }
         : { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((resetAt - now) / 1000)) };
@@ -79,9 +95,42 @@ async function countInRedis(key: string, cost: number, windowMs: number): Promis
     }
 }
 
+/** Redis commands one instance may spend on counting, per policy and minute. */
+const REDIS_BUDGET_PER_MINUTE = 300;
+const budgets = new Map<string, { minute: number; used: number }>();
+
+/** Takes one command from this instance's budget for `policy`; false when this minute's is spent. */
+function spendRedisBudget(policy: string, now: number): boolean {
+    const minute = Math.floor(now / MINUTE);
+    let budget = budgets.get(policy);
+    if (!budget || budget.minute !== minute) {
+        budget = { minute, used: 0 };
+        budgets.set(policy, budget);
+    }
+    if (budget.used >= REDIS_BUDGET_PER_MINUTE) return false;
+    budget.used += 1;
+    return true;
+}
+
+/** For tests. */
+export function _resetRateLimit() {
+    memory.clear();
+    budgets.clear();
+}
+
 function countInMemory(key: string, cost: number, resetAt: number, now: number): number {
     if (memory.size > MAX_TRACKED_KEYS) {
         for (const [k, v] of memory) if (now >= v.resetAt) memory.delete(k);
+        // Still full of live windows (many addresses at once): drop the oldest
+        // ones rather than grow, and rather than forget everyone at once (which
+        // would reset the counters of the very callers being limited).
+        if (memory.size > MAX_TRACKED_KEYS) {
+            let excess = memory.size - Math.floor(MAX_TRACKED_KEYS * 0.9);
+            for (const k of memory.keys()) {
+                if (excess-- <= 0) break;
+                memory.delete(k);
+            }
+        }
     }
     const entry = memory.get(key) ?? { count: 0, resetAt };
     entry.count += cost;
