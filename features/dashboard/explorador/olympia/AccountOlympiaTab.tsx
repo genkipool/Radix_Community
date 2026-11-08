@@ -5,24 +5,30 @@
  * rewards with the yearly CSV.
  */
 import React, { useState } from 'react';
+import type { CalendarTranslations } from '@/components/ui/CalendarDropdown';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { useOlympiaAccount } from '@/features/dashboard/services/olympiaApi';
 import { olympiaDict } from './dict';
+import { OlympiaAccountAtDate } from './OlympiaAccountAtDate';
 import { OlympiaAccountOverview } from './OlympiaAccountSections';
 import { OlympiaFundsPanel } from './OlympiaAccountCard';
 import { OlympiaRewardsPanel } from './OlympiaRewardsPanel';
 import { OlympiaTxTable } from './OlympiaTxTable';
 import { Empty, ErrorText, FilterPills, Loading, OlympiaBadge, OlympiaRef, SourceNote } from './OlympiaParts';
 
-type Part = 'summary' | 'transactions' | 'funds' | 'rewards';
+type Part = 'summary' | 'at_date' | 'transactions' | 'funds' | 'rewards';
 
-export function AccountOlympiaTab({ babylonAddress, tt, locale, copiedAddress, onCopy }: {
+export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, onCopy, calendarT }: {
   babylonAddress: string;
-  tt?: Partial<TranslationsT['dashboard']['transactions']>;
+  /** The explorer translations: the Olympia entities opened in place need them all. */
+  t?: Partial<TranslationsT>;
+  /** The explorer calendar's strings, for the "on a date" view. */
+  calendarT?: CalendarTranslations;
   locale: string;
   copiedAddress: string | null;
   onCopy: (v: string) => void;
 }) {
+  const tt = t?.dashboard?.transactions;
   const o = olympiaDict(tt);
   const [part, setPart] = useState<Part>('summary');
   const { data: a, isLoading, isError } = useOlympiaAccount(babylonAddress);
@@ -32,6 +38,7 @@ export function AccountOlympiaTab({ babylonAddress, tt, locale, copiedAddress, o
 
   const parts: { key: Part; label: string }[] = [
     { key: 'summary', label: o.summary_tab },
+    { key: 'at_date', label: o.at_date_tab },
     { key: 'transactions', label: o.transactions_tab },
     { key: 'funds', label: o.funds_tab },
     { key: 'rewards', label: o.rewards_tab },
@@ -45,7 +52,8 @@ export function AccountOlympiaTab({ babylonAddress, tt, locale, copiedAddress, o
         </div>
         <FilterPills options={parts} value={part} onChange={setPart} />
       </div>
-      {part === 'summary' && <OlympiaAccountOverview a={a} o={o} locale={locale} />}
+      {part === 'summary' && <OlympiaAccountOverview a={a} o={o} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />}
+      {part === 'at_date' && <OlympiaAccountAtDate address={a.address} o={o} locale={locale} calendarT={calendarT} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />}
       {part === 'transactions' && <OlympiaTxTable address={a.address} o={o} locale={locale} />}
       {part === 'funds' && <OlympiaFundsPanel address={a.address} o={o} tt={tt} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} />}
       {part === 'rewards' && <OlympiaRewardsPanel a={a} o={o} locale={locale} />}

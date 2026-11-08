@@ -23,6 +23,7 @@ import { getTabsForEntity, type EntityTab } from './ExpandableEntityBadge';
 import { AccountStakingTab } from './AccountStakingTab';
 import { AccountTransactionsTab } from './AccountTransactionsTab';
 import { AccountOlympiaTab } from '../olympia/AccountOlympiaTab';
+import { AccountAtDateTab } from './AccountAtDateTab';
 import { AccountRewardsTab } from './AccountRewardsTab';
 import { olympiaDict } from '../olympia/dict';
 import { useOlympiaLink } from '@/features/dashboard/services/olympiaApi';
@@ -163,10 +164,15 @@ export function AccountCard({
 
     const o = olympiaDict(tt);
     // Staking rewards are worked out for mainnet only, as the CSV button above does.
-    const tabsData = withAfterLockers(getTabsForEntity(address, tt), [
+    const withRewards = withAfterLockers(getTabsForEntity(address, tt), [
         network === 'mainnet' ? { key: 'rewards', label: accT?.rewards?.label ?? 'Rewards', tooltip: accT?.rewards?.tooltip } : null,
         olympiaLink ? { key: 'olympia', label: o.tab ?? 'Olympia', tooltip: o.tab_tooltip } : null,
     ]);
+    // The account on a past day, right after its transactions (mainnet, as the rewards).
+    const txIndex = withRewards.findIndex((tab) => tab.key === 'transactions');
+    const tabsData = network === 'mainnet' && txIndex >= 0
+        ? [...withRewards.slice(0, txIndex + 1), { key: 'at_date' as EntityTab, label: accT?.at_date?.label ?? '', tooltip: accT?.at_date?.tooltip }, ...withRewards.slice(txIndex + 1)]
+        : withRewards;
 
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
     const configEntries = getConfigEntries(ra, tt);
@@ -319,6 +325,7 @@ export function AccountCard({
                                         }
                                     }}
                                     layoutId={`accountCardTabs-${address}`}
+                                    dense
                                 />
 
                                 <div className={`px-4 py-3 pb-6 ${isModal ? 'flex-1 overflow-y-auto min-h-0 custom-scrollbar' : ''}`}>
@@ -445,8 +452,12 @@ export function AccountCard({
                                             <AccountRewardsTab address={address} tt={tt} locale={locale ?? 'en'} marketData={marketData} />
                                         )}
 
+                                        {activeTab === 'at_date' && (
+                                            <AccountAtDateTab address={address} network={network as 'mainnet' | 'stokenet'} t={t} locale={locale ?? 'en'} onCopy={onCopy} copiedAddress={copiedAddress} marketData={marketData ?? undefined} calendarT={t?.dashboard?.calendar} />
+                                        )}
+
                                         {activeTab === 'olympia' && olympiaLink && (
-                                            <AccountOlympiaTab babylonAddress={address} tt={tt} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} />
+                                            <AccountOlympiaTab babylonAddress={address} t={t} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} calendarT={t?.dashboard?.calendar} />
                                         )}
 
                                         {/* ── POOL UNITS ── */}

@@ -11,6 +11,7 @@ import type { OlympiaAccountSummary } from '@/types/olympia';
 import { fill, olympiaDict, type OlympiaDict } from './dict';
 import { formatAmount } from './format';
 import { OlympiaAccountSecurity, OlympiaAccountStats, OlympiaIdentity, OlympiaStakesList, OlympiaTokensList } from './OlympiaAccountSections';
+import { OlympiaAccountAtDate } from './OlympiaAccountAtDate';
 import { OlympiaRewardsPanel } from './OlympiaRewardsPanel';
 import { OlympiaTxTable } from './OlympiaTxTable';
 import { OlympiaCsvButton } from './OlympiaCsvButton';
@@ -73,8 +74,9 @@ export function OlympiaAccountCard({ address, isExpanded, onExpand, onCopy, copi
         // order. NFTs, pool units, lockers, deposit rules, metadata and roles
         // did not exist there.
         { key: 'summary', label: o.summary_tab, render: () => <div className="space-y-4"><Section title={o.final_state}><OlympiaAccountStats a={a} o={o} locale={locale} /></Section><OlympiaIdentity a={a} o={o} locale={locale} /><SourceNote o={o} /></div> },
-        { key: 'staking', label: o.account_staking_tab ?? 'Staking', render: () => <Section title={o.stakes_tab}><OlympiaStakesList a={a} o={o} locale={locale} /></Section> },
-        { key: 'tokens', label: o.tokens_tab, render: () => <OlympiaTokensList a={a} o={o} locale={locale} /> },
+        { key: 'staking', label: o.account_staking_tab ?? 'Staking', render: () => <OlympiaStakesList a={a} o={o} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} /> },
+        { key: 'tokens', label: o.tokens_tab, render: () => <OlympiaTokensList a={a} o={o} locale={locale} t={t} onCopy={onCopy} copiedAddress={copiedAddress} /> },
+        { key: 'at_date', label: o.at_date_tab, render: () => <OlympiaAccountAtDate address={address} o={o} locale={locale} calendarT={t?.dashboard?.calendar} t={t} onCopy={onCopy} copiedAddress={copiedAddress} /> },
         { key: 'transactions', label: o.transactions_tab, render: () => <OlympiaTxTable address={address} o={o} locale={locale} /> },
         { key: 'funds', label: o.funds_tab, render: () => <OlympiaFundsPanel address={address} o={o} tt={tt} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} /> },
         { key: 'rewards', label: o.rewards_tab, render: () => <OlympiaRewardsPanel a={a} o={o} locale={locale} /> },

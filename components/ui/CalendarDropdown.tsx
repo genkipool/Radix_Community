@@ -31,6 +31,8 @@ interface CalendarDropdownProps {
     minDate?: string;
     /** Last day that can be picked (YYYY-MM-DD); later days are shown disabled. */
     maxDate?: string;
+    /** Opens in the flow of the content instead of floating, for containers that clip overflow. */
+    inline?: boolean;
 }
 
 // Helpers
@@ -62,6 +64,7 @@ export function CalendarDropdown({
     onReset,
     minDate,
     maxDate,
+    inline = false,
 }: CalendarDropdownProps) {
     // Initialize viewDate to the start date if provided, otherwise today (or the last day allowed)
     const [viewDate, setViewDate] = useState(() => {
@@ -140,7 +143,7 @@ export function CalendarDropdown({
         : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
     const weekdaysMonFirst = [...weekdaysSunFirst.slice(1), weekdaysSunFirst[0]];
 
-    const positionClass = align === 'right' ? 'right-0' : 'left-0';
+    const positionClass = inline ? 'relative' : `absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full`;
 
     return (
         <AnimatePresence>
@@ -150,7 +153,7 @@ export function CalendarDropdown({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.98 }}
                     transition={{ duration: 0.2 }}
-                    className={`absolute ${positionClass} top-full mt-2 p-4 w-[280px] rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] shadow-2xl z-[60]`}
+                    className={`${positionClass} mt-2 p-4 w-[280px] rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] shadow-2xl z-[60]`}
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Month navigation */}

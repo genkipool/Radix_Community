@@ -40,6 +40,8 @@ export const OLYMPIA_XRD_RRI = 'xrd_rr1qy5wfsfh';
 
 /** When the last Olympia mainnet transaction was confirmed (state version 337,759,839). */
 export const OLYMPIA_END_ISO = '2023-09-28T06:33:34.523Z';
+/** Babylon mainnet's first day (UTC): the day Olympia ended. */
+export const BABYLON_FIRST_DAY = OLYMPIA_END_ISO.slice(0, 10);
 /** Olympia's first transaction (state version 1): nothing on Radix is older. */
 export const OLYMPIA_START_ISO = '2021-07-26T20:13:01.600Z';
 
