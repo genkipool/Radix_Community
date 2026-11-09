@@ -37,7 +37,11 @@ function useRewardsCsv(subject: Subject, address: string, years: number[]) {
     setResult(null);
     try {
       const { csv, totalXrd } = subject === 'account'
-        ? olympiaAccountRewardsCsv((await olympiaApi.accountRewards(address, year))?.days ?? [], kind)
+        ? olympiaAccountRewardsCsv(
+            (await olympiaApi.accountRewards(address, year))?.days ?? [],
+            kind,
+            kind === 'all' ? (await olympiaApi.accountMoves(address, year))?.moves ?? [] : [],
+          )
         : olympiaValidatorRewardsCsv(address, (await olympiaApi.validatorRewards(address, year))?.days ?? []);
       if (!csv) {
         setResult({ kind: 'empty' });
@@ -152,9 +156,12 @@ function useYearRewards(subject: Subject, address: string, years: number[]) {
   return useQueries({
     queries: years.map((year) => ({
       queryKey: ['olympia', 'rewards', subject, address, year] as const,
-      queryFn: async () => subject === 'account'
-        ? { account: (await olympiaApi.accountRewards(address, year))?.days ?? [], validator: null }
-        : { account: null, validator: (await olympiaApi.validatorRewards(address, year))?.days ?? [] },
+      queryFn: async () => {
+        if (subject !== 'account') return { account: null, moves: null, validator: (await olympiaApi.validatorRewards(address, year))?.days ?? [] };
+        // The account's movements too: the "All" CSV lists them besides the rewards.
+        const [rewards, moves] = await Promise.all([olympiaApi.accountRewards(address, year), olympiaApi.accountMoves(address, year)]);
+        return { account: rewards?.days ?? [], moves: moves ? { list: moves.moves, tooMany: moves.tooMany } : { list: [], tooMany: false }, validator: null };
+      },
       staleTime: Infinity,
       gcTime: 30 * 60_000,
       retry: 1,
@@ -210,7 +217,7 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
     const data = rows.find((r) => r.year === year)?.query.data;
     if (!data) return;
     const { csv } = data.account
-      ? olympiaAccountRewardsCsv(data.account, kind)
+      ? olympiaAccountRewardsCsv(data.account, kind, data.moves?.list ?? [])
       : olympiaValidatorRewardsCsv(address, data.validator ?? []);
     if (!csv) return;
     const suffix = isAccount && kind !== 'all' ? `_${kind}` : '';
@@ -219,15 +226,23 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
     window.setTimeout(() => setDone((d) => (d === `${year}-${kind}` ? null : d)), 2000);
   };
 
-  const downloads: { kind: OlympiaRewardKind; label: string; tooltip?: string; has: (r: YearRow) => boolean }[] = isAccount
+  const titled = (text: string | undefined, year: number) => (text ?? '').replace('{year}', String(year));
+  const moveCount = (year: number) => rows.find((r) => r.year === year)?.query.data?.moves;
+  const downloads: { kind: OlympiaRewardKind; label: string; tooltip?: string; off?: string; has: (r: YearRow, year: number) => boolean }[] = isAccount
     ? [
-        { kind: 'all', label: o.rewards_kind_all ?? 'All', tooltip: o.rewards_kind_all_tooltip, has: (r) => r.delegatorXrd + r.feeXrd > 0 },
-        ...(kinds ? [
-          { kind: 'delegator' as const, label: o.rewards_kind_delegator ?? 'Delegator', tooltip: o.rewards_kind_delegator_tooltip, has: (r: YearRow) => r.delegatorXrd > 0 },
-          { kind: 'validator' as const, label: o.rewards_kind_validator ?? 'Validator', tooltip: o.rewards_kind_validator_tooltip, has: (r: YearRow) => r.feeXrd > 0 },
-        ] : []),
+        { kind: 'all', label: o.rewards_kind_all ?? 'All', tooltip: o.rewards_dl_all, off: o.rewards_csv_empty,
+          has: (r, year) => !moveCount(year)?.tooMany && (r.delegatorXrd + r.feeXrd > 0 || (moveCount(year)?.list.length ?? 0) > 0) },
+        { kind: 'delegator', label: o.rewards_kind_delegator ?? 'Delegator', tooltip: o.rewards_dl_delegator, off: o.rewards_csv_empty, has: (r) => r.delegatorXrd > 0 },
+        { kind: 'validator', label: o.rewards_kind_validator ?? 'Validator', tooltip: o.rewards_dl_validator, off: o.rewards_kind_validator_off, has: (r) => r.feeXrd > 0 },
       ]
-    : [{ kind: 'all', label: o.rewards_csv_download ?? 'Download', tooltip: o.rewards_csv_tooltip, has: (r) => r.feeXrd > 0 }];
+    : [{ kind: 'all', label: o.rewards_csv_download ?? 'Download', tooltip: o.rewards_csv_tooltip, off: o.rewards_csv_empty, has: (r) => r.feeXrd > 0 }];
+  const legend = isAccount
+    ? [
+        { label: o.rewards_kind_all ?? 'All', text: o.rewards_legend_all ?? '' },
+        { label: o.rewards_kind_delegator ?? 'Delegator', text: o.rewards_legend_delegator ?? '' },
+        { label: o.rewards_kind_validator ?? 'Validator', text: o.rewards_legend_validator ?? '' },
+      ]
+    : undefined;
 
   const xrd = (n: number) => `${formatAmount(n, locale)} XRD`;
   // Accounts: what it earned delegating, then its validator fee. Validators: the owner's fee, then what its delegators earned.
@@ -243,6 +258,7 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
     <RewardsYearsTable
       title={o.rewards_csv_title ?? ''}
       desc={isAccount ? o.rewards_csv_desc : o.rewards_csv_owner_desc}
+      legend={legend}
       yearLabel={o.rewards_year ?? ''}
       downloadLabel={o.rewards_table_download ?? 'CSV'}
       totalLabel={o.rewards_table_total ?? 'Total'}
@@ -253,8 +269,10 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
         row,
         status: query.isError ? <span className="text-[var(--color-danger)]">{o.error}</span> : undefined,
         downloads: downloads.map((d) => {
-          const enabled = !!row && d.has(row);
-          return { key: d.kind, label: d.label, tooltip: enabled ? d.tooltip : o.rewards_csv_empty, enabled, done: done === `${year}-${d.kind}`, onClick: () => save(year, d.kind) };
+          const enabled = !!row && d.has(row, year);
+          const tooMany = d.kind === 'all' && isAccount && !!moveCount(year)?.tooMany;
+          const tooltip = enabled ? titled(d.tooltip, year) : tooMany ? o.rewards_kind_all_too_many : d.off;
+          return { key: d.kind, label: d.label, tooltip, enabled, done: done === `${year}-${d.kind}`, onClick: () => save(year, d.kind) };
         }),
       }))}
     />

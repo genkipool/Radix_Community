@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { summarizeFunds } from '@/features/dashboard/explorador/utils/fundsFlow';
 import { mergeFunds, movementsToFlowItems } from '@/features/dashboard/explorador/utils/olympiaFlow';
-import { olympiaAccountRewardsCsv, olympiaValidatorRewardsCsv } from '@/features/dashboard/explorador/olympia/rewardsCsv';
+import { olympiaAccountRewardsCsv, olympiaMovesCsvRows, olympiaValidatorRewardsCsv } from '@/features/dashboard/explorador/olympia/rewardsCsv';
 import { CT_HEADER } from '@/features/dashboard/explorador/utils/coinTrackingCsv';
 import { formatDecimal } from '@/features/dashboard/explorador/olympia/format';
 
@@ -82,6 +82,42 @@ describe('Olympia rewards CSV', () => {
 
   it('is empty when there is nothing to report', () => {
     expect(olympiaAccountRewardsCsv([]).csv).toBe('');
+  });
+});
+
+describe('Olympia account movements CSV', () => {
+  const XRD = 'xrd_rr1qy5wfsfh';
+  const base = { feeXrd: 0, stakes: [], unstakes: [], changes: [] };
+  const moves = [
+    { ...base, stateVersion: 10, timestamp: '2022-01-20T21:25:17.088Z', transactionId: 'a'.repeat(64), feeXrd: 0.5, stakes: [{ validatorName: 'Pool', xrd: 100 }], changes: [{ rri: XRD, symbol: 'XRD', delta: -100 }] },
+    { ...base, stateVersion: 20, timestamp: '2022-02-01T10:00:00.000Z', transactionId: 'b'.repeat(64), feeXrd: 0.2, unstakes: [{ validatorName: 'Pool', xrd: 100 }] },
+    { ...base, stateVersion: 30, timestamp: '2022-02-15T23:59:59.000Z', transactionId: null, changes: [{ rri: XRD, symbol: 'XRD', delta: 101 }] },
+    { ...base, stateVersion: 40, timestamp: '2022-03-01T08:00:00.000Z', transactionId: 'c'.repeat(64), changes: [{ rri: XRD, symbol: 'XRD', delta: 5 }] },
+    { ...base, stateVersion: 50, timestamp: '2022-03-02T08:00:00.000Z', transactionId: 'd'.repeat(64), feeXrd: 0.1, changes: [{ rri: 'oci_rr1x', symbol: 'OCI', delta: -2 }] },
+  ];
+
+  it('lists stakes, unstake requests, returned stake and transfers, each fee once', () => {
+    const rows = olympiaMovesCsvRows(moves);
+    expect(rows.map((r) => [r[0], r[1], r[2], r[3], r[4], r[5]])).toEqual([
+      ['Withdrawal', '', '', '100.00000000', 'XRD', '0.50000000'],
+      ['Other Fee', '', '', '', '', '0.20000000'],
+      ['Deposit', '101.00000000', 'XRD', '', '', ''],
+      ['Deposit', '5.00000000', 'XRD', '', '', ''],
+      ['Withdrawal', '', '', '2.00000000', 'OCI', '0.10000000'],
+    ]);
+    expect(rows[2][9]).toBe('Olympia unstaked XRD returned');
+    expect(rows[2][11]).toBe('');
+    expect(rows[0][11]).toBe('a'.repeat(64));
+    expect(rows[0][10]).toBe('2022-01-20 21:25:17');
+  });
+
+  it('only "all" carries the movements, and the total counts only rewards', () => {
+    const days = [{ day: '2022-01-21', validatorAddress: 'rv1x', validatorName: 'Pool', delegatorXrd: 1, feeXrd: 0 }];
+    const all = olympiaAccountRewardsCsv(days, 'all', moves);
+    const delegator = olympiaAccountRewardsCsv(days, 'delegator', moves);
+    expect(all.csv.split('\n')).toHaveLength(1 + 1 + 5);
+    expect(delegator.csv.split('\n')).toHaveLength(1 + 1);
+    expect(all.totalXrd).toBe(1);
   });
 });
 

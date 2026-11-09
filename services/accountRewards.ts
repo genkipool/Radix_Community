@@ -78,6 +78,28 @@ export async function getAvailableRewardYears(): Promise<string[]> {
     return yearsInflight;
 }
 
+/** A validator owner's fee per day ("YYYY-MM-DD" → XRD). */
+export type ValidatorFeesYearData = Record<string, Record<string, number>>;
+
+/**
+ * The daily fee of the given validators in a year, from the same stored value
+ * as getAccountRewardsYearData (so no further Redis read): what the owner of
+ * each validator earned. Unknown validators are left out; null when the year
+ * is not kept.
+ */
+export async function getValidatorFeesYearData(year: string, validators: string[]): Promise<ValidatorFeesYearData | null> {
+    const redis = getRedis();
+    if (!redis) return null;
+    const source = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`, { maxAgeMs: ACCOUNT_REWARDS_MAX_AGE_MS });
+    if (!source) return null;
+    const out: ValidatorFeesYearData = {};
+    for (const v of validators) {
+        const daily = source[v]?.daily;
+        if (daily) out[v] = daily;
+    }
+    return out;
+}
+
 const trimmed = new Map<string, { source: unknown; data: AccountRewardsYearData }>();
 
 /**

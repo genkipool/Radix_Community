@@ -5,7 +5,7 @@
  * data is reached). Route handlers import from here only.
  */
 export { findAccountByOlympia, findAccountByBabylon, findLinkByBabylon, getAccountSummary, type OlympiaAccountRef } from './accounts';
-export { getAccountTxPage, getTransactionById, getTransactionByVersion } from './transactions';
+export { getAccountMovesInYear, getAccountTxPage, getTransactionById, getTransactionByVersion } from './transactions';
 export { getResource, findRriByBabylon } from './resources';
 export { getValidator, getValidatorDelegators } from './validators';
 export { getAccountRewards, getValidatorRewards, toValidatorRewardData, OLYMPIA_REWARD_YEARS } from './rewards';
