@@ -195,3 +195,24 @@ export interface OlympiaLink {
   olympiaAddress: string;
   babylonAddress: string;
 }
+
+/**
+ * One change of an Olympia account's liquid balance in a year, for its CSV:
+ * a transaction of the account, or a ledger change with no transaction of
+ * its own (stake returned at the end of an unstake, the genesis balance).
+ */
+export interface OlympiaAccountMove {
+  stateVersion: number;
+  /** ISO time of the transaction; for a ledger change, the end of its UTC day. */
+  timestamp: string;
+  /** Null for a ledger change. */
+  transactionId: string | null;
+  /** XRD fee the account paid (0 when another account paid it). */
+  feeXrd: number;
+  stakes: { validatorName: string; xrd: number }[];
+  unstakes: { validatorName: string; xrd: number }[];
+  /** The account's net change per token, the fee left out. */
+  changes: { rri: string; symbol: string; delta: number }[];
+  /** A ledger change at genesis (the first state versions). */
+  genesis?: boolean;
+}

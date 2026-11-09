@@ -672,6 +672,83 @@ function buildCsvRows(
 
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
+/** The validator owner badge: whoever holds a validator's badge receives its fee. */
+const VALIDATOR_OWNER_BADGE = 'resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr';
+
+interface NfVaultHolding { resource_address: string; vaults?: { items?: { items?: string[] }[] } }
+
+/**
+ * The validators whose owner badge the account held at the start or the end
+ * of the year (today for the current year): the ones whose fee it earned.
+ */
+async function ownedValidatorsInYear(accountAddress: string, year: string, signal?: AbortSignal): Promise<string[]> {
+    const nowStr = new Date().toISOString().slice(0, 10);
+    const moments = [`${parseInt(year) - 1}-12-31`, `${year}-12-31`];
+    const owned = new Set<string>();
+    await Promise.all(moments.map(async (day) => {
+        try {
+            const atState = day < nowStr ? { at_ledger_state: { timestamp: `${day}T23:59:59Z` } } : {};
+            const res = await gatewayPost('/state/entity/details', {
+                addresses: [accountAddress],
+                aggregation_level: 'Vault',
+                opt_ins: { non_fungible_include_nfids: true },
+                ...atState,
+            }, signal) as { items?: { non_fungible_resources?: { items?: NfVaultHolding[] } }[] };
+            const badge = res.items?.[0]?.non_fungible_resources?.items?.find((h) => h.resource_address === VALIDATOR_OWNER_BADGE);
+            const ids = (badge?.vaults?.items ?? []).flatMap((v) => v.items ?? []);
+            if (ids.length === 0) return;
+            const data = await gatewayPost('/state/non-fungible/data', {
+                resource_address: VALIDATOR_OWNER_BADGE, non_fungible_ids: ids.slice(0, 100), ...atState,
+            }, signal) as { non_fungible_ids?: { data?: { programmatic_json?: { fields?: { field_name?: string; value?: unknown }[] } } }[] };
+            for (const nft of data.non_fungible_ids ?? []) {
+                const v = nft.data?.programmatic_json?.fields?.find((f) => f.field_name === 'validator')?.value;
+                if (typeof v === 'string' && v.startsWith('validator_')) owned.add(v);
+            }
+        } catch (err) {
+            // Before Babylon's first day there is no state to read: nothing was owned then.
+            if (signal?.aborted) throw err;
+        }
+    }));
+    return [...owned].sort();
+}
+
+/** One day of a validator's fee, earned by its owner. */
+export interface ValidatorFeeRecord { date: string; validator: string; validatorName: string; feeXrd: number }
+
+async function fetchValidatorFees(year: string, validators: string[], signal?: AbortSignal): Promise<Record<string, Record<string, number>>> {
+    if (validators.length === 0) return {};
+    const res = await fetch(`/api/account-rewards-data?year=${year}&fees=${validators.slice(0, 10).join(',')}`, { signal });
+    if (!res.ok) return {};
+    return (await res.json()).fees ?? {};
+}
+
+/** The CSV rows of a validator owner's fees, one per day and validator, as Olympia lists them. */
+function feeCsvRows(fees: ValidatorFeeRecord[]): string[][] {
+    return fees.map((f) => csvRow(
+        'Staking', f.feeXrd, 'XRD', 0, '', 0, '',
+        'Staking', `Validator fee — ${f.validatorName.slice(0, 35)}`,
+        `${f.date} 00:00:00`,
+        '',
+    ));
+}
+
+/** A year of an account's rewards: its CSVs by kind, as the Olympia tab offers them, and the figures of the table. */
+export interface AccountRewardsYear {
+    /** Everything: delegator rewards, validator fees and the account's movements. */
+    csv: string;
+    /** Only the delegator rewards. */
+    csvDelegator: string;
+    /** Only the validator fees; empty for an account that owned no validator. */
+    csvValidator: string;
+    totalXrd: number;
+    delegatorXrd: number;
+    feeXrd: number;
+    /** Days with any reward. */
+    days: number;
+    /** Validators whose owner badge the account held that year. */
+    ownedValidators: string[];
+}
+
 /** A year with nothing to put in the CSV: no rewards and no transactions. */
 export class NoRewardsDataError extends Error {
     override name = 'NoRewardsDataError';
@@ -683,7 +760,7 @@ export async function generateClientAccountRewardsCsv(
     onProgress: (p: number) => void,
     signal?: AbortSignal,
     tt?: AccountRewardsCsvModalDict
-): Promise<{ csv: string, totalXrd: number, days: number }> {
+): Promise<AccountRewardsYear> {
     try {
         onProgress(2);
 
@@ -691,7 +768,7 @@ export async function generateClientAccountRewardsCsv(
         const endDate = `${year}-12-31`;
 
         // 1, 2, 3. Fetch all in parallel
-        const [validatorMap, rewardsData, accountTxs] = await Promise.all([
+        const [validatorMap, rewardsData, accountTxs, ownedValidators] = await Promise.all([
             fetchAllValidators(signal),
             fetch(`/api/account-rewards-data?year=${year}`, { signal })
                 .then(async res => {
@@ -700,8 +777,10 @@ export async function generateClientAccountRewardsCsv(
                     return data.rewardsData || {};
                 })
                 .catch(() => ({})),
-            fetchAccountTransactions(accountAddress, startDate, endDate, (p) => onProgress(2 + p * 68), signal)
+            fetchAccountTransactions(accountAddress, startDate, endDate, (p) => onProgress(2 + p * 68), signal),
+            ownedValidatorsInYear(accountAddress, year, signal),
         ]);
+        const feeDays = await fetchValidatorFees(year, ownedValidators, signal);
         onProgress(70);
 
         // 4. Compute staking rewards with simulation math
@@ -728,26 +807,41 @@ export async function generateClientAccountRewardsCsv(
             validatorNameMap[addr] = info.name;
         }
 
-        // 7. Build and return CSV
-        const csvRows = buildCsvRows(
-            stakingRewards, accountTxs, validatorNameMap, resourceLabels,
-            (p) => onProgress(92 + p * 0.06) // Map 0-100 to 92-98
-        );
-        if (csvRows.length === 0) {
+        // 7. The validator owner's fees, one row per day and validator.
+        const fees: ValidatorFeeRecord[] = [];
+        for (const v of ownedValidators) {
+            for (const [date, feeXrd] of Object.entries(feeDays[v] ?? {})) {
+                if (date.startsWith(year) && feeXrd > 0) fees.push({ date, validator: v, validatorName: validatorNameMap[v] || `${v.slice(0, 25)}…`, feeXrd });
+            }
+        }
+
+        // 8. Build and return the CSVs
+        // The rewards and the movements apart: "Delegator" lists only the former, "All" both.
+        const delegatorRows = buildCsvRows(stakingRewards, [], validatorNameMap, resourceLabels);
+        const moveRows = buildCsvRows([], accountTxs, validatorNameMap, resourceLabels, (p) => onProgress(92 + p * 0.06));
+        const validatorRows = feeCsvRows(fees);
+        const allRows = [...delegatorRows, ...validatorRows, ...moveRows].sort((a, b) => a[10].localeCompare(b[10]));
+        if (allRows.length === 0) {
             throw new NoRewardsDataError(tt?.account_rewards_error_no_data ?? 'No data found for this year');
         }
 
-        const totalXrd = stakingRewards.reduce((s, r) => s + r.rewardXrd, 0);
+        const delegatorXrd = stakingRewards.reduce((s, r) => s + r.rewardXrd, 0);
+        const feeXrd = fees.reduce((s, f) => s + f.feeXrd, 0);
         onProgress(98);
 
-        const csvContent = rowsToCsv(csvRows);
-        onProgress(100);
-
-        return {
-            csv: csvContent,
-            totalXrd,
-            days: new Set(stakingRewards.map((r) => r.date)).size,
+        const toCsv = (rows: string[][]) => (rows.length ? rowsToCsv(rows) : '');
+        const result: AccountRewardsYear = {
+            csv: toCsv(allRows),
+            csvDelegator: toCsv(delegatorRows),
+            csvValidator: toCsv(validatorRows),
+            totalXrd: delegatorXrd + feeXrd,
+            delegatorXrd,
+            feeXrd,
+            days: new Set([...stakingRewards.map((r) => r.date), ...fees.map((f) => f.date)]).size,
+            ownedValidators,
         };
+        onProgress(100);
+        return result;
     } catch (err: unknown) {
         if (err instanceof Error) {
             if (err.name === 'AbortError' || err.message === 'Aborted') {

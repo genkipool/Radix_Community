@@ -22,13 +22,14 @@ import { Loader2 } from 'lucide-react';
 import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { formatNumber } from '@/utils/formatters';
-import { generateClientAccountRewardsCsv, NoRewardsDataError } from '../services/clientCsvExport';
+import { generateClientAccountRewardsCsv, NoRewardsDataError, type AccountRewardsYear } from '../services/clientCsvExport';
 import { downloadText } from '../olympia/rewardsCsv';
 import { RewardsYearsTable, rewardsCellText, type RewardsYearsColumn } from './RewardsYearsTable';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
-type YearResult = { csv: string; totalXrd: number; days: number };
-type Sums = { days: number; totalXrd: number };
+type Sums = { days: number; delegatorXrd: number; feeXrd: number };
+type Kind = 'all' | 'delegator' | 'validator';
+const EMPTY_YEAR: AccountRewardsYear = { csv: '', csvDelegator: '', csvValidator: '', totalXrd: 0, delegatorXrd: 0, feeXrd: 0, days: 0, ownedValidators: [] };
 
 const yearKey = (address: string, year: string) => ['account-rewards-year', address, year] as const;
 
@@ -55,7 +56,7 @@ export function AccountRewardsTab({ address, tt, locale }: { address: string; tt
   const results = useQueries({
     queries: years.map((year) => ({
       queryKey: yearKey(address, year),
-      queryFn: async ({ signal }: { signal: AbortSignal }): Promise<YearResult> => {
+      queryFn: async ({ signal }: { signal: AbortSignal }): Promise<AccountRewardsYear> => {
         try {
           return await generateClientAccountRewardsCsv(
             address, year,
@@ -64,7 +65,7 @@ export function AccountRewardsTab({ address, tt, locale }: { address: string; tt
           );
         } catch (err) {
           // A year with nothing to put in the CSV earned nothing.
-          if (err instanceof NoRewardsDataError) return { csv: '', totalXrd: 0, days: 0 };
+          if (err instanceof NoRewardsDataError) return EMPTY_YEAR;
           throw err;
         }
       },
@@ -75,10 +76,12 @@ export function AccountRewardsTab({ address, tt, locale }: { address: string; tt
     })),
   });
 
-  const save = (year: string, csv: string) => {
-    downloadText(`account_rewards_${address.substring(0, 25)}_${year}.csv`, csv);
-    setJustSaved(year);
-    window.setTimeout(() => setJustSaved((y) => (y === year ? null : y)), 2000);
+  const save = (year: string, kind: Kind, csv: string) => {
+    const suffix = kind === 'all' ? '' : `_${kind}`;
+    downloadText(`account_rewards${suffix}_${address.substring(0, 25)}_${year}.csv`, csv);
+    const key = `${year}-${kind}`;
+    setJustSaved(key);
+    window.setTimeout(() => setJustSaved((k) => (k === key ? null : k)), 2000);
   };
 
   if (isLoading) {
@@ -92,23 +95,43 @@ export function AccountRewardsTab({ address, tt, locale }: { address: string; tt
   if (isError) return <p className="text-xs font-semibold text-[var(--color-danger)]">{accT?.account_rewards_modal_error ?? 'Error'}</p>;
   if (years.length === 0) return <p className="text-xs text-[var(--color-text-muted)]">{accT?.account_rewards_modal_no_data ?? ''}</p>;
 
-  const columns: RewardsYearsColumn<Sums>[] = [
-    { label: text?.days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
-    { label: text?.total ?? '', value: (r) => `${formatNumber(r.totalXrd, 2, locale)} XRD`, tone: 'font-bold text-[var(--color-accent)]' },
-  ];
   const done = results.map((r) => r.data ?? null);
   const allDone = done.every(Boolean);
+  // The fee column and the delegator / validator downloads, only for an account that owned a validator, as in Olympia.
+  const owner = done.some((r) => (r?.ownedValidators.length ?? 0) > 0 || (r?.feeXrd ?? 0) > 0);
+  const xrd = (n: number) => `${formatNumber(n, 2, locale)} XRD`;
+  const columns: RewardsYearsColumn<Sums>[] = [
+    { label: text?.days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
+    { label: text?.total ?? '', value: (r) => xrd(r.delegatorXrd), tone: 'font-bold text-[var(--color-accent)]' },
+    ...(owner ? [
+      { label: text?.fee ?? '', value: (r: Sums) => xrd(r.feeXrd), tone: 'text-[var(--color-text-main)]' },
+      { label: text?.sum ?? 'Total', value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' },
+    ] : []),
+  ];
+  const titled = (t: string | undefined, year: string) => (t ?? '').replace('{year}', year);
+  // The same three downloads as Olympia's; "Validator" stays off for an account that owned no validator.
+  const kinds: { kind: Kind; label: string; tooltip?: string; off?: string; csv: (r: AccountRewardsYear) => string }[] = [
+    { kind: 'all', label: text?.kind_all ?? 'All', tooltip: text?.kind_all_tooltip, off: text?.no_csv, csv: (r) => r.csv },
+    { kind: 'delegator', label: text?.kind_delegator ?? 'Delegator', tooltip: text?.kind_delegator_tooltip, off: text?.no_csv, csv: (r) => r.csvDelegator },
+    { kind: 'validator', label: text?.kind_validator ?? 'Validator', tooltip: text?.kind_validator_tooltip, off: text?.kind_validator_off, csv: (r) => r.csvValidator },
+  ];
+  const legend = [
+    { label: text?.kind_all ?? 'All', text: text?.legend_all ?? '' },
+    { label: text?.kind_delegator ?? 'Delegator', text: text?.legend_delegator ?? '' },
+    { label: text?.kind_validator ?? 'Validator', text: text?.legend_validator ?? '' },
+  ];
   const working = results.some((r) => r.fetchStatus === 'fetching');
 
   return (
     <RewardsYearsTable
       title={text?.title ?? ''}
       desc={text?.desc}
+      legend={legend}
       yearLabel={text?.year ?? 'Year'}
       downloadLabel={text?.download ?? 'CSV'}
       totalLabel={text?.sum ?? 'Total'}
       columns={columns}
-      total={allDone ? done.reduce<Sums>((acc, r) => ({ days: acc.days + (r?.days ?? 0), totalXrd: acc.totalXrd + (r?.totalXrd ?? 0) }), { days: 0, totalXrd: 0 }) : null}
+      total={allDone ? done.reduce<Sums>((acc, r) => ({ days: acc.days + (r?.days ?? 0), delegatorXrd: acc.delegatorXrd + (r?.delegatorXrd ?? 0), feeXrd: acc.feeXrd + (r?.feeXrd ?? 0) }), { days: 0, delegatorXrd: 0, feeXrd: 0 }) : null}
       rows={years.map((year, i) => {
         const q = results[i];
         const out = q.data;
@@ -130,16 +153,19 @@ export function AccountRewardsTab({ address, tt, locale }: { address: string; tt
         }
         return {
           year,
-          row: out ? { days: out.days, totalXrd: out.totalXrd } : null,
+          row: out ? { days: out.days, delegatorXrd: out.delegatorXrd, feeXrd: out.feeXrd } : null,
           status,
-          downloads: [{
-            key: 'csv',
-            label: accT?.account_rewards_modal_download ?? '',
-            tooltip: out?.csv ? accT?.download_rewards_tooltip : undefined,
-            enabled: !!out?.csv,
-            done: justSaved === year,
-            onClick: () => { if (out?.csv) save(year, out.csv); },
-          }],
+          downloads: kinds.map((k) => {
+            const csv = out ? k.csv(out) : '';
+            return {
+              key: k.kind,
+              label: k.label,
+              tooltip: csv ? titled(k.tooltip, year) : k.off,
+              enabled: !!csv,
+              done: justSaved === `${year}-${k.kind}`,
+              onClick: () => { if (csv) save(year, k.kind, csv); },
+            };
+          }),
         };
       })}
       footer={working ? <p className="text-[11px] text-[var(--color-text-muted)]">{accT?.account_rewards_modal_generating_desc}</p> : undefined}

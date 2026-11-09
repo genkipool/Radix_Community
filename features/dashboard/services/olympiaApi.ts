@@ -7,6 +7,7 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FundsFlow } from '@/features/dashboard/explorador/utils/fundsFlow';
 import type {
+  OlympiaAccountMove,
   OlympiaAccountStateAt,
   OlympiaAccountSummary,
   OlympiaDailyReward,
@@ -40,6 +41,9 @@ export const olympiaApi = {
   transactions: (address: string, before?: string, limit = 15) =>
     getOrNull<OlympiaTxPage>('account/transactions', { address, before, limit }),
   funds: (address: string) => getOrNull<OlympiaFundsResponse>('account/funds', { address }),
+  /** Every change of the account's liquid balance in a year, for the "All" rewards CSV. */
+  accountMoves: (address: string, year: number) =>
+    getOrNull<{ olympiaAddress: string; year: number; moves: OlympiaAccountMove[]; tooMany: boolean }>('account/moves', { address, year }),
   accountRewards: (address: string, year: number) =>
     getOrNull<{ olympiaAddress: string; year: number; days: OlympiaDailyReward[] }>('account/rewards', { address, year }),
   tx: (id: string) => getOrNull<OlympiaTxDetail>('tx', { id }),

@@ -37,9 +37,14 @@ export interface RewardsYearsRow<R> {
 
 export const rewardsCellText = 'text-xs text-[var(--color-text-muted)]';
 
-export function RewardsYearsTable<R>({ title, desc, yearLabel, downloadLabel, totalLabel, columns, rows, total, footer }: {
+/** What one download button gives, for the lines above the table. */
+export interface RewardsYearsLegendItem { label: string; text: string }
+
+export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, downloadLabel, totalLabel, columns, rows, total, footer }: {
     title: string;
     desc?: string;
+    /** One line per download button, above the table: what each one gives. */
+    legend?: RewardsYearsLegendItem[];
     yearLabel: string;
     downloadLabel: string;
     totalLabel: string;
@@ -59,6 +64,19 @@ export function RewardsYearsTable<R>({ title, desc, yearLabel, downloadLabel, to
                 <h4 className="text-[11px] uppercase font-black tracking-widest text-[var(--color-text-main)]">{title}</h4>
                 {desc && <p className="text-xs text-[var(--color-text-muted)]">{desc}</p>}
             </div>
+            {legend && legend.length > 0 && (
+                <ul className="space-y-1">
+                    {legend.map((l) => (
+                        <li key={l.label} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]">
+                            <span className="inline-flex items-center gap-1 shrink-0 min-w-[6.5rem] font-bold text-[var(--color-text-main)]">
+                                <Download className="size-3.5" />
+                                {l.label}
+                            </span>
+                            <span>{l.text}</span>
+                        </li>
+                    ))}
+                </ul>
+            )}
             <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-left border-collapse">
                     <thead className="border-b border-[var(--color-card-border)]">
