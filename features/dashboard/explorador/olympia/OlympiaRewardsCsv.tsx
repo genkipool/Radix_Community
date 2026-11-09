@@ -11,13 +11,14 @@
 import React, { useEffect, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
-import { AlertCircle, Check, Download, Loader2, X } from 'lucide-react';
+import { AlertCircle, Download, Loader2, X } from 'lucide-react';
 import { RadixIcon } from '@/components/shared/RadixIcon';
 import { useMounted } from '@/hooks/useMounted';
 import { olympiaApi, useOlympiaAccount } from '@/features/dashboard/services/olympiaApi';
 import type { OlympiaDict } from './dict';
 import { formatAmount } from './format';
 import { FilterPills, OlympiaBadge } from './OlympiaParts';
+import { RewardsYearsTable, type RewardsYearsColumn } from '../components/RewardsYearsTable';
 import { downloadText, olympiaAccountRewardsCsv, olympiaValidatorRewardsCsv, type OlympiaRewardKind } from './rewardsCsv';
 
 type Subject = 'account' | 'validator';
@@ -228,87 +229,35 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
       ]
     : [{ kind: 'all', label: o.rewards_csv_download ?? 'Download', tooltip: o.rewards_csv_tooltip, has: (r) => r.feeXrd > 0 }];
 
-  const th = 'py-2.5 px-3 first:pl-0 last:pr-0 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap';
-  const num = 'py-3 px-3 text-right font-mono text-xs whitespace-nowrap';
   const xrd = (n: number) => `${formatAmount(n, locale)} XRD`;
   // Accounts: what it earned delegating, then its validator fee. Validators: the owner's fee, then what its delegators earned.
-  const first = (r: { delegatorXrd: number; feeXrd: number }) => (isAccount ? r.delegatorXrd : r.feeXrd);
-  const second = (r: { delegatorXrd: number; feeXrd: number }) => (isAccount ? r.feeXrd : r.delegatorXrd);
-  const ownTotal = (r: { delegatorXrd: number; feeXrd: number }) => (isAccount ? r.delegatorXrd + r.feeXrd : r.feeXrd);
+  type Sums = { days: number; delegatorXrd: number; feeXrd: number };
+  const columns: RewardsYearsColumn<Sums>[] = [
+    { label: o.rewards_table_days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
+    { label: isAccount ? (o.rewards_table_delegator ?? '') : (o.rewards_table_fee ?? ''), value: (r) => xrd(isAccount ? r.delegatorXrd : r.feeXrd), tone: 'font-bold text-[var(--color-accent)]' },
+    ...(showFee ? [{ label: isAccount ? (o.rewards_table_fee ?? '') : (o.rewards_table_delegators ?? ''), value: (r: Sums) => xrd(isAccount ? r.feeXrd : r.delegatorXrd), tone: 'text-[var(--color-text-main)]' }] : []),
+    ...(isAccount && showFee ? [{ label: o.rewards_table_total ?? 'Total', value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' }] : []),
+  ];
 
   return (
-    <section className="space-y-3" onClick={(e) => e.stopPropagation()} role="presentation">
-      <div className="space-y-1">
-        <h4 className="text-[11px] uppercase font-black tracking-widest text-[var(--color-text-main)]">{o.rewards_csv_title}</h4>
-        <p className="text-xs text-[var(--color-text-muted)]">{isAccount ? o.rewards_csv_desc : o.rewards_csv_owner_desc}</p>
-      </div>
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full text-left border-collapse">
-          <thead className="border-b border-[var(--color-card-border)]">
-            <tr>
-              <th className={th}>{o.rewards_year}</th>
-              <th className={`${th} text-right`}>{o.rewards_table_days ?? 'Days'}</th>
-              <th className={`${th} text-right`}>{isAccount ? (o.rewards_table_delegator ?? '') : (o.rewards_table_fee ?? '')}</th>
-              {showFee && <th className={`${th} text-right`}>{isAccount ? (o.rewards_table_fee ?? '') : (o.rewards_table_delegators ?? '')}</th>}
-              {isAccount && showFee && <th className={`${th} text-right`}>{o.rewards_table_total ?? 'Total'}</th>}
-              <th className={`${th} text-right`}>{o.rewards_table_download ?? 'CSV'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ year, query, row }) => (
-              <tr key={year} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-white/[0.03] transition-colors">
-                <td className="py-3 pr-3 text-sm font-bold text-[var(--color-text-main)]">{year}</td>
-                {!row ? (
-                  <td colSpan={(showFee ? 3 : 2) + (isAccount && showFee ? 1 : 0)} className="py-3 px-4 text-right text-xs text-[var(--color-text-muted)]">
-                    {query.isError ? <span className="text-[var(--color-danger)]">{o.error}</span> : <Loader2 className="size-3.5 animate-spin inline" />}
-                  </td>
-                ) : (
-                  <>
-                    <td className={`${num} text-[var(--color-text-muted)]`}>{row.days.toLocaleString(locale)}</td>
-                    <td className={`${num} font-bold text-[var(--color-accent)]`}>{xrd(first(row))}</td>
-                    {showFee && <td className={`${num} text-[var(--color-text-main)]`}>{xrd(second(row))}</td>}
-                    {isAccount && showFee && <td className={`${num} font-black text-[var(--color-text-main)]`}>{xrd(ownTotal(row))}</td>}
-                  </>
-                )}
-                <td className="py-2 pl-3">
-                  <div className="flex justify-end flex-wrap gap-x-3 gap-y-1">
-                    {downloads.map((d) => {
-                      const key = `${year}-${d.kind}`;
-                      const enabled = !!row && d.has(row);
-                      return (
-                        <button
-                          key={d.kind}
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); save(year, d.kind); }}
-                          disabled={!enabled}
-                          title={enabled ? d.tooltip : o.rewards_csv_empty}
-                          className="inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-bold transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)]"
-                        >
-                          {done === key ? <Check className="size-3.5 text-[var(--color-accent)]" /> : <Download className="size-3.5" />}
-                          {d.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          {years.length > 1 && allLoaded && (
-            <tfoot className="border-t border-[var(--color-card-border)]">
-              <tr>
-                <td className="py-3 pr-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{o.rewards_table_total ?? 'Total'}</td>
-                <td className={`${num} text-[var(--color-text-muted)]`}>{total.days.toLocaleString(locale)}</td>
-                <td className={`${num} font-bold text-[var(--color-accent)]`}>{xrd(first(total))}</td>
-                {showFee && <td className={`${num} text-[var(--color-text-main)]`}>{xrd(second(total))}</td>}
-                {isAccount && showFee && <td className={`${num} font-black text-[var(--color-text-main)]`}>{xrd(ownTotal(total))}</td>}
-                <td />
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
-    </section>
+    <RewardsYearsTable
+      title={o.rewards_csv_title ?? ''}
+      desc={isAccount ? o.rewards_csv_desc : o.rewards_csv_owner_desc}
+      yearLabel={o.rewards_year ?? ''}
+      downloadLabel={o.rewards_table_download ?? 'CSV'}
+      totalLabel={o.rewards_table_total ?? 'Total'}
+      columns={columns}
+      total={allLoaded ? total : null}
+      rows={rows.map(({ year, query, row }) => ({
+        year,
+        row,
+        status: query.isError ? <span className="text-[var(--color-danger)]">{o.error}</span> : undefined,
+        downloads: downloads.map((d) => {
+          const enabled = !!row && d.has(row);
+          return { key: d.kind, label: d.label, tooltip: enabled ? d.tooltip : o.rewards_csv_empty, enabled, done: done === `${year}-${d.kind}`, onClick: () => save(year, d.kind) };
+        }),
+      }))}
+    />
   );
 }
 

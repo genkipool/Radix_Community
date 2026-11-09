@@ -672,13 +672,18 @@ function buildCsvRows(
 
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
+/** A year with nothing to put in the CSV: no rewards and no transactions. */
+export class NoRewardsDataError extends Error {
+    override name = 'NoRewardsDataError';
+}
+
 export async function generateClientAccountRewardsCsv(
     accountAddress: string,
     year: string,
     onProgress: (p: number) => void,
     signal?: AbortSignal,
     tt?: AccountRewardsCsvModalDict
-): Promise<{ csv: string, totalXrd: number }> {
+): Promise<{ csv: string, totalXrd: number, days: number }> {
     try {
         onProgress(2);
 
@@ -729,7 +734,7 @@ export async function generateClientAccountRewardsCsv(
             (p) => onProgress(92 + p * 0.06) // Map 0-100 to 92-98
         );
         if (csvRows.length === 0) {
-            throw new Error(tt?.account_rewards_error_no_data ?? 'No data found for this year');
+            throw new NoRewardsDataError(tt?.account_rewards_error_no_data ?? 'No data found for this year');
         }
 
         const totalXrd = stakingRewards.reduce((s, r) => s + r.rewardXrd, 0);
@@ -740,14 +745,15 @@ export async function generateClientAccountRewardsCsv(
 
         return {
             csv: csvContent,
-            totalXrd
+            totalXrd,
+            days: new Set(stakingRewards.map((r) => r.date)).size,
         };
     } catch (err: unknown) {
         if (err instanceof Error) {
             if (err.name === 'AbortError' || err.message === 'Aborted') {
                 throw err;
             }
-            if (err.message === tt?.account_rewards_error_no_data) {
+            if (err instanceof NoRewardsDataError) {
                 throw err;
             }
             if (err.message.startsWith('Gateway returned')) {

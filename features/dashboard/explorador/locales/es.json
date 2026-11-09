@@ -969,12 +969,13 @@
           "label": "Recompensas",
           "tooltip": "Las recompensas de staking que ganó esta cuenta en Babylon, año a año, con su CSV en formato CoinTracking.",
           "title": "Recompensas de staking en Babylon (CSV)",
-          "desc": "Una fila por año con recompensas. Calcular un año lee todo su historial y puede tardar unos minutos; el total sale al terminar y el archivo se descarga solo.",
+          "desc": "Una fila por año con recompensas. Al abrir la pestaña se calculan solos, año a año, leyendo el historial de la cuenta, y pueden tardar unos minutos; después el CSV se descarga al momento.",
           "year": "Año",
-          "total": "Total ganado",
-          "value": "Valor hoy",
+          "total": "Como delegador",
           "download": "Descargar CSV",
-          "pending": "Sale al calcular el CSV"
+          "days": "Días",
+          "sum": "Total",
+          "queued": "En espera"
         },
         "security": {
           "label": "Seguridad de la cuenta",
