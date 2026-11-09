@@ -447,7 +447,7 @@ export function AccountCard({
                                         )}
 
                                         {activeTab === 'rewards' && (
-                                            <AccountRewardsTab address={address} tt={tt} locale={locale ?? 'en'} marketData={marketData} />
+                                            <AccountRewardsTab address={address} tt={tt} locale={locale ?? 'en'} />
                                         )}
 
                                         {activeTab === 'at_date' && (

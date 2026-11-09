@@ -969,12 +969,13 @@
           "label": "Rewards",
           "tooltip": "The staking rewards this account earned on Babylon, year by year, with their CoinTracking CSV.",
           "title": "Babylon staking rewards (CSV)",
-          "desc": "One row per year with rewards. Working out a year reads its whole history and can take a few minutes; the total shows when it ends and the file downloads by itself.",
+          "desc": "One row per year with rewards. They are worked out by themselves when the tab opens, one year at a time, from the account history, and can take a few minutes; then the CSV downloads at once.",
           "year": "Year",
-          "total": "Total earned",
-          "value": "Value today",
+          "total": "As delegator",
           "download": "Download CSV",
-          "pending": "Shown once the CSV is worked out"
+          "days": "Days",
+          "sum": "Total",
+          "queued": "Waiting"
         },
         "security": {
           "label": "Account security",

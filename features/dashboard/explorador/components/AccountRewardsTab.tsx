@@ -1,52 +1,79 @@
 'use client';
 /**
- * The "Rewards" tab of a Babylon account: one row per year with staking
- * rewards, and that year's CoinTracking CSV in the row itself, in the layout
- * of the Olympia rewards table. Babylon's yearly figure comes from replaying
- * the account's history against the validators' daily data, which takes
- * minutes, so a year's total appears once its CSV has been worked out; the
- * file is kept, and downloading it again is instant.
+ * The "Rewards" tab of a Babylon account: one row per year with the days it
+ * earned staking rewards and how much, and that year's CoinTracking CSV in
+ * the row itself, in the table of the Olympia rewards tab.
+ *
+ * Babylon's yearly figure comes from replaying the account's history against
+ * the validators' daily data, in the browser, so the tab works the years out
+ * by itself as soon as it opens: one at a time, newest first. The CSV of each
+ * year comes from that same work, so downloading it is instant.
+ *
+ * What it asks the server is the same for every account (the years with data
+ * and each year's validator data), cached by the CDN and by the browser, and
+ * read from Redis at most once per instance and hour (services/accountRewards.ts):
+ * opening the tab costs Redis nothing per account. The account's history is
+ * read from the Gateway by the browser. Leaving the tab stops a year still
+ * being worked out; the finished ones are kept for half an hour.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Check, Download, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
-import type { MarketData, TranslationsT } from '@/features/dashboard/types';
+import type { TranslationsT } from '@/features/dashboard/types';
 import { formatNumber } from '@/utils/formatters';
-import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
-import { generateClientAccountRewardsCsv } from '../services/clientCsvExport';
+import { generateClientAccountRewardsCsv, NoRewardsDataError } from '../services/clientCsvExport';
 import { downloadText } from '../olympia/rewardsCsv';
+import { RewardsYearsTable, rewardsCellText, type RewardsYearsColumn } from './RewardsYearsTable';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
-type YearState = { status: 'running'; progress: number } | { status: 'done'; csv: string; totalXrd: number } | { status: 'error'; message: string };
+type YearResult = { csv: string; totalXrd: number; days: number };
+type Sums = { days: number; totalXrd: number };
 
-function RowIcon({ running, saved }: { running: boolean; saved: boolean }) {
-  if (running) return <Loader2 className="size-3.5 animate-spin" />;
-  if (saved) return <Check className="size-3.5 text-[var(--color-accent)]" />;
-  return <Download className="size-3.5" />;
-}
+const yearKey = (address: string, year: string) => ['account-rewards-year', address, year] as const;
 
-export function AccountRewardsTab({ address, tt, locale, marketData }: {
-  address: string; tt?: Tt; locale: string; marketData?: MarketData | null;
-}) {
+export function AccountRewardsTab({ address, tt, locale }: { address: string; tt?: Tt; locale: string }) {
   const accT = tt?.account_summary;
   const text = accT?.rewards;
-  const [years, setYears] = useState<Record<string, YearState>>({});
+  const qc = useQueryClient();
+  const [progress, setProgress] = useState<Record<string, number>>({});
   const [justSaved, setJustSaved] = useState<string | null>(null);
-  const running = useRef<AbortController | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['account-rewards-years', address],
     queryFn: () => apiFetchAccountRewardsYears(address),
     staleTime: 5 * 60_000,
   });
 
-  // Leaving the tab stops a CSV still being worked out.
-  useEffect(() => () => running.current?.abort(), []);
+  const years = (data?.years ?? []).map(String).sort();
+  // Worked out newest first, one at a time: a year starts once every newer one has settled.
+  const order = [...years].reverse();
+  const settled = (year: string) => {
+    const status = qc.getQueryState(yearKey(address, year))?.status;
+    return status === 'success' || status === 'error';
+  };
 
-  const currency = getCurrencyForLocale(locale);
-  const price = currency === 'EUR' ? (marketData?.priceEur ?? 0) : (marketData?.priceUsd ?? 0);
-  const list = (data?.years ?? []).map(String).sort((a, b) => b.localeCompare(a));
-  const busy = Object.values(years).some((y) => y.status === 'running');
+  const results = useQueries({
+    queries: years.map((year) => ({
+      queryKey: yearKey(address, year),
+      queryFn: async ({ signal }: { signal: AbortSignal }): Promise<YearResult> => {
+        try {
+          return await generateClientAccountRewardsCsv(
+            address, year,
+            (p) => setProgress((all) => ({ ...all, [year]: Math.min(99, p) })),
+            signal, accT,
+          );
+        } catch (err) {
+          // A year with nothing to put in the CSV earned nothing.
+          if (err instanceof NoRewardsDataError) return { csv: '', totalXrd: 0, days: 0 };
+          throw err;
+        }
+      },
+      enabled: order.slice(0, order.indexOf(year)).every(settled),
+      staleTime: Infinity,
+      gcTime: 30 * 60_000,
+      retry: false,
+    })),
+  });
 
   const save = (year: string, csv: string) => {
     downloadText(`account_rewards_${address.substring(0, 25)}_${year}.csv`, csv);
@@ -54,116 +81,68 @@ export function AccountRewardsTab({ address, tt, locale, marketData }: {
     window.setTimeout(() => setJustSaved((y) => (y === year ? null : y)), 2000);
   };
 
-  const download = async (year: string) => {
-    const state = years[year];
-    if (state?.status === 'done') {
-      save(year, state.csv);
-      return;
-    }
-    const controller = new AbortController();
-    running.current = controller;
-    setYears((all) => ({ ...all, [year]: { status: 'running', progress: 0 } }));
-    try {
-      const out = await generateClientAccountRewardsCsv(
-        address, year,
-        (p) => setYears((all) => (all[year]?.status === 'running' ? { ...all, [year]: { status: 'running', progress: Math.min(99, p) } } : all)),
-        controller.signal, accT,
-      );
-      if (controller.signal.aborted) return;
-      if (!out.csv) {
-        setYears((all) => ({ ...all, [year]: { status: 'error', message: accT?.account_rewards_modal_no_data ?? '' } }));
-        return;
-      }
-      setYears((all) => ({ ...all, [year]: { status: 'done', csv: out.csv, totalXrd: out.totalXrd || 0 } }));
-      save(year, out.csv);
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      setYears((all) => ({ ...all, [year]: { status: 'error', message: err instanceof Error ? err.message : String(err) } }));
-    } finally {
-      if (running.current === controller) running.current = null;
-    }
-  };
+  if (isLoading) {
+    return (
+      <p className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+        <Loader2 className="size-3.5 animate-spin" />
+        {accT?.account_rewards_modal_loading ?? 'Loading...'}
+      </p>
+    );
+  }
+  if (isError) return <p className="text-xs font-semibold text-[var(--color-danger)]">{accT?.account_rewards_modal_error ?? 'Error'}</p>;
+  if (years.length === 0) return <p className="text-xs text-[var(--color-text-muted)]">{accT?.account_rewards_modal_no_data ?? ''}</p>;
 
-  const th = 'py-2.5 px-3 first:pl-0 last:pr-0 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap';
-  const num = 'py-3 px-3 text-right font-mono text-xs whitespace-nowrap';
+  const columns: RewardsYearsColumn<Sums>[] = [
+    { label: text?.days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
+    { label: text?.total ?? '', value: (r) => `${formatNumber(r.totalXrd, 2, locale)} XRD`, tone: 'font-bold text-[var(--color-accent)]' },
+  ];
+  const done = results.map((r) => r.data ?? null);
+  const allDone = done.every(Boolean);
+  const working = results.some((r) => r.fetchStatus === 'fetching');
 
   return (
-    <section className="space-y-3">
-      <div className="space-y-1">
-        <h4 className="text-[11px] uppercase font-black tracking-widest text-[var(--color-text-main)]">{text?.title ?? ''}</h4>
-        <p className="text-xs text-[var(--color-text-muted)]">{text?.desc ?? accT?.account_rewards_modal_desc}</p>
-      </div>
-
-      {isLoading ? (
-        <p className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          <Loader2 className="size-3.5 animate-spin" />
-          {accT?.account_rewards_modal_loading ?? 'Loading...'}
-        </p>
-      ) : isError ? (
-        <p className="text-xs font-semibold text-[var(--color-danger)]">{accT?.account_rewards_modal_error ?? 'Error'}</p>
-      ) : list.length === 0 ? (
-        <p className="text-xs text-[var(--color-text-muted)]">{accT?.account_rewards_modal_no_data ?? ''}</p>
-      ) : (
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead className="border-b border-[var(--color-card-border)]">
-              <tr>
-                <th className={th}>{text?.year ?? 'Year'}</th>
-                <th className={`${th} text-right`}>{text?.total ?? ''}</th>
-                <th className={`${th} text-right`}>{text?.value ?? ''}</th>
-                <th className={`${th} text-right`}>{text?.download ?? ''}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((year) => {
-                const state = years[year];
-                return (
-                  <tr key={year} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-white/[0.03] transition-colors">
-                    <td className="py-3 pr-3 text-sm font-bold text-[var(--color-text-main)]">{year}</td>
-                    {state?.status === 'running' ? (
-                      <td colSpan={2} className="py-3 px-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="text-[11px] text-[var(--color-text-muted)] whitespace-nowrap">{accT?.account_rewards_modal_generating ?? ''}</span>
-                          <div className="h-1.5 w-32 bg-[var(--color-card-border)]/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-[var(--color-primary)] transition-all duration-300 ease-out" style={{ width: `${state.progress}%` }} />
-                          </div>
-                          <span className="text-[11px] font-mono text-[var(--color-text-muted)] w-8 text-right">{Math.round(state.progress)}%</span>
-                        </div>
-                      </td>
-                    ) : state?.status === 'error' ? (
-                      <td colSpan={2} className="py-3 px-3 text-right text-xs text-[var(--color-danger)]">{state.message}</td>
-                    ) : state?.status === 'done' ? (
-                      <>
-                        <td className={`${num} font-black text-[var(--color-accent)]`}>{formatNumber(state.totalXrd, 2, locale)} XRD</td>
-                        <td className={`${num} text-[var(--color-text-muted)]`}>
-                          {price > 0 ? `≈ ${formatCurrency(state.totalXrd * price, currency as 'USD' | 'EUR', locale)}` : '-'}
-                        </td>
-                      </>
-                    ) : (
-                      <td colSpan={2} className="py-3 px-3 text-right text-[11px] text-[var(--color-text-muted)]">{text?.pending ?? ''}</td>
-                    )}
-                    <td className="py-2 pl-3">
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); void download(year); }}
-                          disabled={busy}
-                          title={accT?.download_rewards_tooltip}
-                          className="inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-bold transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)]"
-                        >
-                          <RowIcon running={state?.status === 'running'} saved={justSaved === year} />
-                          {accT?.account_rewards_modal_download ?? ''}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {list.length > 0 && <p className="text-[11px] text-[var(--color-text-muted)]">{accT?.account_rewards_modal_generating_desc}</p>}
-    </section>
+    <RewardsYearsTable
+      title={text?.title ?? ''}
+      desc={text?.desc}
+      yearLabel={text?.year ?? 'Year'}
+      downloadLabel={text?.download ?? 'CSV'}
+      totalLabel={text?.sum ?? 'Total'}
+      columns={columns}
+      total={allDone ? done.reduce<Sums>((acc, r) => ({ days: acc.days + (r?.days ?? 0), totalXrd: acc.totalXrd + (r?.totalXrd ?? 0) }), { days: 0, totalXrd: 0 }) : null}
+      rows={years.map((year, i) => {
+        const q = results[i];
+        const out = q.data;
+        let status: React.ReactNode;
+        if (q.isError) {
+          status = <span className="text-[var(--color-danger)]">{q.error instanceof Error ? q.error.message : String(q.error)}</span>;
+        } else if (q.fetchStatus === 'fetching') {
+          const p = progress[year] ?? 0;
+          status = (
+            <span className="inline-flex items-center justify-end gap-2">
+              <span className="h-1.5 w-24 bg-[var(--color-card-border)]/50 rounded-full overflow-hidden">
+                <span className="block h-full bg-[var(--color-primary)] transition-all duration-300 ease-out" style={{ width: `${p}%` }} />
+              </span>
+              <span className="font-mono w-8 text-right">{Math.round(p)}%</span>
+            </span>
+          );
+        } else if (!out) {
+          status = <span className={rewardsCellText}>{text?.queued ?? ''}</span>;
+        }
+        return {
+          year,
+          row: out ? { days: out.days, totalXrd: out.totalXrd } : null,
+          status,
+          downloads: [{
+            key: 'csv',
+            label: accT?.account_rewards_modal_download ?? '',
+            tooltip: out?.csv ? accT?.download_rewards_tooltip : undefined,
+            enabled: !!out?.csv,
+            done: justSaved === year,
+            onClick: () => { if (out?.csv) save(year, out.csv); },
+          }],
+        };
+      })}
+      footer={working ? <p className="text-[11px] text-[var(--color-text-muted)]">{accT?.account_rewards_modal_generating_desc}</p> : undefined}
+    />
   );
 }

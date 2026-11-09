@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { candidateYears, getAccountRewardsYearData } from '@/services/accountRewards';
 import logger from '@/lib/logger';
 
-/** Shared by every account and fresh enough for a day: the CDN answers most requests. */
-const CACHE_HEADERS = { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' };
+/**
+ * Shared by every account and fresh enough for a day: the CDN answers most
+ * requests, and the browser keeps it for an hour, so the Rewards tab of other
+ * accounts, or of the same one opened again, downloads it only once.
+ */
+const CACHE_HEADERS = { 'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' };
 
 /**
  * GET /api/account-rewards-data?year=YYYY
