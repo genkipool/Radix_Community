@@ -812,6 +812,9 @@
         "claim_ready": "Listo para reclamar",
         "claim_in": "faltan ~{time}",
         "tokens_tab": "Tokens",
+        "token_price": "1 {symbol} = {price}, precio de {source}",
+        "tokens_value": "Valor",
+        "token_prices_note": "Precio actual de los tokens según Astrolescent (y Ociswap para los que no lista); XRD según CoinGecko. Se actualiza cada minuto.",
         "nfts_tab": "NFTs",
         "summary_tab": "Resumen",
         "pool_tab": "Pool",
@@ -995,7 +998,8 @@
           "legend_validator": "Solo la comisión cobrada como propietaria de un validador, una fila por día y validador, sin movimientos. Desactivado si la cuenta no tenía ningún validador ese año.",
           "legend_delegator": "Solo las recompensas ganadas poniendo XRD en stake, una fila por día y validador, sin movimientos: se puede importar junto a otras fuentes sin duplicar nada.",
           "legend_all": "Las recompensas como delegador, la comisión de validador y todos los movimientos de la cuenta en el año (transferencias, stakes, unstakes, claims y comisiones de red). Es el archivo completo para CoinTracking.",
-          "kind_validator_off": "Esta cuenta no tenía ningún validador ese año: no cobró comisión."
+          "kind_validator_off": "Esta cuenta no tenía ningún validador ese año: no cobró comisión.",
+          "modal_kind": "Qué descargar"
         },
         "security": {
           "label": "Seguridad de la cuenta",

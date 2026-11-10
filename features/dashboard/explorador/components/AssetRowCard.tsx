@@ -31,13 +31,25 @@ export interface AssetRowCardProps {
 }
 
 /** A section of asset rows with its title, as in the Tokens tab. */
-export function AssetListSection({ title, burned = false, children }: { title: string; burned?: boolean; children: React.ReactNode }) {
+export function AssetListSection({ title, aside, footer, burned = false, children }: {
+    title: string;
+    /** On the right of the title (the total value). */
+    aside?: React.ReactNode;
+    /** A line under the list. */
+    footer?: React.ReactNode;
+    burned?: boolean;
+    children: React.ReactNode;
+}) {
     return (
         <div className="mt-4">
-            <h4 className={`text-xs font-black uppercase mb-3 tracking-wider ${burned ? 'text-red-500/80' : 'text-[var(--color-text-muted)]'}`}>
-                {title}
-            </h4>
+            <div className="flex items-baseline justify-between gap-3 mb-3">
+                <h4 className={`text-xs font-black uppercase tracking-wider ${burned ? 'text-red-500/80' : 'text-[var(--color-text-muted)]'}`}>
+                    {title}
+                </h4>
+                {aside}
+            </div>
             <div className="flex flex-col gap-2">{children}</div>
+            {footer}
         </div>
     );
 }

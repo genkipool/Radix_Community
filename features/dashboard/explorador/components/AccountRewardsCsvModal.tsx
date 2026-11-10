@@ -4,14 +4,18 @@ import React, { useState, useEffect } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { X, Download, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RadixIcon } from '@/components/shared/RadixIcon';
 import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
 import { formatNumber } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
 import type { MarketData } from '@/features/dashboard/types';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
-import { generateClientAccountRewardsCsv } from '../services/clientCsvExport';
+import { generateClientAccountRewardsCsv, type AccountRewardsYear } from '../services/clientCsvExport';
+import { FilterPills } from '../olympia/OlympiaParts';
+
+/** What the CSV lists, as the Rewards tab's three downloads: everything, only the delegator rewards, or only the validator fee. */
+type RewardsKind = 'all' | 'delegator' | 'validator';
 
 export interface AccountRewardsCsvModalProps {
     isOpen: boolean;
@@ -31,6 +35,9 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     locale,
     marketData }) => {
     const [selectedYear, setSelectedYear] = useState<string | null>(null);
+    const [kind, setKind] = useState<RewardsKind>('all');
+    const qc = useQueryClient();
+    const rw = tt?.rewards;
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: 'USD' | 'EUR' | string } | null>(null);
@@ -76,11 +83,21 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         try {
             if (abortControllerRef.current !== controller) return;
 
-            const data = await generateClientAccountRewardsCsv(accountAddress, selectedYear, onProgress, controller.signal, tt);
+            // The Rewards tab works the same year out: reuse it when it already has, and keep this one for it.
+            const key = ['account-rewards-year', accountAddress, selectedYear] as const;
+            let year = qc.getQueryData<AccountRewardsYear>(key);
+            if (!year) {
+                year = await generateClientAccountRewardsCsv(accountAddress, selectedYear, onProgress, controller.signal, tt);
+                qc.setQueryData(key, year);
+            }
+            const data = {
+                csv: kind === 'all' ? year.csv : kind === 'delegator' ? year.csvDelegator : year.csvValidator,
+                totalXrd: kind === 'all' ? year.totalXrd : kind === 'delegator' ? year.delegatorXrd : year.feeXrd,
+            };
 
             if (!data.csv) {
                 if (abortControllerRef.current !== controller) return;
-                setLocalError('CSV is empty');
+                setLocalError((kind === 'validator' ? rw?.kind_validator_off : rw?.no_csv) ?? tt?.account_rewards_error_no_data ?? '');
                 setDownloading(false);
                 setTimeout(() => setProgress(0), 2000);
                 return;
@@ -106,7 +123,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `account_rewards_${accountAddress.substring(0, 25)}_${selectedYear}.csv`;
+            a.download = `account_rewards${kind === 'all' ? '' : `_${kind}`}_${accountAddress.substring(0, 25)}_${selectedYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -289,6 +306,21 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                                 {year}
                                             </button>
                                         ))}
+                                    </div>
+                                    <div className="space-y-2 pt-1">
+                                        <p className="text-[10px] uppercase tracking-wider font-black text-[var(--color-text-muted)]">{rw?.modal_kind}</p>
+                                        <FilterPills
+                                            value={kind}
+                                            onChange={setKind}
+                                            options={[
+                                                { key: 'all', label: rw?.kind_all ?? '', tooltip: rw?.legend_all },
+                                                { key: 'delegator', label: rw?.kind_delegator ?? '', tooltip: rw?.legend_delegator },
+                                                { key: 'validator', label: rw?.kind_validator ?? '', tooltip: rw?.legend_validator },
+                                            ]}
+                                        />
+                                        <p className="text-[11px] text-[var(--color-text-muted)]">
+                                            {kind === 'all' ? rw?.legend_all : kind === 'delegator' ? rw?.legend_delegator : rw?.legend_validator}
+                                        </p>
                                     </div>
                                 </div>
                             )}

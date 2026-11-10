@@ -36,3 +36,15 @@ export function formatCurrency(value: number, currency: 'EUR' | 'USD', locale: s
     const symbol = currency === 'EUR' ? '€' : '$';
     return `${formattedNum} ${symbol}`;
 }
+
+/**
+ * A fiat value that may be tiny (a token's unit price, a small balance): two
+ * decimals from 1 up, otherwise four significant digits, so 0.000251 € does
+ * not show as 0,00 €.
+ */
+export function formatFiatPrecise(value: number, currency: 'EUR' | 'USD', locale: string): string {
+    if (!Number.isFinite(value) || value === 0 || Math.abs(value) >= 1) return formatCurrency(value, currency, locale);
+    const symbol = currency === 'EUR' ? '€' : '$';
+    const formatted = new Intl.NumberFormat(locale, { maximumSignificantDigits: 4 }).format(value);
+    return `${formatted} ${symbol}`;
+}

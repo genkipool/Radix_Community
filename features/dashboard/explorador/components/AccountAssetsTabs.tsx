@@ -12,6 +12,9 @@ import { apiFetchAccountNftHistory, apiFetchEntityDetails, apiFetchNonFungibleDa
 import type { GatewayEntityDetails, TranslationsT, MetadataItem } from '@/features/dashboard/types';
 import { useAccountStats } from '../hooks/useAccountStats';
 import type { ParsedResource as SharedParsedResource } from '../types/models.types';
+import { useTokenPrices, type TokenFiatPrice } from '@/features/dashboard/hooks/useTokenPrices';
+import { formatFiatPrecise } from '@/utils/currencyUtils';
+import { TokenFiatValue, totalFiatValue } from './TokenFiatValue';
 
 /** A holding as the account tabs draw it: the shared parse plus its raw Gateway data. */
 type ParsedResource = SharedParsedResource & {
@@ -25,7 +28,8 @@ export function AccountTokensTab({
     onCopy,
     copiedAddress,
     network = 'mainnet',
-    locale
+    locale,
+    showPrices = true,
 }: {
     address: string;
     entityData: GatewayEntityDetails | null;
@@ -34,12 +38,35 @@ export function AccountTokensTab({
     copiedAddress: string | null;
     network?: 'mainnet' | 'stokenet';
     locale?: string;
+    /** Today's fiat value of each token; off for a past state, which today's prices do not describe. */
+    showPrices?: boolean;
 }) {
     const { tokens } = useAccountStats(_address, network, entityData);
+    const loc = locale || 'en-US';
+    const { priceOf, currency, ready } = useTokenPrices(network, loc, showPrices);
+    const priced = showPrices && ready;
+    const total = priced ? totalFiatValue(tokens, priceOf) : 0;
+    const accT = tt?.account_summary;
 
     return (
         <div className="space-y-6">
-            <AssetSection title={`${tt?.account_summary?.tokens_tab || 'Tokens'} (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection
+                title={`${tt?.account_summary?.tokens_tab || 'Tokens'} (${tokens.length})`}
+                items={tokens}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                tt={tt}
+                network={network}
+                locale={locale}
+                priceOf={priced ? priceOf : undefined}
+                aside={total > 0 ? (
+                    <span className="text-xs font-black font-mono text-[var(--color-text-main)] whitespace-nowrap" title={accT?.token_prices_note}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] mr-1.5">{accT?.tokens_value ?? 'Value'}</span>
+                        {formatFiatPrecise(total, currency, loc)}
+                    </span>
+                ) : undefined}
+                footer={total > 0 && accT?.token_prices_note ? <p className="mt-2 text-[10px] text-[var(--color-text-muted)]">{accT.token_prices_note}</p> : undefined}
+            />
             {tokens.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No tokens found.</p>
             )}
@@ -106,8 +133,12 @@ export function AccountNftsTab({
     );
 }
 
-function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = false, tt, network = 'mainnet', locale }: {
+function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = false, tt, network = 'mainnet', locale, priceOf, aside, footer }: {
     title: string;
+    /** Each token's fiat price, when its value is shown. */
+    priceOf?: (resource: string) => TokenFiatPrice | null;
+    aside?: React.ReactNode;
+    footer?: React.ReactNode;
     items: ParsedResource[];
     /** The account holding them, for what depends on who holds them (a pool position). */
     holder?: string;
@@ -120,9 +151,9 @@ function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = fa
 }) {
     if (items.length === 0) return null;
     return (
-        <AssetListSection title={title} burned={burned}>
+        <AssetListSection title={title} burned={burned} aside={aside} footer={footer}>
             {items.map((item) => (
-                <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} />
+                <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} price={priceOf?.(item.address) ?? null} />
             ))}
         </AssetListSection>
     );
@@ -136,8 +167,10 @@ function ExpandableResourceCard({
     burned = false,
     tt,
     network = 'mainnet',
-    locale
+    locale,
+    price = null,
 }: {
+    price?: TokenFiatPrice | null;
     item: ParsedResource;
     holder?: string;
     onCopy: (v: string) => void;
@@ -186,7 +219,9 @@ function ExpandableResourceCard({
             symbol={symbol}
             iconUrl={iconUrl}
             amountText={parseFloat(amount).toLocaleString(locale || 'en-US')}
-            amountExtra={(item.isClaim || item.isOwnerBadge) && (
+            amountExtra={price && !isNft ? (
+                <TokenFiatValue price={price} amount={amount} symbol={symbol || name} locale={locale || 'en-US'} priceLabel={tt?.account_summary?.token_price} />
+            ) : (item.isClaim || item.isOwnerBadge) && (
                 <div className="flex items-center gap-1.5 justify-end">
                     {(item.validatorName || item.validatorAddress) && (
                         <span className="text-[10px] text-[var(--color-text-muted)] truncate max-w-[100px]" title={item.validatorName || item.validatorAddress}>

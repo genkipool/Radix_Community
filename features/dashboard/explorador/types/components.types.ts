@@ -49,6 +49,18 @@ export interface AccountRewardsCsvModalDict {
     account_rewards_error_retries?: string;
     account_rewards_error_no_data?: string;
     account_rewards_modal_select_another?: string;
+    /** The Rewards tab's words: the three downloads (All, Delegator, Validator) are named the same here. */
+    rewards?: {
+        kind_all?: string;
+        kind_delegator?: string;
+        kind_validator?: string;
+        kind_validator_off?: string;
+        legend_all?: string;
+        legend_delegator?: string;
+        legend_validator?: string;
+        no_csv?: string;
+        modal_kind?: string;
+    };
     staking_validators_title?: string;
     staking_tab?: string;
     stake_xrd?: string;
