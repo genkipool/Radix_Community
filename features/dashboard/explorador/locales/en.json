@@ -812,6 +812,9 @@
         "claim_ready": "Ready to claim",
         "claim_in": "~{time} left",
         "tokens_tab": "Tokens",
+        "token_price": "1 {symbol} = {price}, price from {source}",
+        "tokens_value": "Value",
+        "token_prices_note": "Current token prices from Astrolescent (and Ociswap for those it does not list); XRD from CoinGecko. Updated every minute.",
         "nfts_tab": "NFTs",
         "summary_tab": "Summary",
         "pool_tab": "Pool",
@@ -995,7 +998,8 @@
           "legend_validator": "Only the fee earned as a validator owner, one row per day and validator, no movements. Off when the account had no validator that year.",
           "legend_delegator": "Only the rewards earned staking XRD, one row per day and validator, no movements: safe to import next to other sources without duplicates.",
           "legend_all": "The delegator rewards, the validator fee and every movement of the account in the year (transfers, stakes, unstakes, claims and network fees). The complete file for CoinTracking.",
-          "kind_validator_off": "This account had no validator that year: it earned no fee."
+          "kind_validator_off": "This account had no validator that year: it earned no fee.",
+          "modal_kind": "What to download"
         },
         "security": {
           "label": "Account security",

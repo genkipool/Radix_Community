@@ -17,6 +17,9 @@ import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currency
 import { type AccountRewardsCsvModalDict } from '../types/components.types';
 import { useAccountStats } from '../hooks/useAccountStats';
 import { useLanguage } from '@/context/LanguageContext';
+import { useTokenPrices, type TokenFiatPrice } from '@/features/dashboard/hooks/useTokenPrices';
+import { formatFiatPrecise } from '@/utils/currencyUtils';
+import { TokenFiatValue, totalFiatValue } from './TokenFiatValue';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -88,6 +91,9 @@ export function AccountSummaryTab({
         totalLsuAmount,
         totalLsuXrdEquivalent,
     } = useAccountStats(address, network, entityData);
+    const { priceOf, currency, ready: pricesReady } = useTokenPrices(network, locale);
+    const tokensValue = pricesReady ? totalFiatValue(tokens, priceOf) : 0;
+    const priceLabels = accT;
 
     return (
         <div className="space-y-6">
@@ -339,7 +345,22 @@ export function AccountSummaryTab({
             />
 
             {/* Assets */}
-            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
+            <AssetSection
+                title={`Tokens (${tokens.length})`}
+                items={tokens}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                locale={locale}
+                isModal={isModal}
+                priceOf={pricesReady ? priceOf : undefined}
+                priceLabel={priceLabels?.token_price}
+                aside={tokensValue > 0 ? (
+                    <span className="text-xs font-black font-mono text-[var(--color-text-main)] whitespace-nowrap normal-case tracking-normal" title={priceLabels?.token_prices_note}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] mr-1.5">{priceLabels?.tokens_value ?? 'Value'}</span>
+                        {formatFiatPrecise(tokensValue, currency, locale)}
+                    </span>
+                ) : undefined}
+            />
             <AssetSection title={`NFTs (${activeNfts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
 
             {burnedNfts.length > 0 && (
@@ -460,8 +481,13 @@ export function BalanceCard({ title, amount, symbol, valueColor, marketData, loc
     );
 }
 
-function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale, isModal = false }: {
+function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale, isModal = false, priceOf, priceLabel, aside }: {
     title: string;
+    /** Each token's fiat price, when its value is shown. */
+    priceOf?: (resource: string) => TokenFiatPrice | null;
+    priceLabel?: string;
+    /** On the right of the title (the total value). */
+    aside?: React.ReactNode;
     items: ParsedResource[];
     onCopy: (v: string) => void;
     copiedAddress: string | null;
@@ -473,19 +499,24 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
     if (items.length === 0) return null;
     return (
         <div>
-            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${titleClassName} ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-3'}`}>
-                {title}
-            </h4>
+            <div className={`flex items-baseline justify-between gap-3 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-3'}`}>
+                <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${titleClassName}`}>
+                    {title}
+                </h4>
+                {aside}
+            </div>
             <div className={isModal ? "grid grid-cols-2 gap-3 items-stretch" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch"}>
                 {items.map((item) => (
-                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} />
+                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item.address) ?? null} priceLabel={priceLabel} />
                 ))}
             </div>
         </div>
     );
 }
 
-function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isModal = false }: {
+function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isModal = false, price = null, priceLabel }: {
+    price?: TokenFiatPrice | null;
+    priceLabel?: string;
     item: ParsedResource;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
@@ -514,6 +545,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
                             </span>
                             {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate min-w-0" title={symbol}>{symbol}</span>}
                         </div>
+                        {!isNft && <TokenFiatValue price={price} amount={amount} symbol={symbol || name} locale={locale} priceLabel={priceLabel} />}
                         {(item.isClaim || item.isOwnerBadge) && (
                             <div className="flex items-baseline gap-1.5 shrink-0">
                                 {(item.validatorName || item.validatorAddress) && (

@@ -99,6 +99,7 @@ export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAd
                         currentEpoch={data.ledger.epoch}
                     />
                     <AccountTokensTab
+                        showPrices={false}
                         address={address}
                         entityData={data.entity}
                         tt={tt}
