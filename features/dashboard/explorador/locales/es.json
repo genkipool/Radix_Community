@@ -852,7 +852,7 @@
         "at_date": {
           "loading": "Leyendo la cuenta en ese día…",
           "label": "En una fecha",
-          "tooltip": "La cuenta como estaba al terminar un día: sus tokens y su stake valorado en ese momento.",
+          "tooltip": "La cuenta como estaba al terminar un día: sus tokens, NFTs, pool units y su stake valorado en ese momento.",
           "pick": "Día (UTC)",
           "desc": "Lo que tenía la cuenta al terminar ese día, del {from} al {to}, leído del ledger de Babylon en ese momento. El stake se valora con lo que valía cada LSU entonces.",
           "empty": "Elige un día para ver la cuenta como estaba entonces.",

@@ -852,7 +852,7 @@
         "at_date": {
           "loading": "Reading the account on that day…",
           "label": "On a date",
-          "tooltip": "The account as it was at the end of a day: its tokens and its stake valued at that moment.",
+          "tooltip": "The account as it was at the end of a day: its tokens, NFTs, pool units and its stake valued at that moment.",
           "pick": "Day (UTC)",
           "desc": "What the account held at the end of that day, from {from} to {to}, read from the Babylon ledger at that moment. Stake is valued at what each LSU was worth then.",
           "empty": "Pick a day to see the account as it was then.",

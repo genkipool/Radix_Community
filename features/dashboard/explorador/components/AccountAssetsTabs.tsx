@@ -81,7 +81,8 @@ export function AccountPoolUnitsTab({
     onCopy,
     copiedAddress,
     network = 'mainnet',
-    locale
+    locale,
+    pastState = false,
 }: {
     address: string;
     entityData: GatewayEntityDetails | null;
@@ -90,12 +91,14 @@ export function AccountPoolUnitsTab({
     copiedAddress: string | null;
     network?: 'mainnet' | 'stokenet';
     locale?: string;
+    /** A past state: the pool's tokens of today would not describe it. */
+    pastState?: boolean;
 }) {
     const { poolUnits } = useAccountStats(_address, network, entityData);
 
     return (
         <div className="space-y-6">
-            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} holder={_address} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} holder={_address} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} pastState={pastState} />
             {poolUnits.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">{tt?.account_summary?.no_pool_units || 'No pool units in this account.'}</p>
             )}
@@ -133,8 +136,9 @@ export function AccountNftsTab({
     );
 }
 
-function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = false, tt, network = 'mainnet', locale, priceOf, aside, footer }: {
+function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = false, tt, network = 'mainnet', locale, priceOf, aside, footer, pastState = false }: {
     title: string;
+    pastState?: boolean;
     /** Each token's fiat price, when its value is shown. */
     priceOf?: (resource: string) => TokenFiatPrice | null;
     aside?: React.ReactNode;
@@ -153,7 +157,7 @@ function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = fa
     return (
         <AssetListSection title={title} burned={burned} aside={aside} footer={footer}>
             {items.map((item) => (
-                <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} price={priceOf?.(item.address) ?? null} />
+                <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} price={priceOf?.(item.address) ?? null} pastState={pastState} />
             ))}
         </AssetListSection>
     );
@@ -169,8 +173,10 @@ function ExpandableResourceCard({
     network = 'mainnet',
     locale,
     price = null,
+    pastState = false,
 }: {
     price?: TokenFiatPrice | null;
+    pastState?: boolean;
     item: ParsedResource;
     holder?: string;
     onCopy: (v: string) => void;
@@ -276,6 +282,7 @@ function ExpandableResourceCard({
                     isPoolUnit={item.isPoolUnit}
                     userBalance={parseFloat(item.amount) || 0}
                     poolAddress={item.poolAddress}
+                    pastState={pastState}
                 />
             )}
         </AssetRowCard>

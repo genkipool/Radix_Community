@@ -88,7 +88,7 @@ function resolvePoolAddressFromEntity(entity: GatewayEntityDetails | null): stri
 const BASE_RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
 type ResourceTab = 'summary' | 'contributed_tokens' | 'metadata' | 'configuration' | 'raw';
 
-export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, network, locale, isPoolUnit, userBalance, poolAddress, holder }: ResourceInlinePanelProps) {
+export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, network, locale, isPoolUnit, userBalance, poolAddress, holder, pastState = false }: ResourceInlinePanelProps) {
     const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
 
     const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
@@ -126,7 +126,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
 
     // The pool itself opens in its own card (linked from "Contributed tokens"),
     // so the unit's panel does not repeat it in a tab.
-    const RESOURCE_TABS: ResourceTab[] = isPoolUnit && resolvedPoolAddress
+    const RESOURCE_TABS: ResourceTab[] = isPoolUnit && resolvedPoolAddress && !pastState
         ? ['summary', 'contributed_tokens', 'metadata', 'configuration', 'raw']
         : [...BASE_RESOURCE_TABS];
 
