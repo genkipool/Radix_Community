@@ -1,8 +1,8 @@
 'use client';
 /**
  * The "On a date" tab of a Babylon account: the account as it was at the end
- * of a UTC day. Its stakes and tokens are drawn by the card's own Staking and
- * Tokens tabs, fed with what the Gateway answered for that ledger state
+ * of a UTC day. Its stakes, tokens, NFTs and pool units are drawn by the
+ * card's own tabs, fed with what the Gateway answered for that ledger state
  * (`/api/account-at`), stakes valued at what each LSU was worth then.
  */
 import React, { useState } from 'react';
@@ -16,7 +16,7 @@ import { holdingAmount, type Holding } from '../utils/holdings';
 import { Stat } from '../olympia/OlympiaParts';
 import { formatAmount } from '../olympia/format';
 import { AccountStakingTab } from './AccountStakingTab';
-import { AccountTokensTab } from './AccountAssetsTabs';
+import { AccountNftsTab, AccountPoolUnitsTab, AccountTokensTab } from './AccountAssetsTabs';
 import { AtDateView } from './AtDateView';
 
 interface AccountAtDay {
@@ -100,6 +100,25 @@ export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAd
                     />
                     <AccountTokensTab
                         showPrices={false}
+                        address={address}
+                        entityData={data.entity}
+                        tt={tt}
+                        onCopy={onCopy}
+                        copiedAddress={copiedAddress}
+                        network={network}
+                        locale={locale}
+                    />
+                    <AccountNftsTab
+                        address={address}
+                        entityData={data.entity}
+                        tt={tt}
+                        onCopy={onCopy}
+                        copiedAddress={copiedAddress}
+                        network={network}
+                        locale={locale}
+                    />
+                    <AccountPoolUnitsTab
+                        pastState
                         address={address}
                         entityData={data.entity}
                         tt={tt}

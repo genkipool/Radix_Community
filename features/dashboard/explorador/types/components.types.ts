@@ -308,6 +308,8 @@ export interface ResourceInlinePanelProps {
     /** Address of the pool component associated with this LP token */
     poolAddress?: string;
     /** The account holding it, when shown inside an account (its pool position). */
+    /** Drawn for a past state: leaves out what only today's state can show (the tokens a pool unit is worth now). */
+    pastState?: boolean;
     holder?: string;
 }
 
