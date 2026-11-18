@@ -6,7 +6,7 @@
  */
 import React, { useState } from 'react';
 import type { CalendarTranslations } from '@/components/ui/CalendarDropdown';
-import type { TranslationsT } from '@/features/dashboard/types';
+import type { MarketData, TranslationsT } from '@/features/dashboard/types';
 import { useOlympiaAccount } from '@/features/dashboard/services/olympiaApi';
 import { olympiaDict } from './dict';
 import { OlympiaAccountAtDate } from './OlympiaAccountAtDate';
@@ -18,7 +18,7 @@ import { Empty, ErrorText, FilterPills, Loading, OlympiaBadge, OlympiaRef, Sourc
 
 type Part = 'summary' | 'at_date' | 'transactions' | 'funds' | 'rewards';
 
-export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, onCopy, calendarT }: {
+export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, onCopy, calendarT, marketData }: {
   babylonAddress: string;
   /** The explorer translations: the Olympia entities opened in place need them all. */
   t?: Partial<TranslationsT>;
@@ -27,6 +27,7 @@ export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, on
   locale: string;
   copiedAddress: string | null;
   onCopy: (v: string) => void;
+  marketData?: MarketData;
 }) {
   const tt = t?.dashboard?.transactions;
   const o = olympiaDict(tt);
@@ -56,7 +57,7 @@ export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, on
       {part === 'at_date' && <OlympiaAccountAtDate address={a.address} o={o} locale={locale} calendarT={calendarT} t={t} onCopy={onCopy} copiedAddress={copiedAddress} />}
       {part === 'transactions' && <OlympiaTxTable address={a.address} o={o} locale={locale} />}
       {part === 'funds' && <OlympiaFundsPanel address={a.address} o={o} tt={tt} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} />}
-      {part === 'rewards' && <OlympiaRewardsPanel a={a} o={o} locale={locale} />}
+      {part === 'rewards' && <OlympiaRewardsPanel a={a} o={o} locale={locale} marketData={marketData} />}
       <SourceNote o={o} />
     </div>
   );

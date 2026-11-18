@@ -77,21 +77,43 @@ async function validatorsAt(network: Network, at: { state_version: number }): Pr
   return items;
 }
 
-/** Whether a UTC day can be read: from Babylon's first day to today. */
-export function dayIsReadable(day: string, now = new Date()): boolean {
+/**
+ * Whether a day (`YYYY-MM-DD`) can be read for a given timezone offset in
+ * minutes (`Date.prototype.getTimezoneOffset()`, i.e. `UTC - local`, 0 = UTC).
+ */
+export function dayIsReadable(day: string, now = new Date(), tzOffsetMinutes = 0): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(`${day}T00:00:00Z`))) return false;
-  return day >= BABYLON_FIRST_DAY && day <= now.toISOString().slice(0, 10);
+  if (!Number.isFinite(tzOffsetMinutes) || Math.abs(tzOffsetMinutes) > 840) return false;
+  const localToday = new Date(now.getTime() - tzOffsetMinutes * 60_000).toISOString().slice(0, 10);
+  return day >= BABYLON_FIRST_DAY && day <= localToday;
 }
 
-export async function readAccountAtDay(address: string, day: string, network: Network): Promise<AccountAtDay> {
-  // The day's end. Today has not ended: the Gateway refuses a future moment, so
-  // today is read now, and every later read is pinned to that same state.
-  const today = day >= new Date().toISOString().slice(0, 10);
+/**
+ * Returns the UTC ISO timestamp for the end of `day` (`23:59:59.999`) in the
+ * caller's timezone (`tzOffsetMinutes` = `UTC - local`), or `null` when that
+ * moment is in the future (so the Gateway should be read at the live tip).
+ */
+export function endOfDayIso(day: string, tzOffsetMinutes = 0, nowMs = Date.now()): string | null {
+  const endMs = Date.parse(`${day}T23:59:59.999Z`) + tzOffsetMinutes * 60_000;
+  if (!Number.isFinite(endMs) || endMs >= nowMs) return null;
+  return new Date(endMs).toISOString();
+}
+
+export async function readAccountAtDay(
+  address: string,
+  day: string,
+  network: Network,
+  tzOffsetMinutes = 0,
+): Promise<AccountAtDay> {
+  // The day's end in the caller's timezone. Today has not ended yet: the
+  // Gateway refuses a future moment, so today is read now, and every later
+  // read is pinned to that same state.
+  const timestamp = endOfDayIso(day, tzOffsetMinutes);
   const res = await post<{ ledger_state: LedgerPoint; items?: EntityItem[] }>(network, '/state/entity/details', {
     addresses: [address],
     aggregation_level: 'Vault',
     opt_ins: CARD_ENTITY_OPT_INS,
-    ...(today ? {} : { at_ledger_state: { timestamp: `${day}T23:59:59.999Z` } }),
+    ...(timestamp ? { at_ledger_state: { timestamp } } : {}),
   });
   const ledger = res.ledger_state;
   const item = res.items?.[0];

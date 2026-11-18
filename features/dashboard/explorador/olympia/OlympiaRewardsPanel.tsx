@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import type { MarketData } from '@/features/dashboard/types';
 import type { OlympiaAccountSummary } from '@/types/olympia';
 import { endOfOlympia, type OlympiaDict } from './dict';
 import { formatAmount } from './format';
@@ -7,7 +8,7 @@ import { OlympiaRewardsCsv } from './OlympiaRewardsCsv';
 import { Empty, Section, Stat } from './OlympiaParts';
 
 /** An account's Olympia staking rewards: totals and the yearly CSV download. */
-export function OlympiaRewardsPanel({ a, o, locale }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string }) {
+export function OlympiaRewardsPanel({ a, o, locale, marketData }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string; marketData?: MarketData }) {
   if (a.rewards.years.length === 0) return <Empty text={o.rewards_csv_empty} />;
   return (
     <div className="space-y-4">
@@ -19,7 +20,7 @@ export function OlympiaRewardsPanel({ a, o, locale }: { a: OlympiaAccountSummary
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)]">{o.rewards_desc}</p>
       </Section>
-      <OlympiaRewardsCsv subject="account" address={a.address} years={a.rewards.years} o={o} locale={locale} kinds={a.rewards.validatorFeeXrd > 0} />
+      <OlympiaRewardsCsv subject="account" address={a.address} years={a.rewards.years} o={o} locale={locale} kinds={a.rewards.validatorFeeXrd > 0} marketData={marketData} />
     </div>
   );
 }

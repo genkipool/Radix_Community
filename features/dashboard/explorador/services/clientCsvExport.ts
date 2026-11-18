@@ -1,6 +1,7 @@
 
 import Big from 'big.js';
 import { csvRow, rowsToCsv } from '../utils/coinTrackingCsv';
+import { mergeDailyRewards, type DailyRewardPoint } from '../utils/rewardsBreakdown';
 
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const XRD_ADDR = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
@@ -83,9 +84,11 @@ async function fetchAllValidators(signal?: AbortSignal, cursor: string | null = 
 
 async function getLedgerStateForDay(accountAddress: string, lsuResource: string, vaultAddress: string, dayStr: string, signal?: AbortSignal): Promise<LedgerDayState> {
     try {
+        const nowStr = new Date().toISOString().slice(0, 10);
+        const atState = dayStr < nowStr ? { at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` } } : {};
         const rawData = await gatewayPost('/state/entity/details', {
             addresses: [accountAddress, lsuResource, vaultAddress],
-            at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` },
+            ...atState,
             opt_ins: { fungible_resources: true },
         }, signal);
         const data = rawData as unknown as GatewayEntityDetailsResponse;
@@ -359,6 +362,7 @@ async function computeStakingRewardsMath(
         `${year}-06-30`,
         `${year}-09-30`,
         `${year}-12-31`,
+        ...(nowStr.startsWith(year) ? [nowStr] : []),
         ...extraDates
     ])).filter(d => (d.startsWith(year) || d === `${prevYear}-12-31`) && d <= nowStr).sort();
 
@@ -747,6 +751,8 @@ export interface AccountRewardsYear {
     days: number;
     /** Validators whose owner badge the account held that year. */
     ownedValidators: string[];
+    /** Per-day aggregated rewards for the expandable breakdown and historical fiat valuation. */
+    dailyRewards: DailyRewardPoint[];
 }
 
 /** A year with nothing to put in the CSV: no rewards and no transactions. */
@@ -829,6 +835,10 @@ export async function generateClientAccountRewardsCsv(
         const feeXrd = fees.reduce((s, f) => s + f.feeXrd, 0);
         onProgress(98);
 
+        const dailyRewards = mergeDailyRewards(
+            stakingRewards.map((r) => ({ date: r.date, xrd: r.rewardXrd })),
+            fees.map((f) => ({ date: f.date, xrd: f.feeXrd })),
+        );
         const toCsv = (rows: string[][]) => (rows.length ? rowsToCsv(rows) : '');
         const result: AccountRewardsYear = {
             csv: toCsv(allRows),
@@ -837,8 +847,9 @@ export async function generateClientAccountRewardsCsv(
             totalXrd: delegatorXrd + feeXrd,
             delegatorXrd,
             feeXrd,
-            days: new Set([...stakingRewards.map((r) => r.date), ...fees.map((f) => f.date)]).size,
+            days: dailyRewards.length,
             ownedValidators,
+            dailyRewards,
         };
         onProgress(100);
         return result;

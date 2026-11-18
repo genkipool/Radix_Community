@@ -255,7 +255,7 @@ function Delegators({ v, o, locale }: { v: OlympiaValidator; o: OlympiaDict; loc
 /** Delegators read per "show more". */
 const PAGE = 50;
 
-function Rewards({ v, o, locale }: { v: OlympiaValidator; o: OlympiaDict; locale: string }) {
+function Rewards({ v, o, locale, marketData }: { v: OlympiaValidator; o: OlympiaDict; locale: string; marketData?: AccountCardProps['marketData'] }) {
   return (
     <div className="space-y-4">
       <Section title={o.rewards_owner_title}>
@@ -266,13 +266,13 @@ function Rewards({ v, o, locale }: { v: OlympiaValidator; o: OlympiaDict; locale
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)]">{o.rewards_desc}</p>
       </Section>
-      <OlympiaRewardsCsv subject="validator" address={v.address} years={v.rewards.years} o={o} locale={locale} />
+      <OlympiaRewardsCsv subject="validator" address={v.address} years={v.rewards.years} o={o} locale={locale} marketData={marketData ?? undefined} />
     </div>
   );
 }
 
 /** The card of an Olympia validator (`rv1…`). */
-export function OlympiaValidatorCard({ address, isExpanded, onExpand, onCopy, copiedAddress, t, locale, isModal, headless }: AccountCardProps) {
+export function OlympiaValidatorCard({ address, isExpanded, onExpand, onCopy, copiedAddress, t, locale, marketData, isModal, headless }: AccountCardProps) {
   const o = olympiaDict(t?.dashboard?.transactions);
   const { data: v } = useOlympiaValidator(address);
   // The archive has no icons. A Babylon validator with the same node key is the
@@ -307,7 +307,7 @@ export function OlympiaValidatorCard({ address, isExpanded, onExpand, onCopy, co
       tabs={[
         { key: 'summary', label: o.summary_tab, render: () => <Details v={v} o={o} t={t} locale={locale} onCopy={onCopy} copiedAddress={copiedAddress} /> },
         { key: 'delegators', label: o.delegators_tab, render: () => <Delegators v={v} o={o} locale={locale} /> },
-        { key: 'rewards', label: o.rewards_tab, render: () => <Rewards v={v} o={o} locale={locale} /> },
+        { key: 'rewards', label: o.rewards_tab, render: () => <Rewards v={v} o={o} locale={locale} marketData={marketData} /> },
         { key: 'metadata', label: t?.dashboard?.transactions?.resource_panel_metadata ?? '', render: () => <PanelMetadataTab metadataItems={olympiaValidatorMetadata(v)} tt={t?.dashboard?.transactions} onCopy={onCopy} copiedAddress={copiedAddress} /> },
         { key: 'configuration', label: t?.dashboard?.transactions?.resource_panel_configuration ?? '', render: () => <PanelConfigurationTab configEntries={olympiaValidatorConfig(v, t?.dashboard?.transactions, o)} tt={t?.dashboard?.transactions} onCopy={onCopy} copiedAddress={copiedAddress} /> },
         { key: 'raw', label: o.raw_tab, tooltip: o.raw_tooltip, render: () => <PanelRawTab data={v} tt={t?.dashboard?.transactions} onCopy={onCopy} copiedAddress={copiedAddress} /> },
