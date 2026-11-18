@@ -26,8 +26,28 @@ interface AccountAtDay {
     stakingRows: StakingEntry[];
 }
 
-async function fetchAccountAt(address: string, day: string, network: 'mainnet' | 'stokenet'): Promise<AccountAtDay> {
-    const qs = new URLSearchParams({ address, day, network });
+function localTodayStr(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function tzOffsetForDay(day: string): number {
+    const [y, m, d] = day.split('-').map(Number);
+    if (!y || !m || !d) return new Date().getTimezoneOffset();
+    return new Date(y, m - 1, d, 23, 59, 59, 999).getTimezoneOffset();
+}
+
+function localTimeZoneShort(locale: string): string {
+    try {
+        const parts = new Intl.DateTimeFormat(locale, { timeZoneName: 'short' }).formatToParts(new Date());
+        return parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+    } catch {
+        return '';
+    }
+}
+
+async function fetchAccountAt(address: string, day: string, network: 'mainnet' | 'stokenet', tzOffset: number): Promise<AccountAtDay> {
+    const qs = new URLSearchParams({ address, day, network, tzOffset: String(tzOffset) });
     const res = await fetch(`/api/account-at?${qs.toString()}`);
     if (!res.ok) throw new Error(`account-at ${res.status}`);
     return res.json() as Promise<AccountAtDay>;
@@ -51,10 +71,12 @@ export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAd
     const tt = t?.dashboard?.transactions;
     const at = tt?.account_summary?.at_date;
     const [day, setDay] = useState('');
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localTodayStr();
+    const tzOffset = day ? tzOffsetForDay(day) : new Date().getTimezoneOffset();
+    const tzLabel = localTimeZoneShort(locale);
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['account-at', address, network, day],
-        queryFn: () => fetchAccountAt(address, day, network),
+        queryKey: ['account-at', address, network, day, tzOffset],
+        queryFn: () => fetchAccountAt(address, day, network, tzOffset),
         enabled: !!day,
         // A past day never changes; today does.
         staleTime: day && day < today ? Infinity : 60_000,
@@ -76,7 +98,9 @@ export function AccountAtDateTab({ address, network, t, locale, onCopy, copiedAd
             locale={locale}
             minDate={BABYLON_FIRST_DAY}
             maxDate={today}
-            text={{ ...at, stateVersion: tt?.olympia?.state_version }}
+            timezoneLabel={tzLabel}
+            useLocalTime
+            text={{ ...at, stateVersion: tt?.olympia?.state_version, yearEndPrefix: at?.year_end }}
             status={isLoading ? 'loading' : isError || !data ? 'error' : 'ready'}
             stateVersion={data?.ledger.state_version}
         >

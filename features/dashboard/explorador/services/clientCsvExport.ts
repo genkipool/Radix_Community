@@ -1,6 +1,7 @@
 
 import Big from 'big.js';
 import { csvRow, rowsToCsv } from '../utils/coinTrackingCsv';
+import { mergeDailyRewards, type DailyRewardPoint } from '../utils/rewardsBreakdown';
 
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const XRD_ADDR = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
@@ -747,6 +748,8 @@ export interface AccountRewardsYear {
     days: number;
     /** Validators whose owner badge the account held that year. */
     ownedValidators: string[];
+    /** Per-day aggregated rewards for the expandable breakdown and historical fiat valuation. */
+    dailyRewards: DailyRewardPoint[];
 }
 
 /** A year with nothing to put in the CSV: no rewards and no transactions. */
@@ -829,6 +832,10 @@ export async function generateClientAccountRewardsCsv(
         const feeXrd = fees.reduce((s, f) => s + f.feeXrd, 0);
         onProgress(98);
 
+        const dailyRewards = mergeDailyRewards(
+            stakingRewards.map((r) => ({ date: r.date, xrd: r.rewardXrd })),
+            fees.map((f) => ({ date: f.date, xrd: f.feeXrd })),
+        );
         const toCsv = (rows: string[][]) => (rows.length ? rowsToCsv(rows) : '');
         const result: AccountRewardsYear = {
             csv: toCsv(allRows),
@@ -837,8 +844,9 @@ export async function generateClientAccountRewardsCsv(
             totalXrd: delegatorXrd + feeXrd,
             delegatorXrd,
             feeXrd,
-            days: new Set([...stakingRewards.map((r) => r.date), ...fees.map((f) => f.date)]).size,
+            days: dailyRewards.length,
             ownedValidators,
+            dailyRewards,
         };
         onProgress(100);
         return result;

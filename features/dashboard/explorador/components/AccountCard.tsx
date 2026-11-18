@@ -447,7 +447,7 @@ export function AccountCard({
                                         )}
 
                                         {activeTab === 'rewards' && (
-                                            <AccountRewardsTab address={address} tt={tt} locale={locale ?? 'en'} />
+                                            <AccountRewardsTab address={address} tt={tt} locale={locale ?? 'en'} marketData={marketData ?? undefined} />
                                         )}
 
                                         {activeTab === 'at_date' && (
@@ -455,7 +455,7 @@ export function AccountCard({
                                         )}
 
                                         {activeTab === 'olympia' && olympiaLink && (
-                                            <AccountOlympiaTab babylonAddress={address} t={t} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} calendarT={t?.dashboard?.calendar} />
+                                            <AccountOlympiaTab babylonAddress={address} t={t} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} calendarT={t?.dashboard?.calendar} marketData={marketData ?? undefined} />
                                         )}
 
                                         {/* ── POOL UNITS ── */}

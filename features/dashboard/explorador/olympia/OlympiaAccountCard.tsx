@@ -50,7 +50,7 @@ function facts(a: OlympiaAccountSummary, o: OlympiaDict, locale: string) {
 }
 
 /** The card of an Olympia account (`rdx1…`), found by the search box. */
-export function OlympiaAccountCard({ address, isExpanded, onExpand, onCopy, copiedAddress, t, locale, isModal, headless }: AccountCardProps) {
+export function OlympiaAccountCard({ address, isExpanded, onExpand, onCopy, copiedAddress, t, locale, marketData, isModal, headless }: AccountCardProps) {
   const tt = t?.dashboard?.transactions;
   const o = olympiaDict(tt);
   const { data: a } = useOlympiaAccount(address);
@@ -79,7 +79,7 @@ export function OlympiaAccountCard({ address, isExpanded, onExpand, onCopy, copi
         { key: 'at_date', label: o.at_date_tab, render: () => <OlympiaAccountAtDate address={address} o={o} locale={locale} calendarT={t?.dashboard?.calendar} t={t} onCopy={onCopy} copiedAddress={copiedAddress} /> },
         { key: 'transactions', label: o.transactions_tab, render: () => <OlympiaTxTable address={address} o={o} locale={locale} /> },
         { key: 'funds', label: o.funds_tab, render: () => <OlympiaFundsPanel address={address} o={o} tt={tt} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} /> },
-        { key: 'rewards', label: o.rewards_tab, render: () => <OlympiaRewardsPanel a={a} o={o} locale={locale} /> },
+        { key: 'rewards', label: o.rewards_tab, render: () => <OlympiaRewardsPanel a={a} o={o} locale={locale} marketData={marketData ?? undefined} /> },
         { key: 'security', label: o.account_security_tab ?? '', render: () => <OlympiaAccountSecurity a={a} o={o} locale={locale} /> },
         { key: 'raw', label: o.raw_tab, tooltip: o.raw_tooltip, render: () => <PanelRawTab data={a} tt={t?.dashboard?.transactions} onCopy={onCopy} copiedAddress={copiedAddress} /> },
       ]}

@@ -14,11 +14,16 @@ import { createPortal } from 'react-dom';
 import { AlertCircle, Download, Loader2, X } from 'lucide-react';
 import { RadixIcon } from '@/components/shared/RadixIcon';
 import { useMounted } from '@/hooks/useMounted';
+import { resolveCurrentXrdPrice, useXrdDailyPrices } from '@/features/dashboard/hooks/useXrdDailyPrices';
 import { olympiaApi, useOlympiaAccount } from '@/features/dashboard/services/olympiaApi';
+import type { MarketData } from '@/features/dashboard/types';
+import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
 import type { OlympiaDict } from './dict';
 import { formatAmount } from './format';
 import { FilterPills, OlympiaBadge } from './OlympiaParts';
+import { RewardsYearBreakdown, type RewardsBreakdownLabels } from '../components/RewardsYearBreakdown';
 import { RewardsYearsTable, type RewardsYearsColumn } from '../components/RewardsYearsTable';
+import { mergeDailyRewards, summarizeYearRewards, type DailyRewardPoint, type YearRewardsBreakdown } from '../utils/rewardsBreakdown';
 import { downloadText, olympiaAccountRewardsCsv, olympiaValidatorRewardsCsv, type OlympiaRewardKind } from './rewardsCsv';
 
 type Subject = 'account' | 'validator';
@@ -149,7 +154,14 @@ function ResultNote({ o, csv, locale }: { o: OlympiaDict; csv: Csv; locale: stri
   );
 }
 
-type YearRow = { year: number; days: number; delegatorXrd: number; feeXrd: number };
+type YearRow = {
+  year: number;
+  days: number;
+  delegatorXrd: number;
+  feeXrd: number;
+  fiatAtReceipt: number | null;
+  fiatCurrent: number | null;
+};
 
 /** One year's rewards, read once and kept: the table's totals and the CSV come from the same read. */
 function useYearRewards(subject: Subject, address: string, years: number[]) {
@@ -169,7 +181,26 @@ function useYearRewards(subject: Subject, address: string, years: number[]) {
   });
 }
 
-function summarize(year: number, data: ReturnType<typeof useYearRewards>[number]['data']): YearRow | null {
+function toDailyPoints(data: ReturnType<typeof useYearRewards>[number]['data']): DailyRewardPoint[] | null {
+  if (!data) return null;
+  if (data.account) {
+    return mergeDailyRewards(
+      data.account.map((d) => ({ date: d.day, xrd: d.delegatorXrd })),
+      data.account.map((d) => ({ date: d.day, xrd: d.feeXrd })),
+    );
+  }
+  const v = data.validator ?? [];
+  return v
+    .filter((d) => d.feeXrd > 0 || d.delegatorsXrd > 0)
+    .map((d) => ({ date: d.day, delegatorXrd: d.delegatorsXrd, feeXrd: d.feeXrd }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function summarize(
+  year: number,
+  data: ReturnType<typeof useYearRewards>[number]['data'],
+  breakdown: YearRewardsBreakdown | null,
+): YearRow | null {
   if (!data) return null;
   if (data.account) {
     const days = new Set(data.account.map((d) => d.day)).size;
@@ -178,6 +209,8 @@ function summarize(year: number, data: ReturnType<typeof useYearRewards>[number]
       days,
       delegatorXrd: data.account.reduce((acc, d) => acc + d.delegatorXrd, 0),
       feeXrd: data.account.reduce((acc, d) => acc + d.feeXrd, 0),
+      fiatAtReceipt: breakdown?.fiatAtReceipt ?? null,
+      fiatCurrent: breakdown?.fiatCurrent ?? null,
     };
   }
   const v = data.validator ?? [];
@@ -186,31 +219,53 @@ function summarize(year: number, data: ReturnType<typeof useYearRewards>[number]
     days: v.filter((d) => d.feeXrd > 0 || d.delegatorsXrd > 0).length,
     delegatorXrd: v.reduce((acc, d) => acc + d.delegatorsXrd, 0),
     feeXrd: v.reduce((acc, d) => acc + d.feeXrd, 0),
+    fiatAtReceipt: breakdown?.fiatAtReceipt ?? null,
+    fiatCurrent: breakdown?.fiatCurrent ?? null,
   };
 }
 
 /**
  * The CSV download inside a tab: a table with one row per year (days with
- * rewards, what was earned and the total) and that year's downloads in the
- * row itself. No frame of its own.
+ * rewards, what was earned, fiat values, and the total) and that year's
+ * downloads in the row itself. Clicking a year row expands its monthly/daily
+ * breakdown. No frame of its own.
  */
-export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = true }: {
+export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = true, marketData }: {
   subject: Subject; address: string; years: number[]; o: OlympiaDict; locale: string;
   /** Offer the delegator / validator downloads (off for an account that never owned a validator). */
   kinds?: boolean;
+  marketData?: MarketData;
 }) {
   const results = useYearRewards(subject, address, years);
+  const { data: dailyPricesData } = useXrdDailyPrices(years.length > 0);
   const [done, setDone] = useState<string | null>(null);
-  if (years.length === 0) return null;
 
   const isAccount = subject === 'account';
+  const currency = getCurrencyForLocale(locale);
+  const currentPrice = resolveCurrentXrdPrice(marketData, dailyPricesData?.prices, currency);
+  const mode = isAccount ? 'account' : 'validator';
+
+  const breakdowns: Array<YearRewardsBreakdown | null> = results.map((q) => {
+    const points = toDailyPoints(q.data);
+    return points ? summarizeYearRewards(points, dailyPricesData?.prices, currency, currentPrice, mode) : null;
+  });
+
+  if (years.length === 0) return null;
+
   const showFee = !isAccount || kinds;
-  const rows = years.map((year, i) => ({ year, query: results[i], row: summarize(year, results[i].data) }));
+  const rows = years.map((year, i) => ({
+    year,
+    query: results[i],
+    breakdown: breakdowns[i],
+    row: summarize(year, results[i].data, breakdowns[i]),
+  }));
   const total = rows.reduce((acc, r) => ({
     days: acc.days + (r.row?.days ?? 0),
     delegatorXrd: acc.delegatorXrd + (r.row?.delegatorXrd ?? 0),
     feeXrd: acc.feeXrd + (r.row?.feeXrd ?? 0),
-  }), { days: 0, delegatorXrd: 0, feeXrd: 0 });
+    fiatAtReceipt: r.row?.fiatAtReceipt != null ? (acc.fiatAtReceipt ?? 0) + r.row.fiatAtReceipt : acc.fiatAtReceipt,
+    fiatCurrent: r.row?.fiatCurrent != null ? (acc.fiatCurrent ?? 0) + r.row.fiatCurrent : acc.fiatCurrent,
+  }), { days: 0, delegatorXrd: 0, feeXrd: 0, fiatAtReceipt: null as number | null, fiatCurrent: null as number | null });
   const allLoaded = rows.every((r) => r.row);
 
   const save = (year: number, kind: OlympiaRewardKind) => {
@@ -245,14 +300,35 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
     : undefined;
 
   const xrd = (n: number) => `${formatAmount(n, locale)} XRD`;
+  const fiat = (n: number | null) => (n === null ? '—' : formatCurrency(n, currency, locale));
   // Accounts: what it earned delegating, then its validator fee. Validators: the owner's fee, then what its delegators earned.
-  type Sums = { days: number; delegatorXrd: number; feeXrd: number };
+  type Sums = { days: number; delegatorXrd: number; feeXrd: number; fiatAtReceipt: number | null; fiatCurrent: number | null };
   const columns: RewardsYearsColumn<Sums>[] = [
     { label: o.rewards_table_days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
     { label: isAccount ? (o.rewards_table_delegator ?? '') : (o.rewards_table_fee ?? ''), value: (r) => xrd(isAccount ? r.delegatorXrd : r.feeXrd), tone: 'font-bold text-[var(--color-accent)]' },
     ...(showFee ? [{ label: isAccount ? (o.rewards_table_fee ?? '') : (o.rewards_table_delegators ?? ''), value: (r: Sums) => xrd(isAccount ? r.feeXrd : r.delegatorXrd), tone: 'text-[var(--color-text-main)]' }] : []),
     ...(isAccount && showFee ? [{ label: o.rewards_table_total ?? 'Total', value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' }] : []),
+    { label: o.rewards_fiat_at_receipt ?? 'At receipt', tooltip: o.rewards_fiat_at_receipt_tooltip, value: (r) => fiat(r.fiatAtReceipt), tone: 'text-[var(--color-text-main)]' },
+    { label: o.rewards_fiat_current ?? 'Current value', tooltip: o.rewards_fiat_current_tooltip, value: (r) => fiat(r.fiatCurrent), tone: 'text-[var(--color-text-muted)]' },
   ];
+
+  const breakdownLabels: RewardsBreakdownLabels = {
+    byMonth: o.rewards_breakdown_monthly ?? 'By month',
+    byDay: o.rewards_breakdown_daily ?? 'By day',
+    month: o.rewards_breakdown_month ?? 'Month',
+    date: o.rewards_breakdown_date ?? 'Date',
+    days: o.rewards_table_days ?? 'Days',
+    delegator: o.rewards_table_delegator ?? 'As delegator',
+    fee: o.rewards_table_fee ?? 'Validator fee',
+    delegators: o.rewards_table_delegators ?? 'Paid to delegators',
+    total: o.rewards_table_total ?? 'Total',
+    unitPrice: o.rewards_breakdown_unit_price ?? 'XRD price',
+    fiatAtReceipt: o.rewards_fiat_at_receipt ?? 'At receipt',
+    fiatCurrent: o.rewards_fiat_current ?? 'Current value',
+    allMonths: o.rewards_breakdown_all_months ?? 'All months',
+    empty: o.rewards_csv_empty ?? 'No rewards in this year.',
+    fiatNote: o.rewards_fiat_note ?? '',
+  };
 
   return (
     <RewardsYearsTable
@@ -262,12 +338,25 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
       yearLabel={o.rewards_year ?? ''}
       downloadLabel={o.rewards_table_download ?? 'CSV'}
       totalLabel={o.rewards_table_total ?? 'Total'}
+      expandHint={o.rewards_expand_hint}
       columns={columns}
       total={allLoaded ? total : null}
-      rows={rows.map(({ year, query, row }) => ({
+      rows={rows.map(({ year, query, breakdown, row }) => ({
         year,
         row,
         status: query.isError ? <span className="text-[var(--color-danger)]">{o.error}</span> : undefined,
+        renderExpanded: breakdown
+          ? () => (
+            <RewardsYearBreakdown
+              breakdown={breakdown}
+              currency={currency}
+              locale={locale}
+              showFee={showFee}
+              mode={mode}
+              labels={breakdownLabels}
+            />
+          )
+          : undefined,
         downloads: downloads.map((d) => {
           const enabled = !!row && d.has(row, year);
           const tooMany = d.kind === 'all' && isAccount && !!moveCount(year)?.tooMany;

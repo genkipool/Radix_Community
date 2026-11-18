@@ -18,10 +18,12 @@ function getCurrencyFormatter(locale: string): Intl.NumberFormat {
     return nf;
 }
 
+export type FiatCurrency = 'EUR' | 'USD';
+
 /**
  * Returns 'EUR' for Eurozone locales, otherwise 'USD'.
  */
-export function getCurrencyForLocale(locale: string): 'EUR' | 'USD' {
+export function getCurrencyForLocale(locale: string): FiatCurrency {
     const euroLocales = ['es', 'fr', 'de', 'it', 'pt', 'nl', 'be', 'at', 'fi', 'gr', 'ie', 'lu', 'sk', 'si', 'ee', 'lv', 'lt', 'hr'];
     // Split locale (e.g. 'es-ES' -> 'es')
     const primary = locale.split('-')[0].toLowerCase();

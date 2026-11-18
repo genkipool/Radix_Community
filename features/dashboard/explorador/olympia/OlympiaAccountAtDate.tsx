@@ -35,7 +35,18 @@ export function OlympiaAccountAtDate({ address, o, locale, calendarT, t, onCopy,
       locale={locale}
       minDate={FIRST_DAY}
       maxDate={LAST_DAY}
-      text={{ pick: o.at_date_pick, desc: o.at_date_desc, empty: o.at_date_empty, loading: o.loading, error: o.error, state: o.at_date_state, stateVersion: o.state_version }}
+      text={{
+        pick: o.at_date_pick,
+        desc: o.at_date_desc,
+        empty: o.at_date_empty,
+        loading: o.loading,
+        error: o.error,
+        state: o.at_date_state,
+        stateVersion: o.state_version,
+        lastDay: o.at_date_last_day,
+        firstDay: o.at_date_first_day,
+        yearEndPrefix: o.at_date_year_end,
+      }}
       status={isLoading ? 'loading' : isError || !a ? 'error' : 'ready'}
       stateVersion={a?.stateVersion}
     >
