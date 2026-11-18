@@ -2,7 +2,7 @@
  * Pure aggregation and fiat-valuation helpers for yearly, monthly, and daily
  * staking rewards (shared by Babylon and Olympia reward tables).
  */
-import { formatFiatPrecise, type FiatCurrency } from '@/utils/currencyUtils';
+import { formatCurrency, formatFiatPrecise, type FiatCurrency } from '@/utils/currencyUtils';
 import { lookupXrdFiatPrice, type XrdDailyPricesMap } from '@/features/dashboard/hooks/useXrdDailyPrices';
 
 /** Rewards earned on a single UTC day (`YYYY-MM-DD`). */
@@ -190,4 +190,46 @@ export function formatRewardDay(day: string, locale: string): string {
     const d = new Date(`${day}T00:00:00Z`);
     if (Number.isNaN(d.getTime())) return day;
     return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/**
+ * Percentage gain/loss if sold today compared to the value when received.
+ * Returns `null` when either value is missing or `fiatAtReceipt <= 0`.
+ */
+export function computeFiatChangePct(fiatAtReceipt: number | null, fiatCurrent: number | null): number | null {
+    if (fiatAtReceipt === null || fiatCurrent === null) return null;
+    if (!Number.isFinite(fiatAtReceipt) || !Number.isFinite(fiatCurrent) || fiatAtReceipt <= 0) return null;
+    return ((fiatCurrent - fiatAtReceipt) / fiatAtReceipt) * 100;
+}
+
+/** Formats a signed percentage (e.g. `+14,2 %`, `-68,4 %`, `0,0 %`). */
+export function formatSignedPercent(pct: number | null, locale: string): string {
+    if (pct === null || !Number.isFinite(pct)) return '—';
+    const abs = Math.abs(pct);
+    const digits = abs >= 100 ? 0 : 1;
+    const formatted = new Intl.NumberFormat(locale, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    }).format(abs);
+    const sign = pct > 0.05 ? '+' : pct < -0.05 ? '-' : '';
+    return `${sign}${formatted}%`;
+}
+
+/** Formats a signed fiat delta (e.g. `+12,40 €`, `-45,20 €`). */
+export function formatSignedCurrency(delta: number | null, currency: FiatCurrency, locale: string): string {
+    if (delta === null || !Number.isFinite(delta)) return '—';
+    const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
+    const abs = Math.abs(delta);
+    const body = abs > 0 && abs < 1
+        ? formatFiatPrecise(abs, currency, locale)
+        : formatCurrency(abs, currency, locale);
+    return `${sign}${body}`;
+}
+
+/** Semantic tone class for a percentage gain/loss cell. */
+export function fiatChangeTone(pct: number | null): string {
+    if (pct === null || !Number.isFinite(pct)) return 'text-[var(--color-text-muted)]';
+    if (pct > 0.05) return 'font-semibold text-[var(--color-accent)]';
+    if (pct < -0.05) return 'font-semibold text-red-500';
+    return 'text-[var(--color-text-muted)]';
 }

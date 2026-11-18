@@ -11,9 +11,11 @@ import { Check, ChevronRight, Download, Loader2 } from 'lucide-react';
 export interface RewardsYearsColumn<R> {
     label: string;
     value: (r: R) => string;
-    /** Colour and weight of the figure. */
-    tone: string;
+    /** Colour and weight of the figure (static or derived from the row). */
+    tone: string | ((r: R) => string);
     tooltip?: string;
+    /** Optional per-cell tooltip derived from the row. */
+    cellTooltip?: (r: R) => string | undefined;
 }
 
 export interface RewardsYearsDownload {
@@ -42,13 +44,15 @@ export const rewardsCellText = 'text-xs text-[var(--color-text-muted)]';
 /** What one download button gives, for the lines above the table. */
 export interface RewardsYearsLegendItem { label: string; text: string }
 
-export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, downloadLabel, totalLabel, expandHint, columns, rows, total, footer }: {
+export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearTooltip, downloadLabel, downloadTooltip, totalLabel, expandHint, columns, rows, total, footer }: {
     title: string;
     desc?: string;
     /** One line per download button, above the table: what each one gives. */
     legend?: RewardsYearsLegendItem[];
     yearLabel: string;
+    yearTooltip?: string;
     downloadLabel: string;
+    downloadTooltip?: string;
     totalLabel: string;
     /** Accessible tooltip on expandable year rows. */
     expandHint?: string;
@@ -66,6 +70,7 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, downloadL
     const th = 'py-3 px-4 font-semibold whitespace-nowrap';
     const num = 'py-3 px-4 text-right font-mono text-xs whitespace-nowrap';
     const totalColSpan = columns.length + 2;
+    const resolveTone = (c: RewardsYearsColumn<R>, r: R) => (typeof c.tone === 'function' ? c.tone(r) : c.tone);
 
     return (
         <section className="space-y-3" onClick={(e) => e.stopPropagation()} role="presentation">
@@ -90,13 +95,13 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, downloadL
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-[var(--color-card-border)] text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] bg-[var(--color-surface)]">
-                            <th className={th}>{yearLabel}</th>
+                            <th className={th} title={yearTooltip}>{yearLabel}</th>
                             {columns.map((c) => (
                                 <th key={c.label} className={`${th} text-right`} title={c.tooltip}>
                                     {c.label}
                                 </th>
                             ))}
-                            <th className={`${th} text-right`}>{downloadLabel}</th>
+                            <th className={`${th} text-right`} title={downloadTooltip}>{downloadLabel}</th>
                         </tr>
                     </thead>
                     {rows.map(({ year, row, status, downloads, renderExpanded }) => {
@@ -142,7 +147,11 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, downloadL
                                             {status ?? <Loader2 className="size-3.5 animate-spin inline" />}
                                         </td>
                                     ) : (
-                                        columns.map((c) => <td key={c.label} className={`${num} ${c.tone}`}>{c.value(row)}</td>)
+                                        columns.map((c) => (
+                                            <td key={c.label} className={`${num} ${resolveTone(c, row)}`} title={c.cellTooltip?.(row)}>
+                                                {c.value(row)}
+                                            </td>
+                                        ))
                                     )}
                                     <td className="py-2.5 px-4">
                                         <div className="flex justify-end flex-wrap gap-x-3 gap-y-1">
@@ -176,7 +185,11 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, downloadL
                         <tfoot>
                             <tr className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]">
                                 <td className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap">{totalLabel}</td>
-                                {columns.map((c) => <td key={c.label} className={`${num} ${c.tone}`}>{c.value(total)}</td>)}
+                                {columns.map((c) => (
+                                    <td key={c.label} className={`${num} ${resolveTone(c, total)}`} title={c.cellTooltip?.(total)}>
+                                        {c.value(total)}
+                                    </td>
+                                ))}
                                 <td className="py-3 px-4" />
                             </tr>
                         </tfoot>

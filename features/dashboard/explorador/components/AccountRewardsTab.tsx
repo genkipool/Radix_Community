@@ -21,7 +21,14 @@ import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
 import { formatNumber } from '@/utils/formatters';
 import { generateClientAccountRewardsCsv, NoRewardsDataError, type AccountRewardsYear } from '../services/clientCsvExport';
 import { downloadText } from '../olympia/rewardsCsv';
-import { summarizeYearRewards, type YearRewardsBreakdown } from '../utils/rewardsBreakdown';
+import {
+    computeFiatChangePct,
+    fiatChangeTone,
+    formatSignedCurrency,
+    formatSignedPercent,
+    summarizeYearRewards,
+    type YearRewardsBreakdown,
+} from '../utils/rewardsBreakdown';
 import { RewardsYearBreakdown, type RewardsBreakdownLabels } from './RewardsYearBreakdown';
 import { RewardsYearsTable, rewardsCellText, type RewardsYearsColumn } from './RewardsYearsTable';
 
@@ -132,13 +139,18 @@ export function AccountRewardsTab({ address, tt, locale, marketData }: {
     const owner = done.some((r) => (r?.ownedValidators.length ?? 0) > 0 || (r?.feeXrd ?? 0) > 0);
     const xrd = (n: number) => `${formatNumber(n, 2, locale)} XRD`;
     const fiat = (n: number | null) => (n === null ? '—' : formatCurrency(n, currency, locale));
+    const changeTooltip = (r: Sums) => {
+        if (r.fiatAtReceipt === null || r.fiatCurrent === null) return undefined;
+        const delta = formatSignedCurrency(r.fiatCurrent - r.fiatAtReceipt, currency, locale);
+        return (text?.fiat_change_cell_tooltip ?? '{delta}').replace('{delta}', delta);
+    };
 
     const columns: RewardsYearsColumn<Sums>[] = [
-        { label: text?.days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
-        { label: text?.total ?? '', value: (r) => xrd(r.delegatorXrd), tone: 'font-bold text-[var(--color-accent)]' },
+        { label: text?.days ?? 'Days', tooltip: text?.days_tooltip, value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
+        { label: text?.total ?? '', tooltip: text?.total_tooltip, value: (r) => xrd(r.delegatorXrd), tone: 'font-bold text-[var(--color-accent)]' },
         ...(owner ? [
-            { label: text?.fee ?? '', value: (r: Sums) => xrd(r.feeXrd), tone: 'text-[var(--color-text-main)]' },
-            { label: text?.sum ?? 'Total', value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' },
+            { label: text?.fee ?? '', tooltip: text?.fee_tooltip, value: (r: Sums) => xrd(r.feeXrd), tone: 'text-[var(--color-text-main)]' },
+            { label: text?.sum ?? 'Total', tooltip: text?.sum_tooltip, value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' },
         ] : []),
         {
             label: text?.fiat_at_receipt ?? 'At receipt',
@@ -152,21 +164,44 @@ export function AccountRewardsTab({ address, tt, locale, marketData }: {
             value: (r) => fiat(r.fiatCurrent),
             tone: 'text-[var(--color-text-muted)]',
         },
+        {
+            label: text?.fiat_change ?? 'Change',
+            tooltip: text?.fiat_change_tooltip,
+            value: (r) => formatSignedPercent(computeFiatChangePct(r.fiatAtReceipt, r.fiatCurrent), locale),
+            tone: (r) => fiatChangeTone(computeFiatChangePct(r.fiatAtReceipt, r.fiatCurrent)),
+            cellTooltip: changeTooltip,
+        },
     ];
 
     const breakdownLabels: RewardsBreakdownLabels = {
         byMonth: text?.breakdown_monthly ?? 'By month',
+        byMonthTooltip: text?.breakdown_monthly_tooltip,
         byDay: text?.breakdown_daily ?? 'By day',
+        byDayTooltip: text?.breakdown_daily_tooltip,
         month: text?.breakdown_month ?? 'Month',
+        monthTooltip: text?.breakdown_month_tooltip,
+        monthRowHint: text?.breakdown_month_row_hint,
         date: text?.breakdown_date ?? 'Date',
+        dateTooltip: text?.breakdown_date_tooltip,
         days: text?.days ?? 'Days',
+        daysTooltip: text?.days_tooltip,
         delegator: text?.total ?? 'As delegator',
+        delegatorTooltip: text?.total_tooltip,
         fee: text?.fee ?? 'Validator fee',
+        feeTooltip: text?.fee_tooltip,
         delegators: text?.total ?? 'As delegator',
+        delegatorsTooltip: text?.total_tooltip,
         total: text?.sum ?? 'Total',
+        totalTooltip: text?.sum_tooltip,
         unitPrice: text?.breakdown_unit_price ?? 'XRD price',
+        unitPriceTooltip: text?.breakdown_unit_price_tooltip,
         fiatAtReceipt: text?.fiat_at_receipt ?? 'At receipt',
+        fiatAtReceiptTooltip: text?.fiat_at_receipt_tooltip,
         fiatCurrent: text?.fiat_current ?? 'Current value',
+        fiatCurrentTooltip: text?.fiat_current_tooltip,
+        fiatChange: text?.fiat_change ?? 'Change',
+        fiatChangeTooltip: text?.fiat_change_tooltip,
+        fiatChangeCellTooltip: text?.fiat_change_cell_tooltip,
         allMonths: text?.breakdown_all_months ?? 'All months',
         empty: text?.no_csv ?? 'No rewards in this year.',
         fiatNote: text?.fiat_note ?? '',
@@ -205,7 +240,9 @@ export function AccountRewardsTab({ address, tt, locale, marketData }: {
             desc={text?.desc}
             legend={legend}
             yearLabel={text?.year ?? 'Year'}
+            yearTooltip={text?.year_tooltip}
             downloadLabel={text?.download ?? 'CSV'}
+            downloadTooltip={text?.download_tooltip}
             totalLabel={text?.sum ?? 'Total'}
             expandHint={text?.expand_hint}
             columns={columns}

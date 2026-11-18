@@ -23,7 +23,16 @@ import { formatAmount } from './format';
 import { FilterPills, OlympiaBadge } from './OlympiaParts';
 import { RewardsYearBreakdown, type RewardsBreakdownLabels } from '../components/RewardsYearBreakdown';
 import { RewardsYearsTable, type RewardsYearsColumn } from '../components/RewardsYearsTable';
-import { mergeDailyRewards, summarizeYearRewards, type DailyRewardPoint, type YearRewardsBreakdown } from '../utils/rewardsBreakdown';
+import {
+  computeFiatChangePct,
+  fiatChangeTone,
+  formatSignedCurrency,
+  formatSignedPercent,
+  mergeDailyRewards,
+  summarizeYearRewards,
+  type DailyRewardPoint,
+  type YearRewardsBreakdown,
+} from '../utils/rewardsBreakdown';
 import { downloadText, olympiaAccountRewardsCsv, olympiaValidatorRewardsCsv, type OlympiaRewardKind } from './rewardsCsv';
 
 type Subject = 'account' | 'validator';
@@ -303,28 +312,56 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
   const fiat = (n: number | null) => (n === null ? '—' : formatCurrency(n, currency, locale));
   // Accounts: what it earned delegating, then its validator fee. Validators: the owner's fee, then what its delegators earned.
   type Sums = { days: number; delegatorXrd: number; feeXrd: number; fiatAtReceipt: number | null; fiatCurrent: number | null };
+  const changeTooltip = (r: Sums) => {
+    if (r.fiatAtReceipt === null || r.fiatCurrent === null) return undefined;
+    const delta = formatSignedCurrency(r.fiatCurrent - r.fiatAtReceipt, currency, locale);
+    return (o.rewards_fiat_change_cell_tooltip ?? '{delta}').replace('{delta}', delta);
+  };
   const columns: RewardsYearsColumn<Sums>[] = [
-    { label: o.rewards_table_days ?? 'Days', value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
-    { label: isAccount ? (o.rewards_table_delegator ?? '') : (o.rewards_table_fee ?? ''), value: (r) => xrd(isAccount ? r.delegatorXrd : r.feeXrd), tone: 'font-bold text-[var(--color-accent)]' },
-    ...(showFee ? [{ label: isAccount ? (o.rewards_table_fee ?? '') : (o.rewards_table_delegators ?? ''), value: (r: Sums) => xrd(isAccount ? r.feeXrd : r.delegatorXrd), tone: 'text-[var(--color-text-main)]' }] : []),
-    ...(isAccount && showFee ? [{ label: o.rewards_table_total ?? 'Total', value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' }] : []),
+    { label: o.rewards_table_days ?? 'Days', tooltip: o.rewards_table_days_tooltip, value: (r) => r.days.toLocaleString(locale), tone: 'text-[var(--color-text-muted)]' },
+    { label: isAccount ? (o.rewards_table_delegator ?? '') : (o.rewards_table_fee ?? ''), tooltip: isAccount ? o.rewards_table_delegator_tooltip : o.rewards_table_fee_tooltip, value: (r) => xrd(isAccount ? r.delegatorXrd : r.feeXrd), tone: 'font-bold text-[var(--color-accent)]' },
+    ...(showFee ? [{ label: isAccount ? (o.rewards_table_fee ?? '') : (o.rewards_table_delegators ?? ''), tooltip: isAccount ? o.rewards_table_fee_tooltip : o.rewards_table_delegators_tooltip, value: (r: Sums) => xrd(isAccount ? r.feeXrd : r.delegatorXrd), tone: 'text-[var(--color-text-main)]' }] : []),
+    ...(isAccount && showFee ? [{ label: o.rewards_table_total ?? 'Total', tooltip: o.rewards_table_total_tooltip, value: (r: Sums) => xrd(r.delegatorXrd + r.feeXrd), tone: 'font-black text-[var(--color-text-main)]' }] : []),
     { label: o.rewards_fiat_at_receipt ?? 'At receipt', tooltip: o.rewards_fiat_at_receipt_tooltip, value: (r) => fiat(r.fiatAtReceipt), tone: 'text-[var(--color-text-main)]' },
     { label: o.rewards_fiat_current ?? 'Current value', tooltip: o.rewards_fiat_current_tooltip, value: (r) => fiat(r.fiatCurrent), tone: 'text-[var(--color-text-muted)]' },
+    {
+      label: o.rewards_fiat_change ?? 'Change',
+      tooltip: o.rewards_fiat_change_tooltip,
+      value: (r) => formatSignedPercent(computeFiatChangePct(r.fiatAtReceipt, r.fiatCurrent), locale),
+      tone: (r) => fiatChangeTone(computeFiatChangePct(r.fiatAtReceipt, r.fiatCurrent)),
+      cellTooltip: changeTooltip,
+    },
   ];
 
   const breakdownLabels: RewardsBreakdownLabels = {
     byMonth: o.rewards_breakdown_monthly ?? 'By month',
+    byMonthTooltip: o.rewards_breakdown_monthly_tooltip,
     byDay: o.rewards_breakdown_daily ?? 'By day',
+    byDayTooltip: o.rewards_breakdown_daily_tooltip,
     month: o.rewards_breakdown_month ?? 'Month',
+    monthTooltip: o.rewards_breakdown_month_tooltip,
+    monthRowHint: o.rewards_breakdown_month_row_hint,
     date: o.rewards_breakdown_date ?? 'Date',
+    dateTooltip: o.rewards_breakdown_date_tooltip,
     days: o.rewards_table_days ?? 'Days',
+    daysTooltip: o.rewards_table_days_tooltip,
     delegator: o.rewards_table_delegator ?? 'As delegator',
+    delegatorTooltip: o.rewards_table_delegator_tooltip,
     fee: o.rewards_table_fee ?? 'Validator fee',
+    feeTooltip: o.rewards_table_fee_tooltip,
     delegators: o.rewards_table_delegators ?? 'Paid to delegators',
+    delegatorsTooltip: o.rewards_table_delegators_tooltip,
     total: o.rewards_table_total ?? 'Total',
+    totalTooltip: o.rewards_table_total_tooltip,
     unitPrice: o.rewards_breakdown_unit_price ?? 'XRD price',
+    unitPriceTooltip: o.rewards_breakdown_unit_price_tooltip,
     fiatAtReceipt: o.rewards_fiat_at_receipt ?? 'At receipt',
+    fiatAtReceiptTooltip: o.rewards_fiat_at_receipt_tooltip,
     fiatCurrent: o.rewards_fiat_current ?? 'Current value',
+    fiatCurrentTooltip: o.rewards_fiat_current_tooltip,
+    fiatChange: o.rewards_fiat_change ?? 'Change',
+    fiatChangeTooltip: o.rewards_fiat_change_tooltip,
+    fiatChangeCellTooltip: o.rewards_fiat_change_cell_tooltip,
     allMonths: o.rewards_breakdown_all_months ?? 'All months',
     empty: o.rewards_csv_empty ?? 'No rewards in this year.',
     fiatNote: o.rewards_fiat_note ?? '',
@@ -336,7 +373,9 @@ export function OlympiaRewardsCsv({ subject, address, years, o, locale, kinds = 
       desc={isAccount ? o.rewards_csv_desc : o.rewards_csv_owner_desc}
       legend={legend}
       yearLabel={o.rewards_year ?? ''}
+      yearTooltip={o.rewards_year_tooltip}
       downloadLabel={o.rewards_table_download ?? 'CSV'}
+      downloadTooltip={o.rewards_table_download_tooltip}
       totalLabel={o.rewards_table_total ?? 'Total'}
       expandHint={o.rewards_expand_hint}
       columns={columns}

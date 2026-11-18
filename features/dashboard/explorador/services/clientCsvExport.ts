@@ -84,9 +84,11 @@ async function fetchAllValidators(signal?: AbortSignal, cursor: string | null = 
 
 async function getLedgerStateForDay(accountAddress: string, lsuResource: string, vaultAddress: string, dayStr: string, signal?: AbortSignal): Promise<LedgerDayState> {
     try {
+        const nowStr = new Date().toISOString().slice(0, 10);
+        const atState = dayStr < nowStr ? { at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` } } : {};
         const rawData = await gatewayPost('/state/entity/details', {
             addresses: [accountAddress, lsuResource, vaultAddress],
-            at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` },
+            ...atState,
             opt_ins: { fungible_resources: true },
         }, signal);
         const data = rawData as unknown as GatewayEntityDetailsResponse;
@@ -360,6 +362,7 @@ async function computeStakingRewardsMath(
         `${year}-06-30`,
         `${year}-09-30`,
         `${year}-12-31`,
+        ...(nowStr.startsWith(year) ? [nowStr] : []),
         ...extraDates
     ])).filter(d => (d.startsWith(year) || d === `${prevYear}-12-31`) && d <= nowStr).sort();
 

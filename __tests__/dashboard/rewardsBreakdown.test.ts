@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+    computeFiatChangePct,
+    formatSignedCurrency,
+    formatSignedPercent,
     mergeDailyRewards,
     summarizeYearRewards,
 } from '@/features/dashboard/explorador/utils/rewardsBreakdown';
@@ -103,5 +106,23 @@ describe('summarizeYearRewards', () => {
         expect(res.fiatCurrent).toBeNull();
         expect(res.months[0].fiatAtReceipt).toBeNull();
         expect(res.months[0].fiatCurrent).toBeNull();
+    });
+});
+
+describe('fiat change helpers', () => {
+    it('computes percentage gain and loss vs value at receipt', () => {
+        expect(computeFiatChangePct(100, 125)).toBeCloseTo(25, 6);
+        expect(computeFiatChangePct(100, 40)).toBeCloseTo(-60, 6);
+        expect(computeFiatChangePct(0, 50)).toBeNull();
+        expect(computeFiatChangePct(null, 50)).toBeNull();
+    });
+
+    it('formats signed percentages and fiat deltas', () => {
+        expect(formatSignedPercent(25.4, 'en')).toBe('+25.4%');
+        expect(formatSignedPercent(-60.2, 'en')).toBe('-60.2%');
+        expect(formatSignedPercent(150.4, 'en')).toBe('+150%');
+        expect(formatSignedPercent(null, 'en')).toBe('—');
+        expect(formatSignedCurrency(12.5, 'USD', 'en')).toBe('+12.50 $');
+        expect(formatSignedCurrency(-12.5, 'EUR', 'es')).toBe('-12,50 €');
     });
 });
