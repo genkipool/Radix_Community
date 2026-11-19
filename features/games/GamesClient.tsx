@@ -177,9 +177,9 @@ export default function GamesClient({
                         <button
                             type="button"
                             onClick={handleTheaterToggle}
-                            className="absolute top-5 right-5 z-[60] flex items-center justify-center size-11 rounded-full cursor-pointer backdrop-blur transition-[background,border-color,color] duration-150 shadow-lg"
+                            className="absolute top-5 right-5 z-[60] flex items-center justify-center size-11 rounded-full cursor-pointer transition-[background,border-color,color] duration-150 shadow-lg"
                             style={{
-                                background: 'rgba(0,0,0,0.6)',
+                                background: 'rgba(4,14,34,0.86)',
                                 border: '1px solid rgba(255,255,255,0.2)',
                                 color: 'rgba(255,255,255,0.85)',
                             }}
@@ -203,9 +203,9 @@ export default function GamesClient({
                         <button
                             type="button"
                             onClick={handleTheaterToggle}
-                            className="absolute bottom-5 right-5 z-[50] flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold cursor-pointer backdrop-blur transition-[background,border-color,color] duration-150"
+                            className="absolute bottom-5 right-5 z-[50] flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold cursor-pointer transition-[background,border-color,color] duration-150"
                             style={{
-                                background: 'rgba(0,0,0,0.75)',
+                                background: 'rgba(4,14,34,0.88)',
                                 border: '1px solid rgba(255,255,255,0.18)',
                                 color: 'rgba(255,255,255,0.8)',
                             }}

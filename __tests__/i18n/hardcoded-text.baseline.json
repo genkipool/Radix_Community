@@ -144,7 +144,6 @@
   "features/games/components/GamesSidebar.tsx": 11,
   "features/games/components/LeaderboardSidebar.tsx": 9,
   "features/games/components/TournamentModal.tsx": 25,
-  "features/games/games/radix-invaders/components/RadixInvadersGame.tsx": 17,
   "features/games/GamesClient.tsx": 3,
   "features/governance/components/BrowserTranslation.tsx": 6,
   "features/governance/components/GovernanceBadges.tsx": 2,
