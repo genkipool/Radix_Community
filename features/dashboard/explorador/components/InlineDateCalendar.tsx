@@ -134,17 +134,17 @@ export function InlineDateCalendar({
             }
         };
         if (maxDate === todayStr) {
-            pushIfValid(todayStr, labels?.today ?? 'Today');
+            pushIfValid(todayStr, labels?.today ?? '');
             const yest = new Date(Date.parse(`${todayStr}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
-            pushIfValid(yest, labels?.yesterday ?? 'Yesterday');
+            pushIfValid(yest, labels?.yesterday ?? '');
             const prevYear = Number(todayStr.slice(0, 4)) - 1;
-            pushIfValid(`${prevYear}-12-31`, `${labels?.yearEndPrefix ?? 'End'} ${prevYear}`);
+            pushIfValid(`${prevYear}-12-31`, `${labels?.yearEndPrefix ?? ''} ${prevYear}`.trim());
         } else {
-            pushIfValid(maxDate, labels?.lastDay ?? 'Last day');
+            pushIfValid(maxDate, labels?.lastDay ?? '');
             for (let y = maxYm.year - 1; y >= minYm.year; y--) {
-                pushIfValid(`${y}-12-31`, `${labels?.yearEndPrefix ?? 'End'} ${y}`);
+                pushIfValid(`${y}-12-31`, `${labels?.yearEndPrefix ?? ''} ${y}`.trim());
             }
-            pushIfValid(minDate, labels?.firstDay ?? 'First day');
+            pushIfValid(minDate, labels?.firstDay ?? '');
         }
         return out.slice(0, 4);
     })();
@@ -190,7 +190,7 @@ export function InlineDateCalendar({
                             type="button"
                             onClick={() => setMobileCollapsed((v) => !v)}
                             aria-expanded={!mobileCollapsed}
-                            aria-label={labels?.toggleCalendar ?? 'Toggle calendar'}
+                            aria-label={labels?.toggleCalendar ?? placeholder}
                             className="lg:hidden p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors"
                         >
                             <ChevronDown className={`size-4 transition-transform duration-200 ${mobileCollapsed ? '' : 'rotate-180'}`} />
@@ -207,7 +207,7 @@ export function InlineDateCalendar({
                         type="button"
                         onClick={() => stepMonth(-1)}
                         disabled={!canPrev}
-                        aria-label={labels?.prevMonth ?? 'Previous month'}
+                        aria-label={labels?.prevMonth ?? '<'}
                         className="size-[30px] shrink-0 rounded-lg flex items-center justify-center text-[var(--color-text-main)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
                     >
                         <ChevronLeft className="size-4" />
@@ -246,7 +246,7 @@ export function InlineDateCalendar({
                         type="button"
                         onClick={() => stepMonth(1)}
                         disabled={!canNext}
-                        aria-label={labels?.nextMonth ?? 'Next month'}
+                        aria-label={labels?.nextMonth ?? '>'}
                         className="size-[30px] shrink-0 rounded-lg flex items-center justify-center text-[var(--color-text-main)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
                     >
                         <ChevronRight className="size-4" />
