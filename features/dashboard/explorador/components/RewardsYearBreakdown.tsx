@@ -224,7 +224,7 @@ export function RewardsYearBreakdown({
                                         key={m.month}
                                         onClick={() => openMonthDays(m.month)}
                                         title={labels.monthRowHint}
-                                        className="border-b border-[var(--color-card-border)]/45 last:border-b-0 hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)] transition-all duration-200 cursor-pointer group"
+                                        className="border-b border-[var(--color-card-border)]/45 last:border-b-0 hover:bg-[var(--color-primary)]/[0.06] transition-colors duration-200 cursor-pointer group"
                                     >
                                         <td className="py-2.5 pl-8 pr-4 text-xs font-semibold text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors capitalize whitespace-nowrap">
                                             {formatRewardMonth(m.month, locale)}
@@ -265,7 +265,7 @@ export function RewardsYearBreakdown({
                                 return (
                                     <tr
                                         key={d.date}
-                                        className="border-b border-[var(--color-card-border)]/40 last:border-b-0 hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)] transition-all duration-200"
+                                        className="border-b border-[var(--color-card-border)]/40 last:border-b-0 hover:bg-[var(--color-primary)]/[0.06] transition-colors duration-200"
                                     >
                                         <td className="py-2 pl-8 pr-4 font-mono text-xs text-[var(--color-text-main)] whitespace-nowrap">
                                             {formatRewardDay(d.date, locale)}

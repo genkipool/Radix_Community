@@ -9,9 +9,10 @@ import { csvRow, rowsToCsv } from '../utils/coinTrackingCsv';
 
 /**
  * What an account's CSV lists: everything (its rewards, its validator fee and
- * its movements), only what it earned delegating, or only its validator fee.
+ * its movements), only what it earned delegating, only its validator fee, or
+ * only its transactions / movements.
  */
-export type OlympiaRewardKind = 'all' | 'delegator' | 'validator';
+export type OlympiaRewardKind = 'all' | 'delegator' | 'validator' | 'transactions';
 
 /**
  * The rows of an account's movements in the layout of the Babylon account CSV
@@ -81,19 +82,21 @@ export function olympiaMovesCsvRows(moves: OlympiaAccountMove[]): string[][] {
 export function olympiaAccountRewardsCsv(days: OlympiaDailyReward[], kind: OlympiaRewardKind = 'all', moves: OlympiaAccountMove[] = []): { csv: string; totalXrd: number } {
   const rows: string[][] = [];
   let totalXrd = 0;
-  for (const d of days) {
-    const name = (d.validatorName || d.validatorAddress.slice(0, 25)).slice(0, 35);
-    const date = `${d.day} 00:00:00`;
-    if (kind !== 'validator' && d.delegatorXrd > 0) {
-      rows.push(csvRow('Staking', d.delegatorXrd, 'XRD', 0, '', 0, '', 'Staking', `Olympia staking reward — ${name}`, date));
-      totalXrd += d.delegatorXrd;
-    }
-    if (kind !== 'delegator' && d.feeXrd > 0) {
-      rows.push(csvRow('Staking', d.feeXrd, 'XRD', 0, '', 0, '', 'Staking', `Olympia validator fee — ${name}`, date));
-      totalXrd += d.feeXrd;
+  if (kind !== 'transactions') {
+    for (const d of days) {
+      const name = (d.validatorName || d.validatorAddress.slice(0, 25)).slice(0, 35);
+      const date = `${d.day} 00:00:00`;
+      if (kind !== 'validator' && d.delegatorXrd > 0) {
+        rows.push(csvRow('Staking', d.delegatorXrd, 'XRD', 0, '', 0, '', 'Staking', `Olympia staking reward — ${name}`, date));
+        totalXrd += d.delegatorXrd;
+      }
+      if (kind !== 'delegator' && d.feeXrd > 0) {
+        rows.push(csvRow('Staking', d.feeXrd, 'XRD', 0, '', 0, '', 'Staking', `Olympia validator fee — ${name}`, date));
+        totalXrd += d.feeXrd;
+      }
     }
   }
-  if (kind === 'all') rows.push(...olympiaMovesCsvRows(moves));
+  if (kind === 'all' || kind === 'transactions') rows.push(...olympiaMovesCsvRows(moves));
   rows.sort((a, b) => a[10].localeCompare(b[10]));
   return { csv: rows.length ? rowsToCsv(rows) : '', totalXrd };
 }

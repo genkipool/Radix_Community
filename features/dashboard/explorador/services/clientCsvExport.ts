@@ -675,9 +675,28 @@ function buildCsvRows(
 
 
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
+import type { GatewayEntityDetails } from '@/features/dashboard/types/shared.types';
 
 /** The validator owner badge: whoever holds a validator's badge receives its fee. */
-const VALIDATOR_OWNER_BADGE = 'resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr';
+export const VALIDATOR_OWNER_BADGE = 'resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr';
+
+/** Returns true if the account's current entity details include at least one Validator Owner Badge NFT. */
+export function hasValidatorOwnerBadge(entityData?: GatewayEntityDetails | null): boolean {
+    const badge = entityData?.non_fungible_resources?.items?.find(
+        (item) => item.resource_address === VALIDATOR_OWNER_BADGE
+    );
+    if (!badge) return false;
+    if (typeof badge.amount === 'number' && badge.amount > 0) return true;
+    const vaults = badge.vaults?.items ?? [];
+    if (vaults.length === 0) return true;
+    return vaults.some((v) => {
+        const vAny = v as { amount?: string; total_count?: number; items?: string[] };
+        if (vAny.amount && parseFloat(vAny.amount) > 0) return true;
+        if (typeof vAny.total_count === 'number' && vAny.total_count > 0) return true;
+        if (Array.isArray(vAny.items) && vAny.items.length > 0) return true;
+        return false;
+    });
+}
 
 interface NfVaultHolding { resource_address: string; vaults?: { items?: { items?: string[] }[] } }
 
@@ -744,6 +763,8 @@ export interface AccountRewardsYear {
     csvDelegator: string;
     /** Only the validator fees; empty for an account that owned no validator. */
     csvValidator: string;
+    /** Only the account's transactions / movements in that year. */
+    csvTransactions: string;
     totalXrd: number;
     delegatorXrd: number;
     feeXrd: number;
@@ -844,6 +865,7 @@ export async function generateClientAccountRewardsCsv(
             csv: toCsv(allRows),
             csvDelegator: toCsv(delegatorRows),
             csvValidator: toCsv(validatorRows),
+            csvTransactions: toCsv(moveRows),
             totalXrd: delegatorXrd + feeXrd,
             delegatorXrd,
             feeXrd,

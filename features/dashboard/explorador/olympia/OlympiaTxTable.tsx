@@ -132,12 +132,62 @@ export function OlympiaTxBabylonRows({ tx, o, locale, successLabel }: { tx: Olym
   );
 }
 
-export function OlympiaTxTable({ address, o, locale, enabled = true }: { address: string; o: OlympiaDict; locale: string; enabled?: boolean }) {
+function toLocalDay(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function OlympiaTxTable({
+  address,
+  o,
+  locale,
+  enabled = true,
+  dateRange,
+}: {
+  address: string;
+  o: OlympiaDict;
+  locale: string;
+  enabled?: boolean;
+  dateRange?: { start?: string; end?: string };
+}) {
   const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useOlympiaTransactions(address, enabled);
   if (isLoading) return <Loading text={o.loading} />;
   if (isError) return <ErrorText text={o.error} />;
-  const txs = data?.pages.flatMap((p) => p?.items ?? []) ?? [];
-  if (txs.length === 0) return <Empty text={o.tx_empty} />;
+  const allTxs = data?.pages.flatMap((p) => p?.items ?? []) ?? [];
+  const start = dateRange?.start;
+  const end = dateRange?.end ?? start;
+  const txs = start
+    ? allTxs.filter((tx) => {
+        const day = toLocalDay(tx.timestamp);
+        if (!day) return false;
+        if (day < start) return false;
+        if (end && day > end) return false;
+        return true;
+      })
+    : allTxs;
+
+  const oldestLoadedDay = allTxs.length > 0 ? toLocalDay(allTxs[allTxs.length - 1].timestamp) : null;
+  const canLoadOlderInRange = hasNextPage && (!start || !oldestLoadedDay || oldestLoadedDay >= start);
+
+  if (txs.length === 0) {
+    return (
+      <div className="w-full flex flex-col items-center">
+        <Empty text={o.tx_empty} />
+        {canLoadOlderInRange && (
+          <m.button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); void fetchNextPage(); }}
+            disabled={isFetchingNextPage}
+            className="mb-6 px-8 py-2.5 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isFetchingNextPage ? o.loading : o.load_more}
+          </m.button>
+        )}
+      </div>
+    );
+  }
   // The markup of the Babylon transactions table (AccountTransactionsTab), with Olympia's columns.
   const th = 'py-3 px-4 font-semibold whitespace-nowrap';
   return (
@@ -158,7 +208,7 @@ export function OlympiaTxTable({ address, o, locale, enabled = true }: { address
           {txs.map((tx) => <TxRows key={tx.transactionId} tx={tx} o={o} locale={locale} />)}
         </table>
       </div>
-      {hasNextPage && (
+      {canLoadOlderInRange && (
         <div className="flex justify-center mt-8 mb-4">
           <m.button
             type="button"

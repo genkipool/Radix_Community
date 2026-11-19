@@ -70,6 +70,7 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearToolt
     const th = 'py-3 px-4 font-semibold whitespace-nowrap';
     const num = 'py-3 px-4 text-right font-mono text-xs whitespace-nowrap';
     const totalColSpan = columns.length + 2;
+    const hasExpandable = rows.some((r) => !!r.renderExpanded);
     const resolveTone = (c: RewardsYearsColumn<R>, r: R) => (typeof c.tone === 'function' ? c.tone(r) : c.tone);
 
     return (
@@ -112,16 +113,21 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearToolt
                         return (
                             <tbody
                                 key={key}
-                                className={`border-b border-[var(--color-card-border)] last:border-b-0 transition-all duration-200 ${
+                                className={`border-b border-[var(--color-card-border)] last:border-b-0 transition-colors duration-200 ${
                                     isExpanded
-                                        ? 'shadow-[inset_2px_0_0_0_var(--color-primary)] bg-[var(--color-surface)]/25'
-                                        : 'hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)]'
+                                        ? 'bg-[var(--color-surface)]/25'
+                                        : 'hover:bg-[var(--color-primary)]/[0.06]'
                                 }`}
                             >
                                 <tr
                                     onClick={expandable ? () => toggleYear(key) : undefined}
                                     title={expandable ? expandHint : undefined}
-                                    className={expandable ? 'cursor-pointer' : undefined}
+                                    className={[
+                                        expandable ? 'cursor-pointer' : '',
+                                        isExpanded
+                                            ? 'shadow-[inset_2px_0_0_0_var(--color-primary)] hover:bg-[var(--color-primary)]/[0.06] transition-colors duration-200'
+                                            : '',
+                                    ].filter(Boolean).join(' ') || undefined}
                                 >
                                     <td className="py-3 px-4 text-xs font-bold text-[var(--color-text-main)] whitespace-nowrap">
                                         {expandable ? (
@@ -172,9 +178,15 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearToolt
                                     </td>
                                 </tr>
                                 {isExpanded && renderExpanded && (
-                                    <tr className="border-t border-[var(--color-card-border)]/50 bg-[var(--color-bg)]/50">
+                                    <tr className="bg-[var(--color-bg)]/50">
                                         <td colSpan={totalColSpan} className="p-0">
-                                            {renderExpanded()}
+                                            <div className="relative border-l-2 border-l-[var(--color-primary)] border-t border-t-[var(--color-card-border)]/50">
+                                                {renderExpanded()}
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="pointer-events-none absolute bottom-0 left-0 h-[2px] w-[2%] bg-[var(--color-primary)]"
+                                                />
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
@@ -184,7 +196,7 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearToolt
                     {rows.length > 1 && total && (
                         <tfoot>
                             <tr className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]">
-                                <td className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap">{totalLabel}</td>
+                                <td className={`py-3 ${hasExpandable ? 'pl-9 pr-4' : 'px-4'} text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap`}>{totalLabel}</td>
                                 {columns.map((c) => (
                                     <td key={c.label} className={`${num} ${resolveTone(c, total)}`} title={c.cellTooltip?.(total)}>
                                         {c.value(total)}

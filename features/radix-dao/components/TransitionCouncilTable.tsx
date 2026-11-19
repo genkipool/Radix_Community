@@ -35,7 +35,50 @@ export function TransitionCouncilTable({ people }: TransitionCouncilTableProps) 
         </a>
       </FadeIn>
 
-      <div className="overflow-x-auto border-y border-[var(--color-card-border)]">
+      {/* Mobile stacked layout (< md) */}
+      <ul className="md:hidden divide-y divide-[var(--color-card-border)] border-y border-[var(--color-card-border)]">
+        {DAO_TRANSITION_COUNCIL.map((member) => (
+          <li key={member.seat} className="py-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-xs font-bold text-[var(--color-primary)]">
+                {people.seatPrefix} {member.seat}
+              </span>
+              {member.isLlcMember ? (
+                <DaoStatusBadge variant="primary" size="sm" title={people.llcMemberTitle}>
+                  {people.llcMemberBadge}
+                </DaoStatusBadge>
+              ) : (
+                <span
+                  title={people.councilSeatTitle}
+                  className="text-xs font-medium text-[var(--color-text-muted)] cursor-help underline decoration-dotted underline-offset-2"
+                >
+                  {people.councilSeatLabel}
+                </span>
+              )}
+            </div>
+
+            <div className="text-base font-bold text-[var(--color-text-main)]">
+              {member.name}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-0.5 text-xs">
+              <span className="text-[var(--color-text-muted)]">{people.termLabel}</span>
+              <a
+                href={`https://t.me/${member.telegram}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-secondary)] hover:underline shrink-0"
+              >
+                <span>@{member.telegram}</span>
+                <ExternalLink className="size-3.5" aria-hidden="true" />
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop table (md+) */}
+      <div className="hidden md:block overflow-x-auto border-y border-[var(--color-card-border)]">
         <table className="w-full text-left border-collapse min-w-[680px]">
           <thead>
             <tr className="border-b border-[var(--color-card-border)] text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">

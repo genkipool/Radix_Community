@@ -478,6 +478,7 @@ export function AccountCard({
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 tt={tt as Record<string, unknown>}
                                                 locale={locale}
+                                                calendarT={t?.dashboard?.calendar}
                                             />
                                         )}
 

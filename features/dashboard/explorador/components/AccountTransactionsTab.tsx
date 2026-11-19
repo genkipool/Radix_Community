@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { m } from "motion/react";
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -11,7 +11,8 @@ import { resolveTransactionType } from '../utils/transactionUtils';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import type { TransactionInfo, Validator } from '@/types/radix';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { AlertCircle } from 'lucide-react';
+import { CalendarDropdown, type CalendarTranslations, type DateRange } from '@/components/ui/CalendarDropdown';
+import { AlertCircle, Calendar, Check, Download, Loader2, X } from 'lucide-react';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import { formatNumber } from '@/utils/formatters';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
@@ -20,12 +21,27 @@ import { NetworkScopePills, type NetworkScope } from '../olympia/OlympiaParts';
 import { OlympiaTxBabylonRows, OlympiaTxTable } from '../olympia/OlympiaTxTable';
 import { olympiaDict } from '../olympia/dict';
 import { useOlympiaLink, useOlympiaTransactions } from '@/features/dashboard/services/olympiaApi';
+import { useAccountMonthTxDays, useOlympiaYearTxDays } from '../hooks/useAccountMonthTxDays';
+import { exportAccountTransactionsCsv } from '../utils/accountTransactionsCsv';
+import { dayLabel } from './DayPicker';
 
 interface AccountTransactionsTabProps {
     accountAddress: string;
     network: Network;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     locale: string;
+    calendarT?: CalendarTranslations;
+}
+
+function localTodayStr(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatRangeButtonLabel(range: DateRange, locale: string, placeholder: string): string {
+    if (!range.start) return placeholder;
+    if (!range.end || range.end === range.start) return dayLabel(range.start, locale);
+    return `${dayLabel(range.start, locale)} – ${dayLabel(range.end, locale)}`;
 }
 
 interface TokenFlow {
@@ -140,9 +156,39 @@ export function AccountTransactionsTab({
     accountAddress,
     network,
     tt,
-    locale
+    locale,
+    calendarT,
 }: AccountTransactionsTabProps) {
     const accT = tt?.account_summary;
+    const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+    const [calendarOpen, setCalendarOpen] = useState(false);
+    const [calendarView, setCalendarView] = useState<{ year: number; month: number }>(() => {
+        const now = new Date();
+        return { year: now.getFullYear(), month: now.getMonth() };
+    });
+    const [exportingMode, setExportingMode] = useState<'all' | 'range' | null>(null);
+    const [exportedCount, setExportedCount] = useState(0);
+    const [exportDoneMode, setExportDoneMode] = useState<'all' | 'range' | null>(null);
+    const calendarRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!calendarOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (calendarRef.current?.contains(e.target as Node)) return;
+            if (dateRange.start && !dateRange.end) {
+                setDateRange({ start: dateRange.start, end: dateRange.start });
+            }
+            setCalendarOpen(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [calendarOpen, dateRange]);
+
+    const hasDateFilter = Boolean(dateRange.start || dateRange.end);
+    const activeStart = dateRange.start || undefined;
+    const activeEnd = dateRange.end || dateRange.start || undefined;
+    const dateRangeKey = hasDateFilter ? `${activeStart ?? ''}_${activeEnd ?? ''}` : undefined;
+    const todayStr = localTodayStr();
 
     const {
         data,
@@ -153,17 +199,19 @@ export function AccountTransactionsTab({
         isError,
         error
     } = useInfiniteQuery({
-        queryKey: dashboardKeys.transactions.list(network, accountAddress, undefined, undefined),
+        queryKey: dashboardKeys.transactions.list(network, accountAddress, undefined, dateRangeKey),
         queryFn: async ({ pageParam }) =>
             apiFetchTransactions({
                 cursor: pageParam as string | undefined,
                 limit: 15,
                 address: accountAddress,
-                network
+                network,
+                start: activeStart,
+                end: activeEnd,
             }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
-        staleTime: CACHE_TIMES.SHORT });
+        staleTime: hasDateFilter ? 0 : CACHE_TIMES.SHORT });
 
     // An account that existed on Olympia (same key) shows its Olympia history
     // here too. In "All" it follows the Babylon one in the same table: once the
@@ -178,8 +226,8 @@ export function AccountTransactionsTab({
     // "Load more" reads as broken.
     const noBabylonHistory = !isPending && !hasNextPage && !(data?.pages.some((p) => (p.transactions?.length ?? 0) > 0));
     const olympiaOn = olympiaStarted || (olympiaInline && noBabylonHistory);
-    const olympiaPages = useOlympiaTransactions(olympiaLink?.olympiaAddress, olympiaInline && olympiaOn);
-    const olympiaTxs = olympiaInline && olympiaOn ? olympiaPages.data?.pages.flatMap((p) => p?.items ?? []) ?? [] : [];
+    const olympiaPages = useOlympiaTransactions(olympiaLink?.olympiaAddress, olympiaInline && olympiaOn && !hasDateFilter);
+    const olympiaTxs = olympiaInline && olympiaOn && !hasDateFilter ? olympiaPages.data?.pages.flatMap((p) => p?.items ?? []) ?? [] : [];
 
     const { data: entityDetails } = useQuery({
         queryKey: dashboardKeys.entities.detail(accountAddress, network),
@@ -191,10 +239,48 @@ export function AccountTransactionsTab({
         queryFn: () => apiFetchValidators(network),
         staleTime: CACHE_TIMES.MEDIUM });
 
+    const { data: monthTxDays } = useAccountMonthTxDays({
+        accountAddress,
+        network,
+        year: calendarView.year,
+        monthIndex: calendarView.month,
+        enabled: calendarOpen && scope !== 'olympia',
+    });
+
+    const { data: olympiaYearTxDays } = useOlympiaYearTxDays({
+        olympiaAddress: olympiaLink?.olympiaAddress,
+        year: calendarView.year,
+        enabled: calendarOpen && scope !== 'babylon',
+    });
+
     const transactions = data?.pages.flatMap((p) => p.transactions || []) || [];
+
+    const highlightedDays = (() => {
+        const set = new Set<string>();
+        if (scope !== 'olympia') {
+            for (const day of monthTxDays ?? []) set.add(day);
+            for (const tx of transactions) {
+                const d = new Date(tx.confirmedAt);
+                if (!Number.isNaN(d.getTime())) {
+                    set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+            }
+        }
+        if (scope !== 'babylon') {
+            for (const day of olympiaYearTxDays ?? []) set.add(day);
+            for (const tx of olympiaTxs) {
+                if (!tx.timestamp) continue;
+                const d = new Date(tx.timestamp);
+                if (!Number.isNaN(d.getTime())) {
+                    set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+            }
+        }
+        return set;
+    })();
     const transactionsWithBalances = (() => {
-        if (!transactions.length || !entityDetails || !validatorsData) {
-            return transactions.map(tx => ({ ...tx, balanceXrd: 0, balanceStaking: 0 }));
+        if (hasDateFilter || !transactions.length || !entityDetails || !validatorsData) {
+            return transactions.map(tx => ({ ...tx, balanceXrd: hasDateFilter ? null : 0, balanceStaking: 0 }));
         }
 
         const runningBalances: Record<string, number> = {};
@@ -299,13 +385,195 @@ export function AccountTransactionsTab({
         return rawMsg;
     };
 
-    const pills = olympiaLink ? <NetworkScopePills o={o} value={scope} onChange={setScope} className="mb-3" /> : null;
+    const rangePlaceholder = calendarT?.range_placeholder ?? '';
+    const rangeLabel = formatRangeButtonLabel(dateRange, locale, rangePlaceholder);
+
+    const handleSelectRange = (range: DateRange) => {
+        setDateRange(range);
+        if (range.start && range.end) {
+            setCalendarOpen(false);
+        }
+    };
+
+    const handleResetRange = () => {
+        setDateRange({ start: null, end: null });
+        setCalendarOpen(false);
+    };
+
+    const handleExportCsv = async (mode: 'all' | 'range') => {
+        if (exportingMode) return;
+        setExportingMode(mode);
+        setExportedCount(0);
+        setExportDoneMode(null);
+        try {
+            const count = await exportAccountTransactionsCsv({
+                accountAddress,
+                olympiaAddress: olympiaLink?.olympiaAddress,
+                scope,
+                network,
+                start: mode === 'range' ? activeStart : undefined,
+                end: mode === 'range' ? activeEnd : undefined,
+                tt,
+                olympiaT: o,
+                onProgress: setExportedCount,
+            });
+            if (count > 0) {
+                setExportDoneMode(mode);
+                setTimeout(() => setExportDoneMode((cur) => (cur === mode ? null : cur)), 2500);
+            }
+        } finally {
+            setExportingMode(null);
+        }
+    };
+
+    const effectiveScope: NetworkScope = olympiaLink ? scope : 'babylon';
+    const exportAllTooltip =
+        effectiveScope === 'all'
+            ? accT?.tx_export_csv_all_tooltip_all ?? accT?.tx_export_csv_all_tooltip
+            : effectiveScope === 'olympia'
+                ? accT?.tx_export_csv_all_tooltip_olympia ?? accT?.tx_export_csv_all_tooltip
+                : accT?.tx_export_csv_all_tooltip_babylon ?? accT?.tx_export_csv_all_tooltip;
+
+    const exportRangeTemplate =
+        effectiveScope === 'all'
+            ? accT?.tx_export_csv_range_tooltip_all ?? accT?.tx_export_csv_range_tooltip
+            : effectiveScope === 'olympia'
+                ? accT?.tx_export_csv_range_tooltip_olympia ?? accT?.tx_export_csv_range_tooltip
+                : accT?.tx_export_csv_range_tooltip_babylon ?? accT?.tx_export_csv_range_tooltip;
+    const exportRangeTooltip = exportRangeTemplate?.replace('{range}', rangeLabel);
+
+    const calendarMinDate = scope === 'babylon' ? '2023-09-28' : olympiaLink ? '2021-07-28' : '2023-09-28';
+    const calendarMaxDate = scope === 'olympia' ? '2023-09-28' : todayStr;
+
+    const toolbar = (
+        <div className="flex flex-col gap-2 mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                {olympiaLink ? (
+                    <NetworkScopePills o={o} value={scope} onChange={setScope} />
+                ) : (
+                    <div />
+                )}
+
+                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2">
+                        {hasDateFilter && (
+                            <button
+                                type="button"
+                                onClick={() => void handleExportCsv('range')}
+                                disabled={exportingMode !== null}
+                                title={exportRangeTooltip}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-[var(--color-primary)] hover:underline transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                {exportingMode === 'range' ? (
+                                    <Loader2 className="size-3.5 animate-spin shrink-0" aria-hidden="true" />
+                                ) : exportDoneMode === 'range' ? (
+                                    <Check className="size-3.5 text-[var(--color-accent)] shrink-0" aria-hidden="true" />
+                                ) : (
+                                    <Download className="size-3.5 shrink-0" aria-hidden="true" />
+                                )}
+                                <span className="whitespace-nowrap">
+                                    {exportingMode === 'range'
+                                        ? `${accT?.tx_export_csv_exporting ?? ''} (${exportedCount})`
+                                        : accT?.tx_export_csv_range}
+                                </span>
+                            </button>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={() => void handleExportCsv('all')}
+                            disabled={exportingMode !== null}
+                            title={exportAllTooltip}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            {exportingMode === 'all' ? (
+                                <Loader2 className="size-3.5 animate-spin shrink-0" aria-hidden="true" />
+                            ) : exportDoneMode === 'all' ? (
+                                <Check className="size-3.5 text-[var(--color-accent)] shrink-0" aria-hidden="true" />
+                            ) : (
+                                <Download className="size-3.5 shrink-0" aria-hidden="true" />
+                            )}
+                            <span className="whitespace-nowrap">
+                                {exportingMode === 'all'
+                                    ? `${accT?.tx_export_csv_exporting ?? ''} (${exportedCount})`
+                                    : accT?.tx_export_csv_all}
+                            </span>
+                        </button>
+                    </div>
+
+                    {calendarT && (
+                        <div className="relative flex items-center gap-1.5" ref={calendarRef}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!calendarOpen) {
+                                        if (dateRange.start) {
+                                            const [y, m] = dateRange.start.split('-');
+                                            if (y && m) setCalendarView({ year: Number(y), month: Number(m) - 1 });
+                                        } else if (scope === 'olympia') {
+                                            setCalendarView({ year: 2023, month: 8 });
+                                        } else {
+                                            const now = new Date();
+                                            setCalendarView({ year: now.getFullYear(), month: now.getMonth() });
+                                        }
+                                    }
+                                    setCalendarOpen((v) => !v);
+                                }}
+                                aria-expanded={calendarOpen}
+                                title={rangePlaceholder}
+                                className={`inline-flex items-center justify-center gap-1.5 w-[224px] px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums border transition-colors cursor-pointer ${
+                                    calendarOpen || hasDateFilter
+                                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/35'
+                                        : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)]/40'
+                                }`}
+                            >
+                                <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
+                                <span className="whitespace-nowrap truncate">{rangeLabel}</span>
+                            </button>
+                            {hasDateFilter && (
+                                <button
+                                    type="button"
+                                    onClick={handleResetRange}
+                                    title={calendarT.reset_button}
+                                    aria-label={calendarT.reset_button}
+                                    className="inline-flex items-center justify-center size-7 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:border-[var(--color-danger)]/40 transition-colors cursor-pointer"
+                                >
+                                    <X className="size-3.5" aria-hidden="true" />
+                                </button>
+                            )}
+
+                            <CalendarDropdown
+                                key={`${scope}-${String(calendarOpen)}`}
+                                open={calendarOpen}
+                                align="right"
+                                calendarT={calendarT}
+                                dateRange={dateRange}
+                                onSelectRange={handleSelectRange}
+                                onReset={handleResetRange}
+                                minDate={calendarMinDate}
+                                maxDate={calendarMaxDate}
+                                highlightedDays={highlightedDays}
+                                onViewMonthChange={(year, month) => setCalendarView({ year, month })}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+
+    const containerClass = `w-full flex flex-col${calendarOpen ? ' min-h-[380px]' : ''}`;
 
     if (olympiaLink && scope === 'olympia') {
         return (
-            <div className="w-full flex flex-col">
-                {pills}
-                <OlympiaTxTable address={olympiaLink.olympiaAddress} o={o} locale={locale} />
+            <div className={containerClass}>
+                {toolbar}
+                <OlympiaTxTable
+                    address={olympiaLink.olympiaAddress}
+                    o={o}
+                    locale={locale}
+                    dateRange={hasDateFilter ? { start: activeStart, end: activeEnd } : undefined}
+                />
             </div>
         );
     }
@@ -313,8 +581,8 @@ export function AccountTransactionsTab({
     if (isError) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         return (
-            <div className="w-full flex flex-col">
-                {pills}
+            <div className={containerClass}>
+                {toolbar}
                 <div className="flex flex-col items-center justify-center py-12 text-red-400 gap-3">
                     <AlertCircle className="size-6" />
                     <span className="text-sm font-medium">{getTranslatedError(errorMsg)}</span>
@@ -324,7 +592,7 @@ export function AccountTransactionsTab({
     }
 
     // Babylon pages first; after the last one, the Olympia pages, newest first.
-    const olympiaMore = olympiaInline && (!olympiaOn || olympiaPages.hasNextPage);
+    const olympiaMore = olympiaInline && !hasDateFilter && (!olympiaOn || olympiaPages.hasNextPage);
     const showLoadMore = hasNextPage || olympiaMore;
     const loadingMore = isFetchingNextPage || olympiaPages.isFetching;
     const loadMore = () => {
@@ -335,8 +603,8 @@ export function AccountTransactionsTab({
 
     if (isPending) {
         return (
-            <div className="w-full flex flex-col">
-                {pills}
+            <div className={containerClass}>
+                {toolbar}
                 <p className="flex items-center gap-2 py-12 justify-center text-xs text-[var(--color-text-muted)]">
                     <span className="size-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
                     {accT?.funds?.loading ?? ''}
@@ -345,10 +613,10 @@ export function AccountTransactionsTab({
         );
     }
 
-    if (transactions.length === 0 && !olympiaInline) {
+    if (transactions.length === 0 && (!olympiaInline || hasDateFilter)) {
         return (
-            <div className="w-full flex flex-col">
-                {pills}
+            <div className={containerClass}>
+                {toolbar}
                 <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)]">
                     <span className="text-sm font-medium">{txNoTransactionsText}</span>
                 </div>
@@ -357,8 +625,8 @@ export function AccountTransactionsTab({
     }
 
     return (
-        <div className="w-full flex flex-col">
-            {pills}
+        <div className={containerClass}>
+            {toolbar}
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
@@ -478,7 +746,7 @@ export function AccountTransactionsTab({
                                                     {feePaidByAccount > 0 ? `${(Math.trunc(feePaidByAccount * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XRD` : '-'}
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs font-mono text-[var(--color-text-main)] border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
-                                                    {formatNumber(tx.balanceXrd, 4, locale)} XRD
+                                                    {tx.balanceXrd !== null ? `${formatNumber(tx.balanceXrd, 4, locale)} XRD` : '-'}
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     <StakingBalanceCell

@@ -52,9 +52,9 @@ function useRewardsCsv(subject: Subject, address: string, years: number[]) {
     try {
       const { csv, totalXrd } = subject === 'account'
         ? olympiaAccountRewardsCsv(
-            (await olympiaApi.accountRewards(address, year))?.days ?? [],
+            kind === 'transactions' ? [] : (await olympiaApi.accountRewards(address, year))?.days ?? [],
             kind,
-            kind === 'all' ? (await olympiaApi.accountMoves(address, year))?.moves ?? [] : [],
+            kind === 'all' || kind === 'transactions' ? (await olympiaApi.accountMoves(address, year))?.moves ?? [] : [],
           )
         : olympiaValidatorRewardsCsv(address, (await olympiaApi.validatorRewards(address, year))?.days ?? []);
       if (!csv) {
@@ -96,19 +96,35 @@ function YearButtons({ years, csv }: { years: number[]; csv: Csv }) {
   );
 }
 
-function KindPills({ o, csv }: { o: OlympiaDict; csv: Csv }) {
+function KindPills({ o, csv, ownedValidator }: { o: OlympiaDict; csv: Csv; ownedValidator: boolean }) {
+  const activeKind: OlympiaRewardKind = !ownedValidator && csv.kind === 'validator' ? 'all' : csv.kind;
   return (
     <div className="space-y-2">
       <p className="text-[10px] uppercase tracking-wider font-black text-[var(--color-text-muted)]">{o.rewards_kind ?? 'Rewards'}</p>
       <FilterPills
-        value={csv.kind}
+        value={activeKind}
         onChange={csv.setKind}
         options={[
           { key: 'all', label: o.rewards_kind_all ?? 'All', tooltip: o.rewards_kind_all_tooltip },
           { key: 'delegator', label: o.rewards_kind_delegator ?? 'Delegator', tooltip: o.rewards_kind_delegator_tooltip },
-          { key: 'validator', label: o.rewards_kind_validator ?? 'Validator', tooltip: o.rewards_kind_validator_tooltip },
+          {
+            key: 'validator',
+            label: o.rewards_kind_validator ?? 'Validator',
+            tooltip: ownedValidator ? o.rewards_kind_validator_tooltip : o.rewards_kind_validator_off,
+            disabled: !ownedValidator,
+          },
+          { key: 'transactions', label: o.rewards_kind_transactions ?? '', tooltip: o.rewards_kind_transactions_tooltip },
         ]}
       />
+      <p className="text-[11px] text-[var(--color-text-muted)]">
+        {activeKind === 'all'
+          ? o.rewards_legend_all
+          : activeKind === 'delegator'
+            ? o.rewards_legend_delegator
+            : activeKind === 'validator'
+              ? o.rewards_legend_validator
+              : o.rewards_legend_transactions}
+      </p>
     </div>
   );
 }
@@ -458,7 +474,7 @@ export function OlympiaRewardsCsvModal({ subject, address, years, o, locale, onC
           </div>
           <p className="text-xs text-[var(--color-text-muted)]">{subject === 'account' ? o.rewards_csv_desc : o.rewards_csv_owner_desc}</p>
           <YearButtons years={years} csv={csv} />
-          {subject === 'account' && ownedValidator && <KindPills o={o} csv={csv} />}
+          {subject === 'account' && <KindPills o={o} csv={csv} ownedValidator={ownedValidator} />}
           <ResultNote o={o} csv={csv} locale={locale} />
         </div>
 
