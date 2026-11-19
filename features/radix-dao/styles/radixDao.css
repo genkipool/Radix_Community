@@ -1,0 +1,100 @@
+/* ==========================================================================
+   Radix DAO — Lightweight CSS Utilities & Theme-Native PDF Viewer Styling
+   ========================================================================== */
+
+.dao-section {
+  scroll-margin-block-start: 6rem;
+}
+
+.dao-notice-details > summary {
+  list-style: none;
+}
+
+.dao-notice-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dao-notice-details[open] .dao-notice-chevron {
+  transform: rotate(180deg);
+}
+
+/* Custom theme-integrated scrollbar for the PDF canvas viewport */
+.dao-pdf-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar) transparent;
+  scrollbar-gutter: stable;
+  overscroll-behavior: auto;
+}
+
+.dao-pdf-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dao-pdf-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dao-pdf-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-scrollbar);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.dao-pdf-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary);
+}
+
+/* Selectable pdfjs-dist v6 TextLayer aligned pixel-perfectly over the canvas */
+.dao-pdf-text-layer {
+  color-scheme: only light;
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor, 1) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.dao-pdf-text-layer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+
+.dao-pdf-text-layer > :not(.markedContent),
+.dao-pdf-text-layer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.dao-pdf-text-layer .markedContent {
+  display: contents;
+}
+
+.dao-pdf-text-layer ::selection {
+  background: color-mix(in oklch, var(--color-primary) 28%, transparent);
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dao-notice-chevron {
+    transition: none;
+  }
+}

@@ -98,7 +98,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com https://vercel.live",
               "img-src 'self' data: https: https://vercel.com",
               "connect-src 'self' https: wss: https://cloudflareinsights.com https://vercel.live",
-              "frame-src https://vercel.live https://ramp.alchemypay.org https://ramptest.alchemypay.org https://static.alchemypay.org",
+              "frame-src 'self' blob: https://vercel.live https://ramp.alchemypay.org https://ramptest.alchemypay.org https://static.alchemypay.org",
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",

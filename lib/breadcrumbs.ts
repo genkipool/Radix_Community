@@ -36,6 +36,7 @@ const SECTION_LABEL_KEY: Record<string, string> = {
   'google-wallet': 'google_wallet',
   hyperscale: 'hyperscale',
   infrastructure: 'infrastructure',
+  'radix-dao': 'radix_dao',
   seal: 'seal',
 };
 

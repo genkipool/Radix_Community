@@ -79,6 +79,7 @@ export const NAV_LINKS = [
     path: '/#about',
     sublinks: [
       { key: 'about_us', path: '/#about' },
+      { key: 'radix_dao', path: '/radix-dao' },
       { key: 'community_transparency', path: '/community' },
     ],
   },
