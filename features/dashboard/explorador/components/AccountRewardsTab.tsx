@@ -45,6 +45,7 @@ const EMPTY_YEAR: AccountRewardsYear = {
     csv: '',
     csvDelegator: '',
     csvValidator: '',
+    csvTransactions: '',
     totalXrd: 0,
     delegatorXrd: 0,
     feeXrd: 0,

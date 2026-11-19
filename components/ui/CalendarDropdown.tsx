@@ -33,6 +33,10 @@ interface CalendarDropdownProps {
     maxDate?: string;
     /** Opens in the flow of the content instead of floating, for containers that clip overflow. */
     inline?: boolean;
+    /** Optional set of `YYYY-MM-DD` dates to visually highlight (e.g. days with transactions). */
+    highlightedDays?: ReadonlySet<string>;
+    /** Called when the user navigates to a different month in the calendar. */
+    onViewMonthChange?: (year: number, monthIndex: number) => void;
 }
 
 // Helpers
@@ -65,6 +69,8 @@ export function CalendarDropdown({
     minDate,
     maxDate,
     inline = false,
+    highlightedDays,
+    onViewMonthChange,
 }: CalendarDropdownProps) {
     // Initialize viewDate to the start date if provided, otherwise today (or the last day allowed)
     const [viewDate, setViewDate] = useState(() => {
@@ -91,8 +97,18 @@ export function CalendarDropdown({
     // A month can be shown when any of its days can be picked.
     const canPrev = !minDate || toDateStr(currentYear, currentMonth, 1) > minDate;
     const canNext = !maxDate || toDateStr(currentYear, currentMonth, daysInMonth) < maxDate;
-    const handlePrevMonth = () => { if (canPrev) setViewDate(new Date(currentYear, currentMonth - 1, 1)); };
-    const handleNextMonth = () => { if (canNext) setViewDate(new Date(currentYear, currentMonth + 1, 1)); };
+    const handlePrevMonth = () => {
+        if (!canPrev) return;
+        const next = new Date(currentYear, currentMonth - 1, 1);
+        setViewDate(next);
+        onViewMonthChange?.(next.getFullYear(), next.getMonth());
+    };
+    const handleNextMonth = () => {
+        if (!canNext) return;
+        const next = new Date(currentYear, currentMonth + 1, 1);
+        setViewDate(next);
+        onViewMonthChange?.(next.getFullYear(), next.getMonth());
+    };
 
     const isDisabled = (day: number): boolean => {
         const dateStr = toDateStr(currentYear, currentMonth, day);
@@ -194,10 +210,12 @@ export function CalendarDropdown({
 
                         {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
+                            const dateStr = toDateStr(currentYear, currentMonth, day);
                             const selected = isStartOrEnd(day);
                             const inRange = isInRange(day);
                             const today = isToday(day);
                             const disabled = isDisabled(day);
+                            const hasActivity = !disabled && !!highlightedDays?.has(dateStr);
 
                             return (
                                 <button
@@ -210,14 +228,24 @@ export function CalendarDropdown({
                                         disabled
                                             ? 'text-[var(--color-text-muted)] opacity-25 cursor-not-allowed'
                                             : selected
-                                            ? 'border border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/10 font-bold'
+                                            ? 'border border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/15 font-bold'
                                             : inRange
-                                                ? 'bg-[var(--color-primary)]/5 text-[var(--color-primary)]'
-                                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/5',
+                                                ? hasActivity
+                                                    ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] font-bold'
+                                                    : 'bg-[var(--color-primary)]/5 text-[var(--color-primary)]'
+                                                : hasActivity
+                                                    ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-bold hover:bg-[var(--color-accent)]/25'
+                                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/5',
                                         today && !selected ? 'border-b-2 border-[var(--color-primary)]' : '',
                                     ].join(' ')}
                                 >
                                     {day}
+                                    {hasActivity && selected && (
+                                        <span
+                                            aria-hidden="true"
+                                            className="absolute bottom-1 size-1 rounded-full bg-[var(--color-accent)]"
+                                        />
+                                    )}
                                 </button>
                             );
                         })}

@@ -25,7 +25,69 @@ export function PermanentCandidatesTable({ people }: PermanentCandidatesTablePro
         </p>
       </FadeIn>
 
-      <div className="overflow-x-auto border-y border-[var(--color-card-border)]">
+      {/* Mobile stacked layout (< md) */}
+      <ul className="md:hidden divide-y divide-[var(--color-card-border)] border-y border-[var(--color-card-border)]">
+        {DAO_PERMANENT_CANDIDATES.map((candidate) => {
+          const profile =
+            people.candidates[candidate.id as keyof typeof people.candidates] ?? '';
+
+          return (
+            <li key={candidate.id} className="py-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-baseline gap-2.5 min-w-0">
+                  <span className="font-mono text-xs font-bold text-[var(--color-primary)] shrink-0">
+                    {candidate.number}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-[var(--color-text-main)]">
+                      {candidate.name}
+                    </div>
+                    {candidate.handle && (
+                      <div className="font-mono text-xs text-[var(--color-text-muted)]">
+                        {candidate.handle}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="shrink-0">
+                  {candidate.isCurrentTrac ? (
+                    <DaoStatusBadge variant="primary" size="sm" title={people.candidateTracTitle}>
+                      {people.candidateTracBadge}
+                    </DaoStatusBadge>
+                  ) : (
+                    <span
+                      title={people.candidateCommunityTitle}
+                      className="text-xs font-medium text-[var(--color-text-muted)] cursor-help"
+                    >
+                      {people.candidateCommunityBadge}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                {profile}
+              </p>
+
+              <div className="flex justify-end pt-0.5">
+                <a
+                  href={candidate.threadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-secondary)] hover:underline"
+                >
+                  <span>{people.candidateViewThread}</span>
+                  <ExternalLink className="size-3.5" aria-hidden="true" />
+                </a>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Desktop table (md+) */}
+      <div className="hidden md:block overflow-x-auto border-y border-[var(--color-card-border)]">
         <table className="w-full text-left border-collapse min-w-[760px]">
           <thead>
             <tr className="border-b border-[var(--color-card-border)] text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">

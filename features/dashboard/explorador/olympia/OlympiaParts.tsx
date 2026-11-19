@@ -28,7 +28,7 @@ export function OlympiaBadge({ o, className = '' }: { o: OlympiaDict; className?
 
 /** A row of pill buttons that picks one part of a tab (the filter pills of the Olympia views). */
 export function FilterPills<K extends string>({ options, value, onChange, className = '' }: {
-  options: { key: K; label: string; tooltip?: string }[];
+  options: { key: K; label: string; tooltip?: string; disabled?: boolean }[];
   value: K;
   onChange: (key: K) => void;
   className?: string;
@@ -40,10 +40,20 @@ export function FilterPills<K extends string>({ options, value, onChange, classN
           key={p.key}
           type="button"
           role="tab"
+          disabled={p.disabled}
           title={p.tooltip}
           aria-selected={value === p.key}
-          onClick={(e) => { e.stopPropagation(); onChange(p.key); }}
-          className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${value === p.key ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!p.disabled) onChange(p.key);
+          }}
+          className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+            p.disabled
+              ? 'border-[var(--color-card-border)] text-[var(--color-text-muted)] opacity-40 cursor-not-allowed'
+              : value === p.key
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/10 cursor-pointer'
+                : 'border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer'
+          }`}
         >
           {p.label}
         </button>

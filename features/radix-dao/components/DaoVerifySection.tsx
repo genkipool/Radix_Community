@@ -40,7 +40,59 @@ export function DaoVerifySection({ verify, docItems, locale }: DaoVerifySectionP
             </p>
           </div>
 
-          <div className="overflow-x-auto border-y border-[var(--color-card-border)]">
+          {/* Mobile stacked layout (< md) */}
+          <ul className="md:hidden divide-y divide-[var(--color-card-border)] border-y border-[var(--color-card-border)]">
+            {DAO_ON_CHAIN_ENTITIES.map((entity) => {
+              const label =
+                verify.entities[entity.id as keyof typeof verify.entities] ?? entity.id;
+              const isLive = entity.status === 'live';
+
+              return (
+                <li key={entity.id} className="py-4 space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-sm font-bold text-[var(--color-text-main)]">
+                      {label}
+                    </span>
+                    <DaoStatusBadge
+                      variant={isLive ? 'accent' : 'neutral'}
+                      title={isLive ? verify.statusLiveTitle : verify.statusPendingTitle}
+                      className="shrink-0"
+                    >
+                      {isLive ? verify.statusLive : verify.statusPending}
+                    </DaoStatusBadge>
+                  </div>
+
+                  {entity.address ? (
+                    <>
+                      <code
+                        title={entity.address}
+                        className="block text-xs font-mono text-[var(--color-text-muted)] break-all"
+                      >
+                        {entity.address}
+                      </code>
+                      <div className="flex items-center justify-end gap-2 pt-0.5">
+                        <CopyButton value={entity.address} variant="ghost" size="xs" />
+                        <Link
+                          href={dashboardRoutes.entity(locale, entity.address)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-[var(--color-secondary)] hover:underline"
+                        >
+                          <span>{verify.verifyOnDashboard}</span>
+                          <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="block text-xs italic text-[var(--color-text-muted)]">
+                      {verify.notDeployed}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Desktop table (md+) */}
+          <div className="hidden md:block overflow-x-auto border-y border-[var(--color-card-border)]">
             <table className="w-full text-left border-collapse min-w-[760px]">
               <thead>
                 <tr className="border-b border-[var(--color-card-border)] text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">

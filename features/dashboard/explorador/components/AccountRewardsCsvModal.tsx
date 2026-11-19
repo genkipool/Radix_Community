@@ -6,16 +6,17 @@ import { X, Download, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RadixIcon } from '@/components/shared/RadixIcon';
-import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
+import { apiFetchAccountRewardsYears, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { formatNumber } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
 import type { MarketData } from '@/features/dashboard/types';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
-import { generateClientAccountRewardsCsv, type AccountRewardsYear } from '../services/clientCsvExport';
+import { generateClientAccountRewardsCsv, hasValidatorOwnerBadge, type AccountRewardsYear } from '../services/clientCsvExport';
 import { FilterPills } from '../olympia/OlympiaParts';
 
-/** What the CSV lists, as the Rewards tab's three downloads: everything, only the delegator rewards, or only the validator fee. */
-type RewardsKind = 'all' | 'delegator' | 'validator';
+/** What the CSV lists: everything (rewards + validator fee + delegator + transactions), delegator only, validator fee only, or transactions only. */
+type RewardsKind = 'all' | 'delegator' | 'validator' | 'transactions';
 
 export interface AccountRewardsCsvModalProps {
     isOpen: boolean;
@@ -51,7 +52,23 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         enabled: isOpen,
         staleTime: 5 * 60_000 });
 
+    const { data: entityData } = useQuery({
+        queryKey: entityKeys.detail(accountAddress, 'mainnet'),
+        queryFn: () => apiFetchEntityDetails(accountAddress, 'mainnet'),
+        enabled: isOpen && accountAddress.startsWith('account_'),
+        staleTime: Infinity,
+        gcTime: 10 * 60_000,
+    });
+
     const years = (yearsData?.years ?? []).map(y => String(y));
+    const cachedYear = selectedYear
+        ? qc.getQueryData<AccountRewardsYear>(['account-rewards-year', accountAddress, selectedYear])
+        : undefined;
+    const hasValidatorNft =
+        hasValidatorOwnerBadge(entityData) ||
+        (cachedYear?.ownedValidators.length ?? 0) > 0;
+    const activeKind: RewardsKind = !hasValidatorNft && kind === 'validator' ? 'all' : kind;
+
     const error = localError || (yearsError instanceof Error ? yearsError.message : yearsError ? String(yearsError) : null);
 
 
@@ -91,13 +108,27 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                 qc.setQueryData(key, year);
             }
             const data = {
-                csv: kind === 'all' ? year.csv : kind === 'delegator' ? year.csvDelegator : year.csvValidator,
-                totalXrd: kind === 'all' ? year.totalXrd : kind === 'delegator' ? year.delegatorXrd : year.feeXrd,
+                csv:
+                    activeKind === 'all'
+                        ? year.csv
+                        : activeKind === 'delegator'
+                            ? year.csvDelegator
+                            : activeKind === 'validator'
+                                ? year.csvValidator
+                                : year.csvTransactions,
+                totalXrd:
+                    activeKind === 'all'
+                        ? year.totalXrd
+                        : activeKind === 'delegator'
+                            ? year.delegatorXrd
+                            : activeKind === 'validator'
+                                ? year.feeXrd
+                                : year.totalXrd,
             };
 
             if (!data.csv) {
                 if (abortControllerRef.current !== controller) return;
-                setLocalError((kind === 'validator' ? rw?.kind_validator_off : rw?.no_csv) ?? tt?.account_rewards_error_no_data ?? '');
+                setLocalError((activeKind === 'validator' ? rw?.kind_validator_off : rw?.no_csv) ?? tt?.account_rewards_error_no_data ?? '');
                 setDownloading(false);
                 setTimeout(() => setProgress(0), 2000);
                 return;
@@ -123,7 +154,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `account_rewards${kind === 'all' ? '' : `_${kind}`}_${accountAddress.substring(0, 25)}_${selectedYear}.csv`;
+            a.download = `account_rewards${activeKind === 'all' ? '' : `_${activeKind}`}_${accountAddress.substring(0, 25)}_${selectedYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -310,16 +341,28 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                     <div className="space-y-2 pt-1">
                                         <p className="text-[10px] uppercase tracking-wider font-black text-[var(--color-text-muted)]">{rw?.modal_kind}</p>
                                         <FilterPills
-                                            value={kind}
+                                            value={activeKind}
                                             onChange={setKind}
                                             options={[
                                                 { key: 'all', label: rw?.kind_all ?? '', tooltip: rw?.legend_all },
                                                 { key: 'delegator', label: rw?.kind_delegator ?? '', tooltip: rw?.legend_delegator },
-                                                { key: 'validator', label: rw?.kind_validator ?? '', tooltip: rw?.legend_validator },
+                                                {
+                                                    key: 'validator',
+                                                    label: rw?.kind_validator ?? '',
+                                                    tooltip: hasValidatorNft ? rw?.legend_validator : rw?.kind_validator_off,
+                                                    disabled: !hasValidatorNft,
+                                                },
+                                                { key: 'transactions', label: rw?.kind_transactions ?? '', tooltip: rw?.legend_transactions },
                                             ]}
                                         />
                                         <p className="text-[11px] text-[var(--color-text-muted)]">
-                                            {kind === 'all' ? rw?.legend_all : kind === 'delegator' ? rw?.legend_delegator : rw?.legend_validator}
+                                            {activeKind === 'all'
+                                                ? rw?.legend_all
+                                                : activeKind === 'delegator'
+                                                    ? rw?.legend_delegator
+                                                    : activeKind === 'validator'
+                                                        ? rw?.legend_validator
+                                                        : rw?.legend_transactions}
                                         </p>
                                     </div>
                                 </div>
