@@ -72,9 +72,9 @@ export function PdfToolbar({
   onClose,
 }: PdfToolbarProps) {
   return (
-    <div className="px-4 sm:px-5 py-2.5 border-b border-[var(--color-card-border)] bg-[var(--color-card-bg)] flex flex-wrap items-center justify-between gap-3">
+    <div className="px-3.5 sm:px-5 py-2.5 border-b border-[var(--color-card-border)] bg-[var(--color-card-bg)] flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
       {/* Left: Filename */}
-      <div className="flex items-center gap-2.5 min-w-0 max-w-[220px] sm:max-w-[300px]">
+      <div className="order-1 flex items-center gap-2.5 min-w-0 flex-1 sm:flex-initial max-w-[220px] sm:max-w-[300px]">
         <span
           className="size-2 rounded-full bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] shrink-0"
           aria-hidden="true"
@@ -87,9 +87,9 @@ export function PdfToolbar({
         </span>
       </div>
 
-      {/* Center: Borderless Page & Zoom Controls */}
+      {/* Center (second row on mobile): Borderless Page & Zoom Controls */}
       {showControls && (
-        <div className="flex items-center gap-4 text-xs">
+        <div className="order-3 sm:order-2 w-full sm:w-auto flex items-center justify-between sm:justify-center gap-3 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--color-card-border)]/60 text-xs">
           <div className="inline-flex items-center gap-1">
             <ToolbarIconButton disabled={!canPrev} onClick={onPrevPage} label={copy.prevPage}>
               <ChevronLeft className="size-4" aria-hidden="true" />
@@ -104,7 +104,7 @@ export function PdfToolbar({
 
           <span className="hidden sm:block w-px h-4 bg-[var(--color-card-border)]" aria-hidden="true" />
 
-          <div className="hidden sm:inline-flex items-center gap-1">
+          <div className="inline-flex items-center gap-1">
             <ToolbarIconButton disabled={!canZoomOut} onClick={onZoomOut} label={copy.zoomOut}>
               <Minus className="size-3.5" aria-hidden="true" />
             </ToolbarIconButton>
@@ -119,7 +119,7 @@ export function PdfToolbar({
       )}
 
       {/* Right: Download, Open in tab, Close */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="order-2 sm:order-3 flex items-center gap-1 shrink-0">
         <a
           href={downloadUrl}
           download={fileName}

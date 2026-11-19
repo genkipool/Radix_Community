@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { getPdfCdnUrl, getPdfDownloadUrl, getSourceViewUrl } from '../data/radixDaoData';
 import { usePdfPageRenderer } from '../hooks/usePdfPageRenderer';
+import { usePinchZoom } from '../hooks/usePinchZoom';
 import { useSmoothScrollChaining } from '../hooks/useSmoothScrollChaining';
 import type { DaoCopy } from '../types/radixDao.types';
 import { PdfToolbar } from './PdfToolbar';
@@ -11,6 +12,24 @@ import { PdfToolbar } from './PdfToolbar';
 export { preloadPdfJs } from '../lib/pdfLoader';
 
 const ZOOM_STEPS = [35, 50, 65, 75, 85, 100, 115, 130, 150, 175, 200, 250] as const;
+const MIN_ZOOM = ZOOM_STEPS[0];
+const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1];
+const MOBILE_BREAKPOINT_PX = 640;
+const DEFAULT_MOBILE_ZOOM = 50;
+const DEFAULT_DESKTOP_ZOOM = 85;
+
+function getAdjacentZoomStep(currentZoom: number, direction: 'in' | 'out'): number {
+  if (direction === 'in') {
+    for (let i = 0; i < ZOOM_STEPS.length; i++) {
+      if (ZOOM_STEPS[i] > currentZoom) return ZOOM_STEPS[i];
+    }
+    return MAX_ZOOM;
+  }
+  for (let i = ZOOM_STEPS.length - 1; i >= 0; i--) {
+    if (ZOOM_STEPS[i] < currentZoom) return ZOOM_STEPS[i];
+  }
+  return MIN_ZOOM;
+}
 
 export type PdfPreviewCopy = Pick<
   DaoCopy['documents'],
@@ -51,11 +70,15 @@ export function InlinePdfPreview({
   const fetchUrl = directUrl ?? (pdfPath ? getPdfCdnUrl(pdfPath) : null);
 
   const [page, setPage] = useState(1);
-  const [zoomIdx, setZoomIdx] = useState(4); // 85% default — crisp, fits a full sheet comfortably
+  // 50% fits a full A4 sheet comfortably on mobile screens; 85% on desktop
+  const [zoom, setZoom] = useState<number>(() =>
+    typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT_PX
+      ? DEFAULT_MOBILE_ZOOM
+      : DEFAULT_DESKTOP_ZOOM
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const zoom = ZOOM_STEPS[zoomIdx];
   // Scale factor: 1.0 in pdf.js is 72 DPI; 1.333 is 96 DPI (100% screen scale).
   const scale = (zoom / 100) * 1.333;
 
@@ -67,13 +90,26 @@ export function InlinePdfPreview({
 
   useSmoothScrollChaining(scrollContainerRef);
 
+  const pinchScale = usePinchZoom({
+    containerRef: scrollContainerRef,
+    zoom,
+    minZoom: MIN_ZOOM,
+    maxZoom: MAX_ZOOM,
+    onZoomCommit: setZoom,
+  });
+
   const fallbackViewUrl = fallbackUrl ?? (pdfPath ? getSourceViewUrl(pdfPath) : directUrl ?? '#');
   const fallbackDownloadUrl = fallbackUrl ?? (pdfPath ? getPdfDownloadUrl(pdfPath) : directUrl ?? '#');
 
   const canPrev = page > 1;
   const canNext = totalPages ? page < totalPages : false;
-  const canZoomOut = zoomIdx > 0;
-  const canZoomIn = zoomIdx < ZOOM_STEPS.length - 1;
+  const canZoomOut = zoom > MIN_ZOOM;
+  const canZoomIn = zoom < MAX_ZOOM;
+
+  const handleZoomOut = () => setZoom((z) => getAdjacentZoomStep(z, 'out'));
+  const handleZoomIn = () => setZoom((z) => getAdjacentZoomStep(z, 'in'));
+
+  const displayedZoom = Math.round(zoom * pinchScale);
 
   const goToPage = (next: number) => {
     setPage(next);
@@ -109,11 +145,11 @@ export function InlinePdfPreview({
         canNext={canNext}
         onPrevPage={() => goToPage(Math.max(1, page - 1))}
         onNextPage={() => goToPage(totalPages ? Math.min(totalPages, page + 1) : page + 1)}
-        zoom={zoom}
+        zoom={displayedZoom}
         canZoomOut={canZoomOut}
         canZoomIn={canZoomIn}
-        onZoomOut={() => setZoomIdx((z) => Math.max(0, z - 1))}
-        onZoomIn={() => setZoomIdx((z) => Math.min(ZOOM_STEPS.length - 1, z + 1))}
+        onZoomOut={handleZoomOut}
+        onZoomIn={handleZoomIn}
         downloadUrl={fallbackDownloadUrl}
         viewUrl={fallbackViewUrl}
         copy={copy}
@@ -123,10 +159,10 @@ export function InlinePdfPreview({
       {/* Theme-integrated scrollable sheet viewport with custom scrollbar */}
       <div
         ref={scrollContainerRef}
-        className="dao-pdf-scroll relative w-full h-[82vh] min-h-[760px] max-h-[960px] overflow-auto bg-[var(--color-surface)] p-6 sm:p-8 flex justify-center items-start"
+        className="dao-pdf-scroll relative w-full h-[72vh] sm:h-[82vh] min-h-[460px] sm:min-h-[760px] max-h-[960px] overflow-auto bg-[var(--color-surface)] p-3 sm:p-8 flex items-start"
       >
         {error ? (
-          <div className="my-auto text-center space-y-3 px-4">
+          <div className="m-auto text-center space-y-3 px-4">
             <p className="text-sm text-[var(--color-text-muted)]">{copy.pdfLoadError}</p>
             <a
               href={fallbackViewUrl}
@@ -152,7 +188,12 @@ export function InlinePdfPreview({
 
             {/* Untouched crisp white PDF sheet floating cleanly on the theme backdrop */}
             <div
-              className={`relative bg-white rounded-md shadow-xl ring-1 ring-black/10 transition-opacity duration-200 shrink-0 ${
+              style={
+                pinchScale !== 1
+                  ? { transform: `scale(${pinchScale})`, transformOrigin: 'top center' }
+                  : undefined
+              }
+              className={`relative mx-auto bg-white rounded-md shadow-xl ring-1 ring-black/10 transition-opacity duration-200 shrink-0 ${
                 hasPainted ? 'opacity-100' : 'opacity-0'
               }`}
             >
