@@ -1,0 +1,531 @@
+{
+  "seo": {
+    "radixDao": {
+      "title": "Radix DAO: Community Governance, Legal Formation & Signed Documents",
+      "description": "Explore Radix DAO LLC: Marshall Islands non-profit DAO formed on 9 October 2026. Download all 26 official signed PDFs, verify SHA-256 digests in your browser, inspect on-chain contracts, council members, and official notices.",
+      "keywords": [
+        "Radix DAO",
+        "Radix DAO LLC",
+        "Radix governance",
+        "XRD voting",
+        "Radix Accountability Council",
+        "GP-PRE-1",
+        "Marshall Islands DAO",
+        "Radix signed governance PDFs"
+      ]
+    }
+  },
+  "radixDao": {
+    "hero": {
+      "badge": "Formed · 9 October 2026 · MIDAO 10280-26",
+      "brand": "Radix",
+      "title": "DAO",
+      "subtitle": "A non-profit Decentralized Autonomous Organization registered under Marshall Islands law, owned and directed by XRD holders. Anyone holding XRD can propose, vote, stand for election, and verify every rule on-chain.",
+      "ctaDocs": "Download Official PDFs (26)",
+      "ctaVote": "Vote at vote.radixdao.org",
+      "ctaVerify": "Verify On-Chain & SHA-256",
+      "phaseBannerLabel": "Current Phase",
+      "phaseBannerTitle": "Radix DAO LLC is formed: Permanent RAC candidates under verification",
+      "phaseBannerDesc": "GP-PRE-1 passed on 2 October 2026 and Radix DAO LLC was formed on 9 October 2026. The Permanent RAC candidacy period closed on 13 November 2026 on RadixTalk; TRAC is now verifying candidates ahead of the GP-ELECT-1 vote.",
+      "facts": {
+        "entityValue": "Radix DAO LLC (Non-Profit)",
+        "formedLabel": "Formation Date",
+        "formedValue": "9 Oct 2026",
+        "registrationLabel": "MIDAO Registration",
+        "registrationTitle": "Official registration number with MIDAO (Marshall Islands DAO registry), plus Foreign Investment Business License RMI-2026-65.",
+        "statusLabel": "Governance Status",
+        "statusValue": "Pre-Activation",
+        "statusTitle": "Radix DAO LLC is legally formed, while community governance remains advisory until the GP-ACTIVATE-1 Activation Vote passes."
+      }
+    },
+    "overview": {
+      "badge": "Institutional Architecture",
+      "title": "Execution bodies execute.",
+      "titleAccent": "They do not govern.",
+      "subtitle": "Radix DAO LLC exists to hold and direct community resources for Radix's public goods under rules that token holders set and can amend by vote.",
+      "authorityTitle": "How authority flows",
+      "authoritySubtitle": "Token holders decide what happens; elected roles carry it out on time-bound mandates they can be voted off of.",
+      "tiers": [
+        {
+          "step": "01",
+          "title": "Token Holders (XRD)",
+          "desc": "Propose and vote on everything. Every XRD deployed across the network counts as one vote, including liquid XRD, validator LSUs, LSULP, and eligible DEX liquidity positions."
+        },
+        {
+          "step": "02",
+          "title": "Accountability Council (RAC)",
+          "desc": "Elected body that guards governance procedures without ruling them. A 5-seat Transition Council holds office until the Permanent Council (5–7 seats) is elected."
+        },
+        {
+          "step": "03",
+          "title": "Delegated Functions",
+          "desc": "Operational roles allocated by the Permanent Council from its seated members: Treasury Signers, Governance Operator, Legal Signatory, Compliance Liaison, and Web2 Custodian."
+        },
+        {
+          "step": "04",
+          "title": "Working Groups",
+          "desc": "Execution teams led by elected Stewards operating strictly within voter-approved charters and budgets."
+        }
+      ],
+      "precedenceTitle": "Document precedence (OA-first hierarchy)",
+      "precedenceSubtitle": "Established by Operating Agreement §11.3 and Charter §13. Where two documents conflict, the higher instrument prevails.",
+      "precedence": [
+        {
+          "rank": "01",
+          "title": "Marshall Islands Law & Certificate of Formation",
+          "desc": "Statutory legal foundation and filed registration instrument."
+        },
+        {
+          "rank": "02",
+          "title": "Operating Agreement",
+          "desc": "The Company's primary legally registered instrument; gives legal recognition to the Charter and policies."
+        },
+        {
+          "rank": "03",
+          "title": "Governance Charter",
+          "desc": "The DAO's governance constitution, subordinate to the Operating Agreement and prevailing over all operational policies."
+        },
+        {
+          "rank": "04",
+          "title": "Operational Policies",
+          "desc": "The 19 ratified rulebooks covering voting, treasury, roles, conduct, disputes, emergencies, contributors, code, and compliance."
+        },
+        {
+          "rank": "05",
+          "title": "DAO Parameters Registry",
+          "desc": "Single source of truth for adjustable thresholds, quorums, time limits, and budget caps."
+        }
+      ],
+      "guidesTitle": "Plain-language companion guides",
+      "guidesNote": "Non-operative reading aids published in the official governance repository. Where a guide and a ratified document differ, the ratified document prevails.",
+      "guides": {
+        "charter": "Charter Reading Guide",
+        "policy": "Policy Library Reading Guide",
+        "elections": "Election Methods Guide",
+        "roles": "Roles Registry"
+      }
+    },
+    "sequence": {
+      "badge": "Founding Sequence",
+      "title": "Path to full",
+      "titleAccent": "algorithmic governance",
+      "subtitle": "Under the Operating Agreement, activation occurs through four transparent community milestones rather than a single vote.",
+      "proposalsLinkLabel": "View proposal history (PROPOSALS.md)",
+      "statusLabels": {
+        "completed": "Completed",
+        "next": "Next Step",
+        "upcoming": "Upcoming"
+      },
+      "steps": [
+        {
+          "code": "GP-PRE-1",
+          "title": "Constitutional Ratification",
+          "status": "completed",
+          "date": "Passed 2 October 2026 · On-chain at vote.radixdao.org",
+          "desc": "Community ratified the Charter, 20-document Policy Library, and official Signing Certificate (Activation Condition 6). All 21 signed PDFs are published with SHA-256 hashes."
+        },
+        {
+          "code": "FORMATION",
+          "title": "Legal Formation of Radix DAO LLC",
+          "status": "completed",
+          "date": "Completed · 9 October 2026",
+          "desc": "Transition RAC filed the Certificate of Formation and Operating Agreement in the Marshall Islands (MIDAO #10280-26; Foreign Investment Business License RMI-2026-65 granted 8 Oct 2026). Member-managed until activation."
+        },
+        {
+          "code": "GP-ELECT-1",
+          "title": "Permanent RAC Election",
+          "status": "next",
+          "date": "Candidacies closed 13 Nov 2026 · Verification in progress (16 Nov)",
+          "desc": "The Permanent RAC candidacy window (16 Oct – 13 Nov 2026) closed on RadixTalk with 15 community candidates. TRAC is verifying candidates via Telegram and email before opening the GP-ELECT-1 vote (5–7 seats, 6-month terms)."
+        },
+        {
+          "code": "GP-ACTIVATE-1",
+          "title": "Activation Vote",
+          "status": "upcoming",
+          "date": "Constitutional vote · ≥ 66% YES / ≥ 10% quorum",
+          "desc": "Sole binding pre-activation vote confirming all Operating Agreement Schedule 5 conditions are met. Sets the Activation Date: the Company becomes Algorithmically Governed and community votes become legally binding."
+        }
+      ]
+    },
+    "participate": {
+      "badge": "Open Participation",
+      "title": "Four ways to",
+      "titleAccent": "take part",
+      "subtitle": "Anyone holding XRD can participate, with no prior registration, no minimum balance, and no gatekeeping from any DAO body.",
+      "items": [
+        {
+          "key": "propose",
+          "title": "Propose",
+          "desc": "Any XRD holder can submit a proposal with no minimum holding and no approval gate. Proposals move from draft discussion to a temperature check, then to a binding vote.",
+          "meta": "No minimum XRD · Open pipeline",
+          "cta": "Proposal & Voting Framework"
+        },
+        {
+          "key": "vote",
+          "title": "Vote",
+          "desc": "1 XRD = 1 vote, measured at the snapshot when each vote opens. Liquid XRD, validator LSUs, LSULP, and eligible Ociswap, CaviarNine, and DefiPlaza LP positions all count for their underlying XRD.",
+          "meta": "Snapshot-based · vote.radixdao.org",
+          "cta": "Open Voting Platform"
+        },
+        {
+          "key": "stand",
+          "title": "Stand for Election",
+          "desc": "Accountability Council seats and Working Group Steward roles are open to any token holder. All terms are time-bound (6 months for Permanent RAC) and renewable only by vote.",
+          "meta": "Time-bound · Renewable by vote",
+          "cta": "Elections Policy"
+        },
+        {
+          "key": "challenge",
+          "title": "Compliance Challenge",
+          "desc": "There is no unilateral veto. Within 48 hours of a published result, any holder with ≥ 0.1% voting power may file a compliance challenge claiming a specific rule was broken. Filings are published verbatim within 6 hours.",
+          "meta": "48h window · ≥ 0.1% voting power",
+          "cta": "File a Challenge"
+        }
+      ]
+    },
+    "documents": {
+      "badge": "Signed Document Library",
+      "title": "All 26 official",
+      "titleAccent": "signed PDFs",
+      "subtitle": "Every active legal formation record and ratified governance document from RadixDAO/governance-framework, ready for direct download with SHA-256 verification.",
+      "searchPlaceholder": "Search documents, policies, or SHA-256...",
+      "categoriesLabel": "Document categories",
+      "allCategory": "All Documents",
+      "showingCount": "Showing {shown} of {total} active documents",
+      "emptyState": "No documents match your current filter. Try clearing the search or selecting another category.",
+      "resetFilter": "Reset filters",
+      "downloadPdf": "View PDF",
+      "hidePdf": "Hide PDF",
+      "downloadFile": "Download PDF",
+      "openNewTab": "Open in tab",
+      "loadingPdf": "Loading PDF document...",
+      "pdfLoadError": "Could not load the inline preview. You can open it directly on GitHub.",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "pageOf": "Page {current} / {total}",
+      "viewSource": "Markdown Source",
+      "showHash": "SHA-256 Digest",
+      "hashTitle": "Cryptographic SHA-256 fingerprint of this exact signed PDF. Compare it with your downloaded file to confirm it has not been altered.",
+      "copyHash": "Copy SHA-256",
+      "statusFiled": "Filed · 9 Oct 2026",
+      "statusIssued": "Issued on formation",
+      "statusRatified": "Ratified GP-PRE-1 · In force at activation",
+      "categories": {
+        "formation": "Formation & Legal (5)",
+        "constitutional": "Constitutional & Parameters (2)",
+        "decisions": "Decisions & Treasury (4)",
+        "roles": "People & Roles (4)",
+        "conduct": "Conduct & Disputes (3)",
+        "resilience": "Crisis & Continuity (2)",
+        "contributors": "Contributors (2)",
+        "stewardship": "Code, IP & Maintenance (4)"
+      },
+      "items": {
+        "operating-agreement": {
+          "title": "Operating Agreement",
+          "desc": "Primary legally registered instrument of Radix DAO LLC (personal details redacted as filed on 9 October 2026)."
+        },
+        "certificate-of-formation": {
+          "title": "Certificate of Formation",
+          "desc": "Official Marshall Islands Non-Profit DAO LLC formation filing (MIDAO registration 10280-26)."
+        },
+        "corporate-charter-certificate": {
+          "title": "Corporate Charter Certificate",
+          "desc": "Official corporate charter certificate issued upon legal formation of Radix DAO LLC."
+        },
+        "foreign-investment-business-license": {
+          "title": "Foreign Investment Business License",
+          "desc": "License RMI-2026-65 granted on 8 October 2026 by the Republic of the Marshall Islands."
+        },
+        "midao-cover-letter": {
+          "title": "MIDAO Cover Letter",
+          "desc": "Official formation cover letter issued by MIDAO accompanying the certified registration package."
+        },
+        "charter": {
+          "title": "Governance Charter",
+          "desc": "The DAO's constitution: sets core principles, rights of token holders, and the structure of authority."
+        },
+        "dao-parameters-registry": {
+          "title": "DAO Parameters Registry",
+          "desc": "Single registry holding every adjustable parameter, including voting thresholds, quorums, time limits, and budget caps."
+        },
+        "proposal-and-voting-framework": {
+          "title": "Proposal & Voting Framework",
+          "desc": "How proposals are drafted, discussed, temperature-checked, voted on, and approved."
+        },
+        "execution-and-treasury-actions-policy": {
+          "title": "Execution & Treasury Actions Policy",
+          "desc": "How approved decisions are executed and who is authorized to carry out treasury actions."
+        },
+        "treasury-signers-rules": {
+          "title": "Treasury Signers Operational Rules",
+          "desc": "Operational rules for the 5 Treasury Signers: strictly bounded execution agents, never decision-makers."
+        },
+        "on-chain-identifiers-and-verification-policy": {
+          "title": "On-Chain Identifiers & Verification Policy",
+          "desc": "Public register and verification standard for all governance contracts, badges, and treasury accounts."
+        },
+        "rac-mandate": {
+          "title": "RAC Mandate",
+          "desc": "Defines the Radix Accountability Council, guardian of governance processes without ruling power."
+        },
+        "delegate-mandate": {
+          "title": "Delegate Mandate",
+          "desc": "Defines operational Delegates (treasury, legal, compliance, Web2) who execute community mandates."
+        },
+        "elections-and-role-governance-policy": {
+          "title": "Elections & Role Governance Policy",
+          "desc": "How elected roles are chosen, evaluated, renewed, or replaced so authority remains accountable."
+        },
+        "working-group-framework": {
+          "title": "Working Group Framework",
+          "desc": "How execution Working Groups are chartered, funded, bounded, and audited against deliverables."
+        },
+        "code-of-conduct": {
+          "title": "Code of Conduct",
+          "desc": "Baseline standards of behavior expected from every participant and role holder in the DAO."
+        },
+        "conflict-of-interest-policy": {
+          "title": "Conflict of Interest Policy",
+          "desc": "Mandatory disclosure and recusal rules for role holders with personal or financial interests."
+        },
+        "dispute-resolution-and-arbitration-policy": {
+          "title": "Dispute Resolution & Arbitration Policy",
+          "desc": "Tiered dispute resolution: informal resolution, community vote escalation, and formal arbitration."
+        },
+        "emergency-and-safeguards-policy": {
+          "title": "Emergency & Safeguards Policy",
+          "desc": "Defines genuine emergencies, minimal temporary safeguards, and strict post-action accountability."
+        },
+        "governance-continuity-framework": {
+          "title": "Governance Continuity Framework",
+          "desc": "Procedures to keep governance operating or recover cleanly if a body fails or execution stalls."
+        },
+        "contributor-compensation-policy": {
+          "title": "Contributor Compensation Policy",
+          "desc": "How paid contributors are compensated, how budgets are approved, and full public disclosure rules."
+        },
+        "contributor-onboarding-and-offboarding": {
+          "title": "Contributor Onboarding & Offboarding",
+          "desc": "Clean access control, handover, and continuity procedures when contributors join or depart."
+        },
+        "source-code-stewardship-policy": {
+          "title": "Source Code Stewardship Policy",
+          "desc": "How the DAO maintains, secures, and preserves community ownership of its software repositories."
+        },
+        "open-source-and-ip-policy": {
+          "title": "Open Source & IP Policy",
+          "desc": "Ensures all DAO-funded software and outputs remain open, reusable public goods."
+        },
+        "governance-maintenance-and-upgrade-framework": {
+          "title": "Governance Maintenance & Upgrade Framework",
+          "desc": "The rules for amending, versioning, signing, and retiring governance framework documents."
+        },
+        "compliance-operations-policy": {
+          "title": "Compliance Operations Policy",
+          "desc": "Day-to-day procedures for legal compliance, identity verification, credential security, and regulatory inquiries."
+        }
+      }
+    },
+    "people": {
+      "badge": "Accountability & Stewardship",
+      "title": "Who is",
+      "titleAccent": "accountable today",
+      "subtitle": "Every elected Transition Council member, upcoming Permanent Council seat, Delegated Function, and Working Group status.",
+      "acronyms": {
+        "racCode": "RAC",
+        "racLabel": "Radix Accountability Council (process guardian of Radix DAO)",
+        "tracCode": "TRAC",
+        "tracLabel": "Transition RAC (interim council guiding formation until the permanent council is seated)",
+        "pracCode": "PRAC",
+        "pracLabel": "Permanent RAC (standing council elected for renewable 6-month terms)"
+      },
+      "transitionTitle": "Transition Radix Accountability Council (TRAC)",
+      "transitionBadge": "5 of 5 seats filled · Established Feb 2026",
+      "transitionDesc": "Elected in February 2026 via community approval voting to establish Radix DAO LLC and guide the transition from the Radix Foundation. Seats end automatically once the Permanent Council is seated. Three of the five also serve as legal Members of Radix DAO LLC while it is member-managed.",
+      "llcMemberBadge": "LLC Member",
+      "llcMemberTitle": "Legal Member of Radix DAO LLC under Marshall Islands law while the entity is member-managed. This legal standing is separate from holding a Council seat.",
+      "councilSeatLabel": "Council Seat",
+      "councilSeatTitle": "Elected member of the Transition Accountability Council without separate legal Member standing in the LLC.",
+      "councilTelegramLabel": "Council Telegram Channel",
+      "councilTelegramTitle": "Open Telegram channel where Radix Accountability Council members publish updates and proceedings.",
+      "termLabel": "Until Permanent Council is seated",
+      "seatPrefix": "Seat",
+      "tableHeaders": {
+        "seat": "Seat",
+        "holder": "Member",
+        "legalRole": "Legal Standing",
+        "term": "Mandate",
+        "contact": "Telegram"
+      },
+      "permanentTitle": "Permanent Accountability Council",
+      "permanentBadge": "Candidacies closed 13 Nov 2026 · 5–7 seats",
+      "permanentDesc": "The standing guardian body under the ratified RAC Mandate (2 Oct 2026). The candidacy window closed on 13 November 2026 on RadixTalk with 15 community applicants (including sitting TRAC members); as of 16 November, TRAC is verifying candidates ahead of opening the GP-ELECT-1 vote. The Permanent RAC cannot override valid votes and must propose an independent treasury auditor in its first quarter.",
+      "permanentCta": "View candidates & threads on RadixTalk",
+      "candidatesTitle": "Permanent RAC Candidates (GP-ELECT-1)",
+      "candidatesBadge": "15 candidates · Under TRAC verification",
+      "candidatesDesc": "Community members who submitted their candidacy on RadixTalk during the official window (16 Oct to 13 Nov 2026). TRAC is verifying each candidate via Telegram and email before opening the vote.",
+      "candidateViewThread": "View candidacy",
+      "candidateTracBadge": "Current TRAC",
+      "candidateTracTitle": "Currently serving on the Transition Radix Accountability Council (TRAC) and running for a seat on the Permanent RAC.",
+      "candidateCommunityBadge": "Community",
+      "candidateCommunityTitle": "Independent community candidate who submitted an application during the official Permanent RAC candidacy window.",
+      "candidatesHeaders": {
+        "number": "#",
+        "candidate": "Candidate",
+        "background": "Profile & Focus",
+        "status": "Origin",
+        "thread": "RadixTalk"
+      },
+      "candidates": {
+        "linuxx": "Independent developer and Linux sysadmin (30+ yrs); author of radixdlt-sdk (Rust) and Scrypto contracts.",
+        "gilesmorris": "Chartered Accountant (FCCA), entrepreneur, and developer focused on budgeting, finance, and DAO sustainability.",
+        "dazligth": "Tech entrepreneur and former head of hardware/software product in Germany; strong advocate for Hyperscale delivery.",
+        "a137x": "Full-time Radix and Scrypto developer since 2021; founder of OTER and Tahuna; technical due diligence focus.",
+        "peterjan": "Radix community member since 2018 focused on constructive community stewardship and engagement.",
+        "jimmi": "Long-term Radix community watchdog focused on accountability, token transparency, and protecting users.",
+        "genkipool": "In Radix since 2017 as developer and validator; network administrator and security auditor (pentester) focused on security, reliability, and Charter-aligned DAO activation.",
+        "cryptobright": "Radix community member standing to support fair governance oversight and accountable DAO operations.",
+        "lunatic": "Radix community member since 2013 (eMunie era); graphic designer and long-term ecosystem builder.",
+        "kadafi": "Long-term Radix investor and active community contributor based in Poland.",
+        "wingspan": "Former Radix validator with IT networking background committed to diligent council execution.",
+        "markus": "Radix community member and ecosystem contributor since 2021.",
+        "tadas": "Current TRAC member; 30 years in business development and operations; Radix BD and community since 2021.",
+        "alfred": "Current TRAC member; runs 2 Radix validator nodes and co-built early Radix dApp (DGC).",
+        "robellino1": "Radix community member since Olympia; healthcare professional bringing independent community oversight."
+      },
+      "delegatedTitle": "Delegated Functions",
+      "delegatedDesc": "Allocated by the Permanent Council from among its seated members. None are held by the Transition Council.",
+      "delegated": {
+        "treasury_signers": {
+          "title": "Treasury Signers (5 · 3-of-5 multisig)",
+          "desc": "Standard treasury actions require 3 of 5 signatures (DAO Parameters Registry §6A). Ordinarily allocated among seated Council members or elected directly."
+        },
+        "governance_operator": {
+          "title": "Governance Operator",
+          "desc": "Allocated by the Permanent Council once elected."
+        },
+        "legal_signatory": {
+          "title": "Legal Signatory",
+          "desc": "Allocated by the Permanent Council once elected."
+        },
+        "compliance_liaison": {
+          "title": "Compliance Liaison",
+          "desc": "Allocated by the Permanent Council once elected."
+        },
+        "web2_custodian": {
+          "title": "Web2 Custodian",
+          "desc": "Allocated by the Permanent Council once elected."
+        }
+      },
+      "workingGroupsTitle": "Working Groups",
+      "workingGroupsBadge": "2 groups · Charters pending",
+      "workingGroupsPendingTag": "Pending",
+      "workingGroupsCta": "Read Working Group Framework (PDF)",
+      "workingGroups": {
+        "strategic_coordination": {
+          "title": "Strategic Coordination Working Group",
+          "status": "Charter pending adoption by governance vote"
+        },
+        "governance_legal": {
+          "title": "Governance & Legal Working Group",
+          "status": "Charter pending adoption by governance vote"
+        }
+      }
+    },
+    "verify": {
+      "badge": "Trustless Verification",
+      "title": "Don't take our word.",
+      "titleAccent": "Verify everything.",
+      "subtitle": "Every live governance contract, badge, and treasury account is verifiable on the Radix ledger, and every signed PDF can be hash-checked locally in your browser.",
+      "registryTitle": "On-Chain Identifiers Register",
+      "registrySubtitle": "Pending accounts are shown transparently so the register always reflects the DAO's real on-chain state.",
+      "tableHeaders": {
+        "status": "Status",
+        "function": "Function",
+        "identifier": "On-Chain Identifier",
+        "verify": "Verify"
+      },
+      "statusLive": "Live",
+      "statusLiveTitle": "Deployed on Radix Mainnet and publicly verifiable via the Radix Dashboard.",
+      "statusPending": "Pending",
+      "statusPendingTitle": "Reserved in the ratified On-Chain Identifiers Policy, not yet deployed on Radix Mainnet.",
+      "notDeployed": "Not yet deployed",
+      "verifyOnDashboard": "View in Explorer",
+      "entities": {
+        "governance_component": "Governance smart-contract component",
+        "master_badge": "Master Badge",
+        "owner_badge": "Owner Badge (governance admin)",
+        "governance_package": "Governance package",
+        "voting_xrd": "Voting-power resource (XRD)",
+        "primary_treasury": "Primary multi-signature treasury account",
+        "operational_pool": "Operational treasury pool (via Governance Proposal)",
+        "reserve_pool": "Reserve treasury pool (via Governance Proposal)",
+        "grants_pool": "Grants pool (via Governance Proposal)",
+        "emergency_safe": "Emergency Safe Address"
+      },
+      "certTitle": "Official Signing Certificate",
+      "certDesc": "All 21 ratified governance PDFs and all 5 formation record PDFs carry a signature from this single certificate ratified in GP-PRE-1.",
+      "certSerial": "Serial Number",
+      "certSha1": "Thumbprint (SHA-1)",
+      "certSha256": "Fingerprint (SHA-256)",
+      "checkerTitle": "Verify a Downloaded PDF (100% Local)",
+      "checkerDesc": "Drop any Radix DAO PDF below or choose a file. Its SHA-256 digest is computed directly in your browser using the Web Crypto API, and the file is never uploaded.",
+      "checkerDropCta": "Drop a governance PDF here, or click to select",
+      "checkerHint": "Matches instantly against all 26 official SHA-256 digests",
+      "checkerComputing": "Computing SHA-256 digest locally...",
+      "checkerMatchTitle": "Authentic Official Document Verified",
+      "checkerMatchDesc": "Byte-for-byte SHA-256 match with the official ratified/filed record:",
+      "checkerMismatchTitle": "No Match in Active Official Registry",
+      "checkerMismatchDesc": "This file's SHA-256 does not match any of the 26 active official PDFs. Check whether it is an archived draft or modified copy.",
+      "checkerComputedHash": "Computed SHA-256",
+      "checkerReset": "Verify another file",
+      "cliTitle": "Or verify from your terminal"
+    },
+    "notices": {
+      "badge": "Official Public Record",
+      "title": "Latest notices",
+      "titleAccent": "& open repositories",
+      "subtitle": "Resolutions, meeting minutes, and process notices published on radixdao.org/notices, alongside the active GitHub repositories under RadixDAO.",
+      "liveFeedBadge": "Synced with radixdao.org/notices.json",
+      "snapshotBadge": "Verified official snapshot",
+      "sourceLabel": "Source",
+      "downloadAttachment": "Download signed PDF",
+      "expandHint": "View details",
+      "defaultSummary": "Official record published in the Radix DAO notices registry. Open the official source below for the full text.",
+      "summaries": {
+        "2026-11-13-notice-of-non-elevation-temperature-check-number-2-burn-or-disable-radix-works-xrd-tokens": "The Transition RAC formally determined that Temperature Check #2 (\"Burn or disable Radix Works XRD tokens\") will not advance to a binding Governance Proposal. The signed resolution document details the constitutional and procedural grounds for non-elevation.",
+        "2026-11-10-minutes-of-trac-meeting-on-nov-7th": "Signed minutes of the formal Transition RAC meeting held on 7 November 2026, recording decisions regarding the handover of mobile Store Apps control (iOS / Android) and the evaluation of Temperature Check #2.",
+        "2026-10-31-transition-rac-meeting-minute-for-the-12th-october-2026-dao-formation-and-other-subjects": "Signed minutes of the 12 October 2026 Transition RAC meeting documenting the legal incorporation of Radix DAO LLC (filed 9 October 2026, MIDAO 10280-26) and subsequent operational steps.",
+        "2026-08-29-transition-rac-s-decisions-to-enable-and-support-the-ratification-process": "Full signed minutes of the 25 August 2026 Transition RAC meeting detailing all discussions and formal decisions adopted to enable and support the GP-PRE-1 Constitutional Ratification vote.",
+        "2026-08-29-transition-rac-certificate-technical-information-and-details": "Technical specification of the digital signing certificate created and operated by the Transition RAC during the transition period, enabling independent verification of non-repudiation and tamper-proofing across all signed DAO PDFs."
+      },
+      "allNotices": "All Notices on radixdao.org",
+      "reposTitle": "Active RadixDAO GitHub Repositories",
+      "reposSubtitle": "Open-source repositories maintained under github.com/RadixDAO. The commit history of governance-framework serves as the public governance audit trail.",
+      "repoUpdated": "Updated",
+      "repos": {
+        "governance-framework": "Official operative governance documents, signed PDFs, formation records, reading guides, and proposal history (PROPOSALS.md).",
+        "website": "Open-source Astro codebase powering radixdao.org and the official notices & verification portal.",
+        "pricing-service": "Open-source replacement price service operated by Radix DAO powering token prices for Radix wallets."
+      }
+    },
+    "contact": {
+      "badge": "Official Channels",
+      "title": "Reach the",
+      "titleAccent": "Accountability Council",
+      "subtitle": "Two monitored mailboxes reach the Accountability Council directly for compliance challenges, disputes, and formal notices.",
+      "councilTelegramCta": "RAC Telegram Channel",
+      "mailboxNote": "The veto@ mailbox intentionally retains its legacy name so filers who remember it still reach a monitored channel.",
+      "challengeTitle": "Filing a Compliance Challenge",
+      "challengeDesc": "If you hold at least 0.1% of voting power and believe a published decision broke a specific governance rule, email either mailbox within 48 hours of the result. Filings are published verbatim to the public record within 6 hours.",
+      "knownGapTitle": "Transparency Note: Discussion Platform",
+      "knownGapDesc": "No official DAO discussion platform has been designated yet. Individual Transition Council members are reachable on Telegram, but personal handles are not official DAO channels and nothing said there is on the formal record.",
+      "legalDisclaimer": "Radix DAO LLC is a non-profit Decentralized Autonomous Organization LLC registered under Marshall Islands law (MIDAO 10280-26), and is a separate legal entity from Radix Publishing Ltd.",
+      "midaoLinkLabel": "Official MIDAO Portal (midao.org)",
+      "formationRecordLinkLabel": "Certified Formation Record"
+    }
+  }
+}

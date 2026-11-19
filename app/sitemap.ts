@@ -47,6 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/seal',
         '/google-wallet',
         '/infrastructure',
+        '/radix-dao',
         '/dashboard/staking',
         '/dashboard/explorer',
         '/console',

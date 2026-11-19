@@ -57,6 +57,9 @@ import hyperscaleEs from '@/features/hyperscale/locales/es.json';
 import infrastructureEn from '@/features/infrastructure/locales/en.json';
 import infrastructureEs from '@/features/infrastructure/locales/es.json';
 
+import radixDaoEn from '@/features/radix-dao/locales/en.json';
+import radixDaoEs from '@/features/radix-dao/locales/es.json';
+
 import sealEn from '@/features/seal/locales/en.json';
 import sealEs from '@/features/seal/locales/es.json';
 
@@ -118,6 +121,7 @@ const en = mergeTranslations(commonEn, [
   homeEn,
   hyperscaleEn,
   infrastructureEn,
+  radixDaoEn,
   sealEn,
   signEn,
 ]);
@@ -142,6 +146,7 @@ const es = mergeTranslations(commonEs, [
   homeEs,
   hyperscaleEs,
   infrastructureEs,
+  radixDaoEs,
   sealEs,
   signEs,
 ]);
@@ -166,6 +171,7 @@ export type Dictionary = typeof commonEn &
   typeof homeEn &
   typeof hyperscaleEn &
   typeof infrastructureEn &
+  typeof radixDaoEn &
   typeof sealEn &
   typeof signEn;
 
@@ -178,7 +184,7 @@ export type FeatureKey =
   | 'academy' | 'blog' | 'chat' | 'cipher' | 'community' | 'console' | 'consoleSecurity' | 'dapps' | 'dashboard'
   | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
   | 'games' | 'googleWallet' | 'governance' | 'home' | 'hyperscale' | 'infrastructure'
-  | 'seal' | 'sign';
+  | 'radixDao' | 'seal' | 'sign';
 
 const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ default: Record<string, unknown> }>>> = {
   en: {
@@ -201,6 +207,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     home: () => import('@/features/home/locales/en.json'),
     hyperscale: () => import('@/features/hyperscale/locales/en.json'),
     infrastructure: () => import('@/features/infrastructure/locales/en.json'),
+    radixDao: () => import('@/features/radix-dao/locales/en.json'),
     seal: () => import('@/features/seal/locales/en.json'),
     sign: () => import('@/features/sign/locales/en.json'),
   },
@@ -224,6 +231,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     home: () => import('@/features/home/locales/es.json'),
     hyperscale: () => import('@/features/hyperscale/locales/es.json'),
     infrastructure: () => import('@/features/infrastructure/locales/es.json'),
+    radixDao: () => import('@/features/radix-dao/locales/es.json'),
     seal: () => import('@/features/seal/locales/es.json'),
     sign: () => import('@/features/sign/locales/es.json'),
   }

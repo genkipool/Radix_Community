@@ -112,6 +112,7 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   ],
   about: [
     { key: 'about_us', href: '/#about', icon: <Info className="size-4" />, descKey: 'popup_about_us_desc', isHashLink: true },
+    { key: 'radix_dao', href: '/radix-dao', icon: <Landmark className="size-4" />, descKey: 'popup_about_radix_dao_desc' },
     { key: 'community_transparency', href: '/community', icon: <Eye className="size-4" />, descKey: 'popup_com_transparency_desc' },
   ]
 };
