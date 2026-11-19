@@ -84,7 +84,7 @@ export function DaoDocumentRow({
         </div>
 
         {/* Inline PDF Toggle & Source Actions */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0 lg:pt-1">
+        <div className="flex flex-wrap items-center justify-end gap-3 shrink-0 w-full lg:w-auto lg:pt-1">
           {sourceUrl && (
             <a
               href={sourceUrl}

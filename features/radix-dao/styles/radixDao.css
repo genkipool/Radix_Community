@@ -24,6 +24,7 @@
   scrollbar-color: var(--color-scrollbar) transparent;
   scrollbar-gutter: stable;
   overscroll-behavior: auto;
+  touch-action: pan-x pan-y;
 }
 
 .dao-pdf-scroll::-webkit-scrollbar {
