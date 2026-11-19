@@ -28,7 +28,7 @@
     "@radixdlt/radix-dapp-toolkit": "^2.3.0",
     "@radixdlt/radix-engine-toolkit": "^1.0.6",
     "@radixdlt/rola": "^2.1.0",
-    "@signpdf/placeholder-pdf-lib": "^3.3.0",
+    "@signpdf/placeholder-pdf-lib": "^4.0.0",
     "@signpdf/signer-p12": "^3.3.0",
     "@signpdf/signpdf": "^3.3.0",
     "@signpdf/utils": "^3.3.0",
