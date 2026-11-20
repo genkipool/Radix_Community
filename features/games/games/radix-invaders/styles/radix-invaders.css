@@ -82,3 +82,30 @@
   position: relative;
   font-family: 'Courier New', Courier, monospace;
 }
+
+.ri-game-btn {
+  flex: 1;
+  min-width: 180px;
+  padding: 14px 20px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: clamp(12px, 2.5vw, 15px);
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 2px solid var(--ri-btn-color);
+  color: var(--ri-btn-color);
+  background: rgba(var(--ri-btn-rgb), 0.05);
+  box-shadow: 0 0 8px rgba(var(--ri-btn-rgb), 0.2);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.ri-game-btn:hover {
+  background: rgba(var(--ri-btn-rgb), 0.12);
+  box-shadow: 0 0 20px rgba(var(--ri-btn-rgb), 0.75), 0 0 40px rgba(var(--ri-btn-rgb), 0.3);
+  transform: translateY(-2px) scale(1.02);
+}

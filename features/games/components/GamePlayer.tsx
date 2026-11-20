@@ -37,9 +37,8 @@ export default function GamePlayer({ game }: GamePlayerProps) {
   const CustomGame = CUSTOM_GAMES[game.id];
 
   return (
-    // Absolute fill — no top bar, game occupies all space
-    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+    <div className="flex-1 w-full h-full min-h-0 flex flex-col relative">
+      <div className="flex-1 w-full h-full flex flex-col min-h-0 overflow-hidden">
         {CustomGame ? (
           <CustomGame />
         ) : game.embedUrl ? (

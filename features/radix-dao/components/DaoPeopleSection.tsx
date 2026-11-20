@@ -13,9 +13,10 @@ import { TransitionCouncilTable } from './TransitionCouncilTable';
 
 interface DaoPeopleSectionProps {
   people: DaoCopy['people'];
+  locale: string;
 }
 
-export function DaoPeopleSection({ people }: DaoPeopleSectionProps) {
+export function DaoPeopleSection({ people, locale }: DaoPeopleSectionProps) {
   return (
     <DaoSection id="people" surface="muted" containerClassName="space-y-16">
       <SectionHeader
@@ -47,8 +48,8 @@ export function DaoPeopleSection({ people }: DaoPeopleSectionProps) {
       {/* 1. Full-width Transition RAC Table */}
       <TransitionCouncilTable people={people} />
 
-      {/* 2. Full-width 15 Permanent RAC Candidates Table (GP-ELECT-1) */}
-      <PermanentCandidatesTable people={people} />
+      {/* 2. Full-width 14 Permanent RAC Candidates Table (TC#4 · GP-ELECT-1) */}
+      <PermanentCandidatesTable people={people} locale={locale} />
 
       {/* 3. Balanced 2-column row: Permanent RAC | Working Groups (matched heights & full width) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-16 items-stretch">

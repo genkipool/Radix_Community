@@ -3,7 +3,7 @@
  * (VANGUARD, VIPER, PHALANX, VORTEX, SNIPER, CARRIER, TEMPEST, PULSAR, NEMESIS, OMEGA).
  */
 import type { Boss, GameState } from '../types/radix-invaders.types';
-import { CANVAS_W, COLORS } from '../constants/radix-invaders.constants';
+import { CANVAS_W, COLORS, MOBILE_RENDER_SCALE } from '../constants/radix-invaders.constants';
 import { getBossProfile, type BossArchetype } from '../services/waves';
 
 function drawBossHull(
@@ -256,20 +256,27 @@ function drawBossHull(
   }
 }
 
-export function drawBoss(ctx: CanvasRenderingContext2D, state: GameState, labels: Record<string, string>) {
+export function drawBoss(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  labels: Record<string, string>,
+  scaleY = 1,
+) {
   const boss: Boss | null = state.boss;
   if (!boss || !boss.active) return;
 
   const { x, y, w, h, enraged, hitFlash, chargeTimer, accentColor } = boss;
   const archetype = getBossProfile(boss.tier).archetype;
   const cx = x + w / 2;
-  const cy = y + h / 2;
+  const cy = (y + h / 2) * scaleY;
   const coreColor = hitFlash > 0 ? '#ffffff' : enraged ? '#ff2a2a' : accentColor;
   const turretColor = chargeTimer > 0 ? COLORS.gold : coreColor;
   const pulse = 0.72 + 0.28 * Math.sin(state.tick * (enraged ? 0.28 : 0.14));
 
+  const isTall = scaleY > 1;
   ctx.save();
   ctx.translate(cx, cy);
+  if (isTall) ctx.scale(MOBILE_RENDER_SCALE.boss, MOBILE_RENDER_SCALE.boss);
 
   // Subtle ambient halo behind boss
   ctx.globalAlpha = 0.18 * pulse;
@@ -315,10 +322,10 @@ export function drawBoss(ctx: CanvasRenderingContext2D, state: GameState, labels
   ctx.restore();
 
   // Boss HP bar at top-center
-  const barW = 340;
-  const barH = 12;
+  const barW = isTall ? 460 : 340;
+  const barH = isTall ? 18 : 12;
   const bx = (CANVAS_W - barW) / 2;
-  const by = 58;
+  const by = isTall ? 104 : 58;
   const hpPct = Math.max(0, boss.hp / boss.maxHp);
 
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
@@ -331,7 +338,7 @@ export function drawBoss(ctx: CanvasRenderingContext2D, state: GameState, labels
 
   ctx.textAlign = 'center';
   ctx.fillStyle = enraged ? '#ff6666' : COLORS.gold;
-  ctx.font = 'bold 11px "Courier New", monospace';
+  ctx.font = isTall ? 'bold 18px "Courier New", monospace' : 'bold 11px "Courier New", monospace';
   const bossTitle = `${labels.boss_label ?? ''} ${boss.tier}/10 · ${archetype}${enraged ? ` · ${labels.boss_enraged ?? ''}` : ''}`;
-  ctx.fillText(bossTitle, CANVAS_W / 2, by - 6);
+  ctx.fillText(bossTitle, CANVAS_W / 2, by - (isTall ? 9 : 6));
 }

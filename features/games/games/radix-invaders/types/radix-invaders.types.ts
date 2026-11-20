@@ -1,7 +1,4 @@
 export type GameScreen =
-  | 'INTRO'
-  | 'BADGE_ACQUIRING'
-  | 'BADGE_SUCCESS'
   | 'PLAYING'
   | 'PAUSED'
   | 'CONTINUE'
@@ -12,11 +9,6 @@ export type GameScreen =
 export type GameMode = 'TOURNAMENT' | 'FUN';
 export type PowerUpType = 'NONE' | 'SPREAD' | 'LASER' | 'RAPID';
 export type PowerUpItemType = 'SPREAD' | 'LASER' | 'RAPID' | 'SHIELD' | 'LIFE' | 'CONTINUE';
-
-export interface Vec2 {
-  x: number;
-  y: number;
-}
 
 export interface Star {
   x: number;
@@ -82,16 +74,12 @@ export interface Alien {
   alive: boolean;
   hp: number;
   maxHp: number;
-  frame: number;
   hitFlash: number;
   type: 0 | 1 | 2 | 3;
   diving: boolean;
-  diveTargetX: number;
   diveAngle: number;
-  divePhase: 'RISE' | 'FLIP' | 'DIVE';
+  divePhase: 'RISE' | 'DIVE';
   diveFlipTimer: number;
-  diveOriginX: number;
-  diveOriginY: number;
 }
 
 export interface Boss {
@@ -185,8 +173,6 @@ export interface GameState {
   stars: Star[];
   shakeTimer: number;
   shakeIntensity: number;
-  flashMessage: string;
-  flashTimer: number;
   tick: number;
   stageTimer: number;
   newRecord: boolean;

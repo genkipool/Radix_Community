@@ -201,7 +201,10 @@
       "top10_score": "PUNTOS",
       "top10_prize": "PREMIO",
       "top10_you": "TÚ",
-      "back_to_menu": "MENÚ PRINCIPAL"
+      "back_to_menu": "MENÚ PRINCIPAL",
+      "mobile_exit_theater": "Salir",
+      "sound_on": "Activar sonido",
+      "sound_off": "Silenciar sonido"
     }
   },
   "seo": {

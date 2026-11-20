@@ -74,16 +74,12 @@ function makeAlien(row: number, col: number, x: number, y: number, type: 0 | 1 |
     alive: true,
     hp,
     maxHp: hp,
-    frame: 0,
     hitFlash: 0,
     type,
     diving: false,
-    diveTargetX: 0,
     diveAngle: -Math.PI / 2,
     divePhase: 'RISE',
     diveFlipTimer: 0,
-    diveOriginX: x,
-    diveOriginY: y,
   };
 }
 

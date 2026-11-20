@@ -81,7 +81,7 @@ export async function fetchGovernanceEntries(): Promise<GovernanceEntry[]> {
     // The list does not show full texts; leaving them out keeps the payload small.
     return perSystem.flat()
         .filter(e => !e.item.hidden)
-        .map(e => ({ ...e, item: { ...e.item, description: null } }));
+        .map(e => ({ ...e, item: { ...e.item, description: null, election: null } }));
 }
 
 /** One item with its full text, or null when it does not exist. */

@@ -9,14 +9,14 @@ export const DAO_TRANSITION_COUNCIL: DaoTransitionMember[] = [
 ];
 
 /**
- * 15 community candidates who presented during the Permanent RAC candidacy window
- * (16 Oct - 13 Nov 2026) on RadixTalk thread #2338, under TRAC verification as of 16 Nov 2026.
+ * 14 official candidates on the on-chain TC#4 ballot (`https://vote.radixdao.org/tc/4`)
+ * for the founding Permanent RAC election (7 seats, Majority Judgment).
  */
 export const DAO_PERMANENT_CANDIDATES: DaoPermanentCandidate[] = [
   {
     id: 'linuxx',
     number: '01',
-    name: 'linuxx',
+    name: 'linuxxx',
     handle: '@linuxx_xrd',
     isCurrentTrac: false,
     threadUrl: 'https://radixtalk.com/t/nomination-for-the-dao/2339',
@@ -52,11 +52,11 @@ export const DAO_PERMANENT_CANDIDATES: DaoPermanentCandidate[] = [
     threadUrl: 'https://radixtalk.com/t/candidacy-permanent-rac/2340',
   },
   {
-    id: 'jimmi',
+    id: 'robellino1',
     number: '06',
-    name: 'Jimmi',
+    name: 'Robellino1',
     isCurrentTrac: false,
-    threadUrl: 'https://radixtalk.com/t/candidacy-for-radix-dao-llcs-permanent-rac-election/2338/10',
+    threadUrl: 'https://radixtalk.com/t/candidacy-for-radix-dao-llcs-permanent-rac-election/2338/22',
   },
   {
     id: 'genkipool',
@@ -67,12 +67,11 @@ export const DAO_PERMANENT_CANDIDATES: DaoPermanentCandidate[] = [
     threadUrl: 'https://radixtalk.com/t/candidacy-for-permanent-rac-genkipool/2346',
   },
   {
-    id: 'cryptobright',
+    id: 'leonets',
     number: '08',
-    name: 'CryptoBright (Cluse)',
-    handle: '@cryptobright545',
+    name: 'Leonets',
     isCurrentTrac: false,
-    threadUrl: 'https://radixtalk.com/t/candidacy-for-permanent-rac-cryptobright-aka-cluse/2347',
+    threadUrl: 'https://radixtalk.com/t/rfp-self-nomination-for-the-permanent-radix-rac/2313/2',
   },
   {
     id: 'lunatic',
@@ -91,7 +90,7 @@ export const DAO_PERMANENT_CANDIDATES: DaoPermanentCandidate[] = [
   {
     id: 'wingspan',
     number: '11',
-    name: 'wingspan',
+    name: 'Wingspan',
     handle: '@wingspan_r',
     isCurrentTrac: false,
     threadUrl: 'https://radixtalk.com/t/candidacy-for-permanent-rac-wingspan/2348',
@@ -118,13 +117,6 @@ export const DAO_PERMANENT_CANDIDATES: DaoPermanentCandidate[] = [
     handle: '@ALFRED_DULAiRE',
     isCurrentTrac: true,
     threadUrl: 'https://radixtalk.com/t/candidacy-for-radix-dao-llcs-permanent-rac-election/2338/21',
-  },
-  {
-    id: 'robellino1',
-    number: '15',
-    name: 'Robellino1',
-    isCurrentTrac: false,
-    threadUrl: 'https://radixtalk.com/t/candidacy-for-radix-dao-llcs-permanent-rac-election/2338/22',
   },
 ];
 

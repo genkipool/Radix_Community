@@ -1,14 +1,17 @@
-import { ArrowDownToLine, CheckCircle2, Clock, ExternalLink, Landmark, ShieldCheck, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowDownToLine, ArrowUpRight, CheckCircle2, Clock, Landmark, ShieldCheck, Sparkles, Vote } from 'lucide-react';
 import { FadeIn } from '@/components/ui/FadeIn';
-import { DAO_DOCUMENTS, DAO_EXTERNAL_LINKS, DAO_LEGAL_FACTS } from '../data/radixDaoData';
+import { DAO_DOCUMENTS, DAO_LEGAL_FACTS } from '../data/radixDaoData';
 import type { DaoCopy } from '../types/radixDao.types';
 
 interface DaoHeroProps {
   hero: DaoCopy['hero'];
   sequenceSteps: DaoCopy['sequence']['steps'];
+  locale: string;
 }
 
-export function DaoHero({ hero, sequenceSteps }: DaoHeroProps) {
+export function DaoHero({ hero, sequenceSteps, locale }: DaoHeroProps) {
+  const tc4Href = `/${locale}/governance/radix-dao/temperature-check/4`;
   const stats = [
     { value: hero.facts.formedValue, label: hero.facts.formedLabel, gradient: true, title: undefined, href: undefined },
     { value: `${DAO_DOCUMENTS.length} PDFs`, label: hero.ctaDocs, gradient: false, title: undefined, href: '#documents' },
@@ -62,21 +65,20 @@ export function DaoHero({ hero, sequenceSteps }: DaoHeroProps) {
 
             {/* Primary & Secondary CTAs */}
             <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+              <Link
+                href={tc4Href}
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold hover:opacity-90 transition-opacity"
+              >
+                <Vote className="size-4 shrink-0" aria-hidden="true" />
+                <span>{hero.ctaVote}</span>
+                <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
+              </Link>
               <a
                 href="#documents"
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold hover:opacity-90 transition-opacity"
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-[var(--color-card-border)] text-[var(--color-text-main)] font-bold hover:bg-[var(--color-surface)] transition-colors border border-[var(--color-card-border)]"
               >
                 <ArrowDownToLine className="size-4 shrink-0" aria-hidden="true" />
                 <span>{hero.ctaDocs}</span>
-              </a>
-              <a
-                href={DAO_EXTERNAL_LINKS.vote}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-[var(--color-card-border)] text-[var(--color-text-main)] font-bold hover:bg-[var(--color-surface)] transition-colors border border-[var(--color-card-border)]"
-              >
-                <span>{hero.ctaVote}</span>
-                <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
               </a>
             </div>
           </div>
@@ -134,9 +136,14 @@ export function DaoHero({ hero, sequenceSteps }: DaoHeroProps) {
               </ol>
 
               <div className="pt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                <span className="font-semibold text-[var(--color-text-main)]">
-                  {hero.facts.entityValue}
-                </span>
+                <Link
+                  href={tc4Href}
+                  className="inline-flex items-center gap-1.5 font-bold text-[var(--color-primary)] hover:underline"
+                >
+                  <Vote className="size-4" aria-hidden="true" />
+                  <span>{hero.ctaVote}</span>
+                  <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                </Link>
                 <a
                   href="#verify"
                   className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-secondary)] hover:underline"

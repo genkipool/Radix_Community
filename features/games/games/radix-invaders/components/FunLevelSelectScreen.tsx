@@ -8,6 +8,42 @@ export function snapToBossLevel(level: number): number {
   return Math.min(MAX_LEVEL, Math.max(BOSS_INTERVAL, Math.ceil(level / BOSS_INTERVAL) * BOSS_INTERVAL));
 }
 
+function StepperButton({
+  symbol,
+  ariaLabel,
+  disabled,
+  onStartHold,
+  onStopHold,
+  onStep,
+}: {
+  symbol: string;
+  ariaLabel: string;
+  disabled: boolean;
+  onStartHold: () => void;
+  onStopHold: () => void;
+  onStep: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => { e.preventDefault(); onStartHold(); }}
+      onPointerUp={onStopHold}
+      onPointerLeave={onStopHold}
+      onPointerCancel={onStopHold}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStep(); } }}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      className={[
+        'w-11 h-11 rounded-full border border-white/15 bg-white/5 text-[22px] font-bold',
+        'flex items-center justify-center select-none touch-none',
+        disabled ? 'text-white/20 cursor-default' : 'text-white cursor-pointer hover:bg-white/10',
+      ].join(' ')}
+    >
+      {symbol}
+    </button>
+  );
+}
+
 interface FunLevelSelectScreenProps {
   t: Record<string, string>;
   level: number;
@@ -126,27 +162,14 @@ export default function FunLevelSelectScreen({
         {/* Clean Level Stepper (supports press-and-hold auto-repeat) */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 8px' }}>
-            <button
-              type="button"
-              onPointerDown={(e) => { e.preventDefault(); startHold(-step); }}
-              onPointerUp={stopHold}
-              onPointerLeave={stopHold}
-              onPointerCancel={stopHold}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); adjust(-step); } }}
+            <StepperButton
+              symbol="−"
+              ariaLabel="-"
               disabled={effectiveLevel <= minLvl}
-              aria-label="-"
-              style={{
-                width: 44, height: 44, borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.16)',
-                background: 'rgba(255,255,255,0.05)',
-                color: effectiveLevel <= minLvl ? 'rgba(255,255,255,0.2)' : '#fff',
-                fontSize: 22, fontWeight: 700, cursor: effectiveLevel <= minLvl ? 'default' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                userSelect: 'none', touchAction: 'none',
-              }}
-            >
-              −
-            </button>
+              onStartHold={() => startHold(-step)}
+              onStopHold={stopHold}
+              onStep={() => adjust(-step)}
+            />
 
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 54, fontWeight: 900, lineHeight: 1, color: accent }}>
@@ -157,27 +180,14 @@ export default function FunLevelSelectScreen({
               </div>
             </div>
 
-            <button
-              type="button"
-              onPointerDown={(e) => { e.preventDefault(); startHold(step); }}
-              onPointerUp={stopHold}
-              onPointerLeave={stopHold}
-              onPointerCancel={stopHold}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); adjust(step); } }}
+            <StepperButton
+              symbol="+"
+              ariaLabel="+"
               disabled={effectiveLevel >= MAX_LEVEL}
-              aria-label="+"
-              style={{
-                width: 44, height: 44, borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.16)',
-                background: 'rgba(255,255,255,0.05)',
-                color: effectiveLevel >= MAX_LEVEL ? 'rgba(255,255,255,0.2)' : '#fff',
-                fontSize: 22, fontWeight: 700, cursor: effectiveLevel >= MAX_LEVEL ? 'default' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                userSelect: 'none', touchAction: 'none',
-              }}
-            >
-              +
-            </button>
+              onStartHold={() => startHold(step)}
+              onStopHold={stopHold}
+              onStep={() => adjust(step)}
+            />
           </div>
 
           <div style={{ minHeight: 18, fontSize: 12, fontWeight: 700, textAlign: 'center', color: boss ? '#ffd700' : preBoss ? '#00ff9d' : 'rgba(255,255,255,0.45)' }}>

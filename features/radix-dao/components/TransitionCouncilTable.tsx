@@ -11,28 +11,30 @@ interface TransitionCouncilTableProps {
 export function TransitionCouncilTable({ people }: TransitionCouncilTableProps) {
   return (
     <div>
-      <FadeIn className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-3">
+      <FadeIn className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
         <h3 className="text-2xl font-bold text-[var(--color-text-main)]">
           {people.transitionTitle}
         </h3>
-        <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-accent)]">
-          {people.transitionBadge}
-        </span>
+        <div className="flex flex-col sm:items-end divide-y divide-[var(--color-card-border)]/70">
+          <span className="pb-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-accent)]">
+            {people.transitionBadge}
+          </span>
+          <a
+            href={DAO_EXTERNAL_LINKS.councilTelegram}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={people.councilTelegramTitle}
+            className="pt-1.5 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-secondary)] hover:underline"
+          >
+            <span>{people.councilTelegramLabel}</span>
+            <ExternalLink className="size-3.5" aria-hidden="true" />
+          </a>
+        </div>
       </FadeIn>
-      <FadeIn className="mb-6 space-y-2.5">
+      <FadeIn className="mb-6">
         <p className="text-sm sm:text-base text-[var(--color-text-muted)] leading-relaxed max-w-4xl">
           {people.transitionDesc}
         </p>
-        <a
-          href={DAO_EXTERNAL_LINKS.councilTelegram}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={people.councilTelegramTitle}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-secondary)] hover:underline"
-        >
-          <span>{people.councilTelegramLabel}</span>
-          <ExternalLink className="size-3.5" aria-hidden="true" />
-        </a>
       </FadeIn>
 
       {/* Mobile stacked layout (< md) */}
@@ -143,6 +145,26 @@ export function TransitionCouncilTable({ people }: TransitionCouncilTableProps) 
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Electoral Recusal & FND Asset Handover Operational Notes */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="border-l-2 border-[var(--color-primary)] pl-4 py-1 space-y-1">
+          <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">
+            {people.recusalTitle}
+          </h4>
+          <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
+            {people.recusalDesc}
+          </p>
+        </div>
+        <div className="border-l-2 border-[var(--color-secondary)] pl-4 py-1 space-y-1">
+          <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--color-secondary)]">
+            {people.handoverTitle}
+          </h4>
+          <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
+            {people.handoverDesc}
+          </p>
+        </div>
       </div>
     </div>
   );
