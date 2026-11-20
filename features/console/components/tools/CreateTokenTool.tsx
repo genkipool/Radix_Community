@@ -38,6 +38,18 @@ import { TxResultBanner } from '../shared/TxResultBanner';
 
 type TokenType = 'fungible' | 'nonFungible';
 
+/** Owner role a token type opens with: NFT collections none, fungible tokens a badge. */
+const defaultOwnerRole = (type: TokenType): OwnerRoleState => ({
+  ...DEFAULT_OWNER_ROLE,
+  kind: type === 'nonFungible' ? 'none' : 'badge',
+});
+
+/** The NFT form opens with its first row, so there is something to fill in. */
+const emptyNft = (id: string) => ({
+  id,
+  data: { name: '', description: '', key_image_url: '', customData: {} } as NftItemData,
+});
+
 /* ─── Metadata form model ─────────────────────────────────────────────────── */
 
 type MetaKey = 'name' | 'symbol' | 'icon_url' | 'description' | 'tags' | 'info_url';
@@ -162,10 +174,10 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const [divisibility, setDivisibility] = useState('0');
   const [metadata, setMetadata] = useState<MetadataState>(EMPTY_METADATA);
   const [customMetadata, setCustomMetadata] = useState<CustomMetaFieldState[]>([]);
-  const [ownerRole, setOwnerRole] = useState<OwnerRoleState>({ ...DEFAULT_OWNER_ROLE, kind: 'badge' });
+  const [ownerRole, setOwnerRole] = useState<OwnerRoleState>(defaultOwnerRole('fungible'));
   const [authRoles, setAuthRoles] = useState<ResourceAuthRoles>(DEFAULT_AUTH_ROLES);
-  const [showAuthRoles, setShowAuthRoles] = useState(false);
-  const [nfts, setNfts] = useState<Array<{ id: string; data: NftItemData }>>([]);
+  const [showAuthRoles, setShowAuthRoles] = useState(true);
+  const [nfts, setNfts] = useState<Array<{ id: string; data: NftItemData }>>([emptyNft('nft-initial')]);
   const [nftBaseFieldsLocked, setNftBaseFieldsLocked] = useState({ name: false, description: false, key_image_url: false });
   const [nftCustomFields, setNftCustomFields] = useState<Array<{ id: string; key: string; locked: boolean }>>([]);
 
@@ -194,7 +206,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
     setNfts((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        ...emptyNft(crypto.randomUUID()),
         data: { name: data?.name ?? '', description: data?.description ?? '', key_image_url: data?.key_image_url ?? '', customData: data?.customData ?? {} },
       },
     ]);
@@ -342,7 +354,10 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                 { value: 'nonFungible', label: labels.nonFungible, icon: <Layers className="size-4" /> },
               ]}
               value={tokenType}
-              onChange={setTokenType}
+              onChange={(type) => {
+                setTokenType(type);
+                setOwnerRole(defaultOwnerRole(type));
+              }}
               disabled={isSending}
             />
           </div>

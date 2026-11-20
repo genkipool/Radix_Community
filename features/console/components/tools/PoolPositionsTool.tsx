@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
 import { ArrowDownToLine, ArrowUpFromLine, BadgeCheck, Layers, TriangleAlert, Waves } from 'lucide-react';
 
 import { CopyButton } from '@/components/ui/CopyButton';
@@ -10,6 +9,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
+import { ConsoleToolLink } from '../../ConsoleNav';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { useDexListing, usePoolUnitPositions, useUnitValueChanges } from '../../hooks/useDexPools';
@@ -198,6 +198,7 @@ function PositionCard({
   const dexListing = useDexListing(position.pool);
   const statusOf = (id: string): RangeStatus | null =>
     position.currentTick !== null && position.ranges[id] ? rangeStatus(position.currentTick, position.ranges[id]) : null;
+  const newRangeQuery = toolQuery({ pool: position.pool, account });
   const outOfRange = position.ids.filter((id) => {
     const status = statusOf(id);
     return status !== null && status !== 'in';
@@ -265,13 +266,15 @@ function PositionCard({
       {outOfRange.length > 0 && (
         <div className="space-y-1">
           <MessageLine tone="warning">{(outOfRange.length === 1 ? labels.outOfRangeOne : labels.outOfRangeMany).replace('{count}', String(outOfRange.length))}</MessageLine>
-          <Link
-            href={`/${language}/console/pool-dex-add?${toolQuery({ pool: position.pool, account })}`}
+          <ConsoleToolLink
+            slug="pool-dex-add"
+            query={newRangeQuery}
+            href={`/${language}/console/pool-dex-add?${newRangeQuery}`}
             className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:border-[var(--color-primary)]"
             style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
           >
             <ArrowDownToLine className="size-3.5" /> {labels.newRangeLink}
-          </Link>
+          </ConsoleToolLink>
         </div>
       )}
 
@@ -376,12 +379,12 @@ function UnitRow({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Link href={`/${language}/console/pool-redeem?${query}`} className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:border-[var(--color-primary)]" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
+        <ConsoleToolLink slug="pool-redeem" query={query} href={`/${language}/console/pool-redeem?${query}`} className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:border-[var(--color-primary)]" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
           <ArrowUpFromLine className="size-3.5" /> {labels.redeemLink}
-        </Link>
-        <Link href={`/${language}/console/pool-dex-add?${query}`} className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:border-[var(--color-primary)]" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
+        </ConsoleToolLink>
+        <ConsoleToolLink slug="pool-dex-add" query={query} href={`/${language}/console/pool-dex-add?${query}`} className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:border-[var(--color-primary)]" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
           <ArrowDownToLine className="size-3.5" /> {labels.addMoreLink}
-        </Link>
+        </ConsoleToolLink>
       </div>
     </li>
   );

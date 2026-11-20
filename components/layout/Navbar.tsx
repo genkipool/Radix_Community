@@ -85,10 +85,10 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
     { key: 'astrolescent', href: 'https://astrolescent.com/', icon: <Route className="size-4" />, descKey: 'popup_eco_astro_desc' },
   ],
   developers: [
-    { key: 'doc', href: '/docs', icon: <BookOpen className="size-4" />, descKey: 'popup_dev_docs_desc' },
-    { key: 'academy', href: '/academy', icon: <GraduationCap className="size-4" />, descKey: 'popup_dev_academy_desc' },
     { key: 'console', href: '/console', icon: <Terminal className="size-4" />, descKey: 'popup_dev_console_desc' },
     { key: 'wiki', href: 'https://radix.wiki', icon: <Library className="size-4" />, descKey: 'popup_dev_wiki_desc' },
+    { key: 'doc', href: '/docs', icon: <BookOpen className="size-4" />, descKey: 'popup_dev_docs_desc' },
+    { key: 'academy', href: '/academy', icon: <GraduationCap className="size-4" />, descKey: 'popup_dev_academy_desc' },
   ],
   wallet: [
     { key: 'wallet_ios', href: 'https://apps.apple.com/us/app/radix-wallet/id6448950995', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_ios_desc' },

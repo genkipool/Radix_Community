@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 
 import { useLanguage } from '@/context/LanguageContext';
 
+import { ConsoleToolLink } from '../../ConsoleNav';
 import { usePoolFormContext } from '../../hooks/usePoolFormContext';
 import { useResourceLabels } from '../../hooks/useResourceLabels';
 import { isPositiveDecimal, lteDecimal, normalizeDecimal } from '../../lib/decimal';
@@ -41,6 +41,7 @@ export default function PoolContributeTool({ t }: ConsoleToolProps) {
 
   // A DEX runs this pool: its component guards it, and users add liquidity through that component.
   const { language } = useLanguage();
+  const dexQuery = toolQuery({ pool: state?.address, account: ctx.account });
   const runByContract = !!state && state.manager.type === 'nonFungible' && isGlobalCallerBadge(state.manager.resource);
 
   const blockedReason = !state
@@ -66,9 +67,9 @@ export default function PoolContributeTool({ t }: ConsoleToolProps) {
         {runByContract && state && (
           <p className="rounded-lg p-3 text-xs leading-relaxed" style={{ background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', color: 'var(--color-text-main)' }}>
             {form.dexNote}{' '}
-            <Link href={`/${language}/console/pool-dex-add?${toolQuery({ pool: state.address, account: ctx.account })}`} className="font-bold" style={{ color: 'var(--color-primary)' }}>
+            <ConsoleToolLink slug="pool-dex-add" query={dexQuery} href={`/${language}/console/pool-dex-add?${dexQuery}`} className="font-bold" style={{ color: 'var(--color-primary)' }}>
               {form.dexLink} →
-            </Link>
+            </ConsoleToolLink>
           </p>
         )}
         {resources.map((resource) => (

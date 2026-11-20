@@ -223,7 +223,9 @@
       "wallet_android": "Billetera Android",
       "wallet_chrome": "Conector de Chrome",
       "buy_xrd": "Comprar XRD",
-      "staking": "Hacer Staking"
+      "staking": "Hacer Staking",
+      "governance": "Gobernanza",
+      "radix_dao": "Radix DAO"
     },
     "developers": {
       "title": "Desarrolladores",
