@@ -133,6 +133,9 @@ function TransactionDetailBody({
                                         if (classes.includes('ProtocolVote') || events.some((e) => e.name === 'ProtocolUpdateReadinessSignalEvent')) {
                                             return tt?.tx_type_protocol_vote || 'Protocol Vote';
                                         }
+                                        if (events.some((e) => e.name === 'ProposalVotedEvent' || e.name === 'TemperatureCheckVotedEvent')) {
+                                            return tt?.tx_type_governance_vote ?? '';
+                                        }
                                         if (classes.length === 0) return tt?.tx_type_general || 'General';
                                         const c = classes[0];
                                         if (c === 'ValidatorStake') return tt?.tx_type_stake || 'Stake';

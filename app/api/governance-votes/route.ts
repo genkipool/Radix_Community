@@ -50,9 +50,16 @@ export async function GET(request: NextRequest) {
             rows = voters.map(r => ({ ...r, votePower: power.get(r.account) ?? null }));
         }
 
+        const missingRequestedPower = (Boolean(account) && tally?.accountPower == null)
+            || (withVoters && (rows?.some(r => r.votePower === null) ?? true));
+
         return NextResponse.json(
             tally || rows ? { results: tally?.results ?? [], accountPower: tally?.accountPower ?? null, voters: rows, source: tally?.source ?? null } : null,
-            { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } },
+            {
+                headers: missingRequestedPower
+                    ? NO_STORE
+                    : { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+            },
         );
     } catch (error) {
         logger.warn({ err: error }, 'Governance votes unavailable for %s %s #%s', system.key, type, id);

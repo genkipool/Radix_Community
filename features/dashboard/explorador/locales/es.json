@@ -366,6 +366,7 @@
       "tx_type_settings": "Ajustes",
       "tx_type_general": "General",
       "tx_type_protocol_vote": "Voto de Protocolo",
+      "tx_type_governance_vote": "Voto de Gobernanza",
       "nfts": "NFT(s)",
       "validator_info_title": "Validador",
       "validator_info_stake": "Has delegado {amount} XRD a este validador",

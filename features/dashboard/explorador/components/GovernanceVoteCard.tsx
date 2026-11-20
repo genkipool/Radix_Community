@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info, ArrowRight } from 'lucide-react';
+import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info, ArrowRight, Scale } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { systemByComponent } from '@/features/governance/config/systems';
 import { governanceItemPath } from '@/features/governance/lib/paths';
@@ -13,8 +13,9 @@ import {
     ballotChoices, selectedLabels, summarizeTally, toneOf, uniqueVoters, votingPhase, votingProgress,
     type GovernanceVote, type VotingPhase,
 } from '@/features/governance/lib/governanceVotes';
+import { formatShare } from '@/features/governance/lib/format';
 import {
-    SummaryCard, SummaryHero, SummaryBody, PlainSummary, FactTile, FactGrid, AddressChip, shortenAddress,
+    SummaryCard, SummaryHero, SummaryBody, PlainSummary, FactTile, AddressChip, shortenAddress,
 } from './SummaryCardKit';
 import {
     TONE, fill, formatPct, formatXrd, OutcomeBanner, BallotResults, TurnoutMeter, VotingWindow, LinkList, type Gv,
@@ -68,6 +69,18 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
     const phase = votingPhase(item);
     const title = item?.title || gv.untitled || 'untitled';
     const kindShort = isProposal ? (gv.short_proposal || 'Proposal') : (gv.short_temperature_check || 'Temperature check');
+    const exactAccountPower = tally?.accountPower != null
+        ? new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tally.accountPower)
+        : null;
+    const accountShareText = tally?.accountShare != null
+        ? fill(gv.voting_power_share ?? '', { share: formatShare(tally.accountShare, locale) })
+        : null;
+    const voterPowerHint = tally?.accountPower != null
+        ? fill(gv.voter_power || 'Voting power: {amount} XRD ({share} of the total)', {
+            amount: formatXrd(tally.accountPower, locale),
+            share: formatShare(tally.accountShare ?? 0, locale),
+        })
+        : null;
 
     const summary = fill(
         (isProposal ? gv.summary_proposal : gv.summary_temperature_check) || 'The account {account} voted "{choice}" on "{title}".',
@@ -132,6 +145,66 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                         )}
                     </div>
                 </div>
+
+                {/* ── Voter Account & Voting Power highlight strip ── */}
+                {vote.account && (
+                    <div className="mt-4 pt-3.5 border-t border-[var(--color-card-border)]/60 grid grid-cols-1 @md:grid-cols-2 gap-3">
+                        <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)]/85 px-3.5 py-2.5 flex items-center justify-between gap-3 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="grid place-items-center size-9 rounded-lg bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[var(--color-primary)] shrink-0">
+                                    <UserRound className="size-4" />
+                                </span>
+                                <div className="min-w-0 flex flex-col">
+                                    <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                                        {gv.voter}
+                                    </span>
+                                    <AddressChip address={vote.account} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
+                                </div>
+                            </div>
+                            {vote.voteId && (
+                                <span className="shrink-0 text-[10px] font-mono font-semibold px-2.5 py-1 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]">
+                                    {fill(gv.vote_number ?? '', { id: vote.voteId })}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-card-bg)]/85 px-3.5 py-2.5 flex items-center justify-between gap-3 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="grid place-items-center size-9 rounded-lg bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/25 text-[var(--color-primary)] shrink-0">
+                                    <Scale className="size-4" />
+                                </span>
+                                <div className="min-w-0 flex flex-col">
+                                    <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                                        {gv.voting_power}
+                                    </span>
+                                    {tally?.accountPower != null ? (
+                                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
+                                            <span className="text-base @md:text-lg font-black font-mono text-[var(--color-primary)] leading-tight tabular-nums">
+                                                {formatXrd(tally.accountPower, locale)} XRD
+                                            </span>
+                                            {tally.accountPower >= 1000 && exactAccountPower && (
+                                                <span className="text-[11px] font-mono text-[var(--color-text-muted)] tabular-nums truncate">
+                                                    ({exactAccountPower} XRD)
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : tallyQuery.isLoading && network === 'mainnet' ? (
+                                        <span className="text-xs font-semibold text-[var(--color-text-muted)] animate-pulse">
+                                            {gv.voting_power_counting}
+                                        </span>
+                                    ) : (
+                                        <span className="text-sm font-mono font-semibold text-[var(--color-text-muted)]">—</span>
+                                    )}
+                                </div>
+                            </div>
+                            {accountShareText && (
+                                <span className="shrink-0 text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary)] tabular-nums">
+                                    {accountShareText}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
             </SummaryHero>
 
             <SummaryBody>
@@ -155,48 +228,71 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                 {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={locale} />}
 
                 {/* ── Key facts ── */}
-                <FactGrid>
+                <div className="space-y-3">
                     {vote.account && (
+                        <div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+                            <FactTile
+                                icon={UserRound}
+                                label={gv.voter || 'Voter'}
+                                hint={[
+                                    vote.voteId ? fill(gv.vote_number || 'Vote no. {id}', { id: vote.voteId }) : null,
+                                    voterPowerHint,
+                                ].filter(Boolean).join(' · ') || undefined}
+                            >
+                                <AddressChip address={vote.account} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
+                            </FactTile>
+
+                            <FactTile
+                                icon={Scale}
+                                label={gv.voting_power ?? ''}
+                                hint={tally?.accountPower != null
+                                    ? [
+                                        tally.accountPower >= 1000 && exactAccountPower ? `${exactAccountPower} XRD` : null,
+                                        accountShareText,
+                                    ].filter(Boolean).join(' · ') || undefined
+                                    : undefined}
+                            >
+                                {tally?.accountPower != null ? (
+                                    <span className="text-xl font-black font-mono text-[var(--color-primary)] tabular-nums">
+                                        {formatXrd(tally.accountPower, locale)} XRD
+                                    </span>
+                                ) : tallyQuery.isLoading && network === 'mainnet' ? (
+                                    <span className="text-sm font-semibold text-[var(--color-text-muted)] animate-pulse">
+                                        {gv.voting_power_counting}
+                                    </span>
+                                ) : (
+                                    <span className="text-xl font-black font-mono text-[var(--color-text-muted)]">—</span>
+                                )}
+                            </FactTile>
+                        </div>
+                    )}
+
+                    <div className={`grid grid-cols-1 ${item?.author ? '@md:grid-cols-3' : '@md:grid-cols-2'} gap-3`}>
                         <FactTile
-                            icon={UserRound}
-                            label={gv.voter || 'Voter'}
-                            hint={[
-                                vote.voteId ? fill(gv.vote_number || 'Vote no. {id}', { id: vote.voteId }) : null,
-                                tally?.accountPower != null
-                                    ? fill(gv.voter_power || 'Voting power: {amount} XRD ({share} of the total)', {
-                                        amount: formatXrd(tally.accountPower, locale),
-                                        share: formatPct(tally.accountShare ?? 0, locale),
-                                    })
-                                    : null,
-                            ].filter(Boolean).join(' · ') || undefined}
+                            icon={Users}
+                            label={gv.vote_count || 'Votes cast'}
+                            hint={item?.revoteCount
+                                ? fill(gv.revote_hint || 'Distinct accounts · changed votes: {n}', { n: item.revoteCount.toLocaleString(locale) })
+                                : (gv.vote_count_hint || 'Distinct accounts that voted')}
                         >
-                            <AddressChip address={vote.account} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
+                            <span className="text-xl font-black font-mono">{uniqueVoters(item)?.toLocaleString(locale) ?? '—'}</span>
                         </FactTile>
-                    )}
-                    <FactTile
-                        icon={Users}
-                        label={gv.vote_count || 'Votes cast'}
-                        hint={item?.revoteCount
-                            ? fill(gv.revote_hint || 'Distinct accounts · changed votes: {n}', { n: item.revoteCount.toLocaleString(locale) })
-                            : (gv.vote_count_hint || 'Distinct accounts that voted')}
-                    >
-                        <span className="text-xl font-black font-mono">{uniqueVoters(item)?.toLocaleString(locale) ?? '—'}</span>
-                    </FactTile>
-                    <FactTile
-                        icon={Target}
-                        label={gv.to_pass || 'To pass'}
-                        hint={item?.quorum ? fill(gv.quorum_hint || 'Minimum turnout: {amount} XRD of voting power', { amount: formatXrd(item.quorum, locale) }) : undefined}
-                    >
-                        {item?.approvalThreshold != null
-                            ? fill(gv.to_pass_value || '{pct} in favour', { pct: formatPct(item.approvalThreshold, locale) })
-                            : '—'}
-                    </FactTile>
-                    {item?.author && (
-                        <FactTile icon={PenLine} label={isProposal ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')}>
-                            <AddressChip address={item.author} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
+                        <FactTile
+                            icon={Target}
+                            label={gv.to_pass || 'To pass'}
+                            hint={item?.quorum ? fill(gv.quorum_hint || 'Minimum turnout: {amount} XRD of voting power', { amount: formatXrd(item.quorum, locale) }) : undefined}
+                        >
+                            {item?.approvalThreshold != null
+                                ? fill(gv.to_pass_value || '{pct} in favour', { pct: formatPct(item.approvalThreshold, locale) })
+                                : '—'}
                         </FactTile>
-                    )}
-                </FactGrid>
+                        {item?.author && (
+                            <FactTile icon={PenLine} label={isProposal ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')}>
+                                <AddressChip address={item.author} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
+                            </FactTile>
+                        )}
+                    </div>
+                </div>
 
                 {item && <VotingWindow item={item} phase={phase} progress={votingProgress(item)} gv={gv} locale={locale} timezone={timezone} />}
                 {item && <LinkList links={item.links} title={gv.links || 'Learn more'} />}
@@ -218,7 +314,9 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                         href={`/${language}${governanceItemPath(system.key, vote.kind, vote.itemId)}`}
                         className="flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 transition-opacity"
                     >
-                        {gv.open_in_governance || 'See the full vote and cast yours'}
+                        {phase === 'open'
+                            ? (gv.open_in_governance || 'See the full vote and cast yours')
+                            : (gv.view_in_governance ?? gv.open_in_governance)}
                         <ArrowRight className="size-4" />
                     </Link>
                 )}
