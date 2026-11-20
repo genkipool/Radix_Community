@@ -11,18 +11,26 @@ interface UsePdfPageRendererOptions {
   fetchUrl: string | null;
   page: number;
   scale: number;
+  fitContainerWidthPx?: number | null;
 }
 
 /**
  * Loads & caches a PDFDocumentProxy via pdfjs-dist and renders the requested page
  * onto a double-buffered HiDPI canvas with a pixel-aligned selectable TextLayer.
  */
-export function usePdfPageRenderer({ fetchUrl, page, scale }: UsePdfPageRendererOptions) {
+export function usePdfPageRenderer({
+  fetchUrl,
+  page,
+  scale,
+  fitContainerWidthPx,
+}: UsePdfPageRendererOptions) {
   const cachedDoc = fetchUrl ? pdfDocCache.get(fetchUrl) ?? null : null;
 
   const [loadedDoc, setLoadedDoc] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState(false);
   const [hasPainted, setHasPainted] = useState(false);
+  /** Unscaled page size in PDF points (scale 1 = 72 DPI) of the currently rendered page. */
+  const [pageSize, setPageSize] = useState<{ width: number; height: number } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
@@ -80,7 +88,19 @@ export function usePdfPageRenderer({ fetchUrl, page, scale }: UsePdfPageRenderer
         if (cancelled) return;
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const viewport = pdfPage.getViewport({ scale });
+        const base = pdfPage.getViewport({ scale: 1 });
+        const effectiveScale =
+          fitContainerWidthPx && fitContainerWidthPx > 0
+            ? (Math.max(35, Math.min(75, Math.floor((fitContainerWidthPx / (base.width * 1.333)) * 100))) /
+                100) *
+              1.333
+            : scale;
+        const viewport = pdfPage.getViewport({ scale: effectiveScale });
+        setPageSize((prev) =>
+          prev && prev.width === base.width && prev.height === base.height
+            ? prev
+            : { width: base.width, height: base.height }
+        );
 
         // Render onto an offscreen canvas first so the visible canvas never flashes blank
         const offscreen = document.createElement('canvas');
@@ -119,7 +139,7 @@ export function usePdfPageRenderer({ fetchUrl, page, scale }: UsePdfPageRenderer
           textContainer.replaceChildren();
           textContainer.style.width = `${Math.floor(viewport.width)}px`;
           textContainer.style.height = `${Math.floor(viewport.height)}px`;
-          textContainer.style.setProperty('--total-scale-factor', String(scale));
+          textContainer.style.setProperty('--total-scale-factor', String(effectiveScale));
 
           const textContent = await pdfPage.getTextContent();
           if (cancelled) return;
@@ -151,7 +171,7 @@ export function usePdfPageRenderer({ fetchUrl, page, scale }: UsePdfPageRenderer
       renderTask?.cancel();
       textLayerInstance?.cancel();
     };
-  }, [pdfDoc, page, scale]);
+  }, [pdfDoc, page, scale, fitContainerWidthPx]);
 
-  return { pdfDoc, totalPages, hasPainted, error, canvasRef, textLayerRef };
+  return { pdfDoc, totalPages, hasPainted, error, pageSize, canvasRef, textLayerRef };
 }
