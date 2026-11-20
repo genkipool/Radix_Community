@@ -2,6 +2,7 @@
  * Retro arcade sound engine using Web Audio API synthesis.
  * All sounds are procedurally generated — no audio files required.
  */
+import type { SfxEvent } from '../types/radix-invaders.types';
 
 let ctx: AudioContext | null = null;
 let masterBus: AudioNode | null = null;
@@ -21,7 +22,10 @@ function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   if (!ctx) {
     try {
-      ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)();
+      const AudioCtor =
+        window.AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!;
+      ctx = new AudioCtor();
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.frequency.value = 4200;
@@ -31,7 +35,9 @@ function getCtx(): AudioContext | null {
       filter.connect(comp);
       comp.connect(ctx.destination);
       masterBus = filter;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
   if (ctx.state === 'suspended' && !resuming) {
     resuming = true;
@@ -59,104 +65,88 @@ function osc(ac: AudioContext, type: OscillatorType, freq: number, dest: AudioNo
   return o;
 }
 
+interface ToneSweepOptions {
+  type: OscillatorType;
+  startFreq: number;
+  endFreq?: number;
+  volume: number;
+  freqDur?: number;
+  gainDur: number;
+  stopDur?: number;
+  delay?: number;
+}
+
+function playToneSweep(ac: AudioContext, opts: ToneSweepOptions) {
+  const t = ac.currentTime + (opts.delay ?? 0);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(opts.volume, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + opts.gainDur);
+  g.connect(getBus(ac));
+
+  const o = osc(ac, opts.type, opts.startFreq, g);
+  o.frequency.setValueAtTime(opts.startFreq, t);
+  if (opts.endFreq !== undefined) {
+    o.frequency.exponentialRampToValueAtTime(opts.endFreq, t + (opts.freqDur ?? opts.gainDur));
+  }
+  o.start(t);
+  o.stop(t + (opts.stopDur ?? opts.gainDur));
+}
+
+function playArpeggio(
+  notes: readonly number[],
+  type: OscillatorType,
+  volume: number,
+  stepSec: number,
+  decaySec: number,
+) {
+  const ac = getCtx();
+  if (!ac || muted) return;
+  for (let i = 0; i < notes.length; i++) {
+    playToneSweep(ac, {
+      type,
+      startFreq: notes[i],
+      volume,
+      gainDur: decaySec,
+      stopDur: decaySec + 0.015,
+      delay: i * stepSec,
+    });
+  }
+}
+
 // ── Sound primitives ─────────────────────────────────────────────
 
 export function playShoot(kind: 'normal' | 'spread' | 'laser' | 'rapid' = 'normal') {
   if (muted || !shouldPlay('shoot', 35)) return;
   const ac = getCtx();
   if (!ac) return;
-  const now = ac.currentTime;
-  const bus = getBus(ac);
 
   if (kind === 'laser') {
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0.18, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-    g.connect(bus);
-
-    const o1 = osc(ac, 'sawtooth', 1480, g);
-    o1.frequency.setValueAtTime(1480, now);
-    o1.frequency.exponentialRampToValueAtTime(240, now + 0.11);
-    o1.start(now);
-    o1.stop(now + 0.13);
-
-    const g2 = ac.createGain();
-    g2.gain.setValueAtTime(0.08, now);
-    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    g2.connect(bus);
-
-    const o2 = osc(ac, 'square', 2200, g2);
-    o2.frequency.setValueAtTime(2200, now);
-    o2.frequency.exponentialRampToValueAtTime(520, now + 0.075);
-    o2.start(now);
-    o2.stop(now + 0.085);
+    playToneSweep(ac, { type: 'sawtooth', startFreq: 1480, endFreq: 240, volume: 0.18, freqDur: 0.11, gainDur: 0.13 });
+    playToneSweep(ac, { type: 'square', startFreq: 2200, endFreq: 520, volume: 0.08, freqDur: 0.075, gainDur: 0.08, stopDur: 0.085 });
     return;
   }
 
   if (kind === 'spread') {
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0.16, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
-    g.connect(bus);
-
-    const o1 = osc(ac, 'sawtooth', 840, g);
-    o1.frequency.setValueAtTime(840, now);
-    o1.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-    o1.start(now);
-    o1.stop(now + 0.095);
-
-    const o2 = osc(ac, 'sawtooth', 940, g);
-    o2.frequency.setValueAtTime(940, now);
-    o2.frequency.exponentialRampToValueAtTime(240, now + 0.08);
-    o2.start(now);
-    o2.stop(now + 0.095);
+    playToneSweep(ac, { type: 'sawtooth', startFreq: 840, endFreq: 200, volume: 0.16, freqDur: 0.08, gainDur: 0.095 });
+    playToneSweep(ac, { type: 'sawtooth', startFreq: 940, endFreq: 240, volume: 0.12, freqDur: 0.08, gainDur: 0.095 });
     return;
   }
 
-  // Classic crisp arcade pew (normal & rapid)
   const isRapid = kind === 'rapid';
   const dur = isRapid ? 0.068 : 0.088;
   const startF = isRapid ? 1060 : 920;
   const endF = isRapid ? 270 : 210;
 
-  const g = ac.createGain();
-  g.gain.setValueAtTime(isRapid ? 0.14 : 0.17, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.015);
-  g.connect(bus);
-
-  const o = osc(ac, 'sawtooth', startF, g);
-  o.frequency.setValueAtTime(startF, now);
-  o.frequency.exponentialRampToValueAtTime(endF, now + dur);
-  o.start(now);
-  o.stop(now + dur + 0.015);
-
-  const gSub = ac.createGain();
-  gSub.gain.setValueAtTime(isRapid ? 0.07 : 0.09, now);
-  gSub.gain.exponentialRampToValueAtTime(0.001, now + dur * 0.7);
-  gSub.connect(bus);
-
-  const oSub = osc(ac, 'sine', startF * 1.45, gSub);
-  oSub.frequency.setValueAtTime(startF * 1.45, now);
-  oSub.frequency.exponentialRampToValueAtTime(endF * 1.35, now + dur * 0.65);
-  oSub.start(now);
-  oSub.stop(now + dur * 0.72);
+  playToneSweep(ac, { type: 'sawtooth', startFreq: startF, endFreq: endF, volume: isRapid ? 0.14 : 0.17, freqDur: dur, gainDur: dur + 0.015 });
+  playToneSweep(ac, { type: 'sine', startFreq: startF * 1.45, endFreq: endF * 1.35, volume: isRapid ? 0.07 : 0.09, freqDur: dur * 0.65, gainDur: dur * 0.7, stopDur: dur * 0.72 });
 }
 
 export function playAlienDie(type: 0 | 1 | 2 | 3) {
   if (muted || !shouldPlay('alien_die', 30)) return;
   const ac = getCtx();
   if (!ac) return;
-  const baseFreqs = [120, 160, 200, 90];
-  const base = baseFreqs[type] ?? 140;
-  const g = gain(ac, 0.22);
-  const o = osc(ac, 'square', base * 4, g);
-  const now = ac.currentTime;
-  o.frequency.setValueAtTime(base * 4, now);
-  o.frequency.exponentialRampToValueAtTime(base, now + 0.14);
-  g.gain.setValueAtTime(0.22, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-  o.start(now);
-  o.stop(now + 0.16);
+  const base = ([120, 160, 200, 90])[type] ?? 140;
+  playToneSweep(ac, { type: 'square', startFreq: base * 4, endFreq: base, volume: 0.22, freqDur: 0.14, gainDur: 0.16 });
 }
 
 export function playUFOAppear() {
@@ -212,35 +202,7 @@ export function playPlayerDie() {
 export function playShieldHit() {
   const ac = getCtx();
   if (!ac || muted) return;
-  const now = ac.currentTime;
-  const g = gain(ac, 0.22);
-  const o = osc(ac, 'triangle', 920, g);
-  o.frequency.exponentialRampToValueAtTime(320, now + 0.18);
-  g.gain.setValueAtTime(0.22, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-  o.start(now);
-  o.stop(now + 0.2);
-}
-
-function playArpeggio(
-  notes: readonly number[],
-  type: OscillatorType,
-  volume: number,
-  stepSec: number,
-  decaySec: number,
-) {
-  const ac = getCtx();
-  if (!ac || muted) return;
-  const now = ac.currentTime;
-  for (let i = 0; i < notes.length; i++) {
-    const t = now + i * stepSec;
-    const g = gain(ac, volume);
-    const o = osc(ac, type, notes[i], g);
-    g.gain.setValueAtTime(volume, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + decaySec);
-    o.start(t);
-    o.stop(t + decaySec + 0.015);
-  }
+  playToneSweep(ac, { type: 'triangle', startFreq: 920, endFreq: 320, volume: 0.22, freqDur: 0.18, gainDur: 0.2 });
 }
 
 export function playStageClear() {
@@ -262,14 +224,7 @@ export function playTimeBonus() {
 export function playPowerUp() {
   const ac = getCtx();
   if (!ac || muted) return;
-  const now = ac.currentTime;
-  const g = gain(ac, 0.18);
-  const o = osc(ac, 'sine', 440, g);
-  o.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-  g.gain.setValueAtTime(0.18, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-  o.start(now);
-  o.stop(now + 0.2);
+  playToneSweep(ac, { type: 'sine', startFreq: 440, endFreq: 880, volume: 0.18, freqDur: 0.15, gainDur: 0.2 });
 }
 
 export function playExtraLife() {
@@ -279,17 +234,17 @@ export function playExtraLife() {
 export function playBossWarning() {
   const ac = getCtx();
   if (!ac || muted) return;
-  const now = ac.currentTime;
   for (let i = 0; i < 2; i++) {
-    const g = gain(ac, 0.22);
-    const o = osc(ac, 'sawtooth', 140, g);
-    const t = now + i * 0.28;
-    o.frequency.setValueAtTime(140, t);
-    o.frequency.exponentialRampToValueAtTime(420, t + 0.22);
-    g.gain.setValueAtTime(0.22, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-    o.start(t);
-    o.stop(t + 0.26);
+    playToneSweep(ac, {
+      type: 'sawtooth',
+      startFreq: 140,
+      endFreq: 420,
+      volume: 0.22,
+      freqDur: 0.22,
+      gainDur: 0.25,
+      stopDur: 0.26,
+      delay: i * 0.28,
+    });
   }
 }
 
@@ -297,14 +252,7 @@ export function playBossHit() {
   if (muted || !shouldPlay('boss_hit', 50)) return;
   const ac = getCtx();
   if (!ac) return;
-  const now = ac.currentTime;
-  const g = gain(ac, 0.15);
-  const o = osc(ac, 'square', 220, g);
-  o.frequency.exponentialRampToValueAtTime(95, now + 0.06);
-  g.gain.setValueAtTime(0.15, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-  o.start(now);
-  o.stop(now + 0.07);
+  playToneSweep(ac, { type: 'square', startFreq: 220, endFreq: 95, volume: 0.15, freqDur: 0.06, gainDur: 0.07 });
 }
 
 export function playBossDie() {
@@ -327,15 +275,33 @@ export function playAlienStep(tick: number) {
   if (muted || !shouldPlay('alien_step', 55)) return;
   const ac = getCtx();
   if (!ac) return;
-  const freqs = [100, 80, 90, 70];
-  const f = freqs[tick % 4];
-  const g = gain(ac, 0.1);
-  const o = osc(ac, 'square', f, g);
-  const now = ac.currentTime;
-  g.gain.setValueAtTime(0.1, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
-  o.start(now);
-  o.stop(now + 0.06);
+  const f = ([100, 80, 90, 70])[tick % 4];
+  playToneSweep(ac, { type: 'square', startFreq: f, volume: 0.1, gainDur: 0.055, stopDur: 0.06 });
+}
+
+/** Dispatches a batch of simulation SFX events to the Web Audio synthesizer. */
+export function dispatchSfx(events: SfxEvent[]) {
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    switch (e.type) {
+      case 'shoot': playShoot(e.kind); break;
+      case 'alien_die': playAlienDie(e.alienType); break;
+      case 'ufo_appear': playUFOAppear(); break;
+      case 'ufo_die': playUFODie(); break;
+      case 'player_die': playPlayerDie(); break;
+      case 'shield_hit': playShieldHit(); break;
+      case 'stage_clear': playStageClear(); break;
+      case 'game_over': playGameOver(); break;
+      case 'victory': playVictory(); break;
+      case 'time_bonus': playTimeBonus(); break;
+      case 'power_up': playPowerUp(); break;
+      case 'extra_life': playExtraLife(); break;
+      case 'boss_warning': playBossWarning(); break;
+      case 'boss_hit': playBossHit(); break;
+      case 'boss_die': playBossDie(); break;
+      case 'alien_step': playAlienStep(e.tick); break;
+    }
+  }
 }
 
 // ── Mute control ─────────────────────────────────────────────────

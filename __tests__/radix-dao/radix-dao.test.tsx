@@ -45,10 +45,10 @@ describe('Radix DAO data & i18n integrity', () => {
     }
   });
 
-  it('lists all 5 Transition RAC seats, 15 Permanent RAC candidates, and 10 on-chain entries', () => {
+  it('lists all 5 Transition RAC seats, 14 Permanent RAC candidates, and 10 on-chain entries', () => {
     expect(DAO_TRANSITION_COUNCIL).toHaveLength(5);
     expect(DAO_TRANSITION_COUNCIL.filter((m) => m.isLlcMember)).toHaveLength(3);
-    expect(DAO_PERMANENT_CANDIDATES).toHaveLength(15);
+    expect(DAO_PERMANENT_CANDIDATES).toHaveLength(14);
     for (const c of DAO_PERMANENT_CANDIDATES) {
       expect(c.threadUrl).toMatch(/^https:\/\/radixtalk\.com\/t\//);
       expect(enDict.radixDao.people.candidates[c.id as keyof typeof enDict.radixDao.people.candidates]).toBeDefined();

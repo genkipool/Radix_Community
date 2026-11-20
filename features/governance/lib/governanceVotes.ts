@@ -83,6 +83,21 @@ export function extractGovernanceVotes(events: GatewayEvent[] = []): GovernanceV
    Voted item (proposal / temperature check)
    ───────────────────────────────────────── */
 
+export interface GovernanceCandidate {
+    id: number;
+    reference: string | null;
+    displayName: string;
+    description: string | null;
+    links: string[];
+    displayOrder: number;
+}
+
+export interface GovernanceElectionSpec {
+    roleId: string | null;
+    seatCount: number | null;
+    candidates: GovernanceCandidate[];
+}
+
 export interface GovernanceItem {
     title: string | null;
     shortDescription: string | null;
@@ -113,6 +128,34 @@ export interface GovernanceItem {
     hidden: boolean;
     /** Key-value store mapping each voter account to its current vote. */
     votersStore: string | null;
+    /** Candidate slate committed by a Temperature Check for a Majority Judgment election. */
+    election?: GovernanceElectionSpec | null;
+}
+
+function parseElectionFollowUp(item: unknown): GovernanceElectionSpec | null {
+    const followUp = pjField(item, 'follow_up');
+    if (!followUp || followUp.variant_name !== 'MajorityJudgmentElection') return null;
+
+    const candidates = pjList(pjField(followUp, 'candidates')).flatMap((raw, idx) => {
+        const id = pjNumber(pjFields(pjField(raw, 'id'))[0]) ?? idx;
+        const displayName = pjText(pjField(raw, 'display_name'))?.trim();
+        if (!displayName) return [];
+        const reference = pjText(pjField(raw, 'reference'))?.trim() || null;
+        const description = pjText(pjField(raw, 'description'))?.trim() || null;
+        const links = pjList(pjField(raw, 'links'))
+            .map(pjText)
+            .filter((l): l is string => !!l && /^https?:\/\//i.test(l));
+        const displayOrder = pjNumber(pjField(raw, 'display_order')) ?? idx;
+        return [{ id, reference, displayName, description, links, displayOrder }];
+    });
+
+    if (candidates.length === 0) return null;
+
+    return {
+        roleId: pjText(pjField(followUp, 'role_id'))?.trim() || null,
+        seatCount: pjNumber(pjField(followUp, 'seat_count')),
+        candidates,
+    };
 }
 
 /**
@@ -147,6 +190,7 @@ export function parseGovernanceItem(item: unknown, kind: GovernanceItemKind): Go
         maxSelections: pjNumber(pjOption(pjField(item, 'max_selections'))) ?? 1,
         hidden: pjText(pjField(item, 'hidden')) === 'true',
         votersStore: pjText(pjField(item, 'voters')),
+        election: parseElectionFollowUp(item),
     };
 }
 

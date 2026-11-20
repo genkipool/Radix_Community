@@ -201,7 +201,10 @@
       "top10_score": "SCORE",
       "top10_prize": "PRIZE",
       "top10_you": "YOU",
-      "back_to_menu": "MAIN MENU"
+      "back_to_menu": "MAIN MENU",
+      "mobile_exit_theater": "Exit",
+      "sound_on": "Enable sound",
+      "sound_off": "Mute sound"
     }
   },
   "seo": {

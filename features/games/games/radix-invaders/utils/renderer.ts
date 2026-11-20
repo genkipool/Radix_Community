@@ -10,9 +10,11 @@ import {
   CANVAS_H,
   CANVAS_W,
   COLORS,
+  MOBILE_RENDER_SCALE,
   PLAYER_H,
   PLAYER_W,
   PLAYER_Y,
+  POWERUP_COLORS,
   UFO_H,
   UFO_W,
 } from '../constants/radix-invaders.constants';
@@ -21,7 +23,6 @@ import { drawBoss } from './bossRenderer';
 import {
   drawBossWarning,
   drawContinueScreen,
-  drawFlashMessage,
   drawGameOver,
   drawHUD,
   drawPaused,
@@ -42,7 +43,6 @@ export {
   drawBoss,
   drawBossWarning,
   drawContinueScreen,
-  drawFlashMessage,
   drawGameOver,
   drawHUD,
   drawPaused,
@@ -51,82 +51,85 @@ export {
 };
 
 // ── Background & Stars ─────────────────────────────────────────────
-export function drawBackground(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawBackground(ctx: CanvasRenderingContext2D, state: GameState, renderH = CANVAS_H) {
+  const scaleY = renderH / CANVAS_H;
   const sector = getSectorIndex(state.level);
   const bg = getSectorBackdrop(sector);
   if (bg) {
-    ctx.drawImage(bg, 0, 0);
+    if (renderH === CANVAS_H) {
+      ctx.drawImage(bg, 0, 0);
+    } else {
+      ctx.drawImage(bg, 0, 0, CANVAS_W, renderH);
+    }
   } else {
     ctx.fillStyle = COLORS.bg;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillRect(0, 0, CANVAS_W, renderH);
   }
 
   const warp = state.screen === 'STAGE_CLEAR';
   let lastTint = '';
   for (let i = 0; i < state.stars.length; i++) {
     const st = state.stars[i];
+    const sy = st.y * scaleY;
     if (st.tint !== lastTint) {
       ctx.fillStyle = st.tint;
       lastTint = st.tint;
     }
     ctx.globalAlpha = st.alpha;
     if (warp && st.layer >= 1) {
-      ctx.fillRect(st.x, st.y - st.speed * 7, st.r * 1.1, st.speed * 9 + st.r * 2);
+      ctx.fillRect(st.x, sy - st.speed * 7, st.r * 1.1, st.speed * 9 + st.r * 2);
     } else if (st.layer === 2) {
-      ctx.fillRect(st.x - st.r, st.y - st.r, st.r * 2, st.r * 2);
+      ctx.fillRect(st.x - st.r, sy - st.r, st.r * 2, st.r * 2);
       ctx.globalAlpha = st.alpha * 0.28;
-      ctx.fillRect(st.x - st.r * 2, st.y - 0.6, st.r * 4, 1.2);
-      ctx.fillRect(st.x - 0.6, st.y - st.r * 2, 1.2, st.r * 4);
+      ctx.fillRect(st.x - st.r * 2, sy - 0.6, st.r * 4, 1.2);
+      ctx.fillRect(st.x - 0.6, sy - st.r * 2, 1.2, st.r * 4);
     } else {
-      ctx.fillRect(st.x, st.y, st.r * 1.6, st.r * 1.6);
+      ctx.fillRect(st.x, sy, st.r * 1.6, st.r * 1.6);
     }
   }
   ctx.globalAlpha = 1;
 }
 
 // ── Particles & Shockwaves ─────────────────────────────────────────
-export function drawParticles(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawParticles(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
+  const s = scaleY > 1 ? MOBILE_RENDER_SCALE.particle : 1;
   for (let i = 0; i < state.shockwaves.length; i++) {
     const sw = state.shockwaves[i];
+    const sy = sw.y * scaleY;
     ctx.globalAlpha = Math.max(0, sw.life * 0.65);
     ctx.strokeStyle = sw.color;
-    ctx.lineWidth = 2 * sw.life + 0.5;
+    ctx.lineWidth = (2 * sw.life + 0.5) * s;
     ctx.beginPath();
-    ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+    ctx.arc(sw.x, sy, sw.r * s, 0, Math.PI * 2);
     ctx.stroke();
   }
 
   for (let i = 0; i < state.particles.length; i++) {
     const p = state.particles[i];
+    const py = p.y * scaleY;
     const alpha = Math.max(0, p.life / p.maxLife);
-    const sz = p.r * (0.4 + 0.6 * alpha);
+    const sz = p.r * (0.4 + 0.6 * alpha) * s;
     ctx.fillStyle = p.color;
     if (p.glow) {
       ctx.globalAlpha = alpha * 0.25;
-      ctx.fillRect(p.x - sz * 2, p.y - sz * 2, sz * 4, sz * 4);
+      ctx.fillRect(p.x - sz * 2, py - sz * 2, sz * 4, sz * 4);
     }
     ctx.globalAlpha = alpha;
-    ctx.fillRect(p.x - sz, p.y - sz, sz * 2, sz * 2);
+    ctx.fillRect(p.x - sz, py - sz, sz * 2, sz * 2);
   }
   ctx.globalAlpha = 1;
 }
 
 // ── Player Starfighter ─────────────────────────────────────────────
-export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
   const { x, tilt, invincible, hasShield } = state.player;
   if (invincible > 0 && Math.floor(invincible / 5) % 2 === 0) return;
 
-  const puColor =
-    state.powerUp === 'SPREAD'
-      ? COLORS.bulletSpread
-      : state.powerUp === 'LASER'
-        ? COLORS.bulletLaser
-        : state.powerUp === 'RAPID'
-          ? COLORS.bulletRapid
-          : COLORS.playerShip;
+  const puColor = POWERUP_COLORS[state.powerUp];
 
   ctx.save();
-  ctx.translate(x, PLAYER_Y);
+  ctx.translate(x, PLAYER_Y * scaleY);
+  if (scaleY > 1) ctx.scale(MOBILE_RENDER_SCALE.player, MOBILE_RENDER_SCALE.player);
   ctx.rotate(tilt * 0.13);
 
   const fh = 11 + 6 * Math.sin(state.tick * 0.35);
@@ -218,30 +221,38 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState) {
 }
 
 // ── Aliens (cached offscreen sprite blits) ─────────────────────────
-export function drawAliens(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawAliens(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
   const frame = state.alienFrame;
+  const isTall = scaleY > 1;
+  const alienScale = isTall ? MOBILE_RENDER_SCALE.alien : 1;
   for (let i = 0; i < state.aliens.length; i++) {
     const a = state.aliens[i];
     if (!a.alive) continue;
 
+    const ay = a.y * scaleY;
     const variant: 0 | 1 | 2 = a.hitFlash > 0 ? 2 : a.hp > 1 ? 1 : 0;
     const sprite = getAlienSprite(a.type, frame, variant);
 
     if (sprite) {
-      if (a.diving) {
+      if (a.diving || isTall) {
         ctx.save();
-        ctx.translate(a.x + ALIEN_W / 2, a.y + ALIEN_H / 2);
-        const angle = a.divePhase === 'DIVE' ? a.diveAngle : -Math.PI / 2;
-        ctx.rotate(angle + Math.PI / 2);
+        ctx.translate(a.x + ALIEN_W / 2, ay + ALIEN_H / 2);
+        if (isTall) ctx.scale(alienScale, alienScale);
+        if (a.diving) {
+          const angle = a.divePhase === 'DIVE' ? a.diveAngle : -Math.PI / 2;
+          ctx.rotate(angle + Math.PI / 2);
+        }
         ctx.drawImage(sprite, -ALIEN_W / 2 - ALIEN_SPRITE_PAD_X, -ALIEN_H / 2 - ALIEN_SPRITE_PAD_Y);
         ctx.restore();
       } else {
-        ctx.drawImage(sprite, (a.x - ALIEN_SPRITE_PAD_X) | 0, (a.y - ALIEN_SPRITE_PAD_Y) | 0);
+        ctx.drawImage(sprite, (a.x - ALIEN_SPRITE_PAD_X) | 0, (ay - ALIEN_SPRITE_PAD_Y) | 0);
       }
     } else {
       const color = ALIEN_PALETTE[a.type] ?? COLORS.alien1;
       ctx.save();
-      ctx.translate(a.x, a.y);
+      ctx.translate(a.x + ALIEN_W / 2, ay + ALIEN_H / 2);
+      if (isTall) ctx.scale(alienScale, alienScale);
+      ctx.translate(-ALIEN_W / 2, -ALIEN_H / 2);
       ctx.lineWidth = 1.6;
       ctx.fillStyle = variant === 2 ? '#ffffff' : color;
       ctx.strokeStyle = variant >= 1 ? '#ffffff' : color;
@@ -250,26 +261,28 @@ export function drawAliens(ctx: CanvasRenderingContext2D, state: GameState) {
     }
 
     if (a.maxHp > 1 && !a.diving) {
-      const pipW = 8;
+      const pipW = isTall ? 10 : 8;
       const gap = 3;
       const totalW = a.maxHp * pipW + (a.maxHp - 1) * gap;
       const sx = a.x + (ALIEN_W - totalW) / 2;
-      const sy = a.y - 7;
+      const sy = ay - (isTall ? 12 : 7);
       for (let p = 0; p < a.maxHp; p++) {
         ctx.fillStyle = p < a.hp ? COLORS.gold : 'rgba(255,255,255,0.2)';
-        ctx.fillRect(sx + p * (pipW + gap), sy, pipW, 3);
+        ctx.fillRect(sx + p * (pipW + gap), sy, pipW, isTall ? 4 : 3);
       }
     }
   }
 }
 
 // ── UFO ────────────────────────────────────────────────────────────
-export function drawUFO(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawUFO(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
   const { ufo } = state;
   if (!ufo.active) return;
 
   ctx.save();
-  ctx.translate(ufo.x, ufo.y);
+  ctx.translate(ufo.x + UFO_W / 2, ufo.y * scaleY + UFO_H / 2);
+  if (scaleY > 1) ctx.scale(MOBILE_RENDER_SCALE.ufo, MOBILE_RENDER_SCALE.ufo);
+  ctx.translate(-UFO_W / 2, -UFO_H / 2);
 
   ctx.globalAlpha = 0.2;
   ctx.fillStyle = COLORS.ufo;
@@ -300,16 +313,25 @@ export function drawUFO(ctx: CanvasRenderingContext2D, state: GameState) {
 }
 
 // ── Shields ────────────────────────────────────────────────────────
-export function drawShields(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawShields(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
   ctx.fillStyle = COLORS.shield;
+  const isTall = scaleY > 1;
+  const bwScale = isTall ? MOBILE_RENDER_SCALE.shieldX : 1;
+  const bhScale = isTall ? MOBILE_RENDER_SCALE.shieldY : 1;
   for (let si = 0; si < state.shields.length; si++) {
     const { blocks, x, y, blockW, blockH } = state.shields[si];
+    const cols = blocks[0]?.length ?? 9;
+    const origW = cols * blockW;
+    const bw = blockW * bwScale;
+    const bh = blockH * bhScale;
+    const baseX = x - (cols * bw - origW) / 2;
+    const baseY = y * scaleY;
     for (let r = 0; r < blocks.length; r++) {
       const row = blocks[r];
       ctx.globalAlpha = 0.9 - r * 0.06;
       for (let c = 0; c < row.length; c++) {
         if (!row[c]) continue;
-        ctx.fillRect(x + c * blockW + 1, y + r * blockH + 1, blockW - 2, blockH - 2);
+        ctx.fillRect(baseX + c * bw + 1, baseY + r * bh + 1, bw - 2, bh - 2);
       }
     }
   }
@@ -317,9 +339,12 @@ export function drawShields(ctx: CanvasRenderingContext2D, state: GameState) {
 }
 
 // ── Bullets ────────────────────────────────────────────────────────
-export function drawBullets(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawBullets(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
+  const bs = scaleY > 1 ? MOBILE_RENDER_SCALE.bullet : 1;
   for (let i = 0; i < state.bulletsP.length; i++) {
     const b = state.bulletsP[i];
+    const by = b.y * scaleY;
+    const prevY = b.prevY * scaleY;
     const color =
       b.kind === 'spread'
         ? COLORS.bulletSpread
@@ -331,59 +356,61 @@ export function drawBullets(ctx: CanvasRenderingContext2D, state: GameState) {
 
     ctx.strokeStyle = color;
     ctx.globalAlpha = 0.35;
-    ctx.lineWidth = b.kind === 'laser' ? 7 : 4;
+    ctx.lineWidth = (b.kind === 'laser' ? 7 : 4) * bs;
     ctx.beginPath();
-    ctx.moveTo(b.prevX, b.prevY + 12);
-    ctx.lineTo(b.x, b.y);
+    ctx.moveTo(b.prevX, prevY + 12 * bs);
+    ctx.lineTo(b.x, by);
     ctx.stroke();
 
     ctx.globalAlpha = 1;
     ctx.fillStyle = color;
     if (b.kind === 'laser') {
-      ctx.fillRect(b.x - 3, b.y - 18, 6, 36);
+      ctx.fillRect(b.x - 3 * bs, by - 18 * bs, 6 * bs, 36 * bs);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(b.x - 1, b.y - 16, 2, 32);
+      ctx.fillRect(b.x - 1 * bs, by - 16 * bs, 2 * bs, 32 * bs);
     } else {
-      ctx.fillRect(b.x - 2, b.y - 8, 4, 16);
+      ctx.fillRect(b.x - 2 * bs, by - 8 * bs, 4 * bs, 16 * bs);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(b.x - 1, b.y - 6, 2, 10);
+      ctx.fillRect(b.x - 1 * bs, by - 6 * bs, 2 * bs, 10 * bs);
     }
   }
 
   const orbSprite = getBossOrbSprite();
   for (let i = 0; i < state.bulletsE.length; i++) {
     const b = state.bulletsE[i];
+    const by = b.y * scaleY;
     if (b.kind === 'banana') {
       ctx.strokeStyle = COLORS.bulletBanana;
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 3.5 * bs;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(b.x, b.y, 7, 0.3, Math.PI - 0.3);
+      ctx.arc(b.x, by, 7 * bs, 0.3, Math.PI - 0.3);
       ctx.stroke();
     } else if (b.kind === 'boss_orb') {
       if (orbSprite) {
-        ctx.drawImage(orbSprite, (b.x - 11) | 0, (b.y - 11) | 0);
+        const half = 11 * bs;
+        ctx.drawImage(orbSprite, (b.x - half) | 0, (by - half) | 0, half * 2, half * 2);
       } else {
         ctx.fillStyle = COLORS.bulletBoss;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        ctx.arc(b.x, by, 5 * bs, 0, Math.PI * 2);
         ctx.fill();
       }
     } else if (b.kind === 'boss_heavy') {
       ctx.fillStyle = 'rgba(255,68,68,0.35)';
-      ctx.fillRect(b.x - 6, b.y - 11, 12, 22);
+      ctx.fillRect(b.x - 6 * bs, by - 11 * bs, 12 * bs, 22 * bs);
       ctx.fillStyle = COLORS.gold;
-      ctx.fillRect(b.x - 3, b.y - 9, 6, 18);
+      ctx.fillRect(b.x - 3 * bs, by - 9 * bs, 6 * bs, 18 * bs);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(b.x - 1, b.y - 7, 2, 14);
+      ctx.fillRect(b.x - 1 * bs, by - 7 * bs, 2 * bs, 14 * bs);
     } else {
       ctx.strokeStyle = COLORS.bulletE;
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.5 * bs;
       ctx.beginPath();
-      ctx.moveTo(b.x - 2, b.y - 6);
-      ctx.lineTo(b.x + 2, b.y - 2);
-      ctx.lineTo(b.x - 2, b.y + 2);
-      ctx.lineTo(b.x + 2, b.y + 6);
+      ctx.moveTo(b.x - 2 * bs, by - 6 * bs);
+      ctx.lineTo(b.x + 2 * bs, by - 2 * bs);
+      ctx.lineTo(b.x - 2 * bs, by + 2 * bs);
+      ctx.lineTo(b.x + 2 * bs, by + 6 * bs);
       ctx.stroke();
     }
   }
@@ -400,11 +427,12 @@ function drawHeart(ctx: CanvasRenderingContext2D, r: number) {
   ctx.fill();
 }
 
-export function drawPowerUpItems(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawPowerUpItems(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
   for (let i = 0; i < state.powerUpItems.length; i++) {
     const item = state.powerUpItems[i];
     ctx.save();
-    ctx.translate(item.x, item.y);
+    ctx.translate(item.x, item.y * scaleY);
+    if (scaleY > 1) ctx.scale(MOBILE_RENDER_SCALE.pickup, MOBILE_RENDER_SCALE.pickup);
 
     if (item.type === 'CONTINUE') {
       const s = 1 + 0.12 * Math.sin(item.pulse * 1.7);
@@ -467,14 +495,7 @@ export function drawPowerUpItems(ctx: CanvasRenderingContext2D, state: GameState
       continue;
     }
 
-    const color =
-      item.type === 'SPREAD'
-        ? COLORS.bulletSpread
-        : item.type === 'LASER'
-          ? COLORS.bulletLaser
-          : item.type === 'SHIELD'
-            ? COLORS.shieldItem
-            : COLORS.bulletRapid;
+    const color = POWERUP_COLORS[item.type];
 
     ctx.rotate(item.rotation);
     ctx.fillStyle = `${color}28`;
@@ -502,15 +523,16 @@ export function drawPowerUpItems(ctx: CanvasRenderingContext2D, state: GameState
 }
 
 // ── Floating Score & Pickup Popups ─────────────────────────────────
-export function drawFloatingTexts(ctx: CanvasRenderingContext2D, state: GameState) {
+export function drawFloatingTexts(ctx: CanvasRenderingContext2D, state: GameState, scaleY = 1) {
+  const fontScale = scaleY > 1 ? MOBILE_RENDER_SCALE.floatingText : 1;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (let i = 0; i < state.floatingTexts.length; i++) {
     const ft = state.floatingTexts[i];
     ctx.globalAlpha = Math.min(1, ft.life / 18);
     ctx.fillStyle = ft.color;
-    ctx.font = `bold ${ft.size}px "Courier New", monospace`;
-    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.font = `bold ${Math.round(ft.size * fontScale)}px "Courier New", monospace`;
+    ctx.fillText(ft.text, ft.x, ft.y * scaleY);
   }
   ctx.globalAlpha = 1;
 }
@@ -521,32 +543,33 @@ export function renderGameFrame(
   state: GameState,
   labels: Record<string, string>,
   mode: 'TOURNAMENT' | 'FUN',
+  renderH = CANVAS_H,
 ) {
-  drawBackground(ctx, state);
+  const scaleY = renderH / CANVAS_H;
+  drawBackground(ctx, state, renderH);
 
   ctx.save();
   if (state.shakeTimer > 0 && state.shakeIntensity > 0) {
     const mag = state.shakeIntensity * (state.shakeTimer / 18);
     ctx.translate((Math.random() - 0.5) * mag * 2, (Math.random() - 0.5) * mag * 2);
   }
-  drawShields(ctx, state);
-  drawAliens(ctx, state);
-  drawBoss(ctx, state, labels);
-  drawUFO(ctx, state);
-  drawBullets(ctx, state);
-  drawPowerUpItems(ctx, state);
-  drawPlayer(ctx, state);
-  drawParticles(ctx, state);
-  drawFloatingTexts(ctx, state);
+  drawShields(ctx, state, scaleY);
+  drawAliens(ctx, state, scaleY);
+  drawBoss(ctx, state, labels, scaleY);
+  drawUFO(ctx, state, scaleY);
+  drawBullets(ctx, state, scaleY);
+  drawPowerUpItems(ctx, state, scaleY);
+  drawPlayer(ctx, state, scaleY);
+  drawParticles(ctx, state, scaleY);
+  drawFloatingTexts(ctx, state, scaleY);
   ctx.restore();
 
-  drawHUD(ctx, state, labels, mode);
-  drawBossWarning(ctx, state, labels);
-  drawFlashMessage(ctx, state);
+  drawHUD(ctx, state, labels, mode, renderH);
+  drawBossWarning(ctx, state, labels, renderH);
 
-  if (state.screen === 'GAME_OVER') drawGameOver(ctx, state, labels);
-  else if (state.screen === 'CONTINUE') drawContinueScreen(ctx, state, labels);
-  else if (state.screen === 'VICTORY') drawVictory(ctx, state, labels);
-  else if (state.screen === 'STAGE_CLEAR') drawStageClear(ctx, state, labels);
-  else if (state.screen === 'PAUSED') drawPaused(ctx, labels);
+  if (state.screen === 'GAME_OVER') drawGameOver(ctx, state, labels, renderH);
+  else if (state.screen === 'CONTINUE') drawContinueScreen(ctx, state, labels, renderH);
+  else if (state.screen === 'VICTORY') drawVictory(ctx, state, labels, renderH);
+  else if (state.screen === 'STAGE_CLEAR') drawStageClear(ctx, state, labels, renderH);
+  else if (state.screen === 'PAUSED') drawPaused(ctx, labels, renderH);
 }

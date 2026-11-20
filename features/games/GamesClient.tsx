@@ -130,13 +130,16 @@ export default function GamesClient({
             )}
 
             <div
-                className="flex flex-col md:flex-row w-full flex-1"
+                className={
+                    theaterMode
+                        ? 'fixed inset-0 z-[45] flex flex-col w-full h-[100dvh] overflow-hidden'
+                        : 'flex flex-col md:flex-row w-full flex-1'
+                }
                 style={{
-                    background: 'var(--color-bg)',
-                    minHeight: '100vh',
+                    background: theaterMode ? '#010614' : 'var(--color-bg)',
+                    minHeight: theaterMode ? undefined : '100vh',
                     paddingTop: theaterMode ? 0 : '80px',
-                    position: 'relative',
-                    zIndex: theaterMode ? 41 : undefined,
+                    position: theaterMode ? 'fixed' : 'relative',
                 }}
             >
                 {!theaterMode && (
@@ -160,10 +163,16 @@ export default function GamesClient({
                 )}
 
                 <main
-                    className="flex-1 relative min-w-0 flex flex-col"
-                    style={{ overflowX: 'clip', minHeight: 0 }}
+                    className={`relative min-w-0 flex flex-col ${
+                        theaterMode
+                            ? 'flex-1 h-full min-h-0'
+                            : selectedGame
+                                ? 'flex-none h-[calc(100dvh-80px)] min-h-[540px] md:flex-1 md:h-auto md:min-h-[calc(100vh-80px)]'
+                                : 'flex-1'
+                    }`}
+                    style={{ overflowX: 'clip' }}
                 >
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <div className="flex-1 flex flex-col min-h-0 relative">
                         {selectedGame ? (
                             <GamePlayer game={selectedGame} />
                         ) : (
@@ -203,7 +212,7 @@ export default function GamesClient({
                         <button
                             type="button"
                             onClick={handleTheaterToggle}
-                            className="absolute bottom-5 right-5 z-[50] flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold cursor-pointer transition-[background,border-color,color] duration-150"
+                            className="hidden md:flex absolute bottom-5 right-5 z-[50] items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold cursor-pointer transition-[background,border-color,color] duration-150"
                             style={{
                                 background: 'rgba(4,14,34,0.88)',
                                 border: '1px solid rgba(255,255,255,0.18)',

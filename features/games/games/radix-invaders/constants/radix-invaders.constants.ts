@@ -89,3 +89,29 @@ export const COLORS = {
   glow3: '#ff8800',
   glowP: '#00e5ff',
 } as const;
+
+export const POWERUP_COLORS = {
+  SPREAD: COLORS.bulletSpread,
+  LASER: COLORS.bulletLaser,
+  RAPID: COLORS.bulletRapid,
+  SHIELD: COLORS.shieldItem,
+  LIFE: COLORS.lifeItem,
+  CONTINUE: COLORS.continueItem,
+  NONE: COLORS.playerShip,
+} as const;
+
+/** Unified visual scale factors applied only in mobile portrait mode (`scaleY > 1`). */
+export const MOBILE_RENDER_SCALE = {
+  maxPortraitH: 1600,
+  player: 1.45,
+  alien: 1.28,
+  boss: 1.35,
+  ufo: 1.4,
+  shieldX: 1.18,
+  shieldY: 1.48,
+  bullet: 1.55,
+  pickup: 1.45,
+  particle: 1.35,
+  floatingText: 1.4,
+  miniShip: 1.38,
+} as const;

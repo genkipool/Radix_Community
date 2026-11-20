@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 function SpeakerOnIcon() {
   return (
@@ -30,35 +30,41 @@ function PauseIcon() {
   );
 }
 
+function ExitIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function HudIconButton({
   title,
   dimmed = false,
+  large = false,
   onClick,
   children,
 }: {
   title: string;
   dimmed?: boolean;
+  large?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onTouchStart={(e) => e.stopPropagation()}
       title={title}
       aria-label={title}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 24, height: 22, borderRadius: 5, padding: 0,
-        background: hovered ? 'rgba(0,229,255,0.2)' : 'rgba(4,14,34,0.85)',
-        border: `1px solid ${hovered ? 'rgba(0,229,255,0.55)' : 'rgba(255,255,255,0.18)'}`,
-        color: dimmed ? 'rgba(255,255,255,0.3)' : 'rgba(0,229,255,0.9)',
-        cursor: 'pointer',
-        transition: 'background 0.15s ease, border-color 0.15s ease',
-      }}
+      className={[
+        'flex items-center justify-center cursor-pointer transition-colors duration-150',
+        'bg-[rgba(4,14,34,0.85)] hover:bg-[rgba(0,229,255,0.2)]',
+        'border border-white/20 hover:border-[rgba(0,229,255,0.55)]',
+        dimmed ? 'text-white/30' : 'text-[rgba(0,229,255,0.9)]',
+        large ? 'min-w-[36px] min-h-[32px] rounded-lg px-2 py-1' : 'min-w-[28px] min-h-[26px] rounded-md px-1 py-0.5',
+      ].join(' ')}
     >
       {children}
     </button>
@@ -67,36 +73,48 @@ function HudIconButton({
 
 export function GameHudControls({
   muted,
+  soundOnTitle,
+  soundOffTitle,
   pauseTitle,
+  exitTitle,
+  variant = 'overlay',
   onToggleSound,
   onTogglePause,
+  onExitTheater,
 }: {
   muted: boolean;
+  soundOnTitle: string;
+  soundOffTitle: string;
   pauseTitle: string;
+  exitTitle?: string;
+  variant?: 'overlay' | 'bar';
   onToggleSound: () => void;
   onTogglePause: () => void;
+  onExitTheater?: () => void;
 }) {
+  const isBar = variant === 'bar';
   return (
-    <div style={{
-      position: 'absolute',
-      bottom: 0,
-      right: '14%',
-      height: '3.7%',
-      zIndex: 10,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 6,
-    }}>
+    <div
+      className={isBar
+        ? 'flex items-center gap-2'
+        : 'absolute bottom-0 right-[14%] h-[3.7%] z-10 flex items-center gap-1.5'}
+    >
       <HudIconButton
-        title={muted ? 'Enable sound' : 'Mute sound'}
+        title={muted ? soundOnTitle : soundOffTitle}
         dimmed={muted}
+        large={isBar}
         onClick={onToggleSound}
       >
         {muted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
       </HudIconButton>
-      <HudIconButton title={pauseTitle} onClick={onTogglePause}>
+      <HudIconButton title={pauseTitle} large={isBar} onClick={onTogglePause}>
         <PauseIcon />
       </HudIconButton>
+      {isBar && onExitTheater && exitTitle && (
+        <HudIconButton title={exitTitle} large onClick={onExitTheater}>
+          <ExitIcon />
+        </HudIconButton>
+      )}
     </div>
   );
 }

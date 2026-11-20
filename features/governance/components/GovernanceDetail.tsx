@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
-import { uniqueVoters, votingPhase } from '../lib/governanceVotes';
+import { uniqueVoters, votingPhase, type GovernanceElectionSpec } from '../lib/governanceVotes';
 import { governanceItemPath } from '../lib/paths';
 import { useNow } from '../hooks/useNow';
 import { fill, formatDate, LinkList, type Gv } from './VoteParts';
@@ -98,6 +98,81 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
                 </Link>
             )}
         </CollapsibleCard>
+    );
+}
+
+function CandidatesSection({ election, g }: { election: GovernanceElectionSpec; g: G }) {
+    const descriptions = useTranslatedList(election.candidates.map(c => c.description ?? ''));
+    const metaText = election.roleId && election.seatCount !== null
+        ? fill((g.candidates_meta as string | undefined) ?? '', { role: election.roleId, seats: String(election.seatCount) })
+        : election.seatCount !== null
+            ? fill((g.candidates_meta_no_role as string | undefined) ?? '', { seats: String(election.seatCount) })
+            : null;
+
+    return (
+        <section className="pt-6 border-t border-[var(--color-card-border)] space-y-4">
+            <div className="space-y-1">
+                <h2 className="flex items-center gap-2 text-base font-bold text-[var(--color-text-main)]">
+                    <Users className="size-4 text-[var(--color-primary)]" aria-hidden="true" />
+                    <span>{(g.candidates_title as string | undefined) ?? ''} ({election.candidates.length})</span>
+                </h2>
+                {metaText && (
+                    <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
+                        {metaText}
+                    </p>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {election.candidates.map((candidate, idx) => {
+                    const desc = descriptions[idx] ?? candidate.description;
+                    return (
+                        <div
+                            key={`${candidate.id}-${candidate.displayName}`}
+                            className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-4 flex flex-col justify-between gap-2.5"
+                        >
+                            <div className="space-y-1">
+                                <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                                    <h3 className="text-sm font-bold text-[var(--color-text-main)]">
+                                        {candidate.displayName}
+                                    </h3>
+                                    {candidate.reference && (
+                                        <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
+                                            {candidate.reference}
+                                        </span>
+                                    )}
+                                </div>
+                                {desc && (
+                                    <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                                        {desc}
+                                    </p>
+                                )}
+                            </div>
+
+                            {candidate.links.length > 0 && (
+                                <div className="flex flex-wrap gap-3 pt-1">
+                                    {candidate.links.map((href, linkIdx) => (
+                                        <a
+                                            key={href}
+                                            href={href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+                                        >
+                                            <span>
+                                                {(g.candidate_profile as string | undefined) ?? ''}
+                                                {candidate.links.length > 1 ? ` #${linkIdx + 1}` : ''}
+                                            </span>
+                                            <ExternalLink className="size-3 shrink-0" aria-hidden="true" />
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </section>
     );
 }
 
@@ -204,6 +279,9 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                                     <h2 className="mb-4 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{g.full_text || 'Full text of the proposal'}</h2>
                                     <div className="governance-prose" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
                                 </article>
+                            )}
+                            {item.election && item.election.candidates.length > 0 && (
+                                <CandidatesSection election={item.election} g={g} />
                             )}
                             <LinkList links={item.links} title={gv.links || 'Learn more'} />
                         </div>

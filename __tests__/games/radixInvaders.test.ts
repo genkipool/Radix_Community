@@ -195,4 +195,38 @@ describe('Radix Invaders — 100 levels, bosses & pre-boss extra life', () => {
     expect(state.lives).toBe(3);
     expect(state.continues).toBe(0);
   });
+
+  it('marks newRecord=true when clearing level 100 with a score above previous hi-score', () => {
+    const state = initGameState(MAX_LEVEL, 10_000, 12_000, 3);
+    if (state.boss) state.boss.active = false;
+    state.aliens = [];
+
+    const next = updateGame(state, NO_KEYS, false, 450, false, noop, 1);
+    expect(next.screen).toBe('VICTORY');
+    expect(next.newRecord).toBe(true);
+    expect(next.hiScore).toBeGreaterThanOrEqual(12_000);
+  });
+
+  it('destroys colliding aliens with player bullets and increments score & combo', () => {
+    const state = initGameState(1, 0);
+    const target = state.aliens[0];
+    target.hp = 1;
+    state.bulletsP.push({
+      x: target.x + 10,
+      y: target.y + 10,
+      vx: 0,
+      vy: -1,
+      active: true,
+      prevX: target.x + 10,
+      prevY: target.y + 11,
+      kind: 'normal',
+      damage: 1,
+    });
+
+    const next = updateGame(state, NO_KEYS, false, 450, false, noop, 1);
+    expect(target.alive).toBe(false);
+    expect(next.score).toBeGreaterThan(0);
+    expect(next.combo).toBe(1);
+    expect(next.sfx.some((e) => e.type === 'alien_die')).toBe(true);
+  });
 });

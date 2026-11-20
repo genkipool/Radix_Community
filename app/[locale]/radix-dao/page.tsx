@@ -55,12 +55,12 @@ export default async function RadixDaoPage({ params }: RadixDaoPageProps) {
   return (
     <div>
       <DictionaryEnricher partial={t} />
-      <DaoHero hero={dao.hero} sequenceSteps={dao.sequence.steps} />
+      <DaoHero hero={dao.hero} sequenceSteps={dao.sequence.steps} locale={locale} />
       <DaoOverviewSection overview={dao.overview} />
       <DaoFoundingSequence sequence={dao.sequence} />
       <DaoParticipateSection participate={dao.participate} />
       <DaoDocumentsSection documents={dao.documents} />
-      <DaoPeopleSection people={dao.people} />
+      <DaoPeopleSection people={dao.people} locale={locale} />
       <DaoVerifySection verify={dao.verify} docItems={dao.documents.items} locale={locale} />
       <DaoNoticesSection
         notices={dao.notices}
