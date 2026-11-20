@@ -223,7 +223,9 @@
       "wallet_android": "Android Wallet",
       "wallet_chrome": "Chrome Connector",
       "buy_xrd": "Buy XRD",
-      "staking": "Stake XRD"
+      "staking": "Stake XRD",
+      "governance": "Governance",
+      "radix_dao": "Radix DAO"
     },
     "developers": {
       "title": "Developers",

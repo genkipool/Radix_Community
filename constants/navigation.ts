@@ -108,6 +108,8 @@ export const FOOTER_LINKS = {
     { key: 'wallet_chrome', path: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm' },
     { key: 'buy_xrd', path: 'https://www.kucoin.com/trade/XRD-USDT' },
     { key: 'staking', path: '/dashboard/staking' },
+    { key: 'governance', path: '/governance' },
+    { key: 'radix_dao', path: '/radix-dao' },
   ],
 };
 
