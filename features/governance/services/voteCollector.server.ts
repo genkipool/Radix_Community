@@ -26,12 +26,38 @@ export interface VoteTally {
     source: string;
 }
 
-const TIMEOUT_MS = 8_000;
+const TIMEOUT_MS = 25_000;
+const CACHE_TTL_MS = 30_000;
+
+const inFlight = new Map<string, Promise<unknown>>();
+const responseCache = new Map<string, { data: unknown; expiresAt: number }>();
 
 async function getJson<T>(url: string): Promise<T> {
-    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), next: { revalidate: 60 } });
-    if (!res.ok) throw new Error(`Vote collector ${res.status}`);
-    return res.json() as Promise<T>;
+    const useCache = !process.env.VITEST;
+    if (useCache) {
+        const cached = responseCache.get(url);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.data as T;
+        }
+    }
+
+    const existing = inFlight.get(url);
+    if (existing) return existing as Promise<T>;
+
+    const request = (async () => {
+        const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), next: { revalidate: 60 } });
+        if (!res.ok) throw new Error(`Vote collector ${res.status}`);
+        const data = (await res.json()) as T;
+        if (useCache) {
+            responseCache.set(url, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+        }
+        return data;
+    })().finally(() => {
+        inFlight.delete(url);
+    });
+
+    inFlight.set(url, request);
+    return request;
 }
 
 export function collectorFor(component: string): string | null {

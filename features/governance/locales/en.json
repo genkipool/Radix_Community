@@ -148,6 +148,9 @@
       "selected": "This vote",
       "voter": "Voter",
       "vote_number": "Vote no. {id}",
+      "voting_power": "Voting power",
+      "voting_power_share": "{share} of the total",
+      "voting_power_counting": "Counting voting power…",
       "vote_count": "Voters",
       "vote_count_hint": "Distinct accounts that voted",
       "to_pass": "To pass",
@@ -191,7 +194,8 @@
       "outcome_open_rejected_detail": "There is quorum so far ({turnout} of {quorum} XRD), but only {share} is in favour and {threshold} is needed.",
       "outcome_open_no_quorum_detail": "So far {turnout} XRD of voting power is taking part and {quorum} is needed for the result to count.",
       "outcome_note": "Indicative result, computed with the quorum and threshold stored on the ledger. Some votes have extra requirements; the official result is published by the organisation running the vote.",
-      "open_in_governance": "See the full vote and cast yours"
+      "open_in_governance": "See the full vote and cast yours",
+      "view_in_governance": "See the full vote"
     },
     "tab_proposal": "Proposal",
     "tab_temperature_check": "Temperature check",

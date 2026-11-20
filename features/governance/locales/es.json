@@ -148,6 +148,9 @@
       "selected": "Este voto",
       "voter": "Votante",
       "vote_number": "Voto nº {id}",
+      "voting_power": "Poder de voto",
+      "voting_power_share": "{share} del total",
+      "voting_power_counting": "Calculando poder de voto…",
       "vote_count": "Votantes",
       "vote_count_hint": "Cuentas distintas que han votado",
       "to_pass": "Para aprobarse",
@@ -191,7 +194,8 @@
       "outcome_open_rejected_detail": "De momento hay quórum ({turnout} de {quorum} XRD), pero solo el {share} vota a favor y se necesita el {threshold}.",
       "outcome_open_no_quorum_detail": "De momento participan {turnout} XRD de poder de voto y hacen falta {quorum} para que el resultado cuente.",
       "outcome_note": "Resultado orientativo, calculado con el quórum y el umbral guardados en el ledger. Algunas votaciones tienen requisitos adicionales; el resultado oficial lo publica la organización que gestiona la votación.",
-      "open_in_governance": "Ver la votación completa y votar"
+      "open_in_governance": "Ver la votación completa y votar",
+      "view_in_governance": "Ver la votación completa"
     },
     "tab_proposal": "Propuesta",
     "tab_temperature_check": "Sondeo",
