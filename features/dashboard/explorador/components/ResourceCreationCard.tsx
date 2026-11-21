@@ -122,14 +122,6 @@ export function ResourceCreationCard({
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-2">
                             <span className="text-lg @md:text-xl font-bold text-[var(--color-text-main)] break-words">{name}</span>
-                            {symbol && (
-                                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                    {symbol}
-                                </span>
-                            )}
-                            <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                                {isNft ? (rc.kind_nft || 'NFT collection') : (rc.kind_token || 'Fungible token')}
-                            </span>
                         </div>
                         <div className="mt-1.5 flex items-center gap-1 min-w-0">
                             <button
