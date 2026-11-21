@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { m } from "motion/react";
 import { Activity, Check, Copy, FileJson, List, Terminal } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
@@ -22,6 +22,8 @@ import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { ResourceCreationCard } from './ResourceCreationCard';
 import { extractResourceCreations } from '../utils/resourceCreationUtils';
+import { EntityCreationCard } from './EntityCreationCard';
+import { extractEntityCreations } from '../utils/entityCreationUtils';
 import type { priceRewrites } from '../utils/oraclePrices';
 import { ValidatorOwnerActionCard } from './ValidatorOwnerActionCard';
 import { extractValidatorOwnerActions } from '../utils/validatorOwnerActions';
@@ -65,6 +67,7 @@ const TransactionTabs = ({
     details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone, locale, marketData,
 }: TransactionTabsProps) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'details' | 'raw'>('summary');
+    const tabBarId = useId();
     const tt: Partial<TranslationsT['dashboard']['transactions']> = t?.dashboard?.transactions ?? {};
     const te: Partial<TranslationsT['events']> = t?.events ?? {};
     const dt: Partial<TranslationsT['dashboard']> = t?.dashboard ?? {};
@@ -94,11 +97,14 @@ const TransactionTabs = ({
     const initiators = getInitiators(balanceChanges);
     const realTransferAddresses = getRealTransferAddresses(balanceChanges);
 
-    /* ── Resources brought into existence by this transaction ── */
+    /* ── Resources & global entities brought into existence by this transaction ── */
     const resourceCreations = extractResourceCreations(
         receipt?.state_updates as Parameters<typeof extractResourceCreations>[0],
         receipt?.events ?? [],
         String(manifest_instructions || ''),
+    );
+    const entityCreations = extractEntityCreations(
+        receipt?.state_updates as Parameters<typeof extractEntityCreations>[0],
     );
 
     /* ── Votes cast on governance proposals / temperature checks ── */
@@ -110,7 +116,7 @@ const TransactionTabs = ({
     /* ── Assets an account sent to itself, and calls that moved no assets at all ── */
     const selfMoves = extractSelfTransfers(receipt?.events ?? [], balanceChanges);
     const callsExplained = hasAssetTransfers(balanceChanges) || selfMoves.length > 0 || parsed.oracleUpdates.length > 0
-        || resourceCreations.length > 0 || governanceVotes.length > 0 || !!airdropData;
+        || resourceCreations.length > 0 || entityCreations.length > 0 || governanceVotes.length > 0 || !!airdropData;
     const calls = callsExplained ? [] : componentCalls(String(manifest_instructions || ''));
     // Read from the manifest, no request: the card of the component that minted or burned, in the transfer box.
     const calledComponents = [...new Set(componentCalls(String(manifest_instructions || '')).map((c) => c.component))];
@@ -151,7 +157,7 @@ const TransactionTabs = ({
             className="flex flex-col mt-4 pt-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50 rounded-xl overflow-hidden"
         >
             {/* ── Tab bar ── */}
-            <div className="flex items-center gap-4 border-b border-[var(--color-card-border)] px-6 overflow-x-auto hide-scrollbar">
+            <div className="flex items-center gap-4 border-b border-[var(--color-card-border)] px-6 overflow-x-auto no-scrollbar">
                 {(['summary', 'details', 'raw'] as const).map(tab => (
                     <button
                         key={tab}
@@ -165,7 +171,7 @@ const TransactionTabs = ({
 
                         {activeTab === tab && (
                             <m.div
-                                layoutId={`activeTab-${tx.intentHash}`}
+                                layoutId={`txTab-${tabBarId}`}
                                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10"
                                 transition={{ type: "tween", ease: "circOut", duration: 0.3 }}
                             />
@@ -277,6 +283,20 @@ const TransactionTabs = ({
                                 onResourceClick={onResourceClick}
                                 network={network}
                                 locale={locale}
+                            />
+                        ))}
+
+                        {/* Global entity creation: packages, components, accounts, identities, pools, validators, lockers… */}
+                        {entityCreations.map(creation => (
+                            <EntityCreationCard
+                                key={creation.address}
+                                creation={creation}
+                                creator={parsed.lockFeeAccount}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                onResourceClick={onResourceClick}
+                                network={network}
                             />
                         ))}
 

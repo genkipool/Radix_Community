@@ -54,6 +54,7 @@ export default function RadixInvadersGame() {
   const badgeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [appScreen, setAppScreen] = useState<AppScreen>('INTRO');
+  const [isPaused, setIsPaused] = useState(false);
   const [selectedFunLevel, setSelectedFunLevel] = useState(1);
   const [bossRush, setBossRush] = useState(false);
   const [victoryScore, setVictoryScore] = useState(0);
@@ -103,9 +104,21 @@ export default function RadixInvadersGame() {
       isMouseDownRef.current = false;
       isTouchingRef.current = false;
       clickRef.current = false;
+      setIsPaused(true);
     } else if (s.screen === 'PAUSED') {
       s.screen = 'PLAYING';
+      setIsPaused(false);
     }
+  };
+
+  const handleReturnToMenu = () => {
+    setIsPaused(false);
+    isMouseDownRef.current = false;
+    isTouchingRef.current = false;
+    clickRef.current = false;
+    keysRef.current.clear();
+    stateRef.current = null;
+    setAppScreen('INTRO');
   };
 
   const restartCurrentRun = () => {
@@ -114,6 +127,7 @@ export default function RadixInvadersGame() {
     isMouseRef.current = false;
     mouseXRef.current = CANVAS_W / 2;
     stateRef.current = fresh;
+    setIsPaused(false);
   };
 
   const handleOverlayAction = (s: GameState | null): boolean => {
@@ -127,13 +141,17 @@ export default function RadixInvadersGame() {
       return true;
     }
     if (s.screen === 'PAUSED') {
-      if (performance.now() - pausedAtRef.current > 280) s.screen = 'PLAYING';
+      if (performance.now() - pausedAtRef.current > 280) {
+        s.screen = 'PLAYING';
+        setIsPaused(false);
+      }
       return true;
     }
     return false;
   };
 
   const startGame = (mode: GameMode, level = 1) => {
+    setIsPaused(false);
     hiRef.current = loadHiScore();
     modeRef.current = mode;
     pendingModeRef.current = mode;
@@ -316,6 +334,7 @@ export default function RadixInvadersGame() {
           isMobilePortrait={isMobilePortrait}
           theaterMode={theaterMode}
           soundMuted={soundMuted}
+          isPaused={isPaused}
           t={t}
           canvasRef={canvasRef}
           playfieldWrapRef={playfieldWrapRef}
@@ -329,6 +348,7 @@ export default function RadixInvadersGame() {
           onCanvasClick={handleCanvasClick}
           onToggleSound={handleSoundToggle}
           onTogglePause={togglePause}
+          onReturnToMenu={handleReturnToMenu}
           onExitTheater={() => setTheaterMode(false)}
         />
       )}

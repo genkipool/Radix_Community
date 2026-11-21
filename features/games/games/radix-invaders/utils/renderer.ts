@@ -549,7 +549,7 @@ export function renderGameFrame(
   drawBackground(ctx, state, renderH);
 
   ctx.save();
-  if (state.shakeTimer > 0 && state.shakeIntensity > 0) {
+  if (state.screen === 'PLAYING' && state.shakeTimer > 0 && state.shakeIntensity > 0) {
     const mag = state.shakeIntensity * (state.shakeTimer / 18);
     ctx.translate((Math.random() - 0.5) * mag * 2, (Math.random() - 0.5) * mag * 2);
   }

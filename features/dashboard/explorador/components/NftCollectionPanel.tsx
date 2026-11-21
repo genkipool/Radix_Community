@@ -6,6 +6,7 @@ import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, ChevronDown, Box, FileJson, Activity } from 'lucide-react';
 import { Pill } from '@/components/ui/Pill';
 import { getMetaValue } from '../utils/metadataUtils';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import {
     PanelTabBar,
     PanelMetadataTab,
@@ -112,7 +113,6 @@ export function NftCollectionPanel({
                 tabs={tabs}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                layoutId={`nftCollectionTabs-${_resourceAddress}`}
             />
 
             <div className="px-5 py-4">
@@ -139,8 +139,8 @@ export function NftCollectionPanel({
                                     <div key={id} className={`rounded-xl border border-[var(--color-card-border)] overflow-hidden transition-all ${isOpen ? 'border-[var(--color-primary)]/30' : ''}`}>
                                         <div role="button" tabIndex={hasData ? 0 : -1}
                                             className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]' : 'cursor-auto'} w-full text-left`}
-                                            onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
-                                            onKeyDown={hasData ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); } }) : undefined}
+                                            onClick={hasData ? (e => { e.stopPropagation(); if (hasSelectionInside(e.currentTarget)) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
+                                            onKeyDown={hasData ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); } }) : undefined}
                                         >
                                             <div className="size-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
                                                 {imageUrl ? <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full h-full object-cover" zoomable={true} />

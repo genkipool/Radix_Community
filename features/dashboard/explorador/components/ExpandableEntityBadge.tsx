@@ -8,7 +8,7 @@
  * Configuration, Raw) for the entity, fetched lazily from the Gateway.
  */
 
-import React, { useState, useId } from 'react';
+import React, { useState } from 'react';
 import { m, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Copy, Download } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import {
 } from '@/features/dashboard/hooks/useEntityData';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { getMetaValue } from '../utils/metadataUtils';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import { getConfigEntries } from '../../utils/resourceUtils';
 import { parseTags, deriveBehaviors } from '../../utils/resourceUtils';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
@@ -215,7 +216,6 @@ export function ExpandableEntityBadge({
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
-    const instanceId = useId();
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
 
@@ -279,7 +279,7 @@ export function ExpandableEntityBadge({
     /* ── Click handler (prevents text selection from collapsing) ── */
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (window.getSelection()?.toString()) return;
+        if (hasSelectionInside(e.currentTarget)) return;
         setExpanded((v) => !v);
     };
 
@@ -446,7 +446,7 @@ export function ExpandableEntityBadge({
                             className={`${isTransferCard ? '' : 'border-t border-[var(--color-card-border)]'} bg-[var(--color-surface)]`}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityTabs-${instanceId}`} />
+                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
                             {/* A transfer card's panel has the padding of a resource's (ResourceInlinePanel). */}
                             <div className={isTransferCard ? 'px-5 py-4' : 'px-4 py-3 min-h-[200px]'}>

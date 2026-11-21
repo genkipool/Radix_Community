@@ -137,25 +137,27 @@ export default function FunLevelSelectScreen({
             type="button"
             onClick={() => onSetBossRush(false)}
             style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
               padding: '9px 8px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: '"Courier New", monospace', fontWeight: 700, fontSize: 12,
               color: !bossRush ? '#010614' : 'rgba(255,255,255,0.6)',
               background: !bossRush ? '#00e5ff' : 'transparent',
             }}
           >
-            {t.mode_campaign ?? ''}
+            <span className="ri-centered-label">{t.mode_campaign ?? ''}</span>
           </button>
           <button
             type="button"
             onClick={() => onSetBossRush(true)}
             style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
               padding: '9px 8px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: '"Courier New", monospace', fontWeight: 700, fontSize: 12,
               color: bossRush ? '#010614' : 'rgba(255,215,0,0.75)',
               background: bossRush ? '#ffd700' : 'transparent',
             }}
           >
-            {t.mode_boss_rush ?? ''}
+            <span className="ri-centered-label">{t.mode_boss_rush ?? ''}</span>
           </button>
         </div>
 
@@ -230,24 +232,28 @@ export default function FunLevelSelectScreen({
             type="button"
             onClick={onStart}
             style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
               width: '100%', padding: '13px 18px', borderRadius: 12, border: 'none',
               fontFamily: '"Courier New", monospace', fontWeight: 900, fontSize: 14,
               letterSpacing: '0.06em', cursor: 'pointer',
               color: '#010614', background: accent,
             }}
           >
-            {bossRush ? `${t.start_boss_rush ?? ''} ${effectiveLevel}` : `${t.start_level ?? ''} ${effectiveLevel}`}
+            <span className="ri-centered-label">
+              {bossRush ? `${t.start_boss_rush ?? ''} ${effectiveLevel}` : `${t.start_level ?? ''} ${effectiveLevel}`}
+            </span>
           </button>
           <button
             type="button"
             onClick={onBack}
             style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
               background: 'none', border: 'none', cursor: 'pointer',
               fontFamily: '"Courier New", monospace', fontSize: 12,
-              color: 'rgba(255,255,255,0.5)', padding: '4px 10px',
+              color: 'rgba(255,255,255,0.5)', padding: '6px 10px',
             }}
           >
-            {`← ${t.back ?? ''}`}
+            <span className="ri-centered-label">{`← ${t.back ?? ''}`}</span>
           </button>
         </div>
       </div>

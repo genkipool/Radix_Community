@@ -9,6 +9,7 @@ import { apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashb
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { getMetaValue } from '../utils/metadataUtils';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import { TokenBadge } from '@/components/ui/TokenBadge';
 import { NftCollectionPanel } from './NftCollectionPanel';
 import { IconFlame } from './TransactionIcons';
@@ -75,7 +76,7 @@ const NftTransferCard = ({
                 tabIndex={0}
                 className={`w-full text-left flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] group transition-all hover:bg-[var(--color-surface-hover)] gap-3 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${expanded ? 'rounded-t-xl rounded-b-none border-b-transparent' : ''}`}
                 title={titleStr}
-                onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
+                onClick={e => { e.stopPropagation(); if (hasSelectionInside(e.currentTarget)) return; setExpanded(v => !v); }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(v => !v); } }}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">

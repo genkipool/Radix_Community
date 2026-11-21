@@ -97,6 +97,15 @@ export function getWellKnownKey(
 }
 
 /**
+ * Returns true when `address` is the built-in Radix Faucet component
+ * on either Mainnet or Stokenet.
+ */
+export function isFaucetAddress(address: string | null | undefined): boolean {
+  if (!address) return false;
+  return MAINNET_ADDRESSES[address] === 'faucet' || STOKENET_ADDRESSES[address] === 'faucet';
+}
+
+/**
  * Returns a generic translation key based on the address prefix
  * (e.g., 'account_', 'resource_'), or `null` if the prefix is unrecognized.
  */

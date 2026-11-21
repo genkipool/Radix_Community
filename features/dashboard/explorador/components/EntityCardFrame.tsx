@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useId } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 
 import { Card } from '@/components/ui/Card';
@@ -92,7 +92,6 @@ export function EntityCardFrame({
     addressActions,
     headless = false,
 }: EntityCardFrameProps) {
-    const instanceId = useId();
     const [activeTab, setActiveTab] = useState(tabs[0]?.key ?? '');
     const isCopied = copiedAddress === address;
     const clickable = !isModal && !!onExpand;
@@ -105,7 +104,6 @@ export function EntityCardFrame({
                     tabs={tabs.map(({ key, label, tooltip }) => ({ key, label, tooltip }))}
                     activeTab={active?.key ?? ''}
                     onTabChange={setActiveTab}
-                    layoutId={`entityTabs-${instanceId}`}
                 />
                 <div className="px-4 py-3 min-h-[200px]">{active?.render()}</div>
             </div>
@@ -199,7 +197,6 @@ export function EntityCardFrame({
                                 tabs={tabs.map(({ key, label, tooltip }) => ({ key, label, tooltip }))}
                                 activeTab={active?.key ?? ''}
                                 onTabChange={setActiveTab}
-                                layoutId={`entityTabs-${instanceId}`}
                             />
                             <div className={`px-4 py-3 pb-6 ${isModal ? 'flex-1 overflow-y-auto min-h-0 custom-scrollbar' : ''}`}>
                                 {active?.render()}

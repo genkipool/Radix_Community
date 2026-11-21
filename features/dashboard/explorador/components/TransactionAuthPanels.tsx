@@ -2,7 +2,8 @@
 
 import React from 'react';
 import type { TranslationsT, Network } from '@/features/dashboard/types';
-import { Check, Copy, Shield } from 'lucide-react';
+import { Check, Copy, Shield, Droplets } from 'lucide-react';
+import { isFaucetAddress } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import { BalanceChangeRow } from './BalanceChangeRow';
 
 /* ─────────────────────────────────────────
@@ -23,6 +24,7 @@ export function LockFeePanel({
     onCopy: (v: string) => void;
     copiedAddress: string | null;
 }) {
+    const isFaucetPayer = isFaucetAddress(lockFeeAccount);
     return (
         <div
             className="bg-[var(--color-card-bg)] rounded-xl border border-amber-500/20 overflow-hidden"
@@ -43,6 +45,12 @@ export function LockFeePanel({
                 </div>
                 {lockFeeAccount && (
                     <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
+                        {isFaucetPayer && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold shrink-0">
+                                <Droplets className="size-2.5" />
+                                {tt.faucet_label || 'Radix Faucet'}
+                            </span>
+                        )}
                         <span className="font-mono truncate" title={lockFeeAccount}>{lockFeeAccount.slice(0, 16)}...{lockFeeAccount.slice(-6)}</span>
                         <button type="button" onClick={e => { e.stopPropagation(); onCopy(lockFeeAccount); }} className={`p-0.5 rounded transition-colors ${copiedAddress === lockFeeAccount ? 'text-green-500' : 'hover:text-[var(--color-text-main)]'}`}>
                             {copiedAddress === lockFeeAccount ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
@@ -50,7 +58,9 @@ export function LockFeePanel({
                     </div>
                 )}
                 <p className="text-[12px] text-[var(--color-text-muted)] italic">
-                    {String(tt.lock_fee_desc || 'You authorized the network to spend up to {max} XRD. The actual fee was {actual} XRD.')
+                    {String((isFaucetPayer ? tt.lock_fee_desc_faucet : tt.lock_fee_desc) || (isFaucetPayer
+                        ? 'The Faucet authorized up to {max} XRD for fees. The actual fee was {actual} XRD.'
+                        : 'You authorized the network to spend up to {max} XRD. The actual fee was {actual} XRD.'))
                         .replace('{max}', lockFeeAmount)
                         .replace('{actual}', actualFeePaid)}
                 </p>

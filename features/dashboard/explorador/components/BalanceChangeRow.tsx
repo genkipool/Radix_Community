@@ -8,6 +8,7 @@ import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { TokenBadge } from '@/components/ui/TokenBadge';
 import { getMetaValue } from '../utils/metadataUtils';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import { BalanceChangeRowProps } from '../types/components.types';
 import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 import { ResourceInlinePanel } from './ResourceInlinePanel';
@@ -74,7 +75,7 @@ const BalanceChangeRow = ({
     const handleCardClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isFee) return;
-        if (window.getSelection()?.toString()) return;
+        if (hasSelectionInside(e.currentTarget)) return;
         setExpanded(prev => !prev);
     };
 

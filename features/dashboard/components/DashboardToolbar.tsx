@@ -158,11 +158,10 @@ export const DashboardToolbar = ({
             ...RANKING_TAGS.map(ranking => ({
                 key: `rank:${ranking}`,
                 label: dt?.rankings?.[ranking] || ranking,
-                active: activeRanking === ranking,
+                active: activeRanking === ranking && !isSearchActive,
                 onToggle: () => {
-                    if (activeRanking === ranking) return onRankingChange(null);
+                    if (activeRanking === ranking && !isSearchActive) return onRankingChange(null);
                     onRankingChange(ranking);
-                    if (transactionActiveTag !== 'All') onTransactionTagChange('All');
                 },
             })),
             ...TRANSACTION_TAGS.filter(tag => tag !== 'All').map(tag => ({
