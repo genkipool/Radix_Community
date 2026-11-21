@@ -120,15 +120,14 @@ export function ResourceCreationCard({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-baseline gap-2">
                             <span className="text-lg @md:text-xl font-bold text-[var(--color-text-main)] break-words">{name}</span>
                             {symbol && (
-                                <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                                     {symbol}
                                 </span>
                             )}
-                            <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] text-[var(--color-text-secondary)]">
-                                <KindIcon className="size-3" />
+                            <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                                 {isNft ? (rc.kind_nft || 'NFT collection') : (rc.kind_token || 'Fungible token')}
                             </span>
                         </div>
