@@ -143,12 +143,13 @@ export function EntityCreationCard({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-baseline gap-2">
                             <span className="text-base @md:text-lg font-bold text-[var(--color-text-main)] break-words">{name}</span>
-                            <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] text-[var(--color-text-secondary)]">
-                                <KindIcon className="size-3" />
-                                {kindLabel}
-                            </span>
+                            {kindLabel && kindLabel !== name && (
+                                <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+                                    {kindLabel}
+                                </span>
+                            )}
                         </div>
                         <div className="mt-1.5 flex items-center gap-1 min-w-0">
                             <button
