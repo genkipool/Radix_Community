@@ -162,7 +162,6 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-baseline gap-2 flex-wrap">
                                             <span className="font-bold text-sm text-[var(--color-text-main)] truncate">{name}</span>
-                                            {symbol && <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">{symbol}</span>}
                                         </div>
                                         <div className="flex items-center gap-1 mt-0.5">
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[160px]" title={wellKnownTip || address}>{address.slice(0, 14)}...{address.slice(-6)}</span>

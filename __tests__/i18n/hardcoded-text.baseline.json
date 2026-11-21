@@ -94,7 +94,7 @@
   "features/dashboard/explorador/components/PoolCard.tsx": 7,
   "features/dashboard/explorador/components/PoolParticipants.tsx": 5,
   "features/dashboard/explorador/components/ProtocolVoteCard.tsx": 10,
-  "features/dashboard/explorador/components/ResourceCreationCard.tsx": 24,
+  "features/dashboard/explorador/components/ResourceCreationCard.tsx": 22,
   "features/dashboard/explorador/components/ResourceInlinePanel.tsx": 7,
   "features/dashboard/explorador/components/SourceBadge.tsx": 2,
   "features/dashboard/explorador/components/SwapSettlementCard.tsx": 11,
