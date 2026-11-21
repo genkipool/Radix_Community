@@ -12,7 +12,7 @@
  * loading states, and the metadata / configuration / raw tab bodies.
  */
 
-import React from 'react';
+import React, { useId } from 'react';
 import { m } from "motion/react";
 import { Check, Copy } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
@@ -170,17 +170,19 @@ function PanelRoleRow({
    in all inline entity panels.
 ───────────────────────────────────────── */
 export function PanelTabBar<T extends string>({
-    tabs, activeTab, onTabChange, onTabHover, layoutId = 'activeTabUnderline', dense = false }: {
+    tabs, activeTab, onTabChange, onTabHover, dense = false }: {
     tabs: { key: T; label: string; tooltip?: string }[];
     activeTab: T;
     onTabChange: (tab: T) => void;
     onTabHover?: (tab: T) => void;
-    layoutId?: string;
     /** Tighter tabs, for a bar with many of them (the account card) to fit in one row. */
     dense?: boolean;
 }) {
+    const instanceId = useId();
+    const underlineLayoutId = `panelTabUnderline-${instanceId}`;
+
     return (
-        <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar shrink-0">
+        <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto no-scrollbar shrink-0">
             {tabs.map(tab => (
                 <m.button
                     key={tab.key}
@@ -211,7 +213,7 @@ export function PanelTabBar<T extends string>({
 
                     {activeTab === tab.key && (
                         <m.div
-                            layoutId={layoutId}
+                            layoutId={underlineLayoutId}
                             className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)]"
                             initial={false}
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
@@ -329,9 +331,9 @@ export function PanelMetadataTab({
                                     );
 
                                     return (
-                                        <div key={`${vi}-${typeof vItem === 'string' ? vItem : ''}`} className="flex items-center gap-1 group/meta-item">
+                                        <div key={`${vi}-${typeof vItem === 'string' ? vItem : ''}`} className="flex items-center gap-1 min-w-0 group/meta-item">
                                             {isUrl && typeof vItem === 'string' ? (
-                                                <a href={vItem} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
+                                                <a href={vItem} target="_blank" rel="noopener noreferrer" className="min-w-0 [overflow-wrap:anywhere] text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
                                             ) : isAddress && typeof vItem === 'string' ? (
                                                 <AddressDisplay
                                                     label=""
@@ -343,7 +345,7 @@ export function PanelMetadataTab({
                                                     hideLabel={true}
                                                 />
                                             ) : (
-                                                <span>{vItem}</span>
+                                                <span className="min-w-0 [overflow-wrap:anywhere]">{vItem}</span>
                                             )}
                                         </div>
                                     );

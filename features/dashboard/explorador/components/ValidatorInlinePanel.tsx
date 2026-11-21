@@ -8,6 +8,7 @@ import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import type { GatewayEntityDetails, TranslationsT, DashboardDict, MetadataItem } from '@/features/dashboard/types';
 import { getMetaValue } from '../utils/metadataUtils';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { IconFlame } from './TransactionIcons';
 import {
@@ -126,7 +127,7 @@ export function ValidatorInlinePanel({
             {/* Clickable card row */}
             <button type="button"
                 className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors w-full text-left"
-                onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
+                onClick={e => { e.stopPropagation(); if (hasSelectionInside(e.currentTarget)) return; setExpanded(v => !v); }}
             >
                 <div className="size-9 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
                     {isLoading ? (
@@ -182,7 +183,7 @@ export function ValidatorInlinePanel({
                         className="overflow-hidden"
                     >
                         <button type="button" className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)] w-full text-left cursor-auto block" onClick={e => e.stopPropagation()}>
-                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`validatorInlineTabs-${validatorAddress}`} />
+                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
                             <div className="px-5 py-4">
                                 {isLoading ? (

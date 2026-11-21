@@ -123,19 +123,43 @@ export function updateAliensAndDiveBombers(
     // Trigger dive-bomber
     if (diff.diveChance > 0 && crossedInterval(prevTick, state.tick, diff.diveInterval) && Math.random() < diff.diveChance) {
       const candidates: Alien[] = [];
+      let activeDivers = 0;
       for (let i = 0; i < state.aliens.length; i++) {
         const a = state.aliens[i];
-        if (a.alive && !a.diving) candidates.push(a);
+        if (!a.alive) continue;
+        if (a.diving) activeDivers += 1;
+        else candidates.push(a);
       }
       if (candidates.length > 0) {
-        const diver = candidates[randInt(0, candidates.length - 1)];
-        diver.diving = true;
-        diver.divePhase = 'RISE';
-        diver.diveFlipTimer = 0;
-        diver.diveAngle = -Math.PI / 2;
-        diver.type = 3;
-        if (diver.hp > 2) diver.hp = 2;
-        if (diver.maxHp > 2) diver.maxHp = 2;
+        const launchCount = state.level >= 90 && candidates.length >= 2 && Math.random() < 0.45 ? 2 : 1;
+        for (let k = 0; k < launchCount; k++) {
+          const pickIdx = randInt(0, candidates.length - 1);
+          const diver = candidates[pickIdx];
+          candidates[pickIdx] = candidates[candidates.length - 1];
+          candidates.pop();
+          diver.diving = true;
+          diver.divePhase = 'RISE';
+          diver.diveFlipTimer = 0;
+          diver.diveAngle = -Math.PI / 2;
+          diver.type = 3;
+          if (diver.hp > 2) diver.hp = 2;
+          if (diver.maxHp > 2) diver.maxHp = 2;
+        }
+        if (state.powerUp === 'NONE' && activeDivers + launchCount >= 2) {
+          const maxShielded = state.level >= 90 ? 1 : 0;
+          let shieldedCount = 0;
+          for (let i = 0; i < state.aliens.length; i++) {
+            const a = state.aliens[i];
+            if (a.alive && a.diving && a.hp > 1) {
+              if (shieldedCount < maxShielded) {
+                shieldedCount += 1;
+              } else {
+                a.hp = 1;
+                a.maxHp = 1;
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -274,7 +298,9 @@ export function updatePowerUpItemsAndDrops(
   }
 
   if (crossedInterval(prevTick, state.tick, 340, 170) && Math.random() < (bossAlive ? 0.72 : 0.62)) {
-    const pool: PowerUpItemType[] = ['SPREAD', 'LASER', 'RAPID', 'SHIELD'];
+    const pool: PowerUpItemType[] = state.level >= 80
+      ? ['SPREAD', 'LASER', 'RAPID', 'SHIELD', 'SHIELD']
+      : ['SPREAD', 'LASER', 'RAPID', 'SHIELD'];
     spawnPickupItem(state, pool[randInt(0, pool.length - 1)], rand(64, CANVAS_W - 64), -22, 1.5);
   }
 }

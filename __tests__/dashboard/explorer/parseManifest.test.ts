@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseManifest } from '@/features/dashboard/explorador/utils/parseManifest';
+import { classifySource, parseManifest } from '@/features/dashboard/explorador/utils/parseManifest';
 
 const ACCOUNT = 'account_rdx1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const ORACLE = 'component_rdx1cbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
@@ -68,5 +68,34 @@ CALL_METHOD Address("${ACCOUNT}") "deposit_batch" Expression("ENTIRE_WORKTOP");`
         expect(parsed.oracleUpdates).toEqual([]);
         expect(parsed.oracleCall).toBeNull();
         expect(parsed.mainAction).toBeNull();
+    });
+
+    it('extracts the Faucet component as lockFeeAccount and classifies Faucet senders', () => {
+        const STOKENET_FAUCET = 'component_tdx_2_1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxyulkzl';
+        const RECIPIENT = 'account_tdx_2_128kdm8cy2exfj4f37r2t7vz6skclvm8dyrgwz76r69ds43f2q4l0dl';
+        const faucetManifest = `CALL_METHOD
+    Address("${STOKENET_FAUCET}")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("${STOKENET_FAUCET}")
+    "free"
+;
+CALL_METHOD
+    Address("${RECIPIENT}")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;`;
+        const parsed = parseManifest(faucetManifest);
+        expect(parsed.lockFeeAccount).toBe(STOKENET_FAUCET);
+        expect(parsed.lockFeeAmount).toBe('5000');
+        expect(parsed.mainAction).toBe('free');
+
+        const source = classifySource([
+            { entity_address: STOKENET_FAUCET, resource_address: XRD, balance_change: '-10000' },
+        ]);
+        expect(source.method).toBe('Faucet');
     });
 });

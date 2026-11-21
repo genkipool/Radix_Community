@@ -16,6 +16,7 @@ import { ExpandedEntityPanel } from '../components/ResourceCardParts';
 import { OlympiaAccountCard } from './OlympiaAccountCard';
 import { OlympiaValidatorCard } from './OlympiaValidatorCard';
 import { OlympiaResourceCard } from './OlympiaResourceCard';
+import { hasSelectionInside } from '../utils/selectionUtils';
 
 /** Olympia kinds in the Babylon kind whose look they take. */
 const LOOK = { account: 'account', validator: 'validator', resource: 'resource' } as const;
@@ -44,7 +45,7 @@ export function OlympiaEntityBadge({ address, name, t, locale, onCopy, copiedAdd
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.getSelection()?.toString()) return;
+    if (hasSelectionInside(e.currentTarget)) return;
     setExpanded((v) => !v);
   };
 

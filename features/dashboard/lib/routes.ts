@@ -113,6 +113,10 @@ const NETWORKS: readonly Network[] = ['mainnet', 'stokenet'];
 export const TX_TAGS = ['All', 'Success', 'Failed', 'With Message', 'With NFTs', 'Staking', 'Unstaking', 'Claim'] as const;
 export type TxTag = (typeof TX_TAGS)[number];
 
+/** Explorer rankings that can be carried in the URL query. */
+export const RANKING_KEYS = ['top_accounts', 'top_lsu', 'access_controllers', 'owner_unlocks', 'fee_changes'] as const;
+export type RankingKey = (typeof RANKING_KEYS)[number];
+
 /** ISO `YYYY-MM-DD`, the only date shape the explorer's range accepts. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -121,6 +125,7 @@ export interface DashboardQuery {
   start?: string;
   end?: string;
   tag?: TxTag;
+  ranking?: RankingKey;
   /** Entity the explorer is focused on (transaction hash or address). */
   entity?: string;
 }
@@ -142,6 +147,7 @@ export function parseDashboardQuery(params: RawSearchParams): DashboardQuery {
   const end = first(params.end);
   const rawTag = first(params.tag);
   const tag = rawTag ? safeDecode(rawTag) : undefined;
+  const ranking = first(params.ranking);
   // `tx` is the legacy name; `entity` is the canonical one. Both are read so
   // old links keep working until the deprecation window closes.
   const entity = first(params.entity) ?? first(params.tx);
@@ -151,6 +157,7 @@ export function parseDashboardQuery(params: RawSearchParams): DashboardQuery {
     start: start && ISO_DATE.test(start) ? start : undefined,
     end: end && ISO_DATE.test(end) ? end : undefined,
     tag: TX_TAGS.includes(tag as TxTag) ? (tag as TxTag) : undefined,
+    ranking: RANKING_KEYS.includes(ranking as RankingKey) ? (ranking as RankingKey) : undefined,
     entity: resolveEntityKind(entity) ? entity : undefined,
   };
 }
@@ -171,6 +178,7 @@ export function serializeDashboardQuery(query: DashboardQuery): string {
   if (query.end) params.set('end', query.end);
   // `All` is the default, so it is never written: the shortest URL wins.
   if (query.tag && query.tag !== 'All') params.set('tag', query.tag);
+  if (query.ranking) params.set('ranking', query.ranking);
   if (query.entity) params.set('entity', query.entity);
   const search = params.toString();
   return search ? `?${search}` : '';

@@ -93,7 +93,8 @@ function GameButton({ label, icon, color, onClick }: {
   } as CSSProperties;
   return (
     <button type="button" onClick={onClick} className="ri-game-btn" style={style}>
-      {icon}{label}
+      {icon}
+      <span className="ri-centered-label">{label}</span>
     </button>
   );
 }
@@ -250,8 +251,8 @@ export function IntroScreen({ t, lang, onTournament, onFun }: {
 
         <div style={{ width: '100%', border: '1px solid rgba(0,229,255,0.35)', borderRadius: 16, background: 'rgba(0,229,255,0.04)', backdropFilter: 'blur(8px)', padding: '18px 22px', marginBottom: 16, animation: 'si-slidein 0.5s ease both' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
-            <span style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid #ffd700', borderRadius: 6, padding: '3px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#ffd700' }}>
-              {t.tournament_label ?? ''}
+            <span className="ri-tournament-badge">
+              <span className="ri-centered-label">{t.tournament_label ?? ''}</span>
             </span>
           </div>
           <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
@@ -306,8 +307,8 @@ export function BadgeScreen({ t, step, onPlay }: {
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 22, fontWeight: 700, color: '#ffd700', margin: 0 }}>{t.badge_success_title ?? ''}</p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '12px 0 22px', maxWidth: 400, lineHeight: 1.6 }}>{t.badge_success_body ?? ''}</p>
-            <button type="button" onClick={onPlay} style={{ padding: '14px 40px', fontFamily: '"Courier New",monospace', fontWeight: 700, fontSize: 16, color: '#010614', background: '#ffd700', border: 'none', borderRadius: 12, cursor: 'pointer', boxShadow: '0 0 20px #ffd700,0 0 40px #ffd700aa', letterSpacing: '0.05em' }}>
-              {t.badge_btn_play ?? ''}
+            <button type="button" onClick={onPlay} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, padding: '14px 40px', fontFamily: '"Courier New",monospace', fontWeight: 700, fontSize: 16, color: '#010614', background: '#ffd700', border: 'none', borderRadius: 12, cursor: 'pointer', boxShadow: '0 0 20px #ffd700,0 0 40px #ffd700aa', letterSpacing: '0.05em' }}>
+              <span className="ri-centered-label">{t.badge_btn_play ?? ''}</span>
             </button>
           </div>
         </>

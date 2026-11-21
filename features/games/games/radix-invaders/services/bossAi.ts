@@ -17,8 +17,32 @@ function spawnBossEscorts(s: GameState, boss: Boss, profile: BossProfile, critic
   const activeEscorts = aw;
   const maxEscorts = Math.min(4, profile.maxEscorts + bonusCount + (critical ? 1 : 0));
   if (activeEscorts >= maxEscorts) return;
-  const toSpawn = Math.min(maxEscorts - activeEscorts, critical ? 2 : 1 + (bonusCount > 0 ? 1 : 0));
+  const baseBatch = critical || bonusCount > 0
+    ? 2
+    : s.level >= 90 && Math.random() < 0.5
+      ? 2
+      : 1;
+  const toSpawn = Math.min(maxEscorts - activeEscorts, baseBatch);
+  const restrictProtection = s.powerUp === 'NONE' && activeEscorts + toSpawn >= 2;
+  const maxShielded = restrictProtection ? (s.level >= 90 ? 1 : 0) : Infinity;
+  let shieldedCount = 0;
+  if (restrictProtection) {
+    for (let i = 0; i < activeEscorts; i++) {
+      const existing = s.aliens[i];
+      if (existing.diving && existing.hp > 1) {
+        if (shieldedCount < maxShielded) {
+          shieldedCount += 1;
+        } else {
+          existing.hp = 1;
+          existing.maxHp = 1;
+        }
+      }
+    }
+  }
   for (let i = 0; i < toSpawn; i++) {
+    const canHaveShield = !restrictProtection || shieldedCount < maxShielded;
+    const escortHp = canHaveShield ? profile.escortHp : 1;
+    if (escortHp > 1) shieldedCount += 1;
     const sx = i % 2 === 0 ? boss.x + 10 : boss.x + boss.w - ALIEN_W - 10;
     const escort: Alien = {
       row: 0,
@@ -26,8 +50,8 @@ function spawnBossEscorts(s: GameState, boss: Boss, profile: BossProfile, critic
       x: sx,
       y: boss.y + boss.h,
       alive: true,
-      hp: profile.escortHp,
-      maxHp: profile.escortHp,
+      hp: escortHp,
+      maxHp: escortHp,
       hitFlash: 0,
       type: 3,
       diving: true,

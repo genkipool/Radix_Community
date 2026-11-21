@@ -132,6 +132,7 @@ export default function DashboardClient({
   const {
     activeView, network, deferredNetwork,
     searchQuery, setSearchQuery, deferredSearch,
+    activeRanking, handleRankingChange,
     dateRange, handleDateRangeChange,
     handleViewChange, handleNetworkChange, setTagInUrl,
     isNavigating, committedEntity,
@@ -145,7 +146,6 @@ export default function DashboardClient({
   const tempDateRange = pendingRange ?? dateRange;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
-  const [activeRanking, setActiveRanking] = useState<string | null>(null);
   /* The network panel starts folded and is only mounted once opened: closed, it costs nothing. */
   const [networkPanelOpen, setNetworkPanelOpen] = useState(false);
   const [networkPanelOpened, setNetworkPanelOpened] = useState(false);
@@ -864,6 +864,9 @@ export default function DashboardClient({
           }}
           transactionActiveTag={prefs.transactionActiveTag}
           onTransactionTagChange={(tag) => {
+            if (tag === 'All' || searchQuery.trim().startsWith('txid_')) {
+              setSearchQuery('');
+            }
             prefs.setTransactionActiveTag(tag);
             // The URL owns the filter, so the server prefetches the right slice.
             setTagInUrl(tag);
@@ -895,7 +898,12 @@ export default function DashboardClient({
           columns={columns}
           onColumnsChange={setColumns}
           activeRanking={activeRanking}
-          onRankingChange={setActiveRanking}
+          onRankingChange={(ranking) => {
+            if (ranking && prefs.transactionActiveTag !== 'All') {
+              prefs.setTransactionActiveTag('All');
+            }
+            handleRankingChange(ranking);
+          }}
           networkPanelOpen={networkPanelOpen}
           onNetworkPanelToggle={() => setNetworkPanelOpen(open => !open)}
           filterFavorites={prefs.filterFavorites}

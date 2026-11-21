@@ -2,7 +2,7 @@
 import { SafeImage } from '@/components/ui/SafeImage';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { Check, Copy, Info, Shield, Download } from 'lucide-react';
+import { Check, Copy, Info, Shield, Download, Droplets } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { sanitizeText } from '@/utils/sanitize';
@@ -80,8 +80,9 @@ export function AddressDisplay({
             ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
     const isCM = isConsensusManager(address);
+    const isFaucet = wellKnownKey === 'faucet';
     const meta = useEntityData(address, network);
-    const entityName = meta?.name;
+    const entityName = meta?.name || (isFaucet ? (tt?.faucet_label || 'Radix Faucet') : undefined);
     const entityIcon = meta?.iconUrl;
 
     const displayText = isCM
@@ -91,7 +92,7 @@ export function AddressDisplay({
     const isAccountAddr = address.startsWith('account_');
 
     return (
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-0.5 min-w-0">
             {!hideLabel && (
                 <span
                     className={`text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider ${wellKnownTip ? 'cursor-help' : ''}`}
@@ -100,14 +101,18 @@ export function AddressDisplay({
                     {label}:
                 </span>
             )}
-            <div className="flex items-center gap-2">
-                {entityIcon && (
+            <div className="flex items-center gap-2 min-w-0">
+                {entityIcon ? (
                     <SafeImage src={entityIcon} alt={entityName || address} fallbackName={entityName || address} className="size-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" />
-                )}
+                ) : isFaucet ? (
+                    <span className="size-5 rounded-full shrink-0 border border-sky-500/30 bg-sky-500/10 flex items-center justify-center text-sky-500 dark:text-sky-400">
+                        <Droplets className="size-3" />
+                    </span>
+                ) : null}
 
                 <div className="flex flex-col min-w-0">
                     {entityName && (
-                        <span className="text-[11px] font-semibold text-[var(--color-text-main)] truncate max-w-[200px]">{entityName}</span>
+                        <span className={`text-[11px] font-semibold truncate max-w-[200px] ${isFaucet ? 'text-sky-600 dark:text-sky-400' : 'text-[var(--color-text-main)]'}`}>{entityName}</span>
                     )}
                     <div className="flex items-center gap-1.5">
                         <span

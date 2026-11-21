@@ -15,6 +15,7 @@ import type { OlympiaAccountSummary, OlympiaStake, OlympiaTokenAmount } from '@/
 import { endOfOlympia, type OlympiaDict } from './dict';
 import { formatAmount, formatDate, formatDecimal } from './format';
 import { BabylonRef, OlympiaRef, Section, Stat } from './OlympiaParts';
+import { hasSelectionInside } from '../utils/selectionUtils';
 
 export function OlympiaAccountStats({ a, o, locale }: { a: OlympiaAccountSummary; o: OlympiaDict; locale: string }) {
   // Balances are what the account held when Olympia ended; counts and rewards
@@ -114,7 +115,7 @@ function OlympiaStakeCard({ s, o, locale, t, onCopy, copiedAddress }: { s: Olymp
   ];
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.getSelection()?.toString()) return;
+    if (hasSelectionInside(e.currentTarget)) return;
     setExpanded((v) => !v);
   };
   const address = s.validatorAddress;

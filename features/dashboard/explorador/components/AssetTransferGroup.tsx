@@ -29,12 +29,46 @@ export function AssetTransferGroup({
     const tt = _tt;
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
-    // Only account_ addresses can be origins; everything else goes to destination.
+    // In multi-party P2P / subintent swaps, both accounts appear in `initiators` because
+    // each sends a different asset. Within a single resource group, an account receiving (> 0)
+    // from another account sending (< 0) belongs in Destination, not Origin.
+    const isAccountReceiverFromAnotherAccount = (c: typeof group[number]) => {
+        if (c.is_fee) return false;
+        const addr = sanitizeText(c.entity_address);
+        if (!addr.startsWith('account_')) return false;
+        if (parseFloat(c.balance_change || '0') <= 0) return false;
+        return group.some(oc =>
+            !oc.is_fee &&
+            oc.resource_address === c.resource_address &&
+            sanitizeText(oc.entity_address) !== addr &&
+            sanitizeText(oc.entity_address).startsWith('account_') &&
+            parseFloat(oc.balance_change || '0') < 0
+        );
+    };
+
+    // Usually account_ addresses are the origins and components/pools are destinations.
+    // However, when NO account_ is an initiator in this group (e.g., Faucet dispensation or
+    // component-sponsored payout), a non-account entity that sends assets (< 0) or pays the fee
+    // IS the true origin and must appear in the Origin column rather than Destination.
+    const hasAccountOrigin = !selfTransfer && group.some(c => {
+        const addr = sanitizeText(c.entity_address);
+        return addr.startsWith('account_') && initiators.has(addr) && !isAccountReceiverFromAnotherAccount(c);
+    });
+
+    const isComponentOrigin = (c: typeof group[number]) => {
+        if (hasAccountOrigin) return false;
+        const addr = sanitizeText(c.entity_address);
+        if (addr.startsWith('account_')) return false;
+        if (!c.is_fee) return parseFloat(c.balance_change || '0') < 0;
+        return initiators.has(addr);
+    };
+
     // A self-transfer has the same account on both sides: what it withdrew, then what it got back.
     const originActors = selfTransfer ? group.filter(c => parseFloat(c.balance_change) <= 0) : group.filter(c => {
-        if (!sanitizeText(c.entity_address).startsWith('account_')) return false;
-
-        const isOrigin = initiators.has(sanitizeText(c.entity_address));
+        const addr = sanitizeText(c.entity_address);
+        const isOrigin = addr.startsWith('account_')
+            ? initiators.has(addr) && !isAccountReceiverFromAnotherAccount(c)
+            : isComponentOrigin(c);
         if (!isOrigin) return false;
 
         // If it's NOT a fee, it's always included
@@ -48,23 +82,25 @@ export function AssetTransferGroup({
 
         // 2. If the address has a REAL (non-fee) change in ANY OTHER group, the fee is nested in THAT other card,
         //    so we don't show it as a standalone sender row here in the XRD card.
-        const hasRealInWholeTx = realTransferAddresses.has(sanitizeText(c.entity_address));
+        const hasRealInWholeTx = realTransferAddresses.has(addr);
         if (hasRealInWholeTx) return false;
 
         return true;
     });
 
     const destActors = selfTransfer ? group.filter(c => parseFloat(c.balance_change) >= 0) : group.filter(c => {
-        // Non-account addresses always go to destination
-        if (!sanitizeText(c.entity_address).startsWith('account_')) {
+        const addr = sanitizeText(c.entity_address);
+        // Non-account addresses go to destination unless they are acting as the transaction's origin
+        if (!addr.startsWith('account_')) {
+            if (isComponentOrigin(c)) return false;
             if (!c.is_fee) return true;
             const hasRealInGroup = group.some(oc => oc.entity_address === c.entity_address && !oc.is_fee);
             if (hasRealInGroup) return false;
-            const hasRealInWholeTx = realTransferAddresses.has(sanitizeText(c.entity_address));
+            const hasRealInWholeTx = realTransferAddresses.has(addr);
             return !hasRealInWholeTx;
         }
 
-        const isOrigin = initiators.has(sanitizeText(c.entity_address));
+        const isOrigin = initiators.has(addr) && !isAccountReceiverFromAnotherAccount(c);
         if (isOrigin) return false;
 
         if (!c.is_fee) return true;
@@ -72,7 +108,7 @@ export function AssetTransferGroup({
         const hasRealInGroup = group.some(oc => oc.entity_address === c.entity_address && !oc.is_fee);
         if (hasRealInGroup) return false;
 
-        const hasRealInWholeTx = realTransferAddresses.has(sanitizeText(c.entity_address));
+        const hasRealInWholeTx = realTransferAddresses.has(addr);
         if (hasRealInWholeTx) return false;
 
         return true;
@@ -162,7 +198,7 @@ export function AssetTransferGroup({
             <div className={`flex flex-col ${columns === 2 ? '' : 'md:flex-row'} divide-y ${columns === 2 ? 'divide-y' : 'md:divide-y-0 md:divide-x'} divide-[var(--color-card-border)]`}>
 
                 {/* ── ORIGIN column ── */}
-                <div className="flex-1 p-3 bg-blue-500/5">
+                <div className="flex-1 min-w-0 p-3 bg-blue-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="size-3" />
                         {tt?.from_address || 'Origin (Sent)'}
@@ -280,7 +316,7 @@ export function AssetTransferGroup({
                 </div>
 
                 {/* ── DESTINATION column ── */}
-                <div className="flex-1 p-3 bg-[var(--color-accent)]/5">
+                <div className="flex-1 min-w-0 p-3 bg-[var(--color-accent)]/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="size-3" />
                         {tt?.to_address || 'Destination (Received)'}
@@ -289,7 +325,7 @@ export function AssetTransferGroup({
                         {destActors.length > 0
                             ? destActors.map((change) => {
                                 const nftDeposits = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0);
-                                const isPayerInOrigin = initiators.has(sanitizeText(change.entity_address));
+                                const isPayerInOrigin = originActors.some(o => sanitizeText(o.entity_address) === sanitizeText(change.entity_address));
                                 const recipientFee = !isPayerInOrigin
                                     ? balanceChanges.fungible_fee_balance_changes?.find((f) => sanitizeText(f.entity_address) === sanitizeText(change.entity_address))
                                     : null;
@@ -398,7 +434,7 @@ export function AssetTransferGroup({
                                     result.push(
                                         <div key={'nft-orphan-r-' + result.length}>
                                             <div className="flex items-start justify-between gap-2 mb-2">
-                                                <div className="pl-2">
+                                                <div className="min-w-0 flex-1 pl-2">
                                                     <AddressDisplay label={tt?.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                                 </div>
                                                 <SourceBadge method={method} color={color} bg={bg} title={title} label={tt?.method_label || 'Recibido vía:'} />

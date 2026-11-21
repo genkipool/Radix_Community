@@ -13,6 +13,7 @@ import { sanitizeText } from '@/utils/sanitize';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import { resolveProposerInfo, findProposerValidator } from '@/features/dashboard/explorador/utils/proposerUtils';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import { priceChange, priceRewrites, type PriceRewrite } from '@/features/dashboard/explorador/utils/oraclePrices';
 import { useEntityDetailsBatch } from '@/features/dashboard/explorador/hooks/useEntityDetailsBatch';
 import { ResourceInlinePanel } from './ResourceInlinePanel';
@@ -141,7 +142,7 @@ function OraclePriceRow({
                 role="button"
                 tabIndex={0}
                 aria-expanded={open}
-                onClick={(e) => { e.stopPropagation(); if (!window.getSelection()?.toString()) setOpen((v) => !v); }}
+                onClick={(e) => { e.stopPropagation(); if (!hasSelectionInside(e.currentTarget)) setOpen((v) => !v); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); } }}
                 className={`${ORACLE_GRID} px-1 py-2 cursor-pointer rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors`}
             >

@@ -11,6 +11,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { Check, ChevronDown, Copy, Info } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { truncateAddress } from '@/utils/formatters';
+import { hasSelectionInside } from '../utils/selectionUtils';
 
 export interface AssetRowCardProps {
     address: string;
@@ -57,9 +58,9 @@ export function AssetListSection({ title, aside, footer, burned = false, childre
 export function AssetRowCard({
     address, name, symbol, iconUrl, amountText, amountExtra, expanded, onToggle, onCopy, copiedAddress, burned = false, children,
 }: AssetRowCardProps) {
-    const handleToggle = (e?: React.SyntheticEvent) => {
-        e?.stopPropagation();
-        if (window.getSelection()?.toString()) return;
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (hasSelectionInside(e.currentTarget)) return;
         onToggle();
     };
 
@@ -70,8 +71,8 @@ export function AssetRowCard({
                 role="button"
                 tabIndex={0}
                 className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl w-full text-left"
-                onClick={handleToggle}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e); } }}
+                onClick={handleClick}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onToggle(); } }}
             >
                 {/* Left side: Icon + Name + Address */}
                 <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">

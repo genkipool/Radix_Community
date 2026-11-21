@@ -9,6 +9,7 @@
 
 import { sanitizeText } from '@/utils/sanitize';
 import { isConsensusManager } from '@/features/dashboard/utils/entityUtils';
+import { isFaucetAddress } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import type { ParsedManifest, AirdropData, OracleUpdate, OracleCall, SourceStyle, FungibleChange, BalanceChanges } from '@/features/dashboard/explorador/types';
 import type { TranslationsT } from '@/features/dashboard/types';
 
@@ -89,6 +90,7 @@ export function parseManifest(manifest: string | undefined): ParsedManifest {
   const badgeOriginMatch = manifest.match(/Address\("([a-z0-9_]+)"\)[\s\S]*?"create_proof_of_amount"/i);
 
   const calls = methodCalls(manifest);
+  const lockFeeCall = calls.find((c) => c.method === 'lock_fee' || c.method === 'lock_contingent_fee');
   const mainCall = calls.find((c) => !PLUMBING_METHOD.test(c.method));
   // A badge shown by its local ids: the proof names the resource and the ids.
   const nftProof = calls.find((c) => c.method === 'create_proof_of_non_fungibles');
@@ -123,7 +125,7 @@ export function parseManifest(manifest: string | undefined): ParsedManifest {
 
   return {
     lockFeeAmount: lockFeeMatch?.[1] ?? null,
-    lockFeeAccount: lockFeeAccountMatch?.[1] ?? null,
+    lockFeeAccount: lockFeeCall?.target ?? lockFeeAccountMatch?.[1] ?? null,
     mainAction: mainCall?.method ?? methodCallMatch?.[1] ?? null,
     nftId: calls.length ? actedNftId ?? null : nftIdMatch?.[1] ?? null,
     badgeResource: proofMatch?.[1] ?? nftProofResource,
@@ -174,10 +176,12 @@ export function classifySource(
 ): SourceStyle {
   const dict = tt;
   const hasCM = senders.some(s => isConsensusManager(s.entity_address));
+  const hasFaucet = senders.some(s => isFaucetAddress(sanitizeText(s.entity_address)));
   const allUserAccounts = senders.length > 0 && senders.every(s => sanitizeText(s.entity_address).startsWith('account_'));
 
   if (senders.length === 0) return { method: String(dict?.method_minted || 'Minted / Generated'), title: String(dict?.method_minted_title || ''), color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30' };
   if (hasCM) return { method: String(dict?.method_network || 'Network / Protocol'), title: String(dict?.method_network_title || ''), color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30' };
+  if (hasFaucet) return { method: String(dict?.method_faucet || 'Faucet'), title: String(dict?.method_faucet_title || 'Testnet funds dispensed by the Radix Faucet component.'), color: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-100 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800/30' };
   if (options?.isStakingTx) return { method: String(dict?.method_staking || 'Staking'), title: String(dict?.method_staking_title || ''), color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/30' };
   if (allUserAccounts) return { method: String(dict?.method_user || 'User Transfer'), title: String(dict?.method_user_title || ''), color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-100/10 border-amber-200 dark:border-amber-800/30' };
   return { method: String(dict?.method_smart_contract || 'Smart Contract / Pool'), title: String(dict?.method_smart_contract_title || ''), color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30' };

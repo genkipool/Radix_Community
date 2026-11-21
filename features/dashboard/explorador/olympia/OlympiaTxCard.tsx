@@ -9,7 +9,7 @@
  * Every piece is Olympia's own: Babylon components look addresses up on the
  * Babylon Gateway, which knows nothing of rdx1… / rv1… / xrd_rr1….
  */
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import {
   Activity, Check, ChevronDown, Clock, Coins, Copy, FileJson, Flame, Info, Landmark, List, Mail, Terminal, Users, Wallet, Zap,
@@ -24,6 +24,7 @@ import type { MarketData, TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
 import { OlympiaEntityBadge } from './OlympiaEntityBadge';
 import { OlympiaResourceInlinePanel } from './OlympiaResourcePanel';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import type { AccountCardProps } from '../types/components.types';
 import { useOlympiaTx } from '@/features/dashboard/services/olympiaApi';
 import { OLYMPIA_XRD_RRI } from '@/features/dashboard/lib/olympia';
@@ -83,7 +84,7 @@ function AmountRow({ row, tt, o, locale, onCopy, copiedAddress, fee, t }: {
   const opens = !fee;
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!opens || window.getSelection()?.toString()) return;
+    if (!opens || hasSelectionInside(e.currentTarget)) return;
     setExpanded((v) => !v);
   };
   const color = row.amount > 0 ? 'text-[var(--color-accent)]' : 'text-red-500 dark:text-red-400';
@@ -199,7 +200,7 @@ function AssetTransfers({ flow, tt, t, o, locale, onCopy, copiedAddress }: {
       </h3>
       {info && <p className="px-4 py-2.5 text-xs text-[var(--color-text-main)] border-b border-[var(--color-card-border)] bg-[var(--color-primary)]/5">{o.tx_flow_note}</p>}
       <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-[var(--color-card-border)]">
-        <div className="flex-1 p-3 bg-blue-500/5">
+        <div className="flex-1 min-w-0 p-3 bg-blue-500/5">
           <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-3 flex items-center gap-1.5 opacity-80">
             <Landmark className="size-3" />{tt.from_address || ''}
           </h5>
@@ -221,7 +222,7 @@ function AssetTransfers({ flow, tt, t, o, locale, onCopy, copiedAddress }: {
             {flow.origin.length === 0 && !flow.feeOnlyPayer && <p className="text-xs text-[var(--color-text-muted)] italic py-2">{o.tx_minted}</p>}
           </div>
         </div>
-        <div className="flex-1 p-3 bg-[var(--color-accent)]/5">
+        <div className="flex-1 min-w-0 p-3 bg-[var(--color-accent)]/5">
           <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5 opacity-80">
             <Landmark className="size-3" />{tt.to_address || ''}
           </h5>
@@ -456,7 +457,8 @@ function RawTab({ tx, tt, o, onCopy, copiedAddress }: { tx: OlympiaTxDetail; tt:
   );
 }
 
-function TabBar({ tab, setTab, tt, id }: { tab: Tab; setTab: (t: Tab) => void; tt: Tt; id: string }) {
+function TabBar({ tab, setTab, tt }: { tab: Tab; setTab: (t: Tab) => void; tt: Tt }) {
+  const tabBarId = useId();
   const icon = (t: Tab, Icon: typeof Activity) => <Icon className={`size-3.5 ${tab === t ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />;
   const labels: Record<Tab, React.ReactNode> = {
     summary: <>{icon('summary', Activity)}{tt.summary || 'Summary'}</>,
@@ -464,7 +466,7 @@ function TabBar({ tab, setTab, tt, id }: { tab: Tab; setTab: (t: Tab) => void; t
     raw: <>{icon('raw', FileJson)}{tt.raw_receipt || ''}</>,
   };
   return (
-    <div className="flex items-center gap-4 border-b border-[var(--color-card-border)] px-6 overflow-x-auto hide-scrollbar shrink-0">
+    <div className="flex items-center gap-4 border-b border-[var(--color-card-border)] px-6 overflow-x-auto no-scrollbar shrink-0">
       {(['summary', 'details', 'raw'] as const).map((t) => (
         <button
           key={t}
@@ -474,7 +476,7 @@ function TabBar({ tab, setTab, tt, id }: { tab: Tab; setTab: (t: Tab) => void; t
         >
           {labels[t]}
           {tab === t && (
-            <m.div layoutId={`olympiaTxTab-${id}`} className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10" transition={{ type: 'tween', ease: 'circOut', duration: 0.3 }} />
+            <m.div layoutId={`olympiaTxTab-${tabBarId}`} className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10" transition={{ type: 'tween', ease: 'circOut', duration: 0.3 }} />
           )}
         </button>
       ))}
@@ -521,7 +523,7 @@ export function OlympiaTxCard({ address, columns, isExpanded, onExpand, onCopy, 
       onClick={clickable ? (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
         if (target.closest('button, a, [role="button"], input, textarea')) return;
-        if (window.getSelection()?.toString()) return;
+        if (hasSelectionInside(e.currentTarget)) return;
         toggle();
       } : undefined}
       className={`p-0 shadow-md transition-all duration-300 group overflow-hidden col-span-full ${clickable ? 'cursor-pointer' : 'cursor-default'} ${isModal ? 'bg-[var(--color-bg)] h-full flex flex-col' : ''} ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
@@ -610,7 +612,7 @@ export function OlympiaTxCard({ address, columns, isExpanded, onExpand, onCopy, 
               onClick={(e) => e.stopPropagation()}
               className={`flex flex-col mt-4 pt-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50 rounded-xl overflow-hidden cursor-auto ${isModal ? 'flex-1 min-h-0' : ''}`}
             >
-              <TabBar tab={tab} setTab={setTab} tt={tt} id={id} />
+              <TabBar tab={tab} setTab={setTab} tt={tt} />
               <div className={`p-4 sm:p-5 text-sm ${isModal ? 'flex-1 overflow-y-auto min-h-0 custom-scrollbar' : ''}`}>
                 {tab === 'summary' && <SummaryTab tx={tx} flow={flow} tt={tt} t={t} o={o} locale={locale} onCopy={onCopy} copiedAddress={copiedAddress} marketData={marketData} />}
                 {tab === 'details' && <DetailsTab tx={tx} tt={tt} o={o} locale={locale} />}

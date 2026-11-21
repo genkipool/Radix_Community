@@ -8,6 +8,7 @@ interface GamePlayfieldProps {
   isMobilePortrait: boolean;
   theaterMode: boolean;
   soundMuted: boolean;
+  isPaused: boolean;
   t: Record<string, string>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   playfieldWrapRef: RefObject<HTMLDivElement | null>;
@@ -21,6 +22,7 @@ interface GamePlayfieldProps {
   onCanvasClick: () => void;
   onToggleSound: () => void;
   onTogglePause: () => void;
+  onReturnToMenu: () => void;
   onExitTheater: () => void;
 }
 
@@ -28,6 +30,7 @@ export function GamePlayfield({
   isMobilePortrait,
   theaterMode,
   soundMuted,
+  isPaused,
   t,
   canvasRef,
   playfieldWrapRef,
@@ -41,6 +44,7 @@ export function GamePlayfield({
   onCanvasClick,
   onToggleSound,
   onTogglePause,
+  onReturnToMenu,
   onExitTheater,
 }: GamePlayfieldProps) {
   const canvasElement = (
@@ -53,15 +57,35 @@ export function GamePlayfield({
       onMouseDown={onMouseDown}
       onMouseUp={onMouseUp}
       onClick={onCanvasClick}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', outline: 'none' }}
       className={
         isMobilePortrait
-          ? 'w-full h-full object-contain block image-rendering-pixelated touch-none'
-          : 'w-full h-full block cursor-crosshair image-rendering-pixelated touch-none'
+          ? 'w-full h-full object-contain block image-rendering-pixelated touch-none outline-none focus:outline-none focus-visible:outline-none'
+          : 'w-full h-full block cursor-crosshair image-rendering-pixelated touch-none outline-none focus:outline-none focus-visible:outline-none'
       }
       tabIndex={0}
     />
   );
+
+  const pauseMenuOverlay = isPaused ? (
+    <div
+      className="pointer-events-none absolute inset-x-0 z-20 flex justify-center"
+      style={{ top: 'calc(50% + 66px)' }}
+    >
+      <button
+        type="button"
+        className="ri-pause-menu-btn pointer-events-auto"
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onReturnToMenu();
+        }}
+      >
+        <span className="ri-centered-label">{t.back_to_start ?? t.back_to_menu ?? ''}</span>
+      </button>
+    </div>
+  ) : null;
 
   if (isMobilePortrait) {
     return (
@@ -103,6 +127,7 @@ export function GamePlayfield({
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           {canvasElement}
+          {pauseMenuOverlay}
         </div>
       </div>
     );
@@ -127,6 +152,7 @@ export function GamePlayfield({
         }}
       >
         {canvasElement}
+        {pauseMenuOverlay}
         <GameHudControls
           muted={soundMuted}
           soundOnTitle={t.sound_on ?? ''}

@@ -322,7 +322,6 @@ export function AccountCard({
                                             handleTransactionsMouseEnter();
                                         }
                                     }}
-                                    layoutId={`accountCardTabs-${address}`}
                                     dense
                                 />
 

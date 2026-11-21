@@ -10,8 +10,8 @@
  */
 import { useState, useDeferredValue, useEffect } from 'react';
 import type { DashboardView, Network } from '../types';
-import { segmentToView } from '../lib/routes';
-import { isRadixAddress } from '../utils/radixAddress';
+import { segmentToView, type RankingKey } from '../lib/routes';
+import { detectAddressNetwork, isRadixAddress } from '../utils/radixAddress';
 import { useDashboardNavigation } from './useDashboardNavigation';
 
 export interface UseDashboardUrlSyncOptions {
@@ -59,6 +59,14 @@ export function useDashboardUrlSync({
   const [dateRange, setDateRange] = useState(initialDateRange);
 
   const nav = useDashboardNavigation({ locale, view: activeView });
+  const [activeRanking, setActiveRanking] = useState<string | null>(nav.committedRanking);
+
+  // Keep activeRanking in sync when back/forward or route transitions change `?ranking=`.
+  const [urlRanking, setUrlRanking] = useState(nav.committedRanking);
+  if (nav.committedRanking !== urlRanking) {
+    setUrlRanking(nav.committedRanking);
+    setActiveRanking(nav.committedRanking);
+  }
 
   // The URL can name another entity without the box being typed in: a link
   // to a pool or locker inside a card, or back / forward. The box follows it
@@ -78,8 +86,28 @@ export function useDashboardUrlSync({
   const setSearchQuery = (query: string) => {
     _setSearchQuery(query);
     const trimmed = query.trim();
-    if (isRadixAddress(trimmed)) nav.focusEntity(trimmed);
-    else if (!trimmed) nav.focusEntity(null);
+    if (isRadixAddress(trimmed)) {
+      setActiveRanking(null);
+      const detected = detectAddressNetwork(trimmed);
+      if (detected && detected !== network) {
+        setNetwork(detected);
+        nav.focusEntity(trimmed, detected);
+      } else {
+        nav.focusEntity(trimmed);
+      }
+    } else if (!trimmed) {
+      nav.focusEntity(null);
+    }
+  };
+
+  const handleRankingChange = (ranking: string | null) => {
+    setActiveRanking(ranking);
+    if (ranking) {
+      _setSearchQuery('');
+      nav.setRanking(ranking as RankingKey, network);
+    } else {
+      nav.setRanking(null, network);
+    }
   };
 
   const handleDateRangeChange = (range: { start: string | null; end: string | null }) => {
@@ -100,6 +128,7 @@ export function useDashboardUrlSync({
    */
   const handleViewChange = (view: DashboardView) => {
     _setSearchQuery('');
+    setActiveRanking(null);
     setDateRange({ start: null, end: null });
     setActiveView(view);
     nav.goToView(view);
@@ -107,6 +136,7 @@ export function useDashboardUrlSync({
 
   const handleNetworkChange = (net: Network) => {
     _setSearchQuery('');
+    setActiveRanking(null);
     setDateRange({ start: null, end: null });
     setNetwork(net);
     nav.setNetwork(net);
@@ -119,6 +149,8 @@ export function useDashboardUrlSync({
     searchQuery,
     setSearchQuery,
     deferredSearch,
+    activeRanking,
+    handleRankingChange,
     dateRange,
     handleDateRangeChange,
     handleViewChange,

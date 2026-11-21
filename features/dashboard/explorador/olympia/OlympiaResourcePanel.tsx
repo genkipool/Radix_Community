@@ -163,7 +163,7 @@ export function OlympiaResourceInlinePanel({ rri, t, locale, onCopy, copiedAddre
   ];
   return (
     <div className="block w-full text-left border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]" onClick={(e) => e.stopPropagation()} role="presentation">
-      <PanelTabBar tabs={tabs} activeTab={tab} onTabChange={setTab} layoutId={`olympiaResourceTabs-${rri}`} />
+      <PanelTabBar tabs={tabs} activeTab={tab} onTabChange={setTab} />
       <div className="px-5 py-4">
         {isLoading ? (
           <p className="text-xs text-[var(--color-text-muted)] py-3">{o.loading}</p>

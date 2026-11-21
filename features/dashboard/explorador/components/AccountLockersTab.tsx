@@ -13,6 +13,7 @@ import type { Network, TranslationsT } from '@/features/dashboard/types';
 import { gatewayPost } from '@/services/gateway/bases';
 import { truncateAddress } from '@/utils/formatters';
 import { waitingLine } from '../utils/lockerClaims';
+import { hasSelectionInside } from '../utils/selectionUtils';
 import { PanelMetadataTab } from './EntityPanelShared';
 import { entityMeta, useExplorerEntity } from './ExplorerEntityCard';
 import { LockerDetails } from './LockerDetails';
@@ -137,7 +138,7 @@ function LockerRow({
                 aria-expanded={open}
                 onClick={(e) => {
                     e.stopPropagation();
-                    if (window.getSelection()?.toString()) return;
+                    if (hasSelectionInside(e.currentTarget)) return;
                     setOpen((v) => !v);
                 }}
                 onKeyDown={(e) => {

@@ -27,6 +27,7 @@ import {
   parseDashboardQuery,
   serializeDashboardQuery,
   type DashboardQuery,
+  type RankingKey,
   type TxTag,
 } from '../lib/routes';
 
@@ -93,9 +94,12 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
     return current().entity ?? null;
   })();
 
+  const committedRanking: RankingKey | null = current().ranking ?? null;
+
   return {
     isNavigating,
     committedEntity,
+    committedRanking,
 
     /**
      * Switches view WITHOUT tearing the dashboard down.
@@ -150,7 +154,23 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
     },
 
     setTag: (tag: string) => {
-      replaceQuery({ tag: (tag as TxTag) || undefined });
+      replaceQuery({ tag: (tag as TxTag) || undefined, ranking: undefined });
+    },
+
+    /**
+     * Switches to (or clears) a ranking on the explorer list route.
+     * Carrying `ranking` in the URL ensures it survives the route transition
+     * when leaving an entity page (`/dashboard/tx/…`, `/dashboard/account/…`).
+     */
+    setRanking: (ranking: RankingKey | null, networkOverride?: Network) => {
+      const network = networkOverride ?? current().network;
+      navigate(
+        dashboardRoutes.view(locale, view, {
+          network,
+          ranking: ranking ?? undefined,
+        }),
+        'replace',
+      );
     },
 
     /**
@@ -169,8 +189,8 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
      * account or a resource there), so it still goes to the explorer, which is
      * the only view that can show it.
      */
-    focusEntity: (value: string | null) => {
-      const { network } = current();
+    focusEntity: (value: string | null, networkOverride?: Network) => {
+      const network = networkOverride ?? current().network;
 
       if (!value) {
         navigate(dashboardRoutes.view(locale, view, { network }), 'replace');
