@@ -6,7 +6,6 @@ import { m, AnimatePresence } from "motion/react";
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
-import { TokenBadge } from '@/components/ui/TokenBadge';
 import { getMetaValue } from '../utils/metadataUtils';
 import { hasSelectionInside } from '../utils/selectionUtils';
 import { BalanceChangeRowProps } from '../types/components.types';
@@ -95,7 +94,6 @@ const BalanceChangeRow = ({
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
                             <div className={`font-bold text-sm sm:text-base text-[var(--color-text-main)] ${!isFee ? 'group-hover:text-[var(--color-primary)]' : ''} transition-colors truncate min-w-0`}>{name}</div>
-                            {symbol && <TokenBadge className="shrink-0">{symbol}</TokenBadge>}
                             {!isFee && <ChevronDown className={`size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
