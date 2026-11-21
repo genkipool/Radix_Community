@@ -63,30 +63,30 @@ export function EntityCreationCard({
     const badge = useEntityData(creation.ownerBadge ?? '', network);
 
     const KindIcon = KIND_ICON[creation.kind];
-    const copyTitle = tt?.copy_raw || 'Copy';
+    const copyTitle = tt?.copy_raw ?? '';
 
     const titleByKind: Record<EntityCreationKind, string> = {
-        package: ec.title_package || 'New package',
-        component: ec.title_component || 'New component',
-        account: ec.title_account || 'New account',
-        identity: ec.title_identity || 'New identity (Persona)',
-        pool: ec.title_pool || 'New liquidity pool',
-        validator: ec.title_validator || 'New validator',
-        locker: ec.title_locker || 'New account locker',
-        access_controller: ec.title_access_controller || 'New access controller',
-        other: ec.title_other || 'New entity',
+        package: ec.title_package ?? '',
+        component: ec.title_component ?? '',
+        account: ec.title_account ?? '',
+        identity: ec.title_identity ?? '',
+        pool: ec.title_pool ?? '',
+        validator: ec.title_validator ?? '',
+        locker: ec.title_locker ?? '',
+        access_controller: ec.title_access_controller ?? '',
+        other: ec.title_other ?? '',
     };
 
     const kindLabelByKind: Record<EntityCreationKind, string> = {
-        package: ec.kind_package || 'Package',
-        component: ec.kind_component || 'Component',
-        account: ec.kind_account || 'Account',
-        identity: ec.kind_identity || 'Identity',
-        pool: ec.kind_pool || 'Pool',
-        validator: ec.kind_validator || 'Validator',
-        locker: ec.kind_locker || 'Account Locker',
-        access_controller: ec.kind_access_controller || 'Access Controller',
-        other: creation.entityType || ec.kind_other || 'Entity',
+        package: ec.kind_package ?? '',
+        component: ec.kind_component ?? '',
+        account: ec.kind_account ?? '',
+        identity: ec.kind_identity ?? '',
+        pool: ec.kind_pool ?? '',
+        validator: ec.kind_validator ?? '',
+        locker: ec.kind_locker ?? '',
+        access_controller: ec.kind_access_controller ?? '',
+        other: creation.entityType || (ec.kind_other ?? ''),
     };
 
     const kindLabel = kindLabelByKind[creation.kind];
@@ -96,48 +96,33 @@ export function EntityCreationCard({
     const summary = (() => {
         if (creation.kind === 'package') {
             if (creation.blueprints.length > 0) {
-                return (ec.summary_package_blueprints || 'The package "{name}" was published with {count} blueprint(s): {blueprints}.')
+                return (ec.summary_package_blueprints ?? '')
                     .replace('{name}', name)
                     .replace('{count}', String(creation.blueprints.length))
                     .replace('{blueprints}', creation.blueprints.join(', '));
             }
-            return (ec.summary_package || 'The Scrypto package "{name}" was published on the ledger.')
-                .replace('{name}', name);
+            return (ec.summary_package ?? '').replace('{name}', name);
         }
         if (creation.kind === 'component' && creation.blueprintName) {
-            return (ec.summary_component_blueprint || 'A new component "{name}" was instantiated from the {blueprint} blueprint.')
+            return (ec.summary_component_blueprint ?? '')
                 .replace('{name}', name)
                 .replace('{blueprint}', creation.blueprintName);
         }
-        if (creation.kind === 'account') {
-            return ec.summary_account || 'A new account was created and initialized on the ledger.';
-        }
-        if (creation.kind === 'identity') {
-            return ec.summary_identity || 'A new Persona identity was created on the ledger.';
-        }
-        if (creation.kind === 'pool') {
-            return (ec.summary_pool || 'A new liquidity pool ({blueprint}) was created on the ledger.')
-                .replace('{blueprint}', creation.blueprintName || kindLabel);
-        }
-        if (creation.kind === 'validator') {
-            return (ec.summary_validator || 'A new validator node "{name}" was registered on the network.')
-                .replace('{name}', name);
-        }
-        if (creation.kind === 'locker') {
-            return ec.summary_locker || 'A new account locker was created to hold claimable assets for users.';
-        }
-        if (creation.kind === 'access_controller') {
-            return ec.summary_access_controller || 'A new access controller was created to manage multi-factor recovery and security rules.';
-        }
-        return (ec.summary_generic || 'A new {kind} entity ("{name}") was created on the ledger.')
+        if (creation.kind === 'account') return ec.summary_account ?? '';
+        if (creation.kind === 'identity') return ec.summary_identity ?? '';
+        if (creation.kind === 'pool') return (ec.summary_pool ?? '').replace('{blueprint}', creation.blueprintName || kindLabel);
+        if (creation.kind === 'validator') return (ec.summary_validator ?? '').replace('{name}', name);
+        if (creation.kind === 'locker') return ec.summary_locker ?? '';
+        if (creation.kind === 'access_controller') return ec.summary_access_controller ?? '';
+        return (ec.summary_generic ?? '')
             .replace('{kind}', kindLabel.toLowerCase())
             .replace('{name}', name);
     })();
 
     const depositRuleLabel = (rule: string) => {
-        if (rule === 'Accept') return ec.deposit_accept || 'Accept all';
-        if (rule === 'Reject') return ec.deposit_reject || 'Reject all';
-        if (rule === 'AllowExisting') return ec.deposit_allow_existing || 'Allow existing';
+        if (rule === 'Accept') return ec.deposit_accept ?? rule;
+        if (rule === 'Reject') return ec.deposit_reject ?? rule;
+        if (rule === 'AllowExisting') return ec.deposit_allow_existing ?? rule;
         return rule;
     };
 
@@ -153,7 +138,7 @@ export function EntityCreationCard({
                         </div>
                         <span className="absolute -top-2 -right-2 flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
                             <Sparkles className="size-2.5" />
-                            {ec.new_badge || 'New'}
+                            {ec.new_badge ?? ''}
                         </span>
                     </div>
 
@@ -196,7 +181,7 @@ export function EntityCreationCard({
 
                 <FactGrid>
                     {creator && (
-                        <FactTile icon={UserRound} label={ec.created_by || 'Created by'}>
+                        <FactTile icon={UserRound} label={ec.created_by ?? ''}>
                             <AddressChip address={creator} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
                         </FactTile>
                     )}
@@ -204,7 +189,7 @@ export function EntityCreationCard({
                     {creation.blueprintName && (
                         <FactTile
                             icon={Code2}
-                            label={ec.blueprint || 'Blueprint'}
+                            label={ec.blueprint ?? ''}
                             hint={creation.blueprintVersion ? `v${creation.blueprintVersion}` : undefined}
                         >
                             <span className="font-mono text-xs truncate block" title={creation.blueprintName}>{creation.blueprintName}</span>
@@ -212,7 +197,7 @@ export function EntityCreationCard({
                     )}
 
                     {creation.packageAddress && (
-                        <FactTile icon={Package} label={ec.package || 'Package'}>
+                        <FactTile icon={Package} label={ec.package ?? ''}>
                             <span className="flex items-center gap-1 min-w-0">
                                 <button
                                     type="button"
@@ -229,16 +214,16 @@ export function EntityCreationCard({
                     )}
 
                     {creation.defaultDepositRule && (
-                        <FactTile icon={Shield} label={ec.deposit_rule || 'Default deposit rule'}>
+                        <FactTile icon={Shield} label={ec.deposit_rule ?? ''}>
                             <span>{depositRuleLabel(creation.defaultDepositRule)}</span>
                         </FactTile>
                     )}
 
-                    <FactTile icon={KeyRound} label={ec.controlled_by || 'Controlled by'}>
+                    <FactTile icon={KeyRound} label={ec.controlled_by ?? ''}>
                         {creation.ownerBadge ? (
                             <span className="flex items-center gap-2 min-w-0">
                                 {badge?.iconUrl && (
-                                    <SafeImage src={badge.iconUrl} alt={badge.name || ''} fallbackName={badge.name || 'Badge'} zoomable={false} className="size-5 rounded-full border border-[var(--color-card-border)] object-cover shrink-0" />
+                                    <SafeImage src={badge.iconUrl} alt={badge.name || ''} fallbackName={badge.name || ''} zoomable={false} className="size-5 rounded-full border border-[var(--color-card-border)] object-cover shrink-0" />
                                 )}
                                 <button
                                     type="button"
@@ -251,14 +236,14 @@ export function EntityCreationCard({
                                 </button>
                             </span>
                         ) : (
-                            <span className="text-[var(--color-text-secondary)] text-xs">{ec.no_owner || 'Nobody (no owner)'}</span>
+                            <span className="text-[var(--color-text-secondary)] text-xs">{ec.no_owner ?? ''}</span>
                         )}
                     </FactTile>
                 </FactGrid>
 
                 {creation.kind === 'package' && creation.blueprints.length > 0 && (
                     <div>
-                        <SectionLabel>{ec.published_blueprints || 'Published blueprints'}</SectionLabel>
+                        <SectionLabel>{ec.published_blueprints ?? ''}</SectionLabel>
                         <div className="flex flex-wrap gap-1.5">
                             {creation.blueprints.map((bp) => (
                                 <span
