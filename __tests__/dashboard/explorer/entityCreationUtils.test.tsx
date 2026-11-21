@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import enExplorer from '@/features/dashboard/explorador/locales/en.json';
 import {
     classifyCreatedEntityKind,
     extractEntityCreations,
 } from '@/features/dashboard/explorador/utils/entityCreationUtils';
 import { EntityCreationCard } from '@/features/dashboard/explorador/components/EntityCreationCard';
+import type { TranslationsT } from '@/features/dashboard/types';
 
 vi.mock('@/features/dashboard/hooks/useEntityData', () => ({
     useEntityData: vi.fn(() => null),
@@ -145,6 +147,7 @@ describe('extractEntityCreations & EntityCreationCard', () => {
             <EntityCreationCard
                 creation={pkg}
                 creator={ACCOUNT}
+                tt={enExplorer.dashboard.transactions as unknown as Partial<TranslationsT['dashboard']['transactions']>}
                 onCopy={vi.fn()}
                 copiedAddress={null}
                 network="stokenet"

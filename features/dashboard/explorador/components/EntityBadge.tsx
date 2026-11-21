@@ -82,7 +82,7 @@ export function AddressDisplay({
     const isCM = isConsensusManager(address);
     const isFaucet = wellKnownKey === 'faucet';
     const meta = useEntityData(address, network);
-    const entityName = meta?.name || (isFaucet ? (tt?.faucet_label || 'Radix Faucet') : undefined);
+    const entityName = meta?.name || (isFaucet ? (tt?.faucet_label ?? '') : undefined);
     const entityIcon = meta?.iconUrl;
 
     const displayText = isCM
