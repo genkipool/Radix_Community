@@ -26,7 +26,7 @@ import { AccountOlympiaTab } from '../olympia/AccountOlympiaTab';
 import { AccountAtDateTab } from './AccountAtDateTab';
 import { AccountRewardsTab } from './AccountRewardsTab';
 import { olympiaDict } from '../olympia/dict';
-import { useOlympiaLink } from '@/features/dashboard/services/olympiaApi';
+import { olympiaApi, olympiaKeys, useOlympiaLink } from '@/features/dashboard/services/olympiaApi';
 import { apiFetchEntityDetails, apiFetchTransactions } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
@@ -320,6 +320,12 @@ export function AccountCard({
                                     onTabHover={(t) => {
                                         if (t === 'transactions') {
                                             handleTransactionsMouseEnter();
+                                        } else if ((t === 'olympia' || t === 'rewards') && olympiaLink?.olympiaAddress) {
+                                            queryClient.prefetchQuery({
+                                                queryKey: olympiaKeys.account(olympiaLink.olympiaAddress),
+                                                queryFn: () => olympiaApi.account(olympiaLink.olympiaAddress),
+                                                staleTime: Infinity,
+                                            });
                                         }
                                     }}
                                     dense
@@ -454,7 +460,7 @@ export function AccountCard({
                                         )}
 
                                         {activeTab === 'olympia' && olympiaLink && (
-                                            <AccountOlympiaTab babylonAddress={address} t={t} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} calendarT={t?.dashboard?.calendar} marketData={marketData ?? undefined} />
+                                            <AccountOlympiaTab babylonAddress={address} olympiaAddress={olympiaLink.olympiaAddress} t={t} locale={locale ?? 'en'} copiedAddress={copiedAddress} onCopy={onCopy} calendarT={t?.dashboard?.calendar} marketData={marketData ?? undefined} />
                                         )}
 
                                         {/* ── POOL UNITS ── */}

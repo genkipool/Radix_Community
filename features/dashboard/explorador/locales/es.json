@@ -1073,8 +1073,10 @@
         },
         "rewards": {
           "label": "Recompensas",
-          "tooltip": "Las recompensas de staking que ganó esta cuenta en Babylon, año a año, con su CSV en formato CoinTracking.",
-          "title": "Recompensas de staking en Babylon (CSV)",
+          "tooltip": "Las recompensas de staking que ganó esta cuenta en Olympia y Babylon, año a año, con su CSV en formato CoinTracking.",
+          "title": "Recompensas de staking (CSV)",
+          "babylon_badge": "Babylon",
+          "olympia_badge": "Olympia",
           "desc": "Una fila por año con recompensas. Al abrir la pestaña se calculan solos, año a año, leyendo el historial de la cuenta, y pueden tardar unos minutos; después el CSV se descarga al momento.",
           "year": "Año",
           "year_tooltip": "Año natural (UTC) de las recompensas. Haz clic en una fila para desplegar el desglose mes a mes",

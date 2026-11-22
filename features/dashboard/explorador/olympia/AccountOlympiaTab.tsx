@@ -18,8 +18,10 @@ import { Empty, ErrorText, FilterPills, Loading, OlympiaBadge, OlympiaRef, Sourc
 
 type Part = 'summary' | 'at_date' | 'transactions' | 'funds' | 'rewards';
 
-export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, onCopy, calendarT, marketData }: {
+export function AccountOlympiaTab({ babylonAddress, olympiaAddress, t, locale, copiedAddress, onCopy, calendarT, marketData }: {
   babylonAddress: string;
+  /** Optional already-resolved Olympia rdx1… address to avoid an extra Babylon→Olympia Parquet lookup. */
+  olympiaAddress?: string;
   /** The explorer translations: the Olympia entities opened in place need them all. */
   t?: Partial<TranslationsT>;
   /** The explorer calendar's strings, for the "on a date" view. */
@@ -32,7 +34,7 @@ export function AccountOlympiaTab({ babylonAddress, t, locale, copiedAddress, on
   const tt = t?.dashboard?.transactions;
   const o = olympiaDict(tt);
   const [part, setPart] = useState<Part>('summary');
-  const { data: a, isLoading, isError } = useOlympiaAccount(babylonAddress);
+  const { data: a, isLoading, isError } = useOlympiaAccount(olympiaAddress ?? babylonAddress);
   if (isLoading) return <Loading text={o.loading} />;
   if (isError) return <ErrorText text={o.error} />;
   if (!a) return <Empty text={o.security_none} />;

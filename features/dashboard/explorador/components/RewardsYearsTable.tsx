@@ -29,7 +29,13 @@ export interface RewardsYearsDownload {
 }
 
 export interface RewardsYearsRow<R> {
+    /** Optional unique row key when multiple rows share the same year (e.g. Olympia 2023 and Babylon 2023). */
+    rowKey?: string;
     year: number | string;
+    /** Optional small network badge rendered next to the year (e.g. Olympia / Babylon). */
+    badge?: string;
+    /** Visual tone of the optional badge. */
+    badgeTone?: 'olympia' | 'babylon';
     /** The year's figures, or null while they are not known. */
     row: R | null;
     /** What shows in place of the figures while there are none; a spinner by default. */
@@ -105,10 +111,21 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearToolt
                             <th className={`${th} text-right`} title={downloadTooltip}>{downloadLabel}</th>
                         </tr>
                     </thead>
-                    {rows.map(({ year, row, status, downloads, renderExpanded }) => {
-                        const key = String(year);
+                    {rows.map(({ rowKey, year, badge, badgeTone, row, status, downloads, renderExpanded }) => {
+                        const key = rowKey ?? String(year);
                         const expandable = !!row && !!renderExpanded;
                         const isExpanded = expandable && !!expandedYears[key];
+                        const badgeEl = badge ? (
+                            <span
+                                className={`ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider leading-none border ${
+                                    badgeTone === 'olympia'
+                                        ? 'bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] border-[var(--color-secondary)]/25'
+                                        : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/25'
+                                }`}
+                            >
+                                {badge}
+                            </span>
+                        ) : null;
 
                         return (
                             <tbody
@@ -143,9 +160,13 @@ export function RewardsYearsTable<R>({ title, desc, legend, yearLabel, yearToolt
                                                     }`}
                                                 />
                                                 <span className="font-mono text-sm">{year}</span>
+                                                {badgeEl}
                                             </button>
                                         ) : (
-                                            <span className="font-mono text-sm">{year}</span>
+                                            <span className="inline-flex items-center">
+                                                <span className="font-mono text-sm">{year}</span>
+                                                {badgeEl}
+                                            </span>
                                         )}
                                     </td>
                                     {!row ? (

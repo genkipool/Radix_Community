@@ -5,6 +5,19 @@ import { mergeDailyRewards, type DailyRewardPoint } from '../utils/rewardsBreakd
 
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const XRD_ADDR = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
+/**
+ * Synthetic anchor date for Babylon genesis state (post-Olympia migration,
+ * immediately before epoch 32717 closed on 2023-09-28 at state_version 647).
+ */
+const BABYLON_GENESIS_DATE = '2023-09-27';
+const BABYLON_GENESIS_STATE_VERSION = 646;
+
+function ledgerStateAt(dayStr: string, nowStr: string): Record<string, unknown> {
+    if (dayStr === BABYLON_GENESIS_DATE) {
+        return { at_ledger_state: { state_version: BABYLON_GENESIS_STATE_VERSION } };
+    }
+    return dayStr < nowStr ? { at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` } } : {};
+}
 
 import type {
     ValidatorMapEntry,
@@ -85,7 +98,7 @@ async function fetchAllValidators(signal?: AbortSignal, cursor: string | null = 
 async function getLedgerStateForDay(accountAddress: string, lsuResource: string, vaultAddress: string, dayStr: string, signal?: AbortSignal): Promise<LedgerDayState> {
     try {
         const nowStr = new Date().toISOString().slice(0, 10);
-        const atState = dayStr < nowStr ? { at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` } } : {};
+        const atState = ledgerStateAt(dayStr, nowStr);
         const rawData = await gatewayPost('/state/entity/details', {
             addresses: [accountAddress, lsuResource, vaultAddress],
             ...atState,
@@ -317,12 +330,14 @@ async function computeStakingRewardsMath(
 
     // 2. Discover validators from initial account state (to cover stake held from previous years)
     const prevYear = parseInt(year) - 1;
-    const startOfYearDate = `${prevYear}-12-31`;
-    
+    const isBabylonFirstYear = year === '2023';
+    const startOfYearDate = isBabylonFirstYear ? BABYLON_GENESIS_DATE : `${prevYear}-12-31`;
+    const nowStr = new Date().toISOString().slice(0, 10);
+
     try {
         const startStateRaw = await gatewayPost('/state/entity/details', {
             addresses: [accountAddress],
-            at_ledger_state: { timestamp: `${startOfYearDate}T23:59:59Z` },
+            ...ledgerStateAt(startOfYearDate, nowStr),
             opt_ins: { fungible_resources: true },
         }, signal);
         const startData = startStateRaw as unknown as GatewayEntityDetailsResponse;
@@ -355,16 +370,24 @@ async function computeStakingRewardsMath(
         extraDates.add(accountTxs[accountTxs.length - 1].date);
     }
 
-    const nowStr = new Date().toISOString().slice(0, 10);
-    const qDates = Array.from(new Set([
-        `${prevYear}-12-31`,
-        `${year}-03-31`,
-        `${year}-06-30`,
-        `${year}-09-30`,
-        `${year}-12-31`,
-        ...(nowStr.startsWith(year) ? [nowStr] : []),
-        ...extraDates
-    ])).filter(d => (d.startsWith(year) || d === `${prevYear}-12-31`) && d <= nowStr).sort();
+    const qDates = Array.from(new Set(
+        isBabylonFirstYear
+            ? [
+                BABYLON_GENESIS_DATE,
+                '2023-09-30',
+                '2023-12-31',
+                ...extraDates,
+            ]
+            : [
+                `${prevYear}-12-31`,
+                `${year}-03-31`,
+                `${year}-06-30`,
+                `${year}-09-30`,
+                `${year}-12-31`,
+                ...(nowStr.startsWith(year) ? [nowStr] : []),
+                ...extraDates,
+            ],
+    )).filter((d) => (isBabylonFirstYear ? d >= BABYLON_GENESIS_DATE && d <= '2023-12-31' : (d.startsWith(year) || d === `${prevYear}-12-31`)) && d <= nowStr).sort();
 
     // Pre-fetch all required snapshots in parallel batches of 15
     const snapshotCache: Record<string, LedgerDayState> = {};
@@ -706,11 +729,12 @@ interface NfVaultHolding { resource_address: string; vaults?: { items?: { items?
  */
 async function ownedValidatorsInYear(accountAddress: string, year: string, signal?: AbortSignal): Promise<string[]> {
     const nowStr = new Date().toISOString().slice(0, 10);
-    const moments = [`${parseInt(year) - 1}-12-31`, `${year}-12-31`];
+    const startMoment = year === '2023' ? BABYLON_GENESIS_DATE : `${parseInt(year) - 1}-12-31`;
+    const moments = [startMoment, `${year}-12-31`];
     const owned = new Set<string>();
     await Promise.all(moments.map(async (day) => {
         try {
-            const atState = day < nowStr ? { at_ledger_state: { timestamp: `${day}T23:59:59Z` } } : {};
+            const atState = ledgerStateAt(day, nowStr);
             const res = await gatewayPost('/state/entity/details', {
                 addresses: [accountAddress],
                 aggregation_level: 'Vault',
@@ -791,7 +815,7 @@ export async function generateClientAccountRewardsCsv(
     try {
         onProgress(2);
 
-        const startDate = `${year}-01-01`;
+        const startDate = year === '2023' ? '2023-09-28' : `${year}-01-01`;
         const endDate = `${year}-12-31`;
 
         // 1, 2, 3. Fetch all in parallel
