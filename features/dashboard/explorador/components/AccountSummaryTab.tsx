@@ -3,7 +3,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Check, Info, Download } from 'lucide-react';
+import { Copy, Check, Info, Download, ChevronDown } from 'lucide-react';
+import { AnimatePresence, m } from 'motion/react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountDepositsSummary } from './AccountDepositsTab';
 import { AccountLockersSummary } from './AccountLockersTab';
@@ -21,6 +22,11 @@ import { useTokenPrices, type TokenFiatPrice } from '@/features/dashboard/hooks/
 import { formatFiatPrecise } from '@/utils/currencyUtils';
 import { TokenFiatValue, totalFiatValue } from './TokenFiatValue';
 
+import {
+    DEFAULT_WALLET_MODAL_ORDER,
+    type WalletModalSectionKey,
+} from '@/features/wallet/hooks/useWalletModalSections';
+
 interface AccountSummaryTabProps {
     address: string;
     entityData: GatewayEntityDetails | null;
@@ -36,6 +42,9 @@ interface AccountSummaryTabProps {
     isModal?: boolean;
     stakingErrors?: Record<string, string>;
     sendTransactionSection?: React.ReactNode;
+    filterSection?: React.ReactNode;
+    visibleSections?: Partial<Record<WalletModalSectionKey, boolean>>;
+    sectionOrder?: WalletModalSectionKey[];
 }
 
 interface ParsedResource {
@@ -72,13 +81,26 @@ export function AccountSummaryTab({
     isModal = false,
     stakingErrors,
     sendTransactionSection,
+    filterSection,
+    visibleSections,
+    sectionOrder,
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
+    const showFilter = visibleSections?.filter ?? true;
+    const showSend = visibleSections?.send ?? true;
+    const showBalance = visibleSections?.balance ?? true;
+    const showStaking = visibleSections?.staking ?? true;
+    const showTokens = visibleSections?.tokens ?? true;
+    const showNfts = visibleSections?.nfts ?? true;
+    const showPoolUnits = visibleSections?.poolUnits ?? true;
+    const showLockers = visibleSections?.lockers ?? true;
+    const orderedKeys = sectionOrder ?? DEFAULT_WALLET_MODAL_ORDER;
     const [csvModalAddress, setCsvModalAddress] = useState<string | null>(null);
     const { prefetchAccountRewards } = usePrefetchRewards();
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
 
     const [hideTransactionBuilder, setHideTransactionBuilder] = useState(false);
+    const [balanceOpen, setBalanceOpen] = useState(true);
 
     const description = getMeta('description');
     const {
@@ -151,233 +173,286 @@ export function AccountSummaryTab({
                 </div>
             </div>
 
-            {!hideTransactionBuilder && sendTransactionSection}
-
             {description && (
                 <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
                     {description}
                 </p>
             )}
 
-            {/* Principal Balance */}
-            <div>
-                <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3 ${isModal ? 'pb-2 border-b border-[var(--color-border)]' : ''}`}>{accT?.balance || 'Balance'}</h4>
-                {!isBadge ? (
-                    isModal ? (
-                        <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3 items-stretch">
-                                <BalanceCard
-                                    title={accT?.total_xrd || 'TOTAL XRD'}
-                                    amount={xrdAmount}
-                                    symbol="XRD"
-                                    valueColor="text-[var(--color-accent)]"
-                                    marketData={marketData}
-                                    locale={locale}
-                                    rawFiatAmount={Number(xrdAmount) || 0}
-                                    isModal={isModal}
-                                    align="left"
-                                />
-                                <BalanceCard
-                                    title={accT?.total_lsu || 'TOTAL LSU'}
-                                    amount={String(totalLsuAmount)}
-                                    symbol="LSU"
-                                    valueColor="text-[var(--color-secondary)]"
-                                    marketData={marketData}
-                                    locale={locale}
-                                    rawFiatAmount={totalLsuXrdEquivalent}
-                                    isModal={isModal}
-                                    align="right"
-                                />
+            {orderedKeys.map((sectionKey) => {
+                switch (sectionKey) {
+                    case 'filter':
+                        return showFilter && filterSection ? (
+                            <React.Fragment key="filter">{filterSection}</React.Fragment>
+                        ) : null;
+                    case 'send':
+                        return showSend && !hideTransactionBuilder && sendTransactionSection ? (
+                            <React.Fragment key="send">{sendTransactionSection}</React.Fragment>
+                        ) : null;
+                    case 'balance':
+                        return showBalance ? (
+                            <div key="balance">
+                                {isModal ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setBalanceOpen(v => !v)}
+                                        aria-expanded={balanceOpen}
+                                        className="w-full flex items-center justify-between gap-2 text-xs font-black uppercase text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] tracking-wider mb-3 pb-2 border-b border-[var(--color-border)] transition-colors"
+                                    >
+                                        <span>{accT?.balance || 'Balance'}</span>
+                                        <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-200 ${balanceOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                ) : (
+                                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3">{accT?.balance || 'Balance'}</h4>
+                                )}
+                                {!isBadge ? (
+                                    isModal ? (
+                                        <AnimatePresence initial={false}>
+                                            {balanceOpen && (
+                                                <m.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="space-y-3">
+                                                        <div className="grid grid-cols-2 gap-3 items-stretch">
+                                                            <BalanceCard
+                                                                title={accT?.total_xrd || 'TOTAL XRD'}
+                                                                amount={xrdAmount}
+                                                                symbol="XRD"
+                                                                valueColor="text-[var(--color-accent)]"
+                                                                marketData={marketData}
+                                                                locale={locale}
+                                                                rawFiatAmount={Number(xrdAmount) || 0}
+                                                                isModal={isModal}
+                                                                align="left"
+                                                            />
+                                                            <BalanceCard
+                                                                title={accT?.total_lsu || 'TOTAL LSU'}
+                                                                amount={String(totalLsuAmount)}
+                                                                symbol="LSU"
+                                                                valueColor="text-[var(--color-secondary)]"
+                                                                marketData={marketData}
+                                                                locale={locale}
+                                                                rawFiatAmount={totalLsuXrdEquivalent}
+                                                                isModal={isModal}
+                                                                align="right"
+                                                            />
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-3 items-stretch">
+                                                            <BalanceCard
+                                                                title={accT?.stake_xrd || 'STAKE XRD'}
+                                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                                                                symbol="XRD"
+                                                                valueColor="text-[var(--color-primary)]"
+                                                                marketData={marketData}
+                                                                locale={locale}
+                                                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
+                                                                isModal={isModal}
+                                                                align="left"
+                                                            />
+                                                            <BalanceCard
+                                                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
+                                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                                                                symbol="XRD"
+                                                                valueColor="text-[var(--color-secondary)]"
+                                                                marketData={marketData}
+                                                                locale={locale}
+                                                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
+                                                                isModal={isModal}
+                                                                align="center"
+                                                            />
+                                                            <BalanceCard
+                                                                title={accT?.claim_xrd || 'CLAIM XRD'}
+                                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                                                                symbol="XRD"
+                                                                valueColor="text-[var(--color-accent)]"
+                                                                marketData={marketData}
+                                                                locale={locale}
+                                                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
+                                                                isModal={isModal}
+                                                                align="right"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </m.div>
+                                            )}
+                                        </AnimatePresence>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
+                                            <BalanceCard
+                                                title={accT?.total_xrd || 'TOTAL XRD'}
+                                                amount={xrdAmount}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-accent)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                                rawFiatAmount={Number(xrdAmount) || 0}
+                                                isModal={isModal}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.total_lsu || 'TOTAL LSU'}
+                                                amount={String(totalLsuAmount)}
+                                                symbol="LSU"
+                                                valueColor="text-[var(--color-secondary)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                                rawFiatAmount={totalLsuXrdEquivalent}
+                                                isModal={isModal}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.stake_xrd || 'STAKE XRD'}
+                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-primary)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
+                                                isModal={isModal}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
+                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-secondary)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
+                                                isModal={isModal}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.claim_xrd || 'CLAIM XRD'}
+                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-accent)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
+                                                isModal={isModal}
+                                            />
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+                                            <BalanceCard
+                                                title={accT?.total_xrd || 'TOTAL XRD'}
+                                                amount={xrdAmount}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-accent)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.total_lsu || 'TOTAL LSU'}
+                                                amount={String(totalLsuAmount)}
+                                                symbol="LSU"
+                                                valueColor="text-[var(--color-secondary)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                                rawFiatAmount={totalLsuXrdEquivalent}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
+                                            <BalanceCard
+                                                title={accT?.stake_xrd || 'STAKE XRD'}
+                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-primary)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
+                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-secondary)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                            />
+                                            <BalanceCard
+                                                title={accT?.claim_xrd || 'CLAIM XRD'}
+                                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                                                symbol="XRD"
+                                                valueColor="text-[var(--color-accent)]"
+                                                marketData={marketData}
+                                                locale={locale}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="grid grid-cols-3 gap-3 items-stretch">
-                                <BalanceCard
-                                    title={accT?.stake_xrd || 'STAKE XRD'}
-                                    amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
-                                    symbol="XRD"
-                                    valueColor="text-[var(--color-primary)]"
-                                    marketData={marketData}
-                                    locale={locale}
-                                    rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
-                                    isModal={isModal}
-                                    align="left"
-                                />
-                                <BalanceCard
-                                    title={accT?.unstake_xrd || 'UNSTAKE XRD'}
-                                    amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
-                                    symbol="XRD"
-                                    valueColor="text-[var(--color-secondary)]"
-                                    marketData={marketData}
-                                    locale={locale}
-                                    rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
-                                    isModal={isModal}
-                                    align="center"
-                                />
-                                <BalanceCard
-                                    title={accT?.claim_xrd || 'CLAIM XRD'}
-                                    amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
-                                    symbol="XRD"
-                                    valueColor="text-[var(--color-accent)]"
-                                    marketData={marketData}
-                                    locale={locale}
-                                    rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
-                                    isModal={isModal}
-                                    align="right"
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
-                            <BalanceCard
-                                title={accT?.total_xrd || 'TOTAL XRD'}
-                                amount={xrdAmount}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-accent)]"
-                                marketData={marketData}
+                        ) : null;
+                    case 'staking':
+                        return showStaking ? (
+                            <AccountStakingSection
+                                key="staking"
+                                address={address}
+                                entityData={entityData}
+                                network={network}
                                 locale={locale}
-                                rawFiatAmount={Number(xrdAmount) || 0}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
                                 isModal={isModal}
+                                stakingErrors={stakingErrors}
+                                onOpenCsvModal={(addr) => setCsvModalAddress(addr)}
                             />
-                            <BalanceCard
-                                title={accT?.total_lsu || 'TOTAL LSU'}
-                                amount={String(totalLsuAmount)}
-                                symbol="LSU"
-                                valueColor="text-[var(--color-secondary)]"
-                                marketData={marketData}
+                        ) : null;
+                    case 'tokens':
+                        return showTokens ? (
+                            <AssetSection
+                                key="tokens"
+                                title={`Tokens (${tokens.length})`}
+                                items={tokens}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
                                 locale={locale}
-                                rawFiatAmount={totalLsuXrdEquivalent}
                                 isModal={isModal}
+                                priceOf={pricesReady ? priceOf : undefined}
+                                priceLabel={priceLabels?.token_price}
+                                aside={tokensValue > 0 ? (
+                                    <span className="text-xs font-black font-mono text-[var(--color-text-main)] whitespace-nowrap normal-case tracking-normal" title={priceLabels?.token_prices_note}>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] mr-1.5">{priceLabels?.tokens_value ?? 'Value'}</span>
+                                        {formatFiatPrecise(tokensValue, currency, locale)}
+                                    </span>
+                                ) : undefined}
                             />
-                            <BalanceCard
-                                title={accT?.stake_xrd || 'STAKE XRD'}
-                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-primary)]"
-                                marketData={marketData}
-                                locale={locale}
-                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
-                                isModal={isModal}
-                            />
-                            <BalanceCard
-                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
-                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-secondary)]"
-                                marketData={marketData}
-                                locale={locale}
-                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
-                                isModal={isModal}
-                            />
-                            <BalanceCard
-                                title={accT?.claim_xrd || 'CLAIM XRD'}
-                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-accent)]"
-                                marketData={marketData}
-                                locale={locale}
-                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
-                                isModal={isModal}
-                            />
-                        </div>
-                    )
-                ) : (
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-                            <BalanceCard
-                                title={accT?.total_xrd || 'TOTAL XRD'}
-                                amount={xrdAmount}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-accent)]"
-                                marketData={marketData}
-                                locale={locale}
-                            />
-                            <BalanceCard
-                                title={accT?.total_lsu || 'TOTAL LSU'}
-                                amount={String(totalLsuAmount)}
-                                symbol="LSU"
-                                valueColor="text-[var(--color-secondary)]"
-                                marketData={marketData}
-                                locale={locale}
-                                rawFiatAmount={totalLsuXrdEquivalent}
-                            />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
-                            <BalanceCard
-                                title={accT?.stake_xrd || 'STAKE XRD'}
-                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-primary)]"
-                                marketData={marketData}
-                                locale={locale}
-                            />
-                            <BalanceCard
-                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
-                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-secondary)]"
-                                marketData={marketData}
-                                locale={locale}
-                            />
-                            <BalanceCard
-                                title={accT?.claim_xrd || 'CLAIM XRD'}
-                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
-                                symbol="XRD"
-                                valueColor="text-[var(--color-accent)]"
-                                marketData={marketData}
-                                locale={locale}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
+                        ) : null;
+                    case 'nfts':
+                        return showNfts ? (
+                            <React.Fragment key="nfts">
+                                <AssetSection title={`NFTs (${activeNfts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
 
-            {/* Staking Section */}
-            <AccountStakingSection
-                address={address}
-                entityData={entityData}
-                network={network}
-                locale={locale}
-                tt={tt}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                isModal={isModal}
-                stakingErrors={stakingErrors}
-                onOpenCsvModal={(addr) => setCsvModalAddress(addr)}
-            />
-
-            {/* Assets */}
-            <AssetSection
-                title={`Tokens (${tokens.length})`}
-                items={tokens}
-                onCopy={onCopy}
-                copiedAddress={copiedAddress}
-                locale={locale}
-                isModal={isModal}
-                priceOf={pricesReady ? priceOf : undefined}
-                priceLabel={priceLabels?.token_price}
-                aside={tokensValue > 0 ? (
-                    <span className="text-xs font-black font-mono text-[var(--color-text-main)] whitespace-nowrap normal-case tracking-normal" title={priceLabels?.token_prices_note}>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] mr-1.5">{priceLabels?.tokens_value ?? 'Value'}</span>
-                        {formatFiatPrecise(tokensValue, currency, locale)}
-                    </span>
-                ) : undefined}
-            />
-            <AssetSection title={`NFTs (${activeNfts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
-
-            {burnedNfts.length > 0 && (
-                <AssetSection
-                    title={`${accT?.burned_nfts || 'NFTs quemados, enviados o depositados'} (${burnedNfts.length})`}
-                    items={burnedNfts}
-                    onCopy={onCopy}
-                    copiedAddress={copiedAddress}
-                    burned
-                    titleClassName="text-red-500/80"
-                    locale={locale}
-                    isModal={isModal}
-                />
-            )}
-            <AssetSection title={`${accT?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
-            <AccountLockersSummary address={address} network={network} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} tt={tt} />
-            <AccountDepositsSummary address={address} network={network} tt={tt} />
+                                {burnedNfts.length > 0 && (
+                                    <AssetSection
+                                        title={`${accT?.burned_nfts || 'NFTs quemados, enviados o depositados'} (${burnedNfts.length})`}
+                                        items={burnedNfts}
+                                        onCopy={onCopy}
+                                        copiedAddress={copiedAddress}
+                                        burned
+                                        titleClassName="text-red-500/80"
+                                        locale={locale}
+                                        isModal={isModal}
+                                    />
+                                )}
+                            </React.Fragment>
+                        ) : null;
+                    case 'poolUnits':
+                        return showPoolUnits ? (
+                            <AssetSection key="poolUnits" title={`${accT?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
+                        ) : null;
+                    case 'lockers':
+                        return showLockers ? (
+                            <AccountLockersSummary key="lockers" address={address} network={network} locale={locale} copiedAddress={copiedAddress} onCopy={onCopy} tt={tt} isModal={isModal} />
+                        ) : null;
+                    default:
+                        return null;
+                }
+            })}
+            {!isModal && <AccountDepositsSummary address={address} network={network} tt={tt} />}
 
             {/* Account Rewards CSV Modal */}
             {csvModalAddress && (
@@ -496,20 +571,58 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
     locale: string;
     isModal?: boolean;
 }) {
+    const [open, setOpen] = useState(true);
     if (items.length === 0) return null;
     return (
         <div>
-            <div className={`flex items-baseline justify-between gap-3 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-3'}`}>
-                <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${titleClassName}`}>
-                    {title}
-                </h4>
-                {aside}
-            </div>
-            <div className={isModal ? "grid grid-cols-2 gap-3 items-stretch" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch"}>
-                {items.map((item) => (
-                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item.address) ?? null} priceLabel={priceLabel} />
-                ))}
-            </div>
+            {isModal ? (
+                <button
+                    type="button"
+                    onClick={() => setOpen(v => !v)}
+                    aria-expanded={open}
+                    className="flex items-center justify-between gap-3 pb-2 mb-4 border-b border-[var(--color-card-border)] w-full text-left group"
+                >
+                    <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)] tracking-wider transition-colors ${titleClassName}`}>
+                        {title}
+                    </h4>
+                    <span className="flex items-center gap-2 shrink-0">
+                        {aside}
+                        <ChevronDown className={`size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    </span>
+                </button>
+            ) : (
+                <div className="flex items-baseline justify-between gap-3 mb-3">
+                    <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${titleClassName}`}>
+                        {title}
+                    </h4>
+                    {aside}
+                </div>
+            )}
+            {isModal ? (
+                <AnimatePresence initial={false}>
+                    {open && (
+                        <m.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="grid grid-cols-2 gap-3 items-stretch">
+                                {items.map((item) => (
+                                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item.address) ?? null} priceLabel={priceLabel} />
+                                ))}
+                            </div>
+                        </m.div>
+                    )}
+                </AnimatePresence>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch">
+                    {items.map((item) => (
+                        <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item.address) ?? null} priceLabel={priceLabel} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

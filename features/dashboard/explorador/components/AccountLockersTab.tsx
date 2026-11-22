@@ -210,6 +210,7 @@ export function AccountLockersSummary({
     copiedAddress,
     onCopy,
     tt,
+    isModal = false,
 }: {
     address: string;
     network: Network;
@@ -217,7 +218,9 @@ export function AccountLockersSummary({
     copiedAddress: string | null;
     onCopy: (value: string) => void;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    isModal?: boolean;
 }) {
+    const [open, setOpen] = useState(true);
     const l = tt?.account_summary?.lockers;
     const { data: lockers } = useAccountLockers(address, network);
     const resources = (lockers ?? []).flatMap((locker) => locker.waiting.map((claim) => claim.resource));
@@ -226,34 +229,50 @@ export function AccountLockersSummary({
     if (!lockers?.length) return null;
     const sorted = [...lockers].sort((a, b) => b.waiting.length - a.waiting.length);
 
+    const grid = (
+        <div className={isModal ? 'grid grid-cols-1 gap-3 items-stretch' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-stretch'}>
+            {sorted.map((locker) => (
+                <div
+                    key={locker.address}
+                    className="flex flex-col bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full"
+                >
+                    <Link href={dashboardRoutes.entity(locale, locker.address, { network })} className="flex items-center gap-2 mb-2 min-w-0">
+                        <span className="size-6 rounded-full shrink-0 bg-[var(--color-card-border)] grid place-items-center">
+                            <Inbox className="size-3 text-[var(--color-text-muted)]" />
+                        </span>
+                        <span className="font-bold text-xs text-[var(--color-text-main)] truncate">{locker.name || (l?.unnamed ?? 'Account Locker')}</span>
+                    </Link>
+                    <p className={`text-[11px] leading-snug ${locker.waiting.length ? 'font-semibold text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)]'}`}>
+                        {locker.waiting.length
+                            ? `${l?.waiting ?? 'To claim'}: ${waitingLine(locker.waiting, names, locale)}`
+                            : l?.nothing_waiting ?? 'Nothing to claim'}
+                    </p>
+                    <div className="mt-auto pt-2 border-t border-[var(--color-card-border)]">
+                        <AddressChip address={locker.address} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={l?.copy ?? 'Copy'} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
     return (
         <div>
-            <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3">
-                {l?.label ?? 'Lockers'} ({lockers.length})
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
-                {sorted.map((locker) => (
-                    <div
-                        key={locker.address}
-                        className="flex flex-col bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full"
-                    >
-                        <Link href={dashboardRoutes.entity(locale, locker.address, { network })} className="flex items-center gap-2 mb-2 min-w-0">
-                            <span className="size-6 rounded-full shrink-0 bg-[var(--color-card-border)] grid place-items-center">
-                                <Inbox className="size-3 text-[var(--color-text-muted)]" />
-                            </span>
-                            <span className="font-bold text-xs text-[var(--color-text-main)] truncate">{locker.name || (l?.unnamed ?? 'Account Locker')}</span>
-                        </Link>
-                        <p className={`text-[11px] leading-snug ${locker.waiting.length ? 'font-semibold text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)]'}`}>
-                            {locker.waiting.length
-                                ? `${l?.waiting ?? 'To claim'}: ${waitingLine(locker.waiting, names, locale)}`
-                                : l?.nothing_waiting ?? 'Nothing to claim'}
-                        </p>
-                        <div className="mt-auto pt-2 border-t border-[var(--color-card-border)]">
-                            <AddressChip address={locker.address} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={l?.copy ?? 'Copy'} />
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {isModal ? (
+                <button
+                    type="button"
+                    onClick={() => setOpen(v => !v)}
+                    aria-expanded={open}
+                    className="w-full flex items-center justify-between gap-2 text-xs font-black uppercase text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] tracking-wider pb-2 mb-3 border-b border-[var(--color-card-border)] transition-colors"
+                >
+                    <span>{l?.label ?? 'Lockers'} ({lockers.length})</span>
+                    <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                </button>
+            ) : (
+                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3">
+                    {l?.label ?? 'Lockers'} ({lockers.length})
+                </h4>
+            )}
+            {(!isModal || open) && grid}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 import {
-  Menu, X, Sun, Moon, Globe,
+  Menu, X, Sun, Moon, Globe, ArrowUpRight,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route,
   User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp, Landmark
@@ -40,7 +40,13 @@ const XIcon = ({ className }: { className?: string }) => (
 import { UnderConstructionModal } from '@/components/shared/UnderConstructionModal';
 import { setCookie } from '@/utils/cookies';
 import { useLayout } from '@/context/LayoutContext';
-import { NAV_LINKS, localizeHref } from '@/constants/navigation';
+import {
+  NAV_LINKS,
+  isExternalHref,
+  localizeHref,
+  resolveNavSublinkHref,
+  type NavSublink,
+} from '@/constants/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NavPopup from '@/components/layout/NavPopup';
@@ -57,12 +63,8 @@ import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import type { Dictionary } from '@/i18n';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-interface PopupItem {
-  key: string;
-  href: string;
+interface PopupItem extends NavSublink {
   icon: ReactNode;
-  descKey: string;
-  isHashLink?: boolean;
 }
 
 // ─── ThemeIcon component ──────────────────────────────────────────────────
@@ -72,50 +74,45 @@ function ThemeIcon({ theme, isLightTheme }: { theme: Theme; isLightTheme: boolea
     return isLightTheme ? <Sun className="size-4" /> : <Moon className="size-4" />;
 }
 
-// ─── Nav popup items per section ────────────────────────────────────────────
-const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
-  ecosystem: [
-    { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
-    { key: 'dashboard', href: '/dashboard/staking', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },
-    { key: 'hyperscale', href: '/hyperscale', icon: <Zap className="size-4" />, descKey: 'popup_eco_hyperscale_desc' },
-    { key: 'seal', href: '/seal', icon: <Stamp className="size-4" />, descKey: 'popup_eco_seal_desc' },
-    { key: 'google_wallet', href: '/google-wallet', icon: <Nfc className="size-4" />, descKey: 'popup_eco_google_wallet_desc' },
-    { key: 'dapps', href: '/dapps', icon: <Layers className="size-4" />, descKey: 'popup_eco_dapps_desc' },
-    { key: 'games', href: '/games', icon: <Gamepad2 className="size-4" />, descKey: 'popup_dev_games_desc' },
-    { key: 'astrolescent', href: 'https://astrolescent.com/', icon: <Route className="size-4" />, descKey: 'popup_eco_astro_desc' },
-  ],
-  developers: [
-    { key: 'console', href: '/console', icon: <Terminal className="size-4" />, descKey: 'popup_dev_console_desc' },
-    { key: 'wiki', href: 'https://radix.wiki', icon: <Library className="size-4" />, descKey: 'popup_dev_wiki_desc' },
-    { key: 'doc', href: '/docs', icon: <BookOpen className="size-4" />, descKey: 'popup_dev_docs_desc' },
-    { key: 'academy', href: '/academy', icon: <GraduationCap className="size-4" />, descKey: 'popup_dev_academy_desc' },
-  ],
-  wallet: [
-    { key: 'wallet_ios', href: 'https://apps.apple.com/us/app/radix-wallet/id6448950995', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_ios_desc' },
-    { key: 'wallet_android', href: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_android_desc' },
-    { key: 'wallet_chrome', href: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm', icon: <Globe className="size-4" />, descKey: 'popup_wallet_chrome_desc' },
-    { key: 'wallet_buy_xrd', href: '/#comprar-xrd', icon: <CreditCard className="size-4" />, descKey: 'popup_wallet_buy_xrd_desc', isHashLink: true },
-    { key: 'gumball_club', href: 'https://gumball-club.radixdlt.com/', icon: <Gamepad2 className="size-4" />, descKey: 'popup_wallet_gumball_desc' },
-  ],
-  community: [
-    { key: 'governance', href: '/governance', icon: <Landmark className="size-4" />, descKey: 'popup_com_governance_desc' },
-    { key: 'blog', href: '/blog', icon: <FileText className="size-4" />, descKey: 'popup_com_blog_desc' },
-    { key: 'forum', href: '/forum', icon: <MessageSquare className="size-4" />, descKey: 'popup_com_forum_desc' },
-    { key: 'social_youtube', href: 'https://www.youtube.com/c/radixdlt', icon: <YoutubeIcon className="size-4" />, descKey: 'popup_soc_yt_desc' },
-    { key: 'social_x', href: 'https://twitter.com/radixdlt', icon: <XIcon className="size-4" />, descKey: 'popup_soc_x_desc' },
-    { key: 'social_telegram', href: 'https://t.me/radix_dlt', icon: <TelegramIcon className="size-4" />, descKey: 'popup_soc_tg_desc' },
-    { key: 'social_discord', href: 'https://discord.gg/radixdlt', icon: <DiscordIcon className="size-4" />, descKey: 'popup_soc_discord_desc' },
-  ],
-  roadmap: [
-    { key: 'roadmap_radix', href: '/#roadmap', icon: <Milestone className="size-4" />, descKey: 'popup_roadmap_radix_desc', isHashLink: true },
-    { key: 'roadmap_hyperscale', href: '/hyperscale#xian-roadmap', icon: <Zap className="size-4" />, descKey: 'popup_roadmap_hyper_desc', isHashLink: true },
-  ],
-  about: [
-    { key: 'about_us', href: '/#about', icon: <Info className="size-4" />, descKey: 'popup_about_us_desc', isHashLink: true },
-    { key: 'radix_dao', href: '/radix-dao', icon: <Landmark className="size-4" />, descKey: 'popup_about_radix_dao_desc' },
-    { key: 'community_transparency', href: '/community', icon: <Eye className="size-4" />, descKey: 'popup_com_transparency_desc' },
-  ]
+// ─── Icons keyed by NAV_LINKS sublink key (single source of truth in constants/navigation.ts) ──
+const NAV_ITEM_ICONS: Record<string, ReactNode> = {
+  infrastructure: <Server className="size-4" />,
+  dashboard: <BarChart2 className="size-4" />,
+  hyperscale: <Zap className="size-4" />,
+  seal: <Stamp className="size-4" />,
+  google_wallet: <Nfc className="size-4" />,
+  dapps: <Layers className="size-4" />,
+  games: <Gamepad2 className="size-4" />,
+  astrolescent: <Route className="size-4" />,
+  console: <Terminal className="size-4" />,
+  wiki: <Library className="size-4" />,
+  doc: <BookOpen className="size-4" />,
+  academy: <GraduationCap className="size-4" />,
+  wallet_ios: <Smartphone className="size-4" />,
+  wallet_android: <Smartphone className="size-4" />,
+  wallet_chrome: <Globe className="size-4" />,
+  wallet_buy_xrd: <CreditCard className="size-4" />,
+  gumball_club: <Gamepad2 className="size-4" />,
+  governance: <Landmark className="size-4" />,
+  blog: <FileText className="size-4" />,
+  forum: <MessageSquare className="size-4" />,
+  social_youtube: <YoutubeIcon className="size-4" />,
+  social_x: <XIcon className="size-4" />,
+  social_telegram: <TelegramIcon className="size-4" />,
+  social_discord: <DiscordIcon className="size-4" />,
+  roadmap_radix: <Milestone className="size-4" />,
+  roadmap_hyperscale: <Zap className="size-4" />,
+  about_us: <Info className="size-4" />,
+  radix_dao: <Landmark className="size-4" />,
+  community_transparency: <Eye className="size-4" />,
 };
+
+function toPopupItems(sublinks: NavSublink[]): PopupItem[] {
+  return sublinks.map((sub) => ({
+    ...sub,
+    icon: NAV_ITEM_ICONS[sub.key] ?? null,
+  }));
+}
 
 // ─── Theme configuration ─────────────────────────────────────────────────────
 interface ThemeOption {
@@ -273,12 +270,14 @@ function NavLinkList({
   onNavigate,
   onPrefetch,
   language,
+  activeNetwork,
 }: {
   items: PopupItem[];
   t: ReturnType<typeof useLanguage>['t'];
   onNavigate?: () => void;
   onPrefetch?: (href: string) => void;
   language: string;
+  activeNetwork?: string;
 }) {
   const pathname = usePathname();
   const localize = (href: string) => localizeHref(href, language);
@@ -288,32 +287,52 @@ function NavLinkList({
       {items.map((item) => {
         const label = (t.nav as Record<string, string>)[item.key] ?? item.key;
         const desc = (t.nav as Record<string, string>)[item.descKey] ?? '';
-        let href = localize(item.href);
-        if (item.key === 'social_telegram' && language === 'es') {
-          href = 'https://t.me/radix_spanish';
-        }
+        const href = resolveNavSublinkHref(item, language, activeNetwork);
+        const external = isExternalHref(href);
 
         const inner = (
           <div className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--color-surface)] transition-colors group/item cursor-pointer">
             <div className="size-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center flex-shrink-0 mt-0.5 text-[var(--color-accent)] group-hover/item:bg-[var(--color-accent)] group-hover/item:text-white group-hover/item:border-transparent transition-colors duration-150">
               {item.icon}
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[var(--color-text-main)] leading-tight">{label}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--color-text-main)] leading-tight flex items-center gap-1">
+                <span className="truncate">{label}</span>
+                {external && (
+                  <ArrowUpRight
+                    className="size-3.5 shrink-0 text-[var(--color-text-muted)]/70 group-hover/item:text-[var(--color-accent)] transition-colors"
+                    aria-hidden="true"
+                  />
+                )}
+              </p>
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-snug">{desc}</p>
             </div>
           </div>
         );
 
-        if (item.href === '#' || item.isHashLink) {
+        if (external) {
+          return (
+            <a
+              key={item.key}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onNavigate}
+            >
+              {inner}
+            </a>
+          );
+        }
+
+        if (item.path === '#' || item.isHashLink) {
           return (
             <Link
               key={item.key}
               href={href}
               onClick={(e) => {
-                const hashIndex = item.href.indexOf('#');
+                const hashIndex = item.path.indexOf('#');
                 if (hashIndex !== -1) {
-                  const targetPath = item.href.slice(0, hashIndex);
+                  const targetPath = item.path.slice(0, hashIndex);
                   const normalizedTargetPath = targetPath === '' ? '/' : targetPath;
                   const localizedTargetPath = localize(normalizedTargetPath);
                   
@@ -322,9 +341,9 @@ function NavLinkList({
 
                   if (cleanPathname === cleanTargetPath) {
                     e.preventDefault();
-                    const id = item.href.slice(hashIndex + 1);
+                    const id = item.path.slice(hashIndex + 1);
                     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-                    history.replaceState(null, '', item.href);
+                    history.replaceState(null, '', item.path);
                   }
                 }
                 onNavigate?.();
@@ -589,26 +608,34 @@ function _MobileSubLink({
   language: string;
   onClose: () => void;
 }) {
-  const subHref = item.href.startsWith('/')
-    ? `/${language}${item.href === '/' ? '' : item.href}`
-    : item.href;
+  const subHref = resolveNavSublinkHref(item, language);
+  const external = isExternalHref(subHref);
 
   const inner = (
     <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
       <span className="opacity-60">{item.icon}</span>
-      {item.key}
+      <span className="flex-1 truncate">{item.key}</span>
+      {external && <ArrowUpRight className="size-3.5 shrink-0 opacity-60" aria-hidden="true" />}
     </div>
   );
 
-  if (item.href === '#' || item.isHashLink) {
+  if (external) {
+    return (
+      <a href={subHref} target="_blank" rel="noopener noreferrer" onClick={onClose}>
+        {inner}
+      </a>
+    );
+  }
+
+  if (item.path === '#' || item.isHashLink) {
     return (
       <Link
         href={subHref}
         onClick={(e) => {
-          if (item.href.startsWith('#')) {
+          if (item.path.startsWith('#')) {
             e.preventDefault();
-            document.getElementById(item.href.slice(1))?.scrollIntoView({ behavior: 'smooth' });
-            history.replaceState(null, '', item.href);
+            document.getElementById(item.path.slice(1))?.scrollIntoView({ behavior: 'smooth' });
+            history.replaceState(null, '', item.path);
           }
           onClose();
         }}
@@ -799,9 +826,10 @@ export default function Navbar() {
 
   // Collect internal hrefs from a popup group for prefetching
   const getPopupPrefetchHrefs = (items: PopupItem[], lang: string) =>
-    items.flatMap((item) =>
-      item.href.startsWith('http') || item.href === '#' ? [] : [`/${lang}${item.href}`]
-    );
+    items.flatMap((item) => {
+      const href = resolveNavSublinkHref(item, lang, activeNetwork);
+      return isExternalHref(href) || href === '#' ? [] : [href];
+    });
 
   const handleLogoClick = (e: React.MouseEvent) => {
     // Check if we are already on the home page (with or without locale prefix)
@@ -831,11 +859,7 @@ export default function Navbar() {
             {/* Desktop nav */}
             <div className="hidden xl:flex items-stretch">
               {NAV_LINKS.map((link) => {
-                const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
-                  item.key === 'dashboard' && activeNetwork === 'stokenet'
-                    ? { ...item, href: '/dashboard/staking?network=stokenet' }
-                    : item
-                );
+                const popupItems = link.sublinks.length > 0 ? toPopupItems(link.sublinks) : undefined;
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
                 const isHashLink = link.path.startsWith('/#');
                 const linkHref = localizeNavHref(link.path);
@@ -864,6 +888,7 @@ export default function Navbar() {
                       items={popupItems}
                       t={t}
                       language={language}
+                      activeNetwork={activeNetwork}
                       onPrefetch={(href) => {
                         if (href.includes('dashboard')) prefetchDashboard();
                       }}
@@ -1145,11 +1170,7 @@ export default function Navbar() {
             <div className="px-4 py-4 space-y-1">
               {NAV_LINKS.map((link) => {
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
-                const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
-                  item.key === 'dashboard' && activeNetwork === 'stokenet'
-                    ? { ...item, href: '/dashboard/staking?network=stokenet' }
-                    : item
-                );
+                const popupItems = link.sublinks.length > 0 ? toPopupItems(link.sublinks) : undefined;
                 const isHashLink = link.path.startsWith('/#');
                 const linkHref = localizeNavHref(link.path);
 
@@ -1169,27 +1190,43 @@ export default function Navbar() {
                       <div className="pl-2 mt-1 space-y-1 mb-2">
                         {popupItems.map((sub) => {
                           const subLabel = (t.nav as Record<string, string>)[sub.key] ?? sub.key;
-                          const subHref = sub.href.startsWith('/')
-                            ? `/${language}${sub.href === '/' ? '' : sub.href}`
-                            : sub.href;
+                          const subHref = resolveNavSublinkHref(sub, language, activeNetwork);
+                          const external = isExternalHref(subHref);
 
                           const inner = (
                             <div className="flex items-center gap-3 px-4 py-3 text-sm sm:text-base font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l-2 border-[var(--color-card-border)] ml-2 rounded-r-xl hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
                               <span className="opacity-60">{sub.icon}</span>
-                              {subLabel}
+                              <span className="flex-1 truncate">{subLabel}</span>
+                              {external && (
+                                <ArrowUpRight className="size-4 shrink-0 opacity-60" aria-hidden="true" />
+                              )}
                             </div>
                           );
 
-                          if (sub.href === '#' || sub.isHashLink) {
+                          if (external) {
+                            return (
+                              <a
+                                key={sub.key}
+                                href={subHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setIsOpen(false)}
+                              >
+                                {inner}
+                              </a>
+                            );
+                          }
+
+                          if (sub.path === '#' || sub.isHashLink) {
                             return (
                               <Link
                                 key={sub.key}
                                 href={subHref}
                                 onClick={(e) => {
-                                  if (sub.href.startsWith('#')) {
+                                  if (sub.path.startsWith('#')) {
                                     e.preventDefault();
-                                    document.getElementById(sub.href.slice(1))?.scrollIntoView({ behavior: 'smooth' });
-                                    history.replaceState(null, '', sub.href);
+                                    document.getElementById(sub.path.slice(1))?.scrollIntoView({ behavior: 'smooth' });
+                                    history.replaceState(null, '', sub.path);
                                   }
                                   setIsOpen(false);
                                 }}

@@ -132,13 +132,15 @@ export function CarouselFilter({
     return (
         <div className={`${isRelative ? 'relative' : ''} shrink-0 ${className}`} ref={containerRef}>
             <div className="flex items-center overflow-hidden h-9 w-full">
-                <button
-                    type="button"
-                    onClick={() => cycle('prev')}
-                    className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-l-full"
-                >
-                    <ChevronLeft className="size-4" aria-hidden="true" />
-                </button>
+                {options.length > 1 && (
+                    <button
+                        type="button"
+                        onClick={() => cycle('prev')}
+                        className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-l-full"
+                    >
+                        <ChevronLeft className="size-4" aria-hidden="true" />
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={(e) => { 
@@ -154,13 +156,15 @@ export function CarouselFilter({
                 >
                     {activeLabel}
                 </button>
-                <button
-                    type="button"
-                    onClick={() => cycle('next')}
-                    className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-r-full"
-                >
-                    <ChevronRight className="size-4" aria-hidden="true" />
-                </button>
+                {options.length > 1 && (
+                    <button
+                        type="button"
+                        onClick={() => cycle('next')}
+                        className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-r-full"
+                    >
+                        <ChevronRight className="size-4" aria-hidden="true" />
+                    </button>
+                )}
             </div>
 
             <AnimatePresence>

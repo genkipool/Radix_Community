@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { X, User, LogOut, RefreshCcw, Wallet } from 'lucide-react';
+import { X, User, LogOut, RefreshCcw, Wallet, ChevronDown } from 'lucide-react';
 import { SidePanelModal } from '@/components/shared/SidePanelModal';
 import { SidePanelControls } from '@/components/shared/SidePanelControls';
 import { useSidePanelControls } from '@/components/shared/hooks/useSidePanelControls';
@@ -22,6 +22,12 @@ import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboar
 import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import { TransactionBuilder } from './TransactionBuilder';
 import { InlineAddressBook } from './InlineAddressBook';
+import { WalletSectionsMenu } from './WalletSectionsMenu';
+import {
+    useWalletModalSections,
+    type WalletModalSectionKey,
+    type WalletModalSectionsVisibility,
+} from '../hooks/useWalletModalSections';
 import { BookUser } from 'lucide-react';
 interface WalletProfileModalProps {
     isOpen: boolean;
@@ -44,7 +50,10 @@ function WalletAccountSummaryWrapper({
     locale,
     isOpen,
     stakingErrors,
-    sendTransactionSection
+    sendTransactionSection,
+    filterSection,
+    visibleSections,
+    sectionOrder,
 }: {
     address: string;
     entityName: string;
@@ -56,6 +65,9 @@ function WalletAccountSummaryWrapper({
     isOpen: boolean;
     stakingErrors?: Record<string, string>;
     sendTransactionSection?: React.ReactNode;
+    filterSection?: React.ReactNode;
+    visibleSections?: WalletModalSectionsVisibility;
+    sectionOrder?: WalletModalSectionKey[];
 }) {
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
@@ -80,6 +92,9 @@ function WalletAccountSummaryWrapper({
             isModal={true}
             stakingErrors={stakingErrors}
             sendTransactionSection={sendTransactionSection}
+            filterSection={filterSection}
+            visibleSections={visibleSections}
+            sectionOrder={sectionOrder}
         />
     );
 }
@@ -89,6 +104,16 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [isAddressBookVisible, setIsAddressBookVisible] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(true);
+    const {
+        visibleSections,
+        sectionOrder,
+        toggleSection,
+        reorderSections,
+        resetSections,
+        hasHiddenSections,
+        hasCustomOrder,
+    } = useWalletModalSections();
     const { copiedText, copy } = useCopyToClipboard();
 
     const navT = (t.nav || {}) as Record<string, string>;
@@ -232,33 +257,46 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="px-6 flex items-center gap-6 mt-1 mb-2 border-b border-[var(--color-surface)] overflow-x-auto custom-scrollbar">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleTabClick('accounts')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'accounts' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
-                                    >
-                                        {navT.accounts ?? 'Cuentas'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleTabClick('notifications')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 ${activeTab === 'notifications' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
-                                    >
-                                        {navT.notifications ?? 'Notificaciones'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (onBuyClick) {
-                                                onClose();
-                                                onBuyClick();
-                                            }
-                                        }}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)] whitespace-nowrap`}
-                                    >
-                                        {navT.wallet_buy_xrd ?? 'Comprar XRD'}
-                                    </button>
+                                <div className="px-6 flex items-center justify-between gap-2 mt-1 mb-2 border-b border-[var(--color-surface)]">
+                                    <div className="flex items-stretch self-stretch gap-6 overflow-x-auto custom-scrollbar min-w-0 flex-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleTabClick('accounts')}
+                                            className={`flex items-center pt-0.5 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === 'accounts' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
+                                        >
+                                            {navT.accounts ?? 'Cuentas'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleTabClick('notifications')}
+                                            className={`flex items-center gap-1.5 pt-0.5 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === 'notifications' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
+                                        >
+                                            {navT.notifications ?? 'Notificaciones'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (onBuyClick) {
+                                                    onClose();
+                                                    onBuyClick();
+                                                }
+                                            }}
+                                            className="flex items-center gap-1.5 pt-0.5 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)] whitespace-nowrap"
+                                        >
+                                            {navT.wallet_buy_xrd ?? 'Comprar XRD'}
+                                        </button>
+                                    </div>
+                                    <WalletSectionsMenu
+                                        visibleSections={visibleSections}
+                                        sectionOrder={sectionOrder}
+                                        hasHiddenSections={hasHiddenSections}
+                                        hasCustomOrder={hasCustomOrder}
+                                        onToggleSection={toggleSection}
+                                        onReorderSections={reorderSections}
+                                        onResetSections={resetSections}
+                                        navT={navT}
+                                        closeLabel={t.ui?.close ?? ''}
+                                    />
                                 </div>
 
                                 {/* Tab Content */}
@@ -270,66 +308,101 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                     <Wallet strokeWidth={1.5} className="size-10 mb-3 opacity-50" />
                                                     <p className="text-sm font-medium">{navT.no_accounts ?? 'No hay cuentas conectadas'}</p>
                                                 </div>
-                                            ) : (
-                                                <>
-                                                        <div className="mb-4">
-                                                            <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)] border-b border-[var(--color-card-border)]/50 pb-2 mb-3 px-1">
-                                                                {navT.filter_addresses || 'Filtrar direcciones'}
-                                                            </h3>
-                                                            <div className="flex items-center relative">
-                                                                <div className="flex-1 min-w-0">
-                                                                <CarouselFilter
-                                                                    options={[
-                                                                        ...(accounts.length > 1 ? [{ value: null, label: navT.all_accounts ?? 'Todas' }] : []),
-                                                                        ...accounts.map((acc, idx) => ({
-                                                                            value: acc.address,
-                                                                            label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
-                                                                        }))
-                                                                    ]}
-                                                                    activeValues={selectedAccountAddresses}
-                                                                    onChange={(vals) => setSelectedAccountAddresses(vals)}
-                                                                    title={navT.filter_addresses}
-                                                                    filterText={navT.filter}
-                                                                    multiSelectLabel={navT.selected}
-                                                                    isRelative={false}
-                                                                />
-                                                            </div>
-                                                            <button
-                                                                className={`p-2 w-10 flex items-center justify-center transition-colors shrink-0 ml-1 rounded-full ${isAddressBookVisible ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
-                                                                onClick={() => setIsAddressBookVisible(!isAddressBookVisible)}
-                                                                title="Agenda de direcciones"
-                                                            >
-                                                                <BookUser className="size-5" />
-                                                            </button>
-                                                            </div>
+                                            ) : (() => {
+                                                const visibleAccounts = accounts.filter(
+                                                    (account) =>
+                                                        selectedAccountAddresses.length === 0 ||
+                                                        selectedAccountAddresses.includes(account.address),
+                                                );
+                                                const inlineFilterInAccount = visibleAccounts.length === 1;
+                                                const filterAtBottom =
+                                                    !inlineFilterInAccount &&
+                                                    sectionOrder[sectionOrder.length - 1] === 'filter';
+                                                const filterSectionNode = visibleSections.filter ? (
+                                                    <div className={inlineFilterInAccount ? '' : 'mb-4'}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsFilterOpen(v => !v)}
+                                                            aria-expanded={isFilterOpen}
+                                                            className="w-full flex items-center justify-between gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] border-b border-[var(--color-card-border)]/50 pb-2 mb-3 px-1 transition-colors"
+                                                        >
+                                                            <span>{navT.filter_addresses || 'Filtrar direcciones'}</span>
+                                                            <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
+                                                        </button>
+                                                        <AnimatePresence initial={false}>
+                                                            {isFilterOpen && (
+                                                                <m.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2 }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="flex items-center relative">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <CarouselFilter
+                                                                                options={[
+                                                                                    ...(accounts.length > 1 ? [{ value: null, label: navT.all_accounts ?? 'Todas' }] : []),
+                                                                                    ...accounts.map((acc, idx) => ({
+                                                                                        value: acc.address,
+                                                                                        label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
+                                                                                    }))
+                                                                                ]}
+                                                                                activeValues={selectedAccountAddresses}
+                                                                                onChange={(vals) => setSelectedAccountAddresses(vals)}
+                                                                                title={navT.filter_addresses}
+                                                                                filterText={navT.filter}
+                                                                                multiSelectLabel={navT.selected}
+                                                                                isRelative={false}
+                                                                            />
+                                                                        </div>
+                                                                        <button
+                                                                            className={`p-2 w-10 flex items-center justify-center transition-colors shrink-0 ml-1 rounded-full ${isAddressBookVisible ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
+                                                                            onClick={() => setIsAddressBookVisible(!isAddressBookVisible)}
+                                                                            title="Agenda de direcciones"
+                                                                        >
+                                                                            <BookUser className="size-5" />
+                                                                        </button>
+                                                                    </div>
+                                                                    <AnimatePresence>
+                                                                        {isAddressBookVisible && <InlineAddressBook navT={navT} />}
+                                                                    </AnimatePresence>
+                                                                </m.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                ) : null;
+
+                                                return (
+                                                    <>
+                                                        {!inlineFilterInAccount && !filterAtBottom && filterSectionNode}
+
+                                                        <div className="space-y-6">
+                                                            {visibleAccounts.map((account) => (
+                                                                <div key={account.address} className="relative group">
+                                                                    <WalletAccountSummaryWrapper
+                                                                        address={account.address}
+                                                                        entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
+                                                                        tt={(t?.dashboard?.transactions || (locale === 'es' ? dashboardExploradorEs.dashboard.transactions : dashboardExploradorEn.dashboard.transactions)) as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
+                                                                        onCopy={copy}
+                                                                        copiedAddress={copiedText}
+                                                                        network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
+                                                                        locale={locale}
+                                                                        isOpen={isOpen}
+                                                                        stakingErrors={(t?.dashboard?.staking?.errors || (locale === 'es' ? dashboardStakingEs.dashboard.staking.errors : dashboardStakingEn.dashboard.staking.errors)) as unknown as Parameters<typeof AccountSummaryTab>[0]['stakingErrors']}
+                                                                        sendTransactionSection={visibleSections.send ? <TransactionBuilder accountAddress={account.address} t={t} /> : undefined}
+                                                                        filterSection={inlineFilterInAccount ? filterSectionNode : undefined}
+                                                                        visibleSections={visibleSections}
+                                                                        sectionOrder={sectionOrder}
+                                                                    />
+                                                                </div>
+                                                            ))}
                                                         </div>
 
-                                                    <AnimatePresence>
-                                                        {isAddressBookVisible && <InlineAddressBook navT={navT} />}
-                                                    </AnimatePresence>
-
-                                                    <div className="space-y-6">
-                                                        {accounts.flatMap(account =>
-                                                            selectedAccountAddresses.length === 0 || selectedAccountAddresses.includes(account.address)
-                                                                ? [<div key={account.address} className="relative group">
-                                                                      <WalletAccountSummaryWrapper
-                                                                          address={account.address}
-                                                                          entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
-                                                                          tt={(t?.dashboard?.transactions || (locale === 'es' ? dashboardExploradorEs.dashboard.transactions : dashboardExploradorEn.dashboard.transactions)) as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
-                                                                          onCopy={copy}
-                                                                          copiedAddress={copiedText}
-                                                                          network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
-                                                                          locale={locale}
-                                                                          isOpen={isOpen}
-                                                                          stakingErrors={(t?.dashboard?.staking?.errors || (locale === 'es' ? dashboardStakingEs.dashboard.staking.errors : dashboardStakingEn.dashboard.staking.errors)) as unknown as Parameters<typeof AccountSummaryTab>[0]['stakingErrors']}
-                                                                          sendTransactionSection={<TransactionBuilder accountAddress={account.address} t={t} />}
-                                                                      />
-                                                                </div>]
-                                                                : []
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
+                                                        {!inlineFilterInAccount && filterAtBottom && filterSectionNode}
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     )}
                                 </div>
