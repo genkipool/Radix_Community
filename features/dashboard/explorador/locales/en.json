@@ -1073,8 +1073,10 @@
         },
         "rewards": {
           "label": "Rewards",
-          "tooltip": "The staking rewards this account earned on Babylon, year by year, with their CoinTracking CSV.",
-          "title": "Babylon staking rewards (CSV)",
+          "tooltip": "The staking rewards this account earned across Olympia and Babylon, year by year, with their CoinTracking CSV.",
+          "title": "Staking rewards (CSV)",
+          "babylon_badge": "Babylon",
+          "olympia_badge": "Olympia",
           "desc": "One row per year with rewards. They are worked out by themselves when the tab opens, one year at a time, from the account history, and can take a few minutes; then the CSV downloads at once.",
           "year": "Year",
           "year_tooltip": "Calendar year (UTC) of rewards. Click a row to expand the monthly and daily breakdown",
