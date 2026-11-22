@@ -160,8 +160,10 @@ export function SelectPopup({
       style={style}
     >
       {header ?? (
-        <div className={`${BAR_CLASS} flex items-center justify-between`}>
-          <span className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider truncate">{title}</span>
+        <div className="shrink-0 px-3 pt-3.5 pb-2.5 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50 flex items-center justify-between">
+          <span className="min-w-0 flex-1 text-xs font-bold leading-none text-[var(--color-text-main)] uppercase tracking-wider truncate text-box-cap">
+            {title}
+          </span>
           <SelectPopupClose onClick={onClose} label={closeLabel} />
         </div>
       )}
@@ -238,13 +240,19 @@ export function SelectPopupRow({ selected, onClick, label, sublabel, icon, trail
       disabled={disabled}
       title={title}
       aria-pressed={selected}
-      className={`w-full text-left flex items-center justify-between gap-2 px-3 py-2 text-xs rounded-lg transition-colors group ${
+      className={`relative w-full text-left flex items-center justify-between gap-2 px-3 py-2 text-xs rounded-lg group ${
         selected
-          ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold'
-          : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)]'
+          ? 'text-[var(--color-primary)] font-bold'
+          : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)] transition-colors duration-150'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <span className="flex min-w-0 flex-1 items-center gap-2.5">
+      {selected && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-lg bg-[var(--color-primary)] opacity-10 group-hover:opacity-[0.18] transition-opacity duration-150"
+        />
+      )}
+      <span className="relative flex min-w-0 flex-1 items-center gap-2.5">
         {icon && <span className="flex shrink-0 items-center justify-center">{icon}</span>}
         <span className="flex min-w-0 flex-col">
           <span className={`truncate ${selected ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{label}</span>
@@ -255,8 +263,8 @@ export function SelectPopupRow({ selected, onClick, label, sublabel, icon, trail
           )}
         </span>
       </span>
-      {trailing && <span className="shrink-0">{trailing}</span>}
-      {showCheck && selected && <Check className="size-4 shrink-0" strokeWidth={2} />}
+      {trailing && <span className="relative shrink-0">{trailing}</span>}
+      {showCheck && selected && <Check className="relative size-4 shrink-0" strokeWidth={2} />}
     </button>
   );
 }

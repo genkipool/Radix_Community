@@ -51,7 +51,7 @@ vi.mock('@/features/wallet/components/WalletProfileModal', () => ({
     WalletProfileModal: ({ isOpen }: { isOpen?: boolean }) => isOpen ? <div>Wallet</div> : null,
 }));
 vi.mock('lucide-react', () => {
-    const icons = ['Menu', 'X', 'Sun', 'Moon', 'Globe', 'Server', 'Layers', 'BarChart2', 'BookOpen', 'GraduationCap', 'Gamepad2', 'Smartphone', 'FileText', 'MessageSquare', 'Eye', 'Check', 'Route', 'Sparkles', 'User', 'Terminal', 'CreditCard', 'Zap', 'Nfc', 'Library', 'Milestone', 'Map', 'Info', 'RefreshCcw', 'LogOut', 'Stamp', 'Landmark'];
+    const icons = ['Menu', 'X', 'Sun', 'Moon', 'Globe', 'ArrowUpRight', 'Server', 'Layers', 'BarChart2', 'BookOpen', 'GraduationCap', 'Gamepad2', 'Smartphone', 'FileText', 'MessageSquare', 'Eye', 'Check', 'Route', 'Sparkles', 'User', 'Terminal', 'CreditCard', 'Zap', 'Nfc', 'Library', 'Milestone', 'Map', 'Info', 'RefreshCcw', 'LogOut', 'Stamp', 'Landmark'];
     const mockIcon = () => null;
     const exports: Record<string, unknown> = { default: {} };
     for (const name of icons) exports[name] = mockIcon;
@@ -136,6 +136,21 @@ describe('Navbar', () => {
             expect(screen.getByRole('button', { name: /toggle theme/i })).toHaveAttribute('aria-label');
             expect(screen.getByRole('button', { name: /toggle language/i })).toHaveAttribute('aria-label');
             expect(screen.getByRole('navigation')).toBeInTheDocument();
+        });
+        it('marks external popup links with target=_blank and rel=noopener noreferrer while keeping internal links in-tab', () => {
+            renderWithProviders(<Navbar />);
+            const links = screen.getAllByRole('link');
+            const externalLinks = links.filter((el) => el.getAttribute('href')?.startsWith('https://'));
+            const internalLinks = links.filter((el) => el.getAttribute('href')?.startsWith('/'));
+            expect(externalLinks.length).toBeGreaterThan(0);
+            expect(internalLinks.length).toBeGreaterThan(0);
+            for (const link of externalLinks) {
+                expect(link).toHaveAttribute('target', '_blank');
+                expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+            }
+            for (const link of internalLinks) {
+                expect(link).not.toHaveAttribute('target', '_blank');
+            }
         });
     });
 });

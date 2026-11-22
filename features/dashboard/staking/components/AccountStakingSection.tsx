@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Check, Info, Download, Landmark, X } from 'lucide-react';
+import { Copy, Check, Info, Download, Landmark, X, ChevronDown } from 'lucide-react';
 import { m, AnimatePresence } from 'motion/react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 
@@ -127,6 +127,7 @@ export function AccountStakingSection({
     const [mountTime] = useState(() => Date.now());
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [hideStakingControls, setHideStakingControls] = useState(false);
+    const [sectionOpen, setSectionOpen] = useState(true);
     const [globalAmountStr, setGlobalAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
@@ -760,17 +761,61 @@ export function AccountStakingSection({
 
     return (
         <div className="mb-8">
-            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center justify-between gap-2 ${isModal ? 'pb-2 mb-4 w-full' : 'mb-4'}`}>
-                <div className="flex items-center gap-2">
-                    {stakingTitle}
-                    {infoButton}
+            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center justify-between gap-2 ${isModal ? 'pb-2 mb-4 w-full border-b border-[var(--color-card-border)]' : 'mb-4'}`}>
+                {isModal ? (
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <button
+                            type="button"
+                            onClick={() => setSectionOpen(v => !v)}
+                            aria-expanded={sectionOpen}
+                            className="flex items-center gap-2 text-left hover:text-[var(--color-text-main)] transition-colors min-w-0"
+                        >
+                            <span>{stakingTitle}</span>
+                        </button>
+                        {infoButton}
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        {stakingTitle}
+                        {infoButton}
+                    </div>
+                )}
+                <div className="flex items-center gap-2 shrink-0">
+                    {(!isModal || sectionOpen) && hideToggle}
+                    {isModal && (
+                        <button
+                            type="button"
+                            onClick={() => setSectionOpen(v => !v)}
+                            aria-expanded={sectionOpen}
+                            className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                        >
+                            <ChevronDown className={`size-3.5 transition-transform duration-200 ${sectionOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                    )}
                 </div>
-                {hideToggle}
             </h4>
 
-            {batchControls && <div className="mb-6 space-y-4">{batchControls}</div>}
-
-            {validatorList}
+            {isModal ? (
+                <AnimatePresence initial={false}>
+                    {sectionOpen && (
+                        <m.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            {batchControls && <div className="mb-6 space-y-4">{batchControls}</div>}
+                            {validatorList}
+                        </m.div>
+                    )}
+                </AnimatePresence>
+            ) : (
+                <>
+                    {batchControls && <div className="mb-6 space-y-4">{batchControls}</div>}
+                    {validatorList}
+                </>
+            )}
             {infoModal}
         </div>
     );
