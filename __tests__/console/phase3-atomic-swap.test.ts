@@ -6,9 +6,11 @@ import {
   buildMakerSubintentManifest,
   buildTakerV2SettlementManifest,
   buildV2RootOrchestratorManifest,
+  clampCustomExpirationMinutes,
   decodeSwapOffer,
   encodeSwapOffer,
   extractTakerAccountFromCommittedTx,
+  MAX_EXPIRATION_MINUTES,
   parseSubintentIdInput,
   reconstructOfferFromCommittedTx,
   type AtomicSwapOffer,
@@ -165,5 +167,11 @@ describe('atomic-swap pure engine', () => {
       },
     });
     expect(taker).toBe(TAKER);
+
+    expect(clampCustomExpirationMinutes('')).toBe('');
+    expect(clampCustomExpirationMinutes('abc')).toBe('');
+    expect(clampCustomExpirationMinutes('0')).toBe('');
+    expect(clampCustomExpirationMinutes('45m')).toBe('45');
+    expect(clampCustomExpirationMinutes('999999')).toBe(String(MAX_EXPIRATION_MINUTES));
   });
 });

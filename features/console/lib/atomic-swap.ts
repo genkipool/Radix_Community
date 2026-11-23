@@ -37,6 +37,23 @@ export const EXPIRATION_PRESETS = [
   { key: '24h', seconds: 24 * 60 * 60 },
 ] as const;
 
+/** Minimum custom Subintent V2 expiration: 1 minute (60 seconds). */
+export const MIN_EXPIRATION_MINUTES = 1;
+/**
+ * Maximum custom Subintent V2 expiration: 43,200 minutes (30 days = 8,640 5-min epochs,
+ * matching Radix Cuttlefish `TransactionValidationConfig::max_epoch_range`).
+ */
+export const MAX_EXPIRATION_MINUTES = 43_200;
+
+/** Sanitizes and clamps a custom minutes input string to `1..43200` integer minutes. */
+export function clampCustomExpirationMinutes(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  return String(Math.min(MAX_EXPIRATION_MINUTES, num));
+}
+
 export const STOKENET_FAUCET_ADDRESS =
   'component_tdx_2_1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxyulkzl';
 
