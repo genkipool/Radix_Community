@@ -105,7 +105,12 @@ export function compareCryptoMarketCap(
   const currentPriceEur = base.priceUsd * safeRate;
   const projectedPriceEur = projectedPriceUsd * safeRate;
   const percentChange = (multiplier - 1) * 100;
-  const barSharePct = Math.min(100, Math.max(0.5, (baseCapUsd / Math.max(baseCapUsd, targetCapUsd)) * 100));
+  const ratio = baseCapUsd / targetCapUsd;
+  // Use a base-10 logarithmic scale for ratios < 1 (crypto caps span 5+ orders of
+  // magnitude, so a linear bar looks stuck at ~0.5% for BTC/ETH/SOL/AVAX/etc.).
+  const barSharePct = ratio >= 1
+    ? 100
+    : Math.min(100, Math.max(4, 4 + ((Math.max(-6, Math.log10(ratio)) + 6) / 6) * 96));
 
   const validAmount = typeof amount === 'number' && Number.isFinite(amount) && amount > 0 ? amount : undefined;
   const holding = validAmount !== undefined
