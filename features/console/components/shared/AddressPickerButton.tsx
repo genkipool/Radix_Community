@@ -40,8 +40,8 @@ import { browserCopyOptions, writeBrowserCopy } from '../../lib/browser-copy';
 
 /** Where an option comes from; also the popup's tabs, in this order. */
 const SOURCES = ['wallet', 'myValidators', 'agenda', 'mine', 'ociswap', 'defiplaza', 'reddicks', 'network', 'validators'] as const;
-/** A picker of resources only is split by kind instead: tokens and NFTs. */
-const KINDS = ['tokens', 'nfts'] as const;
+/** A picker of resources only is split by kind instead: tokens, NFTs and pool units. */
+const KINDS = ['tokens', 'nfts', 'pools'] as const;
 type Tab = 'all' | (typeof SOURCES)[number] | (typeof KINDS)[number];
 /** `typed`: a selected address no list has; it shows under "All" only. */
 type Source = (typeof SOURCES)[number] | 'typed';
@@ -55,6 +55,8 @@ interface PickerOption {
   iconUrl?: string;
   source: Source;
   category: AddressCategory;
+  /** True when the fungible resource is a native pool unit (`pool` metadata). */
+  isPoolUnit?: boolean;
 }
 
 const LEDGER_KINDS: LedgerEntityKind[] = ['pool', 'locker'];
@@ -257,6 +259,7 @@ export function AddressPickerButton({
         iconUrl: f.iconUrl,
         source: 'wallet',
         category: 'resource',
+        isPoolUnit: !!f.pool,
       }),
     );
     holdings?.nonFungibles.filter((n) => !locked.has(n.resourceAddress)).forEach((n) =>
@@ -302,7 +305,13 @@ export function AddressPickerButton({
 
   const unique = options.filter((o, i) => options.findIndex((x) => x.address === o.address) === i);
   const byKind = categories.length === 1 && categories[0] === 'resource';
-  const ofKind = (kind: (typeof KINDS)[number]) => unique.filter((o) => isNonFungibleResource(o.address) === (kind === 'nfts'));
+  const ofKind = (kind: (typeof KINDS)[number]) =>
+    unique.filter((o) => {
+      const nft = isNonFungibleResource(o.address);
+      if (kind === 'nfts') return nft;
+      if (kind === 'pools') return !nft && !!o.isPoolUnit;
+      return !nft && !o.isPoolUnit;
+    });
   // Every source this input can draw from has its tab from the start, "…"
   // while its list loads and 0 when it has nothing, so the header is there at
   // once and never changes shape.
@@ -362,7 +371,7 @@ export function AddressPickerButton({
   const inTab =
     activeTab === 'all'
       ? [...typedSelected, ...unique]
-      : activeTab === 'tokens' || activeTab === 'nfts'
+      : activeTab === 'tokens' || activeTab === 'nfts' || activeTab === 'pools'
         ? ofKind(activeTab)
         : options.filter((o) => o.source === activeTab);
   const found = q

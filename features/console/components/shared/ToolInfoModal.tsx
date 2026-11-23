@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Info, CheckCircle2 } from 'lucide-react';
 import { SidePanelModal } from '@/components/shared/SidePanelModal';
 import { SidePanelControls } from '@/components/shared/SidePanelControls';
@@ -20,10 +20,20 @@ interface GuideField {
   example?: string;
 }
 
+interface GuideTab {
+  label: string;
+  steps: string[];
+}
+
 export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) {
   const toolT = slug ? (t.console?.tools as Record<string, Record<string, unknown>>)?.[slug] : null;
   const guide = toolT?.guide as Record<string, unknown> | undefined;
   const headings = (t.console?.toolGuide ?? {}) as Record<string, string>;
+  const guideTabs = Array.isArray(guide?.guideTabs) ? (guide.guideTabs as GuideTab[]) : [];
+  const tabKey = `${slug ?? ''}:${isOpen ? '1' : '0'}`;
+  const [tabState, setTabState] = useState<{ key: string; idx: number }>({ key: tabKey, idx: 0 });
+  const activeTab = tabState.key === tabKey ? tabState.idx : 0;
+  const setActiveTab = (idx: number) => setTabState({ key: tabKey, idx });
 
   const {
     isPinned,
@@ -91,7 +101,53 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
               {(guide?.guideDescription as string) || (toolT?.description as string)}
             </p>
 
-            {Array.isArray(guide?.guideSteps) && guide.guideSteps.length > 0 && (
+            {guideTabs.length > 0 && (
+              <div className="space-y-5">
+                <div className="flex flex-nowrap items-center gap-5 border-b border-[var(--color-card-border)]">
+                  {guideTabs.map((tabItem, idx) => (
+                    <button
+                      key={tabItem.label}
+                      type="button"
+                      onClick={() => setActiveTab(idx)}
+                      className="relative pb-2.5 text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                      style={{ color: activeTab === idx ? 'var(--color-text-main)' : 'var(--color-text-muted)' }}
+                    >
+                      {tabItem.label}
+                      {activeTab === idx && (
+                        <span
+                          className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
+                          style={{ background: 'linear-gradient(to right, var(--color-accent), var(--color-primary))' }}
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  {(guideTabs[activeTab]?.steps ?? []).map((step: string, idx: number) => {
+                    const match = step.match(/^(\d+)\.\s+(.*)$/);
+                    const isNumberFirst = !!match;
+                    const content = isNumberFirst ? match[2] : step;
+                    return (
+                      <div key={idx} className="flex gap-4 items-start">
+                        <div className="shrink-0 mt-0.5">
+                          {isNumberFirst ? (
+                            <div className="text-[var(--color-primary)] text-sm font-black w-6 flex justify-end">
+                              {match[1]}.
+                            </div>
+                          ) : (
+                            <CheckCircle2 className="size-5 text-[var(--color-primary)] opacity-80" strokeWidth={2} />
+                          )}
+                        </div>
+                        <p className="text-[14px] leading-relaxed text-[var(--color-text-main)]">{content}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {guideTabs.length === 0 && Array.isArray(guide?.guideSteps) && guide.guideSteps.length > 0 && (
             <div className="space-y-6">
               <h3 className="text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2 flex items-center gap-2">
                 {headings.steps || 'Instrucciones de uso'}

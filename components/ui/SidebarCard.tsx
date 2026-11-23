@@ -228,7 +228,7 @@ function SidebarCardRow({
     };
 
     return (
-        <div className="relative group/row">
+        <div className="relative group/row" data-sidebar-selected={isSelected ? 'true' : undefined}>
             <Component
                 {...componentProps}
                 className="block w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium"

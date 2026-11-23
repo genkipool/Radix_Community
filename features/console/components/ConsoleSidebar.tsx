@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HoverPrefetchLink } from '@/components/ui/HoverPrefetchLink';
 import { useLanguage } from '@/context/LanguageContext';
 import SidebarLayout from '@/components/layout/SidebarLayout';
@@ -74,6 +74,41 @@ export default function ConsoleSidebar({
     initialAutoCollapse,
     initialExpandedTopics: initialExpandedGroups,
   });
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const lastPositionedSlug = useRef<ConsoleToolSlug | null>(null);
+
+  // When landing directly on a tool URL (e.g. /console/account-migrate), ensure its
+  // group is expanded and scroll ONLY the sidebar container so the active item is visible.
+  useEffect(() => {
+    if (!selectedSlug) return;
+    const ownerGroup = CONSOLE_GROUPS.find((g) => g.tools.includes(selectedSlug));
+    if (ownerGroup && !flatView && !expandedGroups.has(ownerGroup.id) && lastPositionedSlug.current !== selectedSlug) {
+      handleToggle(ownerGroup.id);
+    }
+    const isInitial = lastPositionedSlug.current === null;
+    lastPositionedSlug.current = selectedSlug;
+
+    const raf = window.requestAnimationFrame(() => {
+      const target = contentRef.current?.querySelector<HTMLElement>('[data-sidebar-selected="true"]');
+      const scrollContainer = target?.closest<HTMLElement>('[data-sidebar-scroll="true"]');
+      if (!target || !scrollContainer) return;
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      // Sticky header takes ~210px at the top of the sidebar container; keep the item comfortably centered below it.
+      const visibleTop = containerRect.top + 220;
+      const visibleBottom = containerRect.bottom - 24;
+      if (targetRect.top < visibleTop || targetRect.bottom > visibleBottom) {
+        const offset = targetRect.top - containerRect.top + scrollContainer.scrollTop - containerRect.height * 0.52;
+        scrollContainer.scrollTo({
+          top: Math.max(0, offset),
+          behavior: isInitial ? 'instant' : 'smooth',
+        });
+      }
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [selectedSlug, flatView, expandedGroups, handleToggle]);
 
   const groupLabels = (t.groups ?? {}) as Record<string, string>;
   const toolLabels = (t.tools ?? {}) as Record<string, { title?: string; description?: string }>;
@@ -185,11 +220,11 @@ export default function ConsoleSidebar({
     >
       {flatView ? (
         /* Flat view: every tool as a plain text row, single column */
-        <div className="space-y-0.5">
+        <div ref={contentRef} className="space-y-0.5">
           {flatTools.map((slug) => {
             const isSelected = slug === selectedSlug;
             return (
-              <div key={slug} className="relative group flex items-center">
+              <div key={slug} data-sidebar-selected={isSelected ? 'true' : undefined} className="relative group flex items-center">
                 <HoverPrefetchLink
                   href={toolHref(slug)}
                   onClick={(e) => {
@@ -271,7 +306,7 @@ export default function ConsoleSidebar({
           })}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div ref={contentRef} className="space-y-3">
           {filteredGroups.map((group) => {
             const isExpanded = expandedGroups.has(group.id) || !!query || favoritesOnly;
             const hasSelected = selectedSlug !== null && group.tools.includes(selectedSlug);

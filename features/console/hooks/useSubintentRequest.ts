@@ -37,34 +37,40 @@ export function useSubintentRequest() {
     setState(INITIAL);
   };
 
-  const sendSubintent = async (manifest: string, expireAfterSeconds: number) => {
+  const sendSubintent = async (
+    manifest: string,
+    expireAfterSeconds: number,
+    message?: string,
+  ): Promise<SubintentResult | null> => {
     if (!activeNetworkId) {
       setState({ ...INITIAL, error: 'wallet_not_connected' });
-      return;
+      return null;
     }
     const rdt = getOrCreateToolkit(activeNetworkId);
     if (!rdt) {
       setState({ ...INITIAL, error: 'toolkit_not_initialized' });
-      return;
+      return null;
     }
 
     setState({ isSending: true, result: null, error: null });
-    const response = await sendToWallet(rdt, 'preAuthorization', () =>
-      rdt.walletApi.sendPreAuthorizationRequest(
-        SubintentRequestBuilder()
-          .manifest(manifest)
-          .setExpiration('afterDelay', expireAfterSeconds)
-          .addBlobs(),
-      ),
-      { signal: requests.signal() },
-    );
+    const response = await sendToWallet(rdt, 'preAuthorization', () => {
+      const builder = SubintentRequestBuilder()
+        .manifest(manifest)
+        .setExpiration('afterDelay', expireAfterSeconds)
+        .addBlobs();
+      if (message?.trim()) {
+        builder.message(message.trim());
+      }
+      return rdt.walletApi.sendPreAuthorizationRequest(builder);
+    }, { signal: requests.signal() });
 
     if (!response.ok) {
       const { reason, code } = response.failure;
       setState({ ...INITIAL, error: reason === 'cancelled' ? null : code });
-      return;
+      return null;
     }
     setState({ isSending: false, result: response.value, error: null });
+    return response.value;
   };
 
   return { ...state, sendSubintent, reset };

@@ -961,6 +961,255 @@
         "title": "Address Book",
         "description": "Save and organise Radix addresses (accounts, validators, pools, components and packages) by category, verified on-ledger. The same address book as in your wallet profile."
       },
+      "lsu-info": {
+        "title": "LSU Inspector",
+        "description": "Inspect any validator Liquid Stake Unit (LSU): owning validator, exact XRD exchange rate, fiat value, staked TVL, calculator and top holders.",
+        "guide": {
+          "guideTitle": "Guide: LSU Inspector",
+          "guideDescription": "When you stake XRD with a Radix validator, you receive Liquid Stake Units (LSUs) representing your share of that validator's stake pool. Over time, each LSU becomes worth more XRD as staking rewards compound. This tool lets you inspect any LSU in real time directly from the ledger.",
+          "guideSteps": [
+            "1. Connect your Radix Wallet and select the active network (Mainnet or Stokenet).",
+            "2. Click the + button inside the LSU input to pick any validator's LSU from the list (LSUs already in your wallet appear at the top), or paste an LSU resource address directly.",
+            "3. Review the owning validator, exact live exchange rate (1 LSU = X XRD), fiat value, total pool TVL, owner locked stake, and pending unstakes.",
+            "4. Use the LSU → XRD / Fiat converter (defaulting to 1 LSU, or click 'Use my balance') to check the exact value of any position, and inspect the top LSU holders below."
+          ],
+          "fields": [
+            {
+              "label": "Validator LSU resource",
+              "description": "The fungible resource address minted by a validator to represent staked XRD. Click the + button inside the field to search and pick by validator name.",
+              "example": "resource_rdx1thnkeraq0lukdlhcj226qefqmvdqnqnhegzvxpcw2sscp4q6jegdz0"
+            },
+            {
+              "label": "LSU → XRD / Fiat converter",
+              "description": "Enter any amount of LSU (1 by default) to calculate its exact XRD redemption value and current fiat equivalent.",
+              "example": "1"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "LSU (Liquid Stake Unit)",
+              "definition": "A fungible token minted by a validator when you delegate XRD. Its XRD value increases automatically every epoch as rewards accumulate in the validator's stake vault."
+            },
+            {
+              "term": "Exchange rate (XRD / LSU)",
+              "definition": "Calculated live as total XRD in the validator's stake vault divided by total LSU supply."
+            },
+            {
+              "term": "Owner locked stake",
+              "definition": "LSUs locked by the validator operator inside the validator component as skin-in-the-game and accumulated validator fees."
+            }
+          ]
+        }
+      },
+      "crypto-compare": {
+        "title": "Crypto Comparator",
+        "description": "Compare two cryptocurrencies by market cap or FDV to see the projected price of Radix (XRD) or any coin if it reached another asset's valuation.",
+        "guide": {
+          "guideTitle": "Guide: Crypto Market Cap Comparator",
+          "guideDescription": "Unit price alone never tells you how big a cryptocurrency is because supplies differ wildly. This tool compares two assets by Market Cap (or Fully Diluted Valuation) so you can see what price Radix (XRD) — or any other coin — would trade at if it achieved another cryptocurrency's valuation.",
+          "guideSteps": [
+            "1. Choose whether to compare by Circulating Market Cap or Fully Diluted Valuation (FDV).",
+            "2. Select the Base cryptocurrency (Radix XRD by default) and the Target cryptocurrency (Bitcoin BTC by default, or use the quick-compare chips).",
+            "3. Read the projected unit price, multiplier (×), percentage change and market-cap share bar.",
+            "4. Optionally enter an amount in the Portfolio simulator (or click 'Use wallet balance' when connected) to see what your holding would be worth at the projected price."
+          ],
+          "fields": [
+            {
+              "label": "Base cryptocurrency",
+              "description": "The coin whose projected unit price you want to calculate (defaults to Radix XRD).",
+              "example": "Radix (XRD)"
+            },
+            {
+              "label": "Target market cap",
+              "description": "The reference cryptocurrency whose valuation you want to apply to the base coin.",
+              "example": "Bitcoin (BTC)"
+            },
+            {
+              "label": "Portfolio simulator amount",
+              "description": "Optional quantity of the base coin to calculate current value, projected value and potential gain.",
+              "example": "50000"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Market Cap",
+              "definition": "Current unit price multiplied by circulating supply. Measures the market value of the coins available today."
+            },
+            {
+              "term": "FDV (Fully Diluted Valuation)",
+              "definition": "Current unit price multiplied by total or maximum supply. Estimates the project's valuation once all coins are in circulation."
+            },
+            {
+              "term": "Circulating Supply",
+              "definition": "Number of coins currently in public circulation and available to buy or sell on the open market."
+            },
+            {
+              "term": "Total Supply",
+              "definition": "Total number of coins created so far (including locked, staked, or treasury coins, minus any burned coins)."
+            },
+            {
+              "term": "Max Supply",
+              "definition": "Hard cap on the maximum number of coins that will ever exist according to the project's protocol (for example, 21 million for Bitcoin)."
+            }
+          ]
+        }
+      },
+      "account-migrate": {
+        "title": "Migrate Account",
+        "description": "Transfer selected tokens, LSUs, NFTs and XRD from one account to another in automatic batches, keeping an XRD fee reserve and protecting critical owner badges.",
+        "guide": {
+          "guideTitle": "Guide: Migrate Account",
+          "guideDescription": "Designed for moving all assets safely when switching accounts, migrating to a hardware wallet or reorganizing your portfolio. It groups your holdings, protects critical system owner badges by default, reserves XRD for fees, and automatically splits large accounts into safe transaction batches.",
+          "guideSteps": [
+            "1. Select the Source account you want to empty from your connected Radix Wallet.",
+            "2. Enter or pick (+) the Destination account that will receive your assets.",
+            "3. Set the XRD fee reserve (2 XRD by default) so earlier batches never run out of gas. Native XRD is always placed in the final batch.",
+            "4. Click the asset cards to select or deselect tokens, LSUs and NFTs. Critical system owner badges (Validator/Package/Account owner) are unchecked by default for safety.",
+            "5. Click Simulate to verify the exact balance changes, then click Migrate assets to sign each batch in your Radix Wallet."
+          ],
+          "fields": [
+            {
+              "label": "Source account",
+              "description": "The connected account whose balances will be transferred out.",
+              "example": "account_rdx1..."
+            },
+            {
+              "label": "Destination account",
+              "description": "The target Radix account that will receive all selected tokens and NFTs. Must differ from the source account.",
+              "example": "account_rdx1..."
+            },
+            {
+              "label": "XRD fee reserve",
+              "description": "Amount of XRD left behind in the source account to pay transaction fees.",
+              "example": "2"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Critical system owner badges",
+              "definition": "Special Radix NFTs that control validators, packages or accounts. Moving one transfers full administrative control."
+            },
+            {
+              "term": "Batched transactions",
+              "definition": "When an account holds many resources or NFTs, transfers are split automatically into safe transaction sizes to stay within Radix Engine limits."
+            }
+          ]
+        }
+      },
+      "account-cleanup": {
+        "title": "Spam & Dust Cleaner",
+        "description": "Burn unwanted spam tokens or NFTs (or sweep non-burnable ones) and automatically block future deposits of those resources in a single transaction.",
+        "guide": {
+          "guideTitle": "Guide: Spam & Dust Cleaner",
+          "guideDescription": "Over time accounts accumulate unwanted spam tokens, dust balances and promotional NFTs. This tool inspects each resource's on-ledger burn rules, automatically protects XRD, validator LSUs and owner badges, and lets you burn spam and block future deposits in a single transaction.",
+          "guideSteps": [
+            "1. Select the connected account you want to clean. The tool automatically scans which resources have public burn permissions (burner = AllowAll).",
+            "2. Filter by All, Burnable or Not burnable, and click the resource cards you want to remove.",
+            "3. Choose whether to also add a Deny deposit rule (recommended) so spammers cannot re-send those resources to your account.",
+            "4. If you selected any non-burnable resources and want them moved out of the account, optionally enter a disposable sink account.",
+            "5. Click Simulate to inspect the receipt, then click Clean selected resources to sign in your Radix Wallet."
+          ],
+          "fields": [
+            {
+              "label": "Account",
+              "description": "The account to scan and clean. XRD, validator LSUs and system owner badges are always protected.",
+              "example": "account_rdx1..."
+            },
+            {
+              "label": "Cleanup options (Deny rule)",
+              "description": "Sets each cleaned resource to Disallowed in your account's deposit rules in the same transaction.",
+              "example": "Block future deposits"
+            },
+            {
+              "label": "Optional sink account",
+              "description": "Only needed for non-burnable resources if you want to transfer them out instead of only blocking future deposits.",
+              "example": "account_rdx1..."
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Burnable resource",
+              "definition": "A token or NFT whose burner role is AllowAll, meaning any holder can permanently destroy their own units."
+            },
+            {
+              "term": "Deny deposit rule (Disallowed)",
+              "definition": "A native Radix account setting that rejects future third-party deposits of a specific resource."
+            }
+          ]
+        }
+      },
+      "atomic-swap": {
+        "title": "P2P Atomic OTC Swap",
+        "description": "Exchange tokens, NFTs or badges peer-to-peer with zero fees and zero third-party smart contracts using native Radix atomic manifests and Subintents.",
+        "guide": {
+          "guideTitle": "Guide: P2P Atomic OTC Swap",
+          "guideDescription": "Swap fungible tokens, NFTs or badges directly between two accounts with 0% fees and no intermediary smart contract. Radix Engine guarantees atomicity: either both sides receive the exact agreed assets in the same transaction, or the entire transaction aborts.",
+          "guideTabs": [
+            {
+              "label": "V2 · P2P Link",
+              "steps": [
+                "1. Maker: On the 'Create swap' tab, keep 'Shareable P2P offer (Subintent V2)' selected.",
+                "2. Pick your source account and an expiration window (15m, 1h, 6h or 24h). Your tokens do NOT leave or lock when signing.",
+                "3. Under 'You give', select the tokens or NFTs you offer (use '+ Add more resources' to bundle several). Under 'You receive', pick the exact assets you require in return.",
+                "4. Optionally add a note and click 'Simulate' to verify your balance and withdraw permissions.",
+                "5. Click 'Sign Subintent offer' in your Radix Wallet (0 gas). A green banner appears with 'Copy offer link'.",
+                "6. Taker: Your friend opens the shared link. The app switches directly to 'Inspect / accept offer' showing icons, names, exact amounts, message, and live status.",
+                "7. Your friend picks their account, clicks 'Simulate' to preview the exact real balance changes, and clicks 'Accept & execute swap'.",
+                "8. Once they approve in Radix Wallet, the browser compiles and submits the Transaction V2 to the Radix network in 1 click. Both parties receive their assets in the same block and the offer is settled."
+              ]
+            },
+            {
+              "label": "V1 · Your accounts",
+              "steps": [
+                "1. On 'Create swap', select 'Swap between your accounts (1 tx)'. This mode works only between two accounts connected in your own Radix Wallet.",
+                "2. Pick your Source account in the first row and your Destination account in the second row (they must be different).",
+                "3. Under 'You give', choose the tokens or NFTs leaving the source account (with live 'Max' balance) and under 'You receive', those leaving the destination account (multi-resource supported on both sides).",
+                "4. Optionally enter an on-ledger transaction message.",
+                "5. Click 'Simulate' to verify every balance change, then click 'Execute atomic swap' to sign a single transaction in your Radix Wallet."
+              ]
+            }
+          ],
+          "guideSteps": [
+            "1. Choose Create swap to build a new exchange, or Inspect / accept offer if someone sent you a signed Subintent offer link.",
+            "2. Pick the swap mode: Direct Atomic Swap (1 tx) when both accounts can sign in one transaction, or Subintent Pre-Auth (2 parties) to sign an off-ledger offer at 0 gas and share a link.",
+            "3. Select Your account (Maker) and either the Counterparty account (Direct mode) or an Offer expiration window (Subintent mode).",
+            "4. In 'You give' and 'You receive', pick the resources using the + button. The tool automatically detects whether each resource is a fungible token (asks for Amount) or an NFT (asks for Local IDs like #1#).",
+            "5. Click Simulate to verify the exact manifest, then click Execute atomic swap (or Sign Subintent offer to generate a shareable link)."
+          ],
+          "fields": [
+            {
+              "label": "Your account (Maker)",
+              "description": "The account that provides the 'You give' asset and receives the 'You receive' asset.",
+              "example": "account_rdx1..."
+            },
+            {
+              "label": "Counterparty account (Taker)",
+              "description": "In Direct mode, the second account participating in the atomic exchange.",
+              "example": "account_rdx1..."
+            },
+            {
+              "label": "Resource address (You give / You receive)",
+              "description": "Pick any fungible token or NFT with +. The input below automatically adapts to Amount (for tokens) or NFT local IDs (for NFTs).",
+              "example": "resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd"
+            },
+            {
+              "label": "Offer expiration",
+              "description": "In Subintent mode, how long the signed pre-authorization remains valid before automatically expiring.",
+              "example": "1h"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Atomic Swap",
+              "definition": "An all-or-nothing exchange enforced by the Radix Engine worktop assertions: neither party can cheat."
+            },
+            {
+              "term": "Subintent (Pre-authorization)",
+              "definition": "A native Radix V2 partial transaction signed off-ledger with zero gas cost that a counterparty can embed into a settlement transaction before it expires."
+            }
+          ]
+        }
+      },
       "address-utils": {
         "title": "Address Utilities",
         "description": "Inspect and validate any Radix address, derive accounts from public keys and browse the well-known network addresses.",
@@ -5026,6 +5275,7 @@
     },
     "holders": {
       "resourceTitle": "Token",
+      "nftTitle": "NFT",
       "resourceHint": "Paste the token or NFT collection address. Every holder on the network is read, page by page.",
       "load": "Show holders",
       "loading": "Reading holders: {loaded} of {total}…",
@@ -5489,6 +5739,212 @@
           "packageImmutable": "Its code is in a package that cannot be changed."
         }
       }
-    }
+    },
+    "cryptoCompare": {
+        "selectTitle": "Compare two cryptocurrencies",
+        "selectHint": "Pick a base coin (e.g. Radix XRD) and a target coin (e.g. Bitcoin BTC) to project the price at the target's valuation.",
+        "modeMcap": "Market Cap",
+        "modeMcapTitle": "Market Cap: current price multiplied by circulating supply (coins available in the market today).",
+        "modeFdv": "FDV",
+        "modeFdvTitle": "Fully Diluted Valuation (FDV): current price multiplied by total or maximum supply once all coins are issued.",
+        "quickTargets": "Quick compare:",
+        "baseLabel": "Base cryptocurrency",
+        "targetLabel": "Target market cap",
+        "searchPlaceholder": "Search by name or symbol...",
+        "noResults": "No matching coins found.",
+        "swapTitle": "Swap coins",
+        "loadError": "Could not load market data right now. Please try again shortly.",
+        "resultHeadline": "If {base} had the valuation of {target}",
+        "currentPriceLabel": "Current price",
+        "fallbackNote": "Offline reference data",
+        "ratioNote": "{base} is currently {pct}% of {target}'s valuation.",
+        "portfolioTitle": "Portfolio simulator",
+        "portfolioHint": "Enter an amount to see what your position would be worth at the projected price.",
+        "amountPlaceholder": "Amount of {symbol}",
+        "useWalletBalance": "Use wallet balance",
+        "valueToday": "Value today",
+        "valueProjected": "Value at {target} cap",
+        "difference": "Potential gain"
+      },
+      "lsuInfo": {
+        "inputTitle": "Validator LSU resource",
+        "inputHint": "Paste an LSU resource address or click + to pick any validator's LSU directly.",
+        "placeholder": "resource_rdx1… or resource_tdx_2_1…",
+        "pickerTitle": "Choose a validator LSU",
+        "pickerButton": "Select LSU",
+        "pickerSearchPlaceholder": "Search validator by name or address...",
+        "pickerEmpty": "No validator LSUs found on this network.",
+        "inWallet": "In wallet",
+        "feeShort": "Fee",
+        "loading": "Loading LSU and validator state...",
+        "notAnLsu": "This address is not a valid validator LSU resource on the active network.",
+        "registered": "Registered",
+        "unregistered": "Unregistered",
+        "validatorLabel": "Validator",
+        "feeLabel": "Fee",
+        "acceptsStake": "Accepts stake",
+        "yes": "Yes",
+        "no": "No",
+        "openInExplorer": "Explorer",
+        "exchangeRate": "Exchange rate",
+        "fiatPerLsu": "Fiat value per LSU",
+        "tvlFiat": "Pool TVL",
+        "totalStaked": "Total XRD staked",
+        "totalSupply": "Supply",
+        "ownerLocked": "Owner locked stake",
+        "pendingUnstake": "Pending unstake",
+        "holdersCount": "LSU holders",
+        "calculatorTitle": "LSU → XRD / Fiat converter",
+        "calculatorHint": "Convert any LSU amount into its exact XRD and fiat value using the live validator vault rate.",
+        "useMyLsu": "Use my balance",
+        "xrdEquivalent": "XRD equivalent",
+        "fiatValue": "Fiat value",
+        "holdersTitle": "Top LSU holders",
+        "holdersHint": "Addresses holding the largest share of this validator's Liquid Stake Units.",
+        "loadingHolders": "Loading holders...",
+        "showMoreHolders": "Show top {count} holders",
+        "showLessHolders": "Show fewer holders",
+        "noHolders": "No holders found for this LSU."
+      },
+      "accountMigrate": {
+        "accountsTitle": "Source & destination accounts",
+        "accountsHint": "Choose the source account and the destination account that will receive the selected assets.",
+        "sourceAccount": "Source account",
+        "destinationAccount": "Destination account",
+        "destinationPlaceholder": "account_rdx1… or account_tdx_2_1…",
+        "sameAccountError": "Source and destination accounts must be different.",
+        "xrdReserveLabel": "XRD fee reserve to keep in source",
+        "xrdReserveHint": "Kept in the source account to cover transaction fees. XRD is always transferred in the last batch.",
+        "selectAllSafe": "Select all",
+        "clearSelection": "Clear",
+        "assetsTitle": "Assets to migrate",
+        "assetsHint": "System owner badges are unchecked by default to avoid transferring validator or package ownership by mistake.",
+        "loadingAssets": "Loading account holdings...",
+        "noAssets": "This account holds no transferable assets.",
+        "groupXrd": "Native XRD",
+        "groupFungibles": "Fungible tokens & LSUs",
+        "groupNfts": "NFT collections",
+        "groupCritical": "Critical system owner badges",
+        "criticalWarning": "These badges grant administrative control over validators, packages or accounts. Only select them if you intentionally want to transfer ownership.",
+        "criticalSelectedBanner": "Warning: you have selected one or more critical owner badges. Double-check the destination address before signing.",
+        "ofBalance": "of {amount}",
+        "nftCount": "{count} NFT(s)",
+        "executeTitle": "Review & send",
+        "executeHint": "Simulate before signing. Large accounts are split automatically into safe transaction batches.",
+        "summaryLine": "{items} asset group(s) selected · {batches} transaction batch(es)",
+        "sendButton": "Migrate assets",
+        "needSource": "Select a source account.",
+        "needDestination": "Enter a destination account.",
+        "needSelection": "Select at least one asset to migrate."
+      },
+      "accountCleanup": {
+        "accountTitle": "Account to clean",
+        "accountHint": "Scan your account to detect freely-burnable spam tokens and NFTs.",
+        "accountLabel": "Account",
+        "protectedNotice": "XRD, validator LSUs and system owner badges are automatically protected and excluded from cleanup.",
+        "resourcesTitle": "Cleanable resources",
+        "resourcesHint": "Select unwanted resources. Burnable ones are destroyed permanently; non-burnable ones can be swept to a sink account or blocked from future deposits.",
+        "filterAll": "All",
+        "filterAllTitle": "Shows all cleanable resources in the account (both burnable and non-burnable).",
+        "filterBurnable": "Burnable",
+        "filterBurnableTitle": "Shows only freely burnable resources: they are permanently destroyed when cleaned.",
+        "filterNonBurnable": "Not burnable",
+        "filterNonBurnableTitle": "Shows only non-burnable resources: you can block future deposits (Deny) or sweep them to a disposable account.",
+        "selectBurnable": "Select burnable",
+        "clearSelection": "Clear",
+        "scanning": "Scanning resource burn permissions on-ledger...",
+        "noResources": "No cleanable resources found in this account.",
+        "badgeBurnable": "Burnable",
+        "badgeNotBurnable": "Not burnable",
+        "nftCount": "{count} NFT(s)",
+        "optionsTitle": "Cleanup options",
+        "optionsHint": "Combine burning/sweeping with account deposit rules in the same transaction.",
+        "denyDepositsLabel": "Block future deposits (Deny rule)",
+        "denyDepositsHint": "Adds each cleaned resource to your account's Disallowed deposit list so spammers cannot re-send it.",
+        "keepDepositsLabel": "Clean only (keep deposit rules)",
+        "keepDepositsHint": "Burns or sweeps selected items without modifying your account's deposit preferences.",
+        "sinkAccountLabel": "Optional sink account for non-burnable items",
+        "sinkAccountPlaceholder": "account_rdx1… (leave empty to only add Deny rule)",
+        "sinkAccountHint": "Non-burnable resources cannot be destroyed; specify a disposable account if you also want to move them out.",
+        "executeTitle": "Simulate & clean",
+        "executeHint": "Verify the simulated receipt before signing in your Radix Wallet.",
+        "sendButton": "Clean selected resources",
+        "needAccount": "Select an account.",
+        "needSelection": "Select at least one resource to clean.",
+        "nothingActionable": "Enable Deny deposits or set a sink account for non-burnable items.",
+        "confirmNonBurnableTitle": "Confirm non-burnable resource cleanup",
+        "confirmNonBurnableMessage": "You selected one or more resources that CANNOT be burned. If you specified a sink account they will be transferred there irreversibly, and if Deny is enabled your account will reject future deposits of these resources. Do you want to continue?",
+        "confirmNonBurnableButton": "Confirm and sign",
+        "confirmCancelButton": "Cancel"
+      },
+      "atomicSwap": {
+        "tabCreate": "Create swap",
+        "tabAccept": "Inspect / accept offer",
+        "zeroFeeBadge": "0% fee · Trustless native swap",
+        "flowTitle": "Swap mode",
+        "flowHint": "Choose Direct V1 to execute an immediate atomic swap between two accounts in your wallet, or Subintent V2 to sign a shareable pre-authorization offer.",
+        "flowDirectTitle": "Swap between your accounts (1 tx)",
+        "flowDirectDesc": "Swap instantly between two accounts in your own wallet in a single atomic transaction.",
+        "flowSubintentTitle": "Shareable P2P offer (Subintent V2)",
+        "flowSubintentDesc": "Sign a 0-gas offer with expiration and share the swap link with a friend.",
+        "makerAccount": "Source account (Maker)",
+        "counterpartyAccount": "Destination account (your accounts)",
+        "accountPlaceholder": "account_rdx1… or account_tdx_2_1…",
+        "expirationLabel": "Offer expiration",
+        "assetsTitle": "Swap terms",
+        "assetsHint": "Both sides settle atomically: if either side does not deliver the exact resource, the entire transaction aborts.",
+        "youGive": "You give",
+        "youGiveHint": "Choose which token(s) or NFT(s) leave your account and the exact amount you offer.",
+        "youReceive": "You receive",
+        "youReceiveHint": "Choose which token(s) or NFT(s) and the exact amount you must receive in return.",
+        "kindFungible": "Token",
+        "kindNft": "NFT",
+        "resourceLabel": "Resource address",
+        "resourcePlaceholder": "resource_rdx1… or resource_tdx_2_1…",
+        "amountLabel": "Amount",
+        "maxShort": "Max",
+        "insufficientBalanceError": "Insufficient balance (available: {max}).",
+        "invalidAmountError": "Enter a valid amount greater than 0.",
+        "nftIdsLabel": "NFT local IDs (comma separated)",
+        "executeDirectTitle": "Simulate & execute swap",
+        "executeDirectHint": "Preview the exact balance changes before sending to your Radix Wallet.",
+        "sendDirectButton": "Execute atomic swap",
+        "fillAllFields": "Complete both accounts, resources and amounts/IDs to build the swap.",
+        "signSubintentTitle": "Sign pre-authorization (0 gas)",
+        "signSubintentHint": "Your wallet signs a Subintent without spending fees. Share the generated link with your counterparty.",
+        "signSubintentButton": "Sign Subintent offer",
+        "offerReadyTitle": "Signed OTC offer ready to share",
+        "copyShareLink": "Copy offer link",
+        "subintentHashLabel": "Subintent hash",
+        "acceptTitle": "Inspect or settle a Subintent offer",
+        "acceptHint": "Paste an offer link or code to verify the exact terms and generate the V2 settlement manifest.",
+        "acceptPlaceholder": "Paste offer link (?offer=…) or base64url code...",
+        "invalidOfferCode": "Invalid or corrupted offer code.",
+        "makerLabel": "Maker",
+        "takerReceives": "You receive",
+        "takerPays": "You pay",
+        "takerAccount": "Your account to accept (Taker)",
+        "v2SettlementNote": "Radix Wallet mobile does not yet support settling an external Subintent in 1 click via sendTransaction (V1 only). You can verify the exact terms here, sign your side, or copy the V2 settlement bundle for a V2 notary / CLI.",
+        "notWithdrawableError": "This resource has a restricted withdrawer role and cannot be freely withdrawn from an account.",
+        "offerStatusActive": "Active offer",
+        "offerStatusExpired": "Expired offer",
+        "offerStatusCommitted": "Settled offer",
+        "expiresAtLabel": "Expires at",
+        "networkLabel": "Network",
+        "acceptSummaryTitle": "OTC offer summary",
+        "acceptSummaryHint": "Review exactly what you will receive and what you will pay before accepting.",
+        "signTakerSubintentButton": "Accept & execute swap",
+        "settlingStatus": "Compiling & submitting Transaction V2 to the network...",
+        "takerSignedNotice": "Atomic swap executed and committed on-ledger!",
+        "copySettlementBundle": "Copy V2 bundle (JSON)",
+        "addResource": "Add more resources",
+        "removeResource": "Remove resource",
+        "messageLabel": "Optional message",
+        "messagePlaceholder": "e.g. Agreed swap for NFT #1...",
+        "offerMessageLabel": "Maker message",
+        "customExpiryPlaceholder": "Minutes...",
+        "loadingNfts": "Loading collection NFTs...",
+        "emptyNftCollectionHint": "This collection has 0 minted NFTs on-ledger; you can type an ID manually if needed."
+      }
   }
 }

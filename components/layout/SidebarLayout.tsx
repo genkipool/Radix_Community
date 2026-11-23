@@ -81,6 +81,7 @@ export default function SidebarLayout({
             {/* Desktop only: internal scroll + sticky. The sidebar is hidden
                 entirely on mobile (the <aside> above is `hidden md:flex`). */}
             <div
+                data-sidebar-scroll="true"
                 className={`flex flex-col overflow-y-auto md:sticky md:top-${heightOffset / 4}`}
                 style={{ height: `calc(100vh - ${heightOffset}px)`, scrollbarWidth: 'none' }}
             >

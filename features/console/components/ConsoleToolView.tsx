@@ -83,11 +83,17 @@ import SignDocumentTool from './tools/SignDocumentTool';
 import EncryptDocumentTool from './tools/EncryptDocumentTool';
 import ChatTool from './tools/ChatTool';
 import AddressBookTool from './tools/AddressBookTool';
+import LsuInfoTool from './tools/LsuInfoTool';
+import CryptoCompareTool from './tools/CryptoCompareTool';
+import AccountMigrateTool from './tools/AccountMigrateTool';
+import AccountCleanupTool from './tools/AccountCleanupTool';
+import AtomicSwapTool from './tools/AtomicSwapTool';
 
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
   staking: StakingTool,
   'validator-info': ValidatorInfoTool,
+  'lsu-info': LsuInfoTool,
   'validator-registration': ValidatorRegistrationTool,
   'validator-profile': ValidatorProfileTool,
   'validator-staking': ValidatorStakingTool,
@@ -102,6 +108,9 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'pool-dex-add': PoolDexAddTool,
   'pool-profile': PoolProfileTool,
   'account-deposits': AccountDepositsTool,
+  'account-migrate': AccountMigrateTool,
+  'account-cleanup': AccountCleanupTool,
+  'atomic-swap': AtomicSwapTool,
   'locker-recover': LockerRecoverTool,
   'pool-manage': PoolManageTool,
   'resource-holders': ResourceHoldersTool,
@@ -117,6 +126,7 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'address-utils': AddressUtilsTool,
   'account-security': AccountSecurityTool,
   'address-book': AddressBookTool,
+  'crypto-compare': CryptoCompareTool,
   faucet: FaucetTool,
   'wallet-playground': WalletPlaygroundTool,
   'deploy-package': DeployPackageTool,
@@ -147,7 +157,7 @@ export default function ConsoleToolView({ slug, dictionary }: ConsoleToolViewPro
   const content = <Tool t={t} />;
 
   return (
-    <div className={`${meta.wide ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-10 py-10 space-y-8`}>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-10 space-y-8">
       <div>
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--color-text-main)' }}>

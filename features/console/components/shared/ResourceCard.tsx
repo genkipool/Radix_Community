@@ -37,7 +37,7 @@ export function ResourceCard({
       className={`group flex items-center justify-start rounded-xl border text-left transition-all duration-150 ${
         disabled 
           ? 'opacity-50 cursor-not-allowed' 
-          : 'cursor-pointer hover:opacity-90 hover:shadow-sm active:scale-95'
+          : 'cursor-pointer hover:opacity-90 hover:shadow-sm'
       }`}
       style={{
         background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',

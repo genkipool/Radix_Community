@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Check, ExternalLink, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Check, ExternalLink, Loader2, X } from 'lucide-react';
 
 import { useLanguage } from '@/context/LanguageContext';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
@@ -40,6 +40,13 @@ interface BatchRunnerProps {
   leading?: ReactNode;
   /** Called when a batch commits, with what the wallet returned. */
   onSent?: (index: number, result: ConsoleTxResult) => void;
+  /** Optional confirmation modal shown before sending (e.g. risky irreversible actions). */
+  confirmBeforeSend?: {
+    title: string;
+    message: string;
+    confirmLabel: string;
+    cancelLabel: string;
+  };
 }
 
 /**
@@ -48,7 +55,7 @@ interface BatchRunnerProps {
  * batch is in flight; a sent batch is marked with its transaction and cannot
  * be sent twice by accident.
  */
-export function BatchRunner({ t, batches, resetKey, blockedReason, note, sendLabel, leading, onSent }: BatchRunnerProps) {
+export function BatchRunner({ t, batches, resetKey, blockedReason, note, sendLabel, leading, onSent, confirmBeforeSend }: BatchRunnerProps) {
   const labels = t.batches;
   const { language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
@@ -57,11 +64,14 @@ export function BatchRunner({ t, batches, resetKey, blockedReason, note, sendLab
   const [statuses, setStatuses] = useState<Record<string, BatchStatus>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [previewed, setPreviewed] = useState<number | null>(null);
+  const [pendingConfirmIndex, setPendingConfirmIndex] = useState<number | null>(null);
 
   const keyOf = (i: number) => `${resetKey}:${i}`;
   const sentCount = batches.filter((_, i) => statuses[keyOf(i)]?.state === 'sent').length;
+  const errorMessages = t.common.errors as Record<string, string>;
+  const translatedError = error ? (errorMessages[error] ?? error) : null;
 
-  const send = async (i: number) => {
+  const executeSend = async (i: number) => {
     setBusy(i);
     const result = await sendTransaction(batches[i].manifest);
     setStatuses((prev) => ({
@@ -74,6 +84,68 @@ export function BatchRunner({ t, batches, resetKey, blockedReason, note, sendLab
     setBusy(null);
     if (result) onSent?.(i, result);
   };
+
+  const send = (i: number) => {
+    if (confirmBeforeSend) {
+      setPendingConfirmIndex(i);
+      return;
+    }
+    void executeSend(i);
+  };
+
+  const confirmModal = pendingConfirmIndex !== null && confirmBeforeSend ? (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      onClick={() => setPendingConfirmIndex(null)}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl"
+        style={{ background: 'var(--color-card-bg)', borderColor: 'var(--color-card-border)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className="size-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'color-mix(in srgb, var(--color-danger) 14%, transparent)', color: 'var(--color-danger)' }}
+          >
+            <AlertTriangle className="size-5" />
+          </span>
+          <div className="space-y-1.5 min-w-0">
+            <h3 className="text-sm font-black" style={{ color: 'var(--color-text-main)' }}>
+              {confirmBeforeSend.title}
+            </h3>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              {confirmBeforeSend.message}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2.5 pt-2">
+          <button
+            type="button"
+            onClick={() => setPendingConfirmIndex(null)}
+            className="px-4 py-2 rounded-xl border text-xs font-bold cursor-pointer hover:opacity-80"
+            style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+          >
+            {confirmBeforeSend.cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const idx = pendingConfirmIndex;
+              setPendingConfirmIndex(null);
+              void executeSend(idx);
+            }}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer hover:opacity-90"
+            style={{ background: 'var(--color-danger)' }}
+          >
+            {confirmBeforeSend.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   const simulate = (i: number) => {
     setPreviewed(i);
@@ -114,28 +186,32 @@ export function BatchRunner({ t, batches, resetKey, blockedReason, note, sendLab
           </a>
         )}
         <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
-        {error && !isSending && (
+        {translatedError && !isSending && (
           <p role="alert" className="text-xs" style={{ color: 'var(--color-danger)' }}>
-            {labels.lastError.replace('{error}', error)}
+            {labels.lastError.replace('{error}', translatedError)}
           </p>
         )}
+        {confirmModal}
       </div>
     );
   }
 
   if (batches.length === 0) {
     return (
-      <TxActions
-        t={t}
-        onSend={() => {}}
-        onSimulate={() => {}}
-        sendDisabled
-        simulateDisabled
-        sendLabel={sendLabel ?? labels.send}
-        sendingLabel={t.common.sending}
-        blockedReason={blockedReason}
-        leading={leading}
-      />
+      <div className="space-y-4">
+        <CollapsibleManifest manifest="" showLabel={labels.showManifest} hideLabel={labels.hideManifest} copyLabel={t.common.copy} />
+        <TxActions
+          t={t}
+          onSend={() => {}}
+          onSimulate={() => {}}
+          sendDisabled
+          simulateDisabled
+          sendLabel={sendLabel ?? labels.send}
+          sendingLabel={t.common.sending}
+          blockedReason={blockedReason}
+          leading={leading}
+        />
+      </div>
     );
   }
 
@@ -215,11 +291,12 @@ export function BatchRunner({ t, batches, resetKey, blockedReason, note, sendLab
           );
         })}
       </ol>
-      {error && !isSending && (
+      {translatedError && !isSending && (
         <p role="alert" className="text-xs" style={{ color: 'var(--color-danger)' }}>
-          {labels.lastError.replace('{error}', error)}
+          {labels.lastError.replace('{error}', translatedError)}
         </p>
       )}
+      {confirmModal}
     </div>
   );
 }

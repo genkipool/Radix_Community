@@ -62,6 +62,42 @@ describe('mapHoldings', () => {
     expect(holdings.nonFungibles[0].ids).toEqual([]);
   });
 
+  it('preserves full 18-decimal precision without IEEE-754 float rounding', () => {
+    const exact = '17.099759466766969894';
+    const holdings = mapHoldings({
+      fungible_resources: {
+        items: [
+          {
+            resource_address: RESOURCE,
+            explicit_metadata: metadata,
+            vaults: {
+              items: [{ vault_address: 'internal_vault_rdx1exact', amount: exact }],
+            },
+          },
+        ],
+      },
+    });
+    expect(holdings.fungibles[0].amount).toBe(exact);
+
+    const summed = mapHoldings({
+      fungible_resources: {
+        items: [
+          {
+            resource_address: RESOURCE,
+            explicit_metadata: metadata,
+            vaults: {
+              items: [
+                { vault_address: 'internal_vault_rdx1a', amount: '17.099759466766969890' },
+                { vault_address: 'internal_vault_rdx1b', amount: '0.000000000000000004' },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(summed.fungibles[0].amount).toBe(exact);
+  });
+
   it('handles empty and missing resource lists', () => {
     expect(mapHoldings({})).toEqual({ fungibles: [], nonFungibles: [] });
     expect(mapHoldings({ fungible_resources: { items: [] } }).fungibles).toEqual([]);
