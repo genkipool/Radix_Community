@@ -189,7 +189,6 @@ export function WalletSectionsMenu({
   return (
     <MoreMenuButton
       ariaLabel={navT.wallet_sections_menu ?? ''}
-      hasActiveIndicator={hasCustomization}
       customPanel
     >
       {(close) => (

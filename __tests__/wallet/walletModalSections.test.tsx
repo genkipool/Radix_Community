@@ -96,6 +96,7 @@ describe('useWalletModalSections & WalletSectionsMenu', () => {
 
     const trigger = screen.getByRole('button', { name: navT.wallet_sections_menu });
     expect(trigger).toHaveClass('min-w-11', 'min-h-11');
+    expect(trigger.querySelector('span.rounded-full')).toBeNull();
     expect(screen.queryByText(navT.wallet_sections_title)).toBeNull();
 
     fireEvent.click(trigger);
