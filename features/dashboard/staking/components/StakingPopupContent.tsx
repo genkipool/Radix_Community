@@ -9,6 +9,7 @@ import { useStakingTransaction } from '../hooks/useStakingTransaction';
 import { StakingTab, StakingAction } from '../types/staking-operations.types';
 import { WalletAccount } from '@/features/wallet/types/wallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { minRadixDecimal } from '@/features/wallet/lib/radix-decimal';
 import { Loader2 } from 'lucide-react';
 import { TranslationsT } from '@/features/dashboard/types';
 import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
@@ -150,10 +151,16 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
         setTransactingAction(actionToPerform);
 
-        let txAmount = amount;
+        let txAmount: number | string = amount;
         if (actionToPerform === 'Unstake') {
-            if (amount === stakedXrd) {
-                txAmount = isOwnerTab ? (stakingData.ownerLockedStakeXrd / xrdPerLsu) : stakingData.lsuBalance; // Use exact LSU balance if max
+            if (isOwnerTab) {
+                txAmount = amount / xrdPerLsu;
+            } else if (stakingData.lsuBalanceRaw && Math.abs(amount - stakedXrd) <= 1e-6) {
+                txAmount = stakingData.lsuBalanceRaw;
+            } else if (stakingData.lsuBalanceRaw) {
+                txAmount = minRadixDecimal(amount / xrdPerLsu, stakingData.lsuBalanceRaw);
+            } else if (amount === stakedXrd) {
+                txAmount = stakingData.lsuBalance;
             } else {
                 txAmount = amount / xrdPerLsu;
             }
@@ -167,7 +174,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
             txAmount,
             validator.lsuResource,
             activeTab === 'delegator' ? stakingData.claimNftIds : [],
-            validator.claimTokenResourceAddress,
+            stakingData.claimNftResourceAddress || validator.claimTokenResourceAddress,
             validator.ownerBadge
         );
 

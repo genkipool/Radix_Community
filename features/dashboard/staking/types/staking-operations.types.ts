@@ -13,12 +13,16 @@ export interface AccountStakingData {
     xrdBalance: number;
     /** Current staked balance (amount of LSU owned) */
     lsuBalance: number;
+    /** Exact 18-decimal LSU balance string from the ledger, when available */
+    lsuBalanceRaw?: string;
     /** Current unstaking balance (XRD in unlocking period) */
     pendingUnstake: number;
     /** Current claimable XRD balance */
     claimableXrd: number;
-    /** Local IDs for the standard claim NFTs */
+    /** Local IDs for the standard claim NFTs that have matured and can be claimed now */
     claimNftIds: string[];
+    /** Actual claim NFT resource address held by the account, when available */
+    claimNftResourceAddress?: string;
     /** Local IDs for the owner claim NFTs (if validator tab is active) */
     ownerClaimNftIds: string[];
     /** Tooltip with epoch unlock info for pending unstake */

@@ -285,7 +285,7 @@ export const AccountValidatorStakeAction = ({
         let txAmount = amount;
         if (actionToPerform === 'Unstake') {
             if (ownerMode) {
-                txAmount = amount;
+                txAmount = amount / xrdPerLsu;
             } else if (amount === stakedXrd) {
                 txAmount = lsuBalance;
             } else {

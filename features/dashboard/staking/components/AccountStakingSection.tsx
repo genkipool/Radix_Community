@@ -30,6 +30,8 @@ import type { StakingAction } from '../types/staking-operations.types';
 import type { BatchStakeItem, BatchUnstakeItem, BatchClaimItem, MixedBatchItem } from '@/features/wallet/lib/manifest-builders';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
+import { minRadixDecimal, splitRadixDecimal, toRadixDecimal } from '@/features/wallet/lib/radix-decimal';
 import { stakingErrorMessage } from '@/features/dashboard/staking/lib/stakingErrorMessage';
 
 type StakingTranslations = Partial<TranslationsT['dashboard']['transactions']> & {
@@ -244,8 +246,11 @@ export function AccountStakingSection({
         }
 
         const amountPerValidator = globalAmount / count;
+        const exactStakeShares =
+            actionToPerform === 'Stake' ? splitRadixDecimal(globalAmountStr, count) : [];
 
-        for (const vAddr of nonOwnerAddresses) {
+        for (let idx = 0; idx < nonOwnerAddresses.length; idx++) {
+            const vAddr = nonOwnerAddresses[idx];
             const row = displayRows.find(r => r.validatorAddress === vAddr);
             const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
 
@@ -254,17 +259,25 @@ export function AccountStakingSection({
             if (actionToPerform === 'Stake') {
                 items.push({
                     validatorAddress: vAddr,
-                    amountXrd: amountPerValidator
+                    amountXrd: exactStakeShares[idx]
                 } as any);
             } else if (actionToPerform === 'Unstake') {
                 const xrdPerLsu = valInfo.lsu2xrdFactor || 1;
                 const maxStaked = row.xrdInStake;
-                if (amountPerValidator > maxStaked) {
+                if (amountPerValidator > maxStaked + 1e-6) {
                     setActionError((accT?.insufficient_balance_validator || 'Insufficient balance in validator {address}').replace('{address}', `${vAddr.slice(0, 8)}...`));
                     setTransactingAction(null);
                     return;
                 }
-                const lsuAmount = amountPerValidator / xrdPerLsu;
+                const lsuToken = lsuTokens.find(
+                    t => t.validatorAddress === vAddr || t.address === valInfo.lsuResource
+                );
+                const computedLsu = amountPerValidator / xrdPerLsu;
+                const lsuAmount = lsuToken?.amount
+                    ? (Math.abs(amountPerValidator - maxStaked) <= 1e-6
+                        ? toRadixDecimal(lsuToken.amount)
+                        : minRadixDecimal(computedLsu, lsuToken.amount))
+                    : toRadixDecimal(computedLsu);
 
                 items.push({
                     validatorAddress: vAddr,
@@ -278,7 +291,7 @@ export function AccountStakingSection({
                     items.push({
                         validatorAddress: vAddr,
                         claimNftLocalIds: nfts,
-                        claimNftResourceAddress: valInfo.claimTokenResourceAddress
+                        claimNftResourceAddress: claimableNfts[vAddr]?.resource || valInfo.claimTokenResourceAddress
                     } as any);
                 }
             }
@@ -306,6 +319,9 @@ export function AccountStakingSection({
         setTransactingAction('Stake'); // genérico para spinner
 
         const items: MixedBatchItem[] = [];
+        const ownerBadgeResourceAddress = activeNetworkId
+            ? RADIX_TOKEN_ADDRESSES[activeNetworkId]?.OWNER_BADGE
+            : undefined;
 
         for (const vAddr of Object.keys(validatorSelections)) {
             const selections = validatorSelections[vAddr];
@@ -313,47 +329,92 @@ export function AccountStakingSection({
             const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
             if (!row || !valInfo || !selections) continue;
 
+            const isOwnerMode =
+                ownerModeAddresses.has(vAddr) &&
+                !!valInfo.ownerBadge &&
+                !!ownerBadgeResourceAddress;
+
             // Procesar Stake
             if (selections.stake && parseFloat(selections.stake) > 0) {
-                items.push({
-                    action: 'Stake',
-                    validatorAddress: vAddr,
-                    amountXrd: parseFloat(selections.stake)
-                } as any);
+                if (isOwnerMode) {
+                    items.push({
+                        action: 'OwnerStake',
+                        validatorAddress: vAddr,
+                        amountXrd: toRadixDecimal(selections.stake),
+                        lsuResourceAddress: valInfo.lsuResource,
+                        ownerBadgeId: valInfo.ownerBadge!,
+                        ownerBadgeResourceAddress: ownerBadgeResourceAddress!,
+                    });
+                } else {
+                    items.push({
+                        action: 'Stake',
+                        validatorAddress: vAddr,
+                        amountXrd: toRadixDecimal(selections.stake),
+                    });
+                }
             }
 
             // Procesar Unstake
             if (selections.unstake && parseFloat(selections.unstake) > 0) {
                 const unstakeAmt = parseFloat(selections.unstake);
                 const xrdPerLsu = valInfo.lsu2xrdFactor || 1;
-                const maxStaked = row.xrdInStake;
 
-                if (unstakeAmt > maxStaked) {
-                    setActionError((accT?.insufficient_balance_validator_unstake || 'Insufficient balance in validator {address} for Unstake.').replace('{address}', `${vAddr.slice(0, 8)}...`));
-                    setTransactingAction(null);
-                    return;
+                if (isOwnerMode) {
+                    items.push({
+                        action: 'OwnerUnstake',
+                        validatorAddress: vAddr,
+                        amountLsu: toRadixDecimal(unstakeAmt / xrdPerLsu),
+                        ownerBadgeId: valInfo.ownerBadge!,
+                        ownerBadgeResourceAddress: ownerBadgeResourceAddress!,
+                    });
+                } else {
+                    const maxStaked = row.xrdInStake;
+                    if (unstakeAmt > maxStaked + 1e-6) {
+                        setActionError((accT?.insufficient_balance_validator_unstake || 'Insufficient balance in validator {address} for Unstake.').replace('{address}', `${vAddr.slice(0, 8)}...`));
+                        setTransactingAction(null);
+                        return;
+                    }
+
+                    const lsuToken = lsuTokens.find(
+                        t => t.validatorAddress === vAddr || t.address === valInfo.lsuResource
+                    );
+                    const computedLsu = unstakeAmt / xrdPerLsu;
+                    const lsuAmount = lsuToken?.amount
+                        ? (Math.abs(unstakeAmt - maxStaked) <= 1e-6
+                            ? toRadixDecimal(lsuToken.amount)
+                            : minRadixDecimal(computedLsu, lsuToken.amount))
+                        : toRadixDecimal(computedLsu);
+
+                    items.push({
+                        action: 'Unstake',
+                        validatorAddress: vAddr,
+                        amountLsu: lsuAmount,
+                        lsuResourceAddress: valInfo.lsuResource,
+                    });
                 }
-
-                const lsuAmount = unstakeAmt / xrdPerLsu;
-                items.push({
-                    action: 'Unstake',
-                    validatorAddress: vAddr,
-                    amountLsu: lsuAmount,
-                    lsuResourceAddress: valInfo.lsuResource
-                } as any);
             }
 
             // Procesar Claim
             if (selections.claim) {
-                // Only the NFTs that have matured: one still unbonding aborts the claim.
-                const nfts = claimableNfts[vAddr]?.ids ?? [];
-                if (nfts.length > 0) {
+                if (isOwnerMode) {
                     items.push({
-                        action: 'Claim',
+                        action: 'OwnerClaim',
                         validatorAddress: vAddr,
-                        claimNftLocalIds: nfts,
-                        claimNftResourceAddress: valInfo.claimTokenResourceAddress
-                    } as any);
+                        ownerBadgeId: valInfo.ownerBadge!,
+                        ownerBadgeResourceAddress: ownerBadgeResourceAddress!,
+                    });
+                } else {
+                    // Only the NFTs that have matured: one still unbonding aborts the claim.
+                    const nfts = claimableNfts[vAddr]?.ids ?? [];
+                    const claimRes = claimableNfts[vAddr]?.resource || valInfo.claimTokenResourceAddress;
+                    if (nfts.length > 0 && claimRes) {
+                        items.push({
+                            action: 'Claim',
+                            validatorAddress: vAddr,
+                            claimNftLocalIds: nfts,
+                            claimNftResourceAddress: claimRes,
+                        });
+                    }
                 }
             }
         }
@@ -425,7 +486,7 @@ export function AccountStakingSection({
         if (!row) return false;
         return (sel.stake && parseFloat(sel.stake) > 0) ||
                (sel.unstake && parseFloat(sel.unstake) > 0) ||
-               (sel.claim && row.xrdInClaim > 0);
+               (sel.claim && (row.xrdInClaim > 0 || ownerModeAddresses.has(k)));
     });
 
     /** Mixed-operations summary, reused inline or as the sticky side column. */
