@@ -60,7 +60,7 @@ interface UnderlyingTokensTabProps {
  * card and the console (it copes with both Gateway aggregation levels); any
  * other entity falls back to its fungible vaults, summed per resource.
  */
-function extractPoolReserves(poolData: GatewayEntityDetails): PoolReserve[] {
+export function extractPoolReserves(poolData: GatewayEntityDetails): PoolReserve[] {
     const pool = parsePoolState(poolData);
     if (pool) return pool.resources.map((resource) => ({ resource_address: resource, amount: pool.reserves[resource] ?? '0' }));
 
@@ -218,15 +218,34 @@ export function UnderlyingTokensTab({
     }
 
     const reserves = extractPoolReserves(poolData as GatewayEntityDetails);
+    const share = lpTotalSupply > 0 ? userBalance / lpTotalSupply : 0;
     // What this account has put in and taken out, from the pool's history.
     const flows = holder ? contributions?.byAccount[holder] : undefined;
+    const redeemableByRes = (resource: string) =>
+        share * (parseFloat(reserves.find((r) => r.resource_address === resource)?.amount ?? '0') || 0);
+    const redeemableLine = reserves.length > 0
+        ? reserves
+              .map((r) => `${fmtAmount(redeemableByRes(r.resource_address), locale, 6)} ${names[r.resource_address] ?? '?'}`)
+              .join(' · ')
+        : '—';
     const flowLine = (side: 'putIn' | 'takenOut') =>
         contributions
             ? reserves
                   .map((r) => `${fmtAmount(Number(flows?.[side][r.resource_address] ?? 0), locale, 6)} ${names[r.resource_address] ?? '?'}`)
                   .join(' · ')
             : '…';
-    const share = lpTotalSupply > 0 ? userBalance / lpTotalSupply : 0;
+    const resultEntries = contributions
+        ? reserves.map((r) => {
+              const putIn = Number(flows?.putIn[r.resource_address] ?? 0);
+              const takenOut = Number(flows?.takenOut[r.resource_address] ?? 0);
+              const net = redeemableByRes(r.resource_address) + takenOut - putIn;
+              return {
+                  resource: r.resource_address,
+                  symbol: names[r.resource_address] ?? '?',
+                  net: Math.abs(net) < 1e-12 ? 0 : net,
+              };
+          })
+        : null;
     const poolName = (poolData as GatewayEntityDetails).metadata?.items?.find((m) => m.key === 'name')?.value?.typed?.value;
     const copyTitle = tt?.copy_address || 'Copy address';
 
@@ -240,18 +259,22 @@ export function UnderlyingTokensTab({
                 </h4>
                 <dl className="flex flex-1 flex-col [&>div]:flex-1">
                     <SummaryInlineRow label={accT?.pool_tab || 'Pool'}>
-                        <Link
-                            href={dashboardRoutes.entity(locale, resolvedPoolAddress, { network })}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs font-semibold text-[var(--color-primary)] hover:underline truncate"
-                            title={accT?.open_pool || 'Open the pool card'}
-                        >
-                            {poolName || truncateAddress(resolvedPoolAddress, 10, 6)}
-                        </Link>
-                        <CopyButton value={resolvedPoolAddress} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
+                        <div className="flex flex-col items-end min-w-0">
+                            <Link
+                                href={dashboardRoutes.entity(locale, resolvedPoolAddress, { network })}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs font-semibold text-[var(--color-primary)] hover:underline truncate max-w-full"
+                                title={accT?.open_pool || 'Open the pool card'}
+                            >
+                                {poolName || truncateAddress(resolvedPoolAddress, 10, 6)}
+                            </Link>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[var(--color-text-muted)]">
+                                <span>{truncateAddress(resolvedPoolAddress, 10, 6)}</span>
+                                <CopyButton value={resolvedPoolAddress} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
+                            </span>
+                        </div>
                     </SummaryInlineRow>
                     <SummaryInlineRow label={accT?.contributed_tokens_lp_units || 'Your units'} value={`${fmtAmount(userBalance, locale, 6)} ${lpName}`} mono />
-                    <SummaryInlineRow label={accT?.contributed_tokens_total_supply || 'Units in circulation'} value={fmtAmount(lpTotalSupply, locale, 6)} mono />
                     <SummaryInlineRow label={accT?.contributed_tokens_pool_share || 'Share'}>
                         <span className="flex items-center gap-2">
                             <span className="h-1.5 w-20 rounded-full bg-[var(--color-card-border)] overflow-hidden" aria-hidden>
@@ -262,10 +285,41 @@ export function UnderlyingTokensTab({
                             </span>
                         </span>
                     </SummaryInlineRow>
+                    <SummaryInlineRow
+                        label={accT?.contributed_tokens_redeemable || 'What you would receive on redeem'}
+                        value={redeemableLine}
+                        mono
+                    />
                     {holder && (
                         <>
                             <SummaryInlineRow label={accT?.contributed_tokens_put_in || 'Put in'} value={flowLine('putIn')} mono />
                             <SummaryInlineRow label={accT?.contributed_tokens_taken_out || 'Taken out'} value={flowLine('takenOut')} mono />
+                            <SummaryInlineRow label={accT?.contributed_tokens_result || 'Result'}>
+                                {resultEntries ? (
+                                    <span className="text-xs font-mono font-semibold tabular-nums flex flex-wrap justify-end gap-x-1.5">
+                                        {resultEntries.map((entry, idx) => (
+                                            <span key={entry.resource} className="inline-flex items-center gap-1">
+                                                {idx > 0 && <span className="text-[var(--color-text-muted)]">·</span>}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            entry.net > 0
+                                                                ? 'var(--color-success)'
+                                                                : entry.net < 0
+                                                                  ? 'var(--color-danger)'
+                                                                  : 'var(--color-text-main)',
+                                                    }}
+                                                >
+                                                    {entry.net > 0 ? '+' : ''}
+                                                    {fmtAmount(entry.net, locale, 6)} {entry.symbol}
+                                                </span>
+                                            </span>
+                                        ))}
+                                    </span>
+                                ) : (
+                                    <span className="text-xs font-mono text-[var(--color-text-muted)]">…</span>
+                                )}
+                            </SummaryInlineRow>
                         </>
                     )}
                 </dl>

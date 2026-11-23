@@ -2,8 +2,11 @@
 import { SafeImage } from '@/components/ui/SafeImage';
 import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import { Pill } from '@/components/ui/Pill';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { getMetaValue } from '../utils/metadataUtils';
 import {
     PanelTabBar,
@@ -12,6 +15,8 @@ import {
     PanelConfigurationTab,
     PanelRawTab,
 } from './EntityPanelShared';
+import { HeldResourcesList } from './HeldResourcesList';
+import { extractPoolReserves } from './UnderlyingTokensTab';
 import { ResourceInlinePanelProps } from '../types/components.types';
 import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 import dynamic from 'next/dynamic';
@@ -88,7 +93,7 @@ const BASE_RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as co
 type ResourceTab = 'summary' | 'contributed_tokens' | 'metadata' | 'configuration' | 'raw';
 
 export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, network, locale, isPoolUnit, userBalance, poolAddress, holder, pastState = false }: ResourceInlinePanelProps) {
-    const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
+    const [pickedTab, setPickedTab] = useState<ResourceTab | null>(null);
 
     const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
     const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
@@ -122,17 +127,29 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
     const accT = tt?.account_summary;
 
     const resolvedPoolAddress = poolAddress || resolvePoolAddressFromEntity(details);
+    const hasPositionTab = Boolean(isPoolUnit && resolvedPoolAddress && !pastState);
+    const activeTab: ResourceTab = pickedTab ?? (hasPositionTab ? 'contributed_tokens' : 'summary');
 
-    // The pool itself opens in its own card (linked from "Contributed tokens"),
-    // so the unit's panel does not repeat it in a tab.
-    const RESOURCE_TABS: ResourceTab[] = isPoolUnit && resolvedPoolAddress && !pastState
-        ? ['summary', 'contributed_tokens', 'metadata', 'configuration', 'raw']
+    // Pool reserves for the Summary tab (shares React Query cache with UnderlyingTokensTab).
+    const { data: poolEntity } = useQuery({
+        queryKey: entityKeys.full(resolvedPoolAddress ?? '', ledger),
+        queryFn: () => apiFetchEntityDetails(resolvedPoolAddress!, ledger),
+        staleTime: 5 * 60_000,
+        gcTime: 10 * 60_000,
+        retry: 1,
+        enabled: Boolean(isPoolUnit && resolvedPoolAddress && resolvedPoolAddress.startsWith('pool_') && activeTab === 'summary'),
+    });
+    const poolReserves = poolEntity ? extractPoolReserves(poolEntity as GatewayEntityDetails) : [];
+
+    // Pool units open on "Your position" first, followed by Summary (with pool reserves).
+    const RESOURCE_TABS: ResourceTab[] = hasPositionTab
+        ? ['contributed_tokens', 'summary', 'metadata', 'configuration', 'raw']
         : [...BASE_RESOURCE_TABS];
 
     const tabs = RESOURCE_TABS.map(key => ({
         key,
         label: key === 'contributed_tokens'
-            ? (accT?.contributed_tokens || 'Contributed Tokens')
+            ? (accT?.contributed_tokens_position || 'Your position')
             : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
         tooltip: key === 'contributed_tokens'
             ? tt?.tab_tokens_tooltip
@@ -144,7 +161,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
             className="block w-full text-left border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
             onClick={e => e.stopPropagation()}
         >
-            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setPickedTab} />
             <div className="px-5 py-4">
                 {loading ? (
                     <PanelLoadingState tt={tt} />
@@ -214,6 +231,19 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                             {behaviors.map((b) => <li key={b} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="size-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}
                                         </ul>
                                     </>
+                                )}
+                                {isPoolUnit && poolReserves.length > 0 && (
+                                    <div className="border-t border-[var(--color-card-border)] mt-4 pt-3">
+                                        <HeldResourcesList
+                                            network={ledger}
+                                            title={tt?.summary_pool_resources || 'Pool resources'}
+                                            items={poolReserves}
+                                            locale={locale || 'en-US'}
+                                            copiedAddress={copiedAddress}
+                                            onCopy={onCopy}
+                                            copyTitle={tt?.copy_address || 'Copy address'}
+                                        />
+                                    </div>
                                 )}
                             </div>
                         )}
