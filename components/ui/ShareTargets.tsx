@@ -165,7 +165,7 @@ export function ShareTargets({
    * the pointer rests on it. Pointer rows only: a touch layout offers the QR
    * from its menu instead.
    */
-  qr?: { label: string; hint?: string };
+  qr?: { label: string; hint?: string; size?: number };
   size?: ShareTargetsSize;
   className?: string;
 }) {
@@ -211,7 +211,7 @@ export function ShareTargets({
         <TelegramIcon className={icon} />
       </a>
       {qr && (
-        <QrPopover url={url} label={qr.label} hint={qr.hint} unstyled className={style} iconClassName={icon} />
+        <QrPopover url={url} label={qr.label} hint={qr.hint} size={qr.size} unstyled className={style} iconClassName={icon} />
       )}
       {copyLabel && (
         <button

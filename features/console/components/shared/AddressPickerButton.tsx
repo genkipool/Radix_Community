@@ -213,7 +213,10 @@ export function AddressPickerButton({
     },
   });
   // The site's shared validator set: already loaded if the staking list or the explorer was opened.
-  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(activeNetwork, load && accepts('validator'));
+  const { data: validatorSet, isFetching: validatorsLoading } = useValidatorList(
+    activeNetwork,
+    load && (accepts('validator') || accepts('resource')),
+  );
   const validators = validatorSet?.validators;
   const ownerBadge = RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet].OWNER_BADGE;
   const myValidatorsKey = ['console-picker-owned-validators', activeNetwork, accountAddresses.join(',')];
@@ -251,20 +254,31 @@ export function AddressPickerButton({
     accounts.forEach((a) => add({ address: a.address, label: a.label || '', source: 'wallet', category: 'account' }));
   }
   if (accepts('resource')) {
-    holdings?.fungibles.filter((f) => !locked.has(f.resourceAddress)).forEach((f) =>
+    holdings?.fungibles.filter((f) => !locked.has(f.resourceAddress)).forEach((f) => {
+      const valByLsu = !f.iconUrl ? validators?.find((v) => v.lsuResource === f.resourceAddress) : undefined;
       add({
         address: f.resourceAddress,
-        label: f.name || f.symbol || '',
+        label: f.name || f.symbol || valByLsu?.name || '',
         detail: `${fmtAmount(f.amount)}${f.symbol ? ` ${f.symbol}` : ''}`,
-        iconUrl: f.iconUrl,
+        iconUrl: f.iconUrl || valByLsu?.iconUrl,
         source: 'wallet',
         category: 'resource',
         isPoolUnit: !!f.pool,
-      }),
-    );
-    holdings?.nonFungibles.filter((n) => !locked.has(n.resourceAddress)).forEach((n) =>
-      add({ address: n.resourceAddress, label: n.name || '', detail: `${n.ids.length} NFT`, iconUrl: n.iconUrl, source: 'wallet', category: 'resource' }),
-    );
+      });
+    });
+    holdings?.nonFungibles.filter((n) => !locked.has(n.resourceAddress)).forEach((n) => {
+      const valByClaim = !n.iconUrl
+        ? validators?.find((v) => v.claimTokenResourceAddress === n.resourceAddress)
+        : undefined;
+      add({
+        address: n.resourceAddress,
+        label: n.name || valByClaim?.name || '',
+        detail: `${n.ids.length} NFT`,
+        iconUrl: n.iconUrl || valByClaim?.iconUrl,
+        source: 'wallet',
+        category: 'resource',
+      });
+    });
   }
   (accepts('validator') ? myValidators ?? [] : []).forEach((mv) => {
     const listed = validators?.find((v) => v.address === mv.address);
@@ -492,7 +506,7 @@ export function AddressPickerButton({
                       title={o.address}
                       icon={
                         <span className="flex size-6 items-center justify-center">
-                          {o.iconUrl ? (
+                          {o.iconUrl || o.category === 'resource' ? (
                             <SafeImage src={o.iconUrl} alt="" fallbackName={nameOf(o)} zoomable={false} className="size-6 rounded-full object-cover" />
                           ) : (
                             SOURCE_ICON[o.source]

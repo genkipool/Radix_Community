@@ -13,16 +13,18 @@ body {
 
 /* Global Scrollbar - thin & elegant */
 
-/* Standard (Firefox) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar) transparent;
+/* Standard (Firefox only — in Chromium 121+, setting scrollbar-width disables ::-webkit-scrollbar) */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar) transparent;
+  }
 }
 
-/* WebKit (Chrome, Safari, Edge) */
+/* WebKit / Blink (Chrome, Safari, Edge, Brave) */
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 3.5px;
   background-color: transparent;
   transition: background-color 0.2s;
 }

@@ -32,21 +32,27 @@ function sumVaultAmounts(item: GatewayResourceItem): string {
   return total.toFixed();
 }
 
+const XRD_ICON_URL = 'https://assets.coingecko.com/coins/images/4374/standard/Radix.png';
+const isXrdResource = (address: string) => address.includes('tknxxxxxxxxxradxrd');
+
 export function mapHoldings(details: Record<string, unknown>): AccountHoldings {
   const fungibleItems =
     ((details.fungible_resources as { items?: GatewayResourceItem[] })?.items ?? []);
   const nonFungibleItems =
     ((details.non_fungible_resources as { items?: GatewayResourceItem[] })?.items ?? []);
 
-  const fungibles: FungibleHolding[] = fungibleItems.map((item) => ({
-    resourceAddress: item.resource_address,
-    name: getMetadataString(item.explicit_metadata?.items, 'name'),
-    symbol: getMetadataString(item.explicit_metadata?.items, 'symbol'),
-    iconUrl: getMetadataString(item.explicit_metadata?.items, 'icon_url') || undefined,
-    amount: sumVaultAmounts(item),
-    vaultAddress: item.vaults?.items?.[0]?.vault_address || undefined,
-    pool: getMetadataString(item.explicit_metadata?.items, 'pool') || undefined,
-  }));
+  const fungibles: FungibleHolding[] = fungibleItems.map((item) => {
+    const isXrd = isXrdResource(item.resource_address);
+    return {
+      resourceAddress: item.resource_address,
+      name: getMetadataString(item.explicit_metadata?.items, 'name') || (isXrd ? 'Radix' : ''),
+      symbol: getMetadataString(item.explicit_metadata?.items, 'symbol') || (isXrd ? 'XRD' : ''),
+      iconUrl: getMetadataString(item.explicit_metadata?.items, 'icon_url') || (isXrd ? XRD_ICON_URL : undefined),
+      amount: sumVaultAmounts(item),
+      vaultAddress: item.vaults?.items?.[0]?.vault_address || undefined,
+      pool: getMetadataString(item.explicit_metadata?.items, 'pool') || undefined,
+    };
+  });
 
   const nonFungibles: NonFungibleHolding[] = nonFungibleItems.map((item) => ({
     resourceAddress: item.resource_address,

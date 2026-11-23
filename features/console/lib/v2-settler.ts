@@ -25,7 +25,7 @@ function loadSettlerWasm(): Promise<SettlerWasmExports> {
   if (!cachedExports) {
     cachedExports = (async () => {
       const response = await fetch('/wasm/radix_v2_settler.wasm');
-      if (!response.ok) throw new Error(`Failed to load V2 settler WASM (${response.status})`);
+      if (!response.ok) throw new Error('v2_wasm_load_failed');
       const bytes = await response.arrayBuffer();
       const { instance } = await WebAssembly.instantiate(bytes, {});
       return instance.exports as unknown as SettlerWasmExports;
@@ -75,7 +75,7 @@ export async function settleAtomicSwapV2(
     want,
     network,
   );
-  if (!rootManifest) throw new Error('Invalid swap assets for V2 settlement.');
+  if (!rootManifest) throw new Error('v2_invalid_assets');
 
   // 1. Fetch current ledger epoch from Gateway
   const statusRes = await gatewayPost<{ ledger_state?: { epoch?: number } }>(
@@ -85,7 +85,7 @@ export async function settleAtomicSwapV2(
   );
   const currentEpoch = statusRes.ledger_state?.epoch;
   if (typeof currentEpoch !== 'number') {
-    throw new Error('Could not read current epoch from Radix Gateway.');
+    throw new Error('v2_epoch_fetch_failed');
   }
 
   // 2. Compile & notarize NotarizedTransactionV2 inside browser WASM
@@ -117,7 +117,7 @@ export async function settleAtomicSwapV2(
     error?: string;
   };
   if (!parsed.ok || !parsed.notarized_transaction_hex || !parsed.intent_hash) {
-    throw new Error(parsed.error || 'Failed to build NotarizedTransactionV2.');
+    throw new Error('v2_compile_failed');
   }
 
   // 3. Submit directly to Gateway /transaction/submit

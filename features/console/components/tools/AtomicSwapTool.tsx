@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Big from 'big.js';
 import { useSearchParams } from 'next/navigation';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeftRight, Check, Clock, Link2, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Ban, BookmarkPlus, Check, Clock, ExternalLink, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { ShareTargets } from '@/components/ui/ShareTargets';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { CARD_ENTITY_OPT_INS, gatewayPost } from '@/services/gateway/bases';
@@ -17,15 +18,26 @@ import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { useSubintentRequest } from '../../hooks/useSubintentRequest';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import {
+  type AtomicSwapOffer,
+  buildCancelSwapMoveManifest,
   buildDirectAtomicSwapManifest,
   buildMakerSubintentManifest,
   buildMakerSubintentPreviewManifest,
   buildTakerSubintentManifest,
   buildTakerV2SettlementManifest,
+  type CommittedSwapTransaction,
   decodeSwapOffer,
   encodeSwapOffer,
   EXPIRATION_PRESETS,
+  extractTakerAccountFromCommittedTx,
+  getSavedSwapOffersServerSnapshot,
+  getSavedSwapOffersSnapshot,
   normalizeSwapAssets,
+  parseSubintentIdInput,
+  reconstructOfferFromCommittedTx,
+  removeSavedSwapOffer,
+  saveSignedSwapOffer,
+  subscribeSavedSwapOffers,
   type SwapAsset,
 } from '../../lib/atomic-swap';
 import { isNonFungibleResource } from '../../lib/bulk-send';
@@ -42,9 +54,9 @@ import { ResourceCard } from '../shared/ResourceCard';
 import { SimulateResultCard } from '../shared/SimulatePanel';
 import { ToolSection } from '../shared/ToolSection';
 import { TxActions } from '../shared/TxActions';
-import { TxResultBanner } from '../shared/TxResultBanner';
+import { resolveConsoleError, TxResultBanner } from '../shared/TxResultBanner';
 
-type TabMode = 'create' | 'accept';
+type TabMode = 'create' | 'accept' | 'offers';
 type SwapFlow = 'subintent' | 'direct';
 
 interface LegDraft {
@@ -63,7 +75,10 @@ interface ResourceSummary {
   iconUrl?: string;
 }
 
+const XRD_LOGO_URL = 'https://assets.coingecko.com/coins/images/4374/standard/Radix.png';
+
 async function fetchResourceSummary(trimmed: string, network: 'mainnet' | 'stokenet'): Promise<ResourceSummary> {
+  const isXrd = trimmed.includes('tknxxxxxxxxxradxrd');
   const res = await gatewayPost<{
     items?: Array<{
       details?: { type?: string; role_assignments?: unknown };
@@ -78,9 +93,9 @@ async function fetchResourceSummary(trimmed: string, network: 'mainnet' | 'stoke
   return {
     isNft: item?.details?.type === 'NonFungibleResource',
     withdrawable: item ? isFreelyWithdrawable(item) : true,
-    name: getMetadataString(meta, 'name') || '',
-    symbol: getMetadataString(meta, 'symbol') || '',
-    iconUrl: getMetadataString(meta, 'icon_url') || undefined,
+    name: getMetadataString(meta, 'name') || (isXrd ? 'Radix' : ''),
+    symbol: getMetadataString(meta, 'symbol') || (isXrd ? 'XRD' : ''),
+    iconUrl: getMetadataString(meta, 'icon_url') || (isXrd ? XRD_LOGO_URL : undefined),
   };
 }
 
@@ -96,6 +111,35 @@ function useResourceInfo(resourceAddress: string, network: 'mainnet' | 'stokenet
     queryFn: () => fetchResourceSummary(trimmed, network),
   });
   return data ?? { isNft: heuristic, withdrawable: true, name: '', symbol: '' };
+}
+
+/** Batch-resolves `ResourceSummary` for a list of draft swap legs on the active network. */
+function useLegsResourceInfos(
+  legs: LegDraft[],
+  activeNetwork: 'mainnet' | 'stokenet',
+  expectedResourcePrefix: string,
+): ResourceSummary[] {
+  const queries = useQueries({
+    queries: legs.map((leg) => {
+      const trimmed = leg.resource.trim();
+      return {
+        queryKey: ['console', 'resource-info-v3', activeNetwork, trimmed],
+        enabled: trimmed.startsWith(expectedResourcePrefix) && trimmed.length >= 20,
+        staleTime: 5 * 60_000,
+        retry: false,
+        queryFn: () => fetchResourceSummary(trimmed, activeNetwork),
+      };
+    }),
+  });
+  return legs.map(
+    (leg, idx) =>
+      queries[idx]?.data ?? {
+        isNft: isNonFungibleResource(leg.resource.trim()),
+        withdrawable: true,
+        name: '',
+        symbol: '',
+      },
+  );
 }
 
 function parsePositiveBig(raw: string): Big | null {
@@ -353,9 +397,306 @@ function OfferAssetBox({
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2 pt-1.5 border-t text-[11px] font-mono" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-muted)' }}>
-        <span className="truncate">{truncateAddress(asset.resourceAddress, 14, 10)}</span>
-        <CopyButton value={asset.resourceAddress} size="xs" variant="ghost" />
+      <div className="flex items-center justify-between gap-2 pt-3.5 -mb-0.5 border-t text-[11px] font-mono" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-muted)' }}>
+        <span className="truncate leading-none">{truncateAddress(asset.resourceAddress, 14, 10)}</span>
+        <CopyButton value={asset.resourceAddress} size="xs" variant="ghost" className="shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+interface SubintentStatusInfo {
+  status: string | null;
+  txid: string | null;
+  committedTx: CommittedSwapTransaction | null;
+}
+
+async function fetchSubintentStatusInfo(
+  network: 'mainnet' | 'stokenet',
+  subintentHash: string,
+): Promise<SubintentStatusInfo> {
+  try {
+    const res = await gatewayPost<{
+      subintent_status?: string;
+      finalized_at_transaction_intent_hash?: string;
+    }>(
+      network,
+      '/transaction/subintent-status',
+      { subintent_hash: subintentHash },
+    );
+    const status = res.subintent_status ?? null;
+    const txid = res.finalized_at_transaction_intent_hash ?? null;
+    if (!txid) {
+      return { status, txid: null, committedTx: null };
+    }
+    try {
+      const details = await gatewayPost<{ transaction?: CommittedSwapTransaction }>(
+        network,
+        '/transaction/committed-details',
+        {
+          intent_hash: txid,
+          opt_ins: {
+            manifest_instructions: true,
+            balance_changes: true,
+            affected_global_entities: true,
+            confirmed_at: true,
+          },
+        },
+      );
+      return { status, txid, committedTx: details.transaction ?? null };
+    } catch {
+      return { status, txid, committedTx: null };
+    }
+  } catch {
+    return { status: null, txid: null, committedTx: null };
+  }
+}
+
+function EditableSwapSideColumn({
+  title,
+  hint,
+  accentColor,
+  legs,
+  onChangeLegs,
+  infos,
+  holdings,
+  network,
+  locale,
+  labels,
+}: {
+  title: string;
+  hint: string;
+  accentColor: string;
+  legs: LegDraft[];
+  onChangeLegs: (updater: (prev: LegDraft[]) => LegDraft[]) => void;
+  infos: ResourceSummary[];
+  holdings?: AccountHoldings;
+  network: 'mainnet' | 'stokenet';
+  locale: string;
+  labels: ConsoleToolProps['t']['atomicSwap'];
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="pb-2 border-b space-y-0.5" style={{ borderColor: 'var(--color-card-border)' }}>
+        <span className="block text-xs font-black uppercase tracking-widest" style={{ color: accentColor }}>
+          {title}
+        </span>
+        <p className="text-[11px] leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+          {hint}
+        </p>
+      </div>
+      {legs.map((leg, idx) => (
+        <div key={leg.id} className={idx > 0 ? 'pt-3 border-t' : ''} style={{ borderColor: 'var(--color-card-border)' }}>
+          <AssetLegRow
+            leg={leg}
+            allLegs={legs}
+            onChange={(next) => onChangeLegs((prev) => prev.map((l) => (l.id === leg.id ? next : l)))}
+            onRemove={() => onChangeLegs((prev) => prev.filter((l) => l.id !== leg.id))}
+            canRemove={legs.length > 1}
+            info={infos[idx]}
+            holdings={holdings}
+            network={network}
+            locale={locale}
+            labels={labels}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChangeLegs((prev) => [...prev, emptyLeg()])}
+        className="inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer"
+        style={{ color: accentColor }}
+      >
+        <Plus className="size-3.5" />
+        {labels.addResource}
+      </button>
+    </div>
+  );
+}
+
+function SwapOfferAssetsGrid({
+  leftAssets,
+  leftLabel,
+  leftAccent,
+  rightAssets,
+  rightLabel,
+  rightAccent,
+  network,
+}: {
+  leftAssets: SwapAsset[];
+  leftLabel: string;
+  leftAccent: string;
+  rightAssets: SwapAsset[];
+  rightLabel: string;
+  rightAccent: string;
+  network: 'mainnet' | 'stokenet';
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-start">
+      <div className="space-y-2.5">
+        {leftAssets.map((asset, idx) => (
+          <OfferAssetBox
+            key={`${asset.resourceAddress}-${idx}`}
+            label={leftLabel}
+            accentVar={leftAccent}
+            asset={asset}
+            network={network}
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-center self-center py-1 md:py-0">
+        <ArrowLeftRight className="size-5" style={{ color: 'var(--color-text-muted)' }} />
+      </div>
+      <div className="space-y-2.5">
+        {rightAssets.map((asset, idx) => (
+          <OfferAssetBox
+            key={`${asset.resourceAddress}-${idx}`}
+            label={rightLabel}
+            accentVar={rightAccent}
+            asset={asset}
+            network={network}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OfferStatusBadge({
+  status,
+  labels,
+}: {
+  status: 'active' | 'expired' | 'committed';
+  labels: ConsoleToolProps['t']['atomicSwap'];
+}) {
+  const isCommitted = status === 'committed';
+  const isExpired = status === 'expired';
+  const Icon = isCommitted ? Check : Clock;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
+      style={{
+        color: isCommitted
+          ? 'var(--color-primary)'
+          : isExpired
+            ? 'var(--color-danger)'
+            : 'var(--color-success)',
+        background: isCommitted
+          ? 'rgba(var(--color-primary-rgb), 0.12)'
+          : isExpired
+            ? 'color-mix(in srgb, var(--color-danger) 12%, transparent)'
+            : 'color-mix(in srgb, var(--color-success) 12%, transparent)',
+      }}
+    >
+      <Icon className="size-3.5" />
+      {isCommitted
+        ? labels.offerStatusCommitted
+        : isExpired
+          ? labels.offerStatusExpired
+          : labels.offerStatusActive}
+    </span>
+  );
+}
+
+function OfferMetadataBar({
+  makerAccount,
+  takerAccount,
+  subintentHash,
+  txid,
+  network,
+  expirationTimestamp,
+  language,
+  borderedBottom,
+  labels,
+}: {
+  makerAccount: string;
+  takerAccount: string | null;
+  subintentHash: string;
+  txid?: string | null;
+  network: 'mainnet' | 'stokenet';
+  expirationTimestamp: number;
+  language: string;
+  borderedBottom?: boolean;
+  labels: ConsoleToolProps['t']['atomicSwap'];
+}) {
+  return (
+    <div
+      className={`${borderedBottom ? 'py-5 border-y' : 'pt-5 sm:pt-6 border-t'} flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 text-xs`}
+      style={{ borderColor: 'var(--color-card-border)' }}
+    >
+      <div className="flex flex-col justify-center">
+        <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
+          {labels.makerLabel}
+        </span>
+        <span className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none" style={{ color: 'var(--color-text-main)' }}>
+          <span>{truncateAddress(makerAccount, 10, 6)}</span>
+          <CopyButton value={makerAccount} size="xs" variant="ghost" className="-my-1" />
+        </span>
+      </div>
+
+      <div className="flex flex-col justify-center sm:items-center">
+        <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
+          {labels.takerLabel}
+        </span>
+        <span
+          className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none"
+          style={{ color: takerAccount ? 'var(--color-text-main)' : 'var(--color-text-muted)' }}
+        >
+          {takerAccount ? (
+            <>
+              <span>{truncateAddress(takerAccount, 10, 6)}</span>
+              <CopyButton value={takerAccount} size="xs" variant="ghost" className="-my-1" />
+            </>
+          ) : (
+            <span>{labels.takerPending}</span>
+          )}
+        </span>
+      </div>
+
+      <div className="flex flex-col justify-center sm:items-center">
+        <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
+          {labels.subintentHashLabel}
+        </span>
+        <span className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none" style={{ color: 'var(--color-text-main)' }}>
+          {txid ? (
+            <>
+              <a
+                href={`/${language}/dashboard/tx/${txid}?network=${network}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-bold hover:underline"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                <span>{truncateAddress(txid, 10, 6)}</span>
+                <ExternalLink className="size-3 shrink-0" />
+              </a>
+              <CopyButton value={txid} size="xs" variant="ghost" className="-my-1" />
+            </>
+          ) : (
+            <>
+              <span>{truncateAddress(subintentHash, 10, 6)}</span>
+              <CopyButton value={subintentHash} size="xs" variant="ghost" className="-my-1" />
+            </>
+          )}
+        </span>
+      </div>
+
+      <div className="flex flex-col justify-center sm:items-center">
+        <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
+          {labels.networkLabel}
+        </span>
+        <span className="inline-flex items-center mt-2 font-mono font-semibold uppercase leading-none" style={{ color: 'var(--color-text-main)' }}>
+          {network}
+        </span>
+      </div>
+
+      <div className="flex flex-col justify-center sm:items-center">
+        <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
+          {labels.expiresAtLabel}
+        </span>
+        <span className="inline-flex items-center mt-2 font-mono leading-none" style={{ color: 'var(--color-text-main)' }}>
+          {new Date(expirationTimestamp * 1000).toLocaleString(language)}
+        </span>
       </div>
     </div>
   );
@@ -374,6 +715,9 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   const labels = t.atomicSwap;
   const { language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
+  const expectedAccountPrefix = activeNetwork === 'stokenet' ? 'account_tdx_2_' : 'account_rdx1';
+  const expectedResourcePrefix = activeNetwork === 'stokenet' ? 'resource_tdx_2_' : 'resource_rdx1';
+  const expectedSubintentPrefix = activeNetwork === 'stokenet' ? 'subtxid_tdx_2_' : 'subtxid_rdx1';
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const initialOfferParam = searchParams.get('offer')?.trim() ?? '';
@@ -387,11 +731,27 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   const [tab, setTab] = useState<TabMode>(initialOfferParam ? 'accept' : 'create');
   const [flow, setFlow] = useState<SwapFlow>('subintent');
 
-  const [makerAccount, setMakerAccount] = useState<string | null>(null);
-  const [takerAccount, setTakerAccount] = useState<string | null>(null);
+  const [makerAccountRaw, setMakerAccount] = useState<string | null>(null);
+  const [takerAccountRaw, setTakerAccount] = useState<string | null>(null);
+  const makerAccount = makerAccountRaw?.startsWith(expectedAccountPrefix) ? makerAccountRaw : null;
+  const takerAccount = takerAccountRaw?.startsWith(expectedAccountPrefix) ? takerAccountRaw : null;
 
-  const [offerLegs, setOfferLegs] = useState<LegDraft[]>([{ id: 1, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }]);
-  const [wantLegs, setWantLegs] = useState<LegDraft[]>([{ id: 1000, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }]);
+  const [offerLegsByNet, setOfferLegsByNet] = useState<Record<'mainnet' | 'stokenet', LegDraft[]>>({
+    mainnet: [{ id: 1, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }],
+    stokenet: [{ id: 2, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }],
+  });
+  const [wantLegsByNet, setWantLegsByNet] = useState<Record<'mainnet' | 'stokenet', LegDraft[]>>({
+    mainnet: [{ id: 1000, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }],
+    stokenet: [{ id: 1001, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }],
+  });
+  const offerLegs = offerLegsByNet[activeNetwork];
+  const wantLegs = wantLegsByNet[activeNetwork];
+  const setOfferLegs = (updater: (prev: LegDraft[]) => LegDraft[]) => {
+    setOfferLegsByNet((prev) => ({ ...prev, [activeNetwork]: updater(prev[activeNetwork]) }));
+  };
+  const setWantLegs = (updater: (prev: LegDraft[]) => LegDraft[]) => {
+    setWantLegsByNet((prev) => ({ ...prev, [activeNetwork]: updater(prev[activeNetwork]) }));
+  };
 
   const [expirySec, setExpirySec] = useState<string>(String(EXPIRATION_PRESETS[1].seconds));
   const [customMinutes, setCustomMinutes] = useState('');
@@ -403,14 +763,52 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
       ? Math.max(60, Math.round(parsedCustomMinutes * 60))
       : Number(expirySec);
 
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [offerCodeByNet, setOfferCodeByNet] = useState<Record<'mainnet' | 'stokenet', string>>(() => {
+    if (!initialOfferParam) return { mainnet: '', stokenet: '' };
+    const initDecoded = decodeSwapOffer(initialOfferParam);
+    const initSubtx = parseSubintentIdInput(initialOfferParam);
+    const initNet = initDecoded?.network ?? initSubtx?.network ?? null;
+    if (initNet === 'mainnet') return { mainnet: initialOfferParam, stokenet: '' };
+    if (initNet === 'stokenet') return { mainnet: '', stokenet: initialOfferParam };
+    return { mainnet: initialOfferParam, stokenet: initialOfferParam };
+  });
+  const offerCodeInput = offerCodeByNet[activeNetwork];
+  const setOfferCodeInput = (val: string) => {
+    setOfferCodeByNet((prev) => ({ ...prev, [activeNetwork]: val }));
+  };
 
-  const [offerCodeInput, setOfferCodeInput] = useState(initialOfferParam);
-  const [acceptAccount, setAcceptAccount] = useState<string | null>(null);
+  const [acceptAccountRaw, setAcceptAccount] = useState<string | null>(null);
+  const acceptAccount = acceptAccountRaw?.startsWith(expectedAccountPrefix) ? acceptAccountRaw : null;
   const [isSettlingV2, setIsSettlingV2] = useState(false);
   const [v2TxResult, setV2TxResult] = useState<ConsoleTxResult | null>(null);
   const [v2TxError, setV2TxError] = useState<string | null>(null);
+  const [cancelingHash, setCancelingHash] = useState<string | null>(null);
+  const [cancelDestAccountRaw, setCancelDestAccount] = useState<string | null>(null);
+  const cancelDestAccount = cancelDestAccountRaw?.startsWith(expectedAccountPrefix) ? cancelDestAccountRaw : null;
+  const [offersFilter, setOffersFilter] = useState<'pending' | 'settled'>('pending');
+  const cancelTx = useConsoleTransaction();
   const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const allSavedOffers = useSyncExternalStore(
+    subscribeSavedSwapOffers,
+    getSavedSwapOffersSnapshot,
+    getSavedSwapOffersServerSnapshot,
+  );
+  const networkSavedOffers = allSavedOffers.filter((entry) => entry.offer.network === activeNetwork);
+
+  const savedStatusQueries = useQueries({
+    queries: networkSavedOffers.map((entry) => ({
+      queryKey: ['console', 'subintent-status-v3', entry.offer.network, entry.offer.subintentHash],
+      staleTime: 15_000,
+      retry: false,
+      queryFn: () => fetchSubintentStatusInfo(entry.offer.network, entry.offer.subintentHash),
+    })),
+  });
+
+  const activePendingCount = networkSavedOffers.filter((entry, idx) => {
+    const status = savedStatusQueries[idx]?.data?.status;
+    return status !== 'CommittedSuccess' && entry.offer.expirationTimestamp * 1000 > nowMs;
+  }).length;
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 15_000);
@@ -420,39 +818,13 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   const { data: makerHoldings } = useAccountResources(makerAccount);
   const { data: takerHoldings } = useAccountResources(flow === 'direct' ? takerAccount : null);
 
-  const offerInfoQueries = useQueries({
-    queries: offerLegs.map((leg) => {
-      const trimmed = leg.resource.trim();
-      return {
-        queryKey: ['console', 'resource-info-v3', activeNetwork, trimmed],
-        enabled: trimmed.startsWith('resource_') && trimmed.length >= 20,
-        staleTime: 5 * 60_000,
-        retry: false,
-        queryFn: () => fetchResourceSummary(trimmed, activeNetwork),
-      };
-    }),
+  const offerInfos = useLegsResourceInfos(offerLegs, activeNetwork, expectedResourcePrefix);
+  const wantInfos = useLegsResourceInfos(wantLegs, activeNetwork, expectedResourcePrefix);
+
+  const hasWrongNetworkResource = [...offerLegs, ...wantLegs].some((leg) => {
+    const trimmed = leg.resource.trim();
+    return trimmed.startsWith('resource_') && !trimmed.startsWith(expectedResourcePrefix);
   });
-
-  const wantInfoQueries = useQueries({
-    queries: wantLegs.map((leg) => {
-      const trimmed = leg.resource.trim();
-      return {
-        queryKey: ['console', 'resource-info-v3', activeNetwork, trimmed],
-        enabled: trimmed.startsWith('resource_') && trimmed.length >= 20,
-        staleTime: 5 * 60_000,
-        retry: false,
-        queryFn: () => fetchResourceSummary(trimmed, activeNetwork),
-      };
-    }),
-  });
-
-  const offerInfos: ResourceSummary[] = offerLegs.map(
-    (leg, idx) => offerInfoQueries[idx]?.data ?? { isNft: isNonFungibleResource(leg.resource.trim()), withdrawable: true, name: '', symbol: '' },
-  );
-  const wantInfos: ResourceSummary[] = wantLegs.map(
-    (leg, idx) => wantInfoQueries[idx]?.data ?? { isNft: isNonFungibleResource(leg.resource.trim()), withdrawable: true, name: '', symbol: '' },
-  );
-
   const hasLockedResource = offerInfos.some((i) => !i.withdrawable) || wantInfos.some((i) => !i.withdrawable);
   const offerBalanceStates = offerLegs.map((leg, i) => getLegBalanceState(leg, offerLegs, offerInfos[i].isNft, makerHoldings));
   const wantBalanceStates = wantLegs.map((leg, i) =>
@@ -460,30 +832,37 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   );
   const firstOverBalance = [...offerBalanceStates, ...wantBalanceStates].find((s) => s.isOverBalance && s.available);
   const hasInvalidAmount = [...offerBalanceStates, ...wantBalanceStates].some((s) => s.isInvalidAmount);
-  const balanceBlockedReason = hasInvalidAmount
-    ? labels.invalidAmountError
-    : firstOverBalance?.available
-      ? labels.insufficientBalanceError.replace('{max}', formatBigForDisplay(firstOverBalance.available, language))
-      : undefined;
+  const balanceBlockedReason = hasWrongNetworkResource
+    ? t.common.otherNetworkField
+    : hasInvalidAmount
+      ? labels.invalidAmountError
+      : firstOverBalance?.available
+        ? labels.insufficientBalanceError.replace('{max}', formatBigForDisplay(firstOverBalance.available, language))
+        : undefined;
 
   const offerAssets = offerLegs.map((leg, i) => toSwapAsset(offerInfos[i].isNft, leg));
   const wantAssets = wantLegs.map((leg, i) => toSwapAsset(wantInfos[i].isNft, leg));
 
   const makerSubintentManifest =
-    makerAccount && !hasLockedResource ? buildMakerSubintentManifest(makerAccount, offerAssets, wantAssets) : '';
+    makerAccount && !hasLockedResource && !hasWrongNetworkResource
+      ? buildMakerSubintentManifest(makerAccount, offerAssets, wantAssets)
+      : '';
 
   const makerSubintentPreviewManifest =
-    makerAccount && !hasLockedResource && makerSubintentManifest
+    makerAccount && !hasLockedResource && !hasWrongNetworkResource && makerSubintentManifest
       ? buildMakerSubintentPreviewManifest(makerAccount, offerAssets)
       : '';
 
   const directSwapManifest =
-    makerAccount && takerAccount && !hasLockedResource
+    makerAccount && takerAccount && !hasLockedResource && !hasWrongNetworkResource
       ? buildDirectAtomicSwapManifest(makerAccount, takerAccount, offerAssets, wantAssets)
       : '';
 
+  const activeSubintentResult =
+    subintent.result?.subintentHash.startsWith(expectedSubintentPrefix) ? subintent.result : null;
+
   const signedOfferCode =
-    !subintent.result || !makerAccount
+    !activeSubintentResult || !makerAccount
       ? ''
       : encodeSwapOffer({
           v: 1,
@@ -491,56 +870,109 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
           makerAccount,
           offer: offerAssets.length === 1 ? offerAssets[0] : offerAssets,
           want: wantAssets.length === 1 ? wantAssets[0] : wantAssets,
-          subintentHash: subintent.result.subintentHash,
-          signedPartialTransaction: subintent.result.signedPartialTransaction,
-          expirationTimestamp: subintent.result.expirationTimestamp,
+          subintentHash: activeSubintentResult.subintentHash,
+          signedPartialTransaction: activeSubintentResult.signedPartialTransaction,
+          expirationTimestamp: activeSubintentResult.expirationTimestamp,
           ...(message.trim() ? { message: message.trim() } : {}),
         });
 
-  const decodedOffer = decodeSwapOffer(offerCodeInput);
-  const isOfferExpired = decodedOffer ? decodedOffer.expirationTimestamp * 1000 < nowMs : false;
+  const directDecodedOffer = decodeSwapOffer(offerCodeInput);
+  const parsedSubintentId = directDecodedOffer ? null : parseSubintentIdInput(offerCodeInput);
+  const inputOfferNetwork = directDecodedOffer?.network ?? parsedSubintentId?.network ?? null;
+  const isWrongNetworkOffer = !!inputOfferNetwork && inputOfferNetwork !== activeNetwork;
 
-  // Check on-ledger status of the Subintent via Gateway so settled offers show as Committed.
-  const { data: subintentStatus } = useQuery<string | null>({
-    queryKey: ['console', 'subintent-status', decodedOffer?.network, decodedOffer?.subintentHash],
-    enabled: !!decodedOffer?.subintentHash,
+  const savedMatchedOffer =
+    parsedSubintentId && !isWrongNetworkOffer
+      ? allSavedOffers.find(
+          (entry) => entry.offer.subintentHash.toLowerCase() === parsedSubintentId.subintentHash,
+        )?.offer ?? null
+      : null;
+
+  const targetSubintentHash = !isWrongNetworkOffer
+    ? (directDecodedOffer?.subintentHash ?? savedMatchedOffer?.subintentHash ?? parsedSubintentId?.subintentHash ?? '')
+    : '';
+
+  // Check on-ledger status of the Subintent via Gateway so settled offers show as Committed and expose their txid & committed details.
+  const { data: subintentStatusInfo, isLoading: isLoadingSubintentStatus } = useQuery<SubintentStatusInfo>({
+    queryKey: ['console', 'subintent-status-v3', activeNetwork, targetSubintentHash],
+    enabled: !!targetSubintentHash,
     staleTime: 15_000,
     retry: false,
-    queryFn: async () => {
-      try {
-        const res = await gatewayPost<{ subintent_status?: string }>(
-          decodedOffer!.network,
-          '/transaction/subintent-status',
-          { subintent_hash: decodedOffer!.subintentHash },
-        );
-        return res.subintent_status ?? null;
-      } catch {
-        return null;
-      }
-    },
+    queryFn: () => fetchSubintentStatusInfo(activeNetwork, targetSubintentHash),
   });
-  const isOfferCommitted = subintentStatus === 'CommittedSuccess';
+
+  const reconstructedOffer: AtomicSwapOffer | null =
+    parsedSubintentId
+    && !isWrongNetworkOffer
+    && !savedMatchedOffer
+    && subintentStatusInfo?.committedTx
+      ? reconstructOfferFromCommittedTx(
+          parsedSubintentId.subintentHash,
+          activeNetwork,
+          subintentStatusInfo.committedTx,
+        )
+      : null;
+
+  const decodedOffer = isWrongNetworkOffer
+    ? null
+    : (directDecodedOffer ?? savedMatchedOffer ?? reconstructedOffer ?? null);
+  const isLookingUpRawSubintent =
+    !!parsedSubintentId
+    && !isWrongNetworkOffer
+    && !savedMatchedOffer
+    && isLoadingSubintentStatus;
+  const isUnsettledOffLedgerSubintent =
+    !!parsedSubintentId
+    && !isWrongNetworkOffer
+    && !savedMatchedOffer
+    && !isLoadingSubintentStatus
+    && !decodedOffer;
+
+  const isOfferExpired = decodedOffer ? decodedOffer.expirationTimestamp * 1000 < nowMs : false;
+  const isOfferCommitted = subintentStatusInfo?.status === 'CommittedSuccess';
+  const hasSignedPartialTx = Boolean(decodedOffer?.signedPartialTransaction);
+  const settledTakerAccount =
+    decodedOffer && subintentStatusInfo?.committedTx
+      ? extractTakerAccountFromCommittedTx(decodedOffer.makerAccount, subintentStatusInfo.committedTx)
+      : null;
 
   const takerSettlementManifest =
-    decodedOffer && acceptAccount ? buildTakerV2SettlementManifest(acceptAccount, decodedOffer) : '';
+    decodedOffer && hasSignedPartialTx && acceptAccount ? buildTakerV2SettlementManifest(acceptAccount, decodedOffer) : '';
 
   const takerCounterSubintentManifest =
-    decodedOffer && acceptAccount ? buildTakerSubintentManifest(acceptAccount, decodedOffer.want, decodedOffer.offer) : '';
+    decodedOffer && hasSignedPartialTx && acceptAccount ? buildTakerSubintentManifest(acceptAccount, decodedOffer.want, decodedOffer.offer) : '';
 
   // Simulate the full two-sided swap (Maker <-> Taker) so Preview displays the exact
   // real balance changes (-paid / +received for both accounts) using assume_all_signature_proofs.
   const takerPreviewManifest =
-    decodedOffer && acceptAccount
+    decodedOffer && hasSignedPartialTx && acceptAccount
       ? buildDirectAtomicSwapManifest(decodedOffer.makerAccount, acceptAccount, decodedOffer.offer, decodedOffer.want)
         || buildMakerSubintentPreviewManifest(acceptAccount, decodedOffer.want)
       : '';
 
-  const copyShareUrl = () => {
-    if (!signedOfferCode || typeof window === 'undefined') return;
-    const url = `${window.location.origin}${window.location.pathname}?offer=${signedOfferCode}`;
-    void navigator.clipboard?.writeText(url);
-    setCopiedCode(true);
-    window.setTimeout(() => setCopiedCode(false), 2000);
+  const shareUrl =
+    signedOfferCode && typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}?offer=${signedOfferCode}`
+      : '';
+
+  const buildOfferShareUrl = (code: string) =>
+    typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?offer=${code}` : '';
+
+  const handleSignMakerSubintent = async () => {
+    if (!makerAccount || !makerSubintentManifest) return;
+    const signed = await subintent.sendSubintent(makerSubintentManifest, effectiveExpirySec, message);
+    if (!signed) return;
+    saveSignedSwapOffer({
+      v: 1,
+      network: activeNetwork === 'stokenet' ? 'stokenet' : 'mainnet',
+      makerAccount,
+      offer: offerAssets.length === 1 ? offerAssets[0] : offerAssets,
+      want: wantAssets.length === 1 ? wantAssets[0] : wantAssets,
+      subintentHash: signed.subintentHash,
+      signedPartialTransaction: signed.signedPartialTransaction,
+      expirationTimestamp: signed.expirationTimestamp,
+      ...(message.trim() ? { message: message.trim() } : {}),
+    });
   };
 
   const handleAcceptAndSettleV2 = async () => {
@@ -569,10 +1001,10 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
         createdEntities: [],
       });
       void queryClient.invalidateQueries({
-        queryKey: ['console', 'subintent-status', decodedOffer.network, decodedOffer.subintentHash],
+        queryKey: ['console', 'subintent-status-v3', decodedOffer.network, decodedOffer.subintentHash],
       });
     } catch (err) {
-      setV2TxError(err instanceof Error ? err.message : 'V2 settlement failed');
+      setV2TxError(err instanceof Error ? err.message : 'unknown');
     } finally {
       setIsSettlingV2(false);
     }
@@ -595,16 +1027,33 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
     <div className="space-y-6">
       {/* Radix Seal style underline tab bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b" style={{ borderColor: 'var(--color-card-border)' }}>
-        <div className="flex gap-6">
-          {(['create', 'accept'] as const).map((key) => (
+        <div className="flex flex-wrap gap-6">
+          {(['create', 'accept', 'offers'] as const).map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => setTab(key)}
-              className="relative pb-2.5 text-sm font-bold transition-colors cursor-pointer"
+              className="relative pb-2.5 text-sm font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
               style={{ color: tab === key ? 'var(--color-text-main)' : 'var(--color-text-muted)' }}
             >
-              {key === 'create' ? labels.tabCreate : labels.tabAccept}
+              <span>
+                {key === 'create'
+                  ? labels.tabCreate
+                  : key === 'accept'
+                    ? labels.tabAccept
+                    : labels.tabMyOffers}
+              </span>
+              {key === 'offers' && activePendingCount > 0 && (
+                <span
+                  className="px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none"
+                  style={{
+                    background: 'rgba(var(--color-primary-rgb), 0.14)',
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  {activePendingCount}
+                </span>
+              )}
               {tab === key && (
                 <span
                   className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
@@ -715,92 +1164,55 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
           )}
 
           <div className="pt-4 border-t grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-start" style={{ borderColor: 'var(--color-card-border)' }}>
-            {/* Entregas column */}
-            <div className="space-y-4">
-              <div className="pb-2 border-b space-y-0.5" style={{ borderColor: 'var(--color-card-border)' }}>
-                <span className="block text-xs font-black uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>
-                  {labels.youGive}
-                </span>
-                <p className="text-[11px] leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-                  {labels.youGiveHint}
-                </p>
-              </div>
-              {offerLegs.map((leg, idx) => (
-                <div key={leg.id} className={idx > 0 ? 'pt-3 border-t' : ''} style={{ borderColor: 'var(--color-card-border)' }}>
-                  <AssetLegRow
-                    leg={leg}
-                    allLegs={offerLegs}
-                    onChange={(next) => setOfferLegs((prev) => prev.map((l) => (l.id === leg.id ? next : l)))}
-                    onRemove={() => setOfferLegs((prev) => prev.filter((l) => l.id !== leg.id))}
-                    canRemove={offerLegs.length > 1}
-                    info={offerInfos[idx]}
-                    holdings={makerHoldings}
-                    network={activeNetwork}
-                    locale={language}
-                    labels={labels}
-                  />
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setOfferLegs((prev) => [...prev, emptyLeg()])}
-                className="inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer"
-                style={{ color: 'var(--color-primary)' }}
-              >
-                <Plus className="size-3.5" />
-                {labels.addResource}
-              </button>
-            </div>
+            <EditableSwapSideColumn
+              title={labels.youGive}
+              hint={labels.youGiveHint}
+              accentColor="var(--color-primary)"
+              legs={offerLegs}
+              onChangeLegs={setOfferLegs}
+              infos={offerInfos}
+              holdings={makerHoldings}
+              network={activeNetwork}
+              locale={language}
+              labels={labels}
+            />
 
-            <div className="hidden md:flex items-center justify-center pt-10">
+            <div className="flex items-center justify-center self-center py-1 md:py-0">
               <ArrowLeftRight className="size-5" style={{ color: 'var(--color-text-muted)' }} />
             </div>
 
-            {/* Recibes column */}
-            <div className="space-y-4">
-              <div className="pb-2 border-b space-y-0.5" style={{ borderColor: 'var(--color-card-border)' }}>
-                <span className="block text-xs font-black uppercase tracking-widest" style={{ color: 'var(--color-accent)' }}>
-                  {labels.youReceive}
-                </span>
-                <p className="text-[11px] leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-                  {labels.youReceiveHint}
-                </p>
-              </div>
-              {wantLegs.map((leg, idx) => (
-                <div key={leg.id} className={idx > 0 ? 'pt-3 border-t' : ''} style={{ borderColor: 'var(--color-card-border)' }}>
-                  <AssetLegRow
-                    leg={leg}
-                    allLegs={wantLegs}
-                    onChange={(next) => setWantLegs((prev) => prev.map((l) => (l.id === leg.id ? next : l)))}
-                    onRemove={() => setWantLegs((prev) => prev.filter((l) => l.id !== leg.id))}
-                    canRemove={wantLegs.length > 1}
-                    info={wantInfos[idx]}
-                    holdings={flow === 'direct' ? takerHoldings : undefined}
-                    network={activeNetwork}
-                    locale={language}
-                    labels={labels}
-                  />
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setWantLegs((prev) => [...prev, emptyLeg()])}
-                className="inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer"
-                style={{ color: 'var(--color-accent)' }}
-              >
-                <Plus className="size-3.5" />
-                {labels.addResource}
-              </button>
-            </div>
+            <EditableSwapSideColumn
+              title={labels.youReceive}
+              hint={labels.youReceiveHint}
+              accentColor="var(--color-accent)"
+              legs={wantLegs}
+              onChangeLegs={setWantLegs}
+              infos={wantInfos}
+              holdings={flow === 'direct' ? takerHoldings : undefined}
+              network={activeNetwork}
+              locale={language}
+              labels={labels}
+            />
           </div>
 
           <div className="pt-4 border-t space-y-4" style={{ borderColor: 'var(--color-card-border)' }}>
             <TextField
               label={labels.messageLabel}
               value={message}
-              onChange={setMessage}
+              onChange={(v) => setMessage(v.slice(0, 240))}
               placeholder={labels.messagePlaceholder}
               maxLength={240}
+              trailingPadding="pr-14"
+              trailing={
+                <span
+                  className="px-1.5 text-xs font-mono font-bold tabular-nums pointer-events-none"
+                  style={{
+                    color: 240 - message.length <= 20 ? 'var(--color-danger)' : 'var(--color-text-muted)',
+                  }}
+                >
+                  {Math.max(0, 240 - message.length)}
+                </span>
+              }
             />
 
             {flow === 'direct' ? (
@@ -828,7 +1240,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
               </>
             ) : (
               <>
-                {subintent.result && signedOfferCode && (
+                {activeSubintentResult && signedOfferCode && (
                   <div
                     className="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-3"
                     style={{
@@ -836,23 +1248,27 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                       borderColor: 'color-mix(in srgb, var(--color-success) 35%, var(--color-card-border))',
                     }}
                   >
-                    <div className="space-y-0.5 min-w-0">
+                    <div className="space-y-1 min-w-0 flex-1">
                       <span className="block text-xs font-black" style={{ color: 'var(--color-success)' }}>
                         {labels.offerReadyTitle}
                       </span>
+                      <p className="text-xs leading-snug" style={{ color: 'var(--color-text-main)' }}>
+                        {labels.offerReadyHint}
+                      </p>
                       <span className="block text-[11px] font-mono truncate" style={{ color: 'var(--color-text-muted)' }}>
-                        {labels.subintentHashLabel}: {truncateAddress(subintent.result.subintentHash, 18, 12)}
+                        {labels.subintentHashLabel}: {truncateAddress(activeSubintentResult.subintentHash, 18, 12)}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={copyShareUrl}
-                      className="min-w-[180px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:border-[var(--color-primary)] shrink-0"
-                      style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)', color: 'var(--color-primary)' }}
-                    >
-                      {copiedCode ? <Check className="size-3.5 shrink-0" /> : <Link2 className="size-3.5 shrink-0" />}
-                      <span>{copiedCode ? t.common.copied : labels.copyShareLink}</span>
-                    </button>
+                    <div className="shrink-0">
+                      <ShareTargets
+                        url={shareUrl}
+                        text={labels.offerReadyTitle}
+                        copyLabel={labels.copyShareLink}
+                        copiedLabel={t.common.copied}
+                        qr={{ label: 'QR', hint: labels.offerReadyHint, size: 300 }}
+                        size="panel"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -864,7 +1280,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 />
                 <TxActions
                   t={t}
-                  onSend={() => void subintent.sendSubintent(makerSubintentManifest, effectiveExpirySec, message)}
+                  onSend={() => void handleSignMakerSubintent()}
                   onSimulate={() => void preview.simulate(makerSubintentPreviewManifest)}
                   sendDisabled={!makerSubintentManifest || !!balanceBlockedReason || subintent.isSending}
                   simulateDisabled={!makerSubintentPreviewManifest || !!balanceBlockedReason || preview.isSimulating}
@@ -885,14 +1301,14 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
                 {subintent.error && (
                   <p role="alert" className="text-xs font-semibold" style={{ color: 'var(--color-danger)' }}>
-                    {errorMessages[subintent.error] ?? subintent.error}
+                    {resolveConsoleError(subintent.error, errorMessages)}
                   </p>
                 )}
               </>
             )}
           </div>
         </div>
-      ) : (
+      ) : tab === 'accept' ? (
         <div className="space-y-5">
           <ToolSection title={labels.acceptTitle} hint={labels.acceptHint}>
             <textarea
@@ -903,11 +1319,25 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
               className="w-full px-3.5 py-2.5 rounded-xl border font-mono text-xs outline-none focus:border-[var(--color-primary)]"
               style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
             />
-            {offerCodeInput.trim() && !decodedOffer && (
+            {isWrongNetworkOffer && inputOfferNetwork ? (
+              <p className="text-xs font-semibold" style={{ color: 'var(--color-danger)' }}>
+                {labels.wrongNetworkOffer
+                  .replace('{offerNetwork}', inputOfferNetwork)
+                  .replace('{activeNetwork}', activeNetwork)}
+              </p>
+            ) : isLookingUpRawSubintent ? (
+              <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                {labels.lookingUpSubintent}
+              </p>
+            ) : isUnsettledOffLedgerSubintent ? (
+              <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                {labels.subintentOffLedgerNotice}
+              </p>
+            ) : offerCodeInput.trim() && !decodedOffer ? (
               <p className="text-xs font-semibold" style={{ color: 'var(--color-danger)' }}>
                 {labels.invalidOfferCode}
               </p>
-            )}
+            ) : null}
           </ToolSection>
 
           {decodedOffer && (
@@ -916,85 +1346,52 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 title={labels.acceptSummaryTitle}
                 hint={labels.acceptSummaryHint}
                 action={
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                    style={{
-                      color: isOfferCommitted
-                        ? 'var(--color-primary)'
-                        : isOfferExpired
-                          ? 'var(--color-danger)'
-                          : 'var(--color-success)',
-                      background: isOfferCommitted
-                        ? 'rgba(var(--color-primary-rgb), 0.12)'
-                        : isOfferExpired
-                          ? 'color-mix(in srgb, var(--color-danger) 12%, transparent)'
-                          : 'color-mix(in srgb, var(--color-success) 12%, transparent)',
-                    }}
-                  >
-                    <Clock className="size-3.5" />
-                    {isOfferCommitted
-                      ? labels.offerStatusCommitted
-                      : isOfferExpired
-                        ? labels.offerStatusExpired
-                        : labels.offerStatusActive}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {hasSignedPartialTx && (
+                      !allSavedOffers.some((e) => e.offer.subintentHash === decodedOffer.subintentHash) ? (
+                        <button
+                          type="button"
+                          onClick={() => saveSignedSwapOffer(decodedOffer)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold cursor-pointer hover:border-[var(--color-primary)]"
+                          style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-primary)' }}
+                        >
+                          <BookmarkPlus className="size-3.5" />
+                          {labels.saveOfferButton}
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ color: 'var(--color-text-muted)' }}>
+                          <Check className="size-3" />
+                          {labels.savedInOffers}
+                        </span>
+                      )
+                    )}
+                    <OfferStatusBadge
+                      status={isOfferCommitted ? 'committed' : isOfferExpired ? 'expired' : 'active'}
+                      labels={labels}
+                    />
+                  </div>
                 }
               >
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-start">
-                  <div className="space-y-2.5">
-                    {normalizeSwapAssets(decodedOffer.offer).map((asset, idx) => (
-                      <OfferAssetBox
-                        key={`${asset.resourceAddress}-${idx}`}
-                        label={labels.takerReceives}
-                        accentVar="var(--color-accent)"
-                        asset={asset}
-                        network={decodedOffer.network}
-                      />
-                    ))}
-                  </div>
-                  <div className="hidden md:flex items-center justify-center pt-10">
-                    <ArrowLeftRight className="size-5" style={{ color: 'var(--color-text-muted)' }} />
-                  </div>
-                  <div className="space-y-2.5">
-                    {normalizeSwapAssets(decodedOffer.want).map((asset, idx) => (
-                      <OfferAssetBox
-                        key={`${asset.resourceAddress}-${idx}`}
-                        label={labels.takerPays}
-                        accentVar="var(--color-primary)"
-                        asset={asset}
-                        network={decodedOffer.network}
-                      />
-                    ))}
-                  </div>
-                </div>
+                <SwapOfferAssetsGrid
+                  leftAssets={normalizeSwapAssets(decodedOffer.offer)}
+                  leftLabel={labels.takerReceives}
+                  leftAccent="var(--color-accent)"
+                  rightAssets={normalizeSwapAssets(decodedOffer.want)}
+                  rightLabel={labels.takerPays}
+                  rightAccent="var(--color-primary)"
+                  network={decodedOffer.network}
+                />
 
-                <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs" style={{ borderColor: 'var(--color-card-border)' }}>
-                  <div>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-                      {labels.makerLabel}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 mt-0.5 font-mono" style={{ color: 'var(--color-text-main)' }}>
-                      {truncateAddress(decodedOffer.makerAccount, 12, 8)}
-                      <CopyButton value={decodedOffer.makerAccount} size="xs" variant="ghost" />
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-                      {labels.networkLabel}
-                    </span>
-                    <span className="block mt-0.5 font-mono font-semibold uppercase" style={{ color: 'var(--color-text-main)' }}>
-                      {decodedOffer.network}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-                      {labels.expiresAtLabel}
-                    </span>
-                    <span className="block mt-0.5 font-mono" style={{ color: 'var(--color-text-main)' }}>
-                      {new Date(decodedOffer.expirationTimestamp * 1000).toLocaleString(language)}
-                    </span>
-                  </div>
-                </div>
+                <OfferMetadataBar
+                  makerAccount={decodedOffer.makerAccount}
+                  takerAccount={isOfferCommitted ? settledTakerAccount : null}
+                  subintentHash={decodedOffer.subintentHash}
+                  txid={isOfferCommitted ? subintentStatusInfo?.txid : null}
+                  network={decodedOffer.network}
+                  expirationTimestamp={decodedOffer.expirationTimestamp}
+                  language={language}
+                  labels={labels}
+                />
 
                 {decodedOffer.message && (
                   <div className="pt-3 border-t text-xs" style={{ borderColor: 'var(--color-card-border)' }}>
@@ -1008,45 +1405,300 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 )}
               </ToolSection>
 
-              <ToolSection title={labels.takerAccount}>
-                <AccountPicker value={acceptAccount} onChange={setAcceptAccount} />
-              </ToolSection>
+              {hasSignedPartialTx && !isOfferCommitted && (
+                <>
+                  <ToolSection title={labels.takerAccount}>
+                    <AccountPicker value={acceptAccount} onChange={setAcceptAccount} />
+                  </ToolSection>
 
-              <div className="space-y-4">
-                <CollapsibleManifest
-                  manifest={takerSettlementManifest}
-                  showLabel={t.batches.showManifest}
-                  hideLabel={t.batches.hideManifest}
-                  copyLabel={t.common.copy}
-                />
+                  <div className="space-y-4">
+                    <CollapsibleManifest
+                      manifest={takerSettlementManifest}
+                      showLabel={t.batches.showManifest}
+                      hideLabel={t.batches.hideManifest}
+                      copyLabel={t.common.copy}
+                    />
 
-                <TxActions
-                  t={t}
-                  onSend={() => void handleAcceptAndSettleV2()}
-                  onSimulate={() => void acceptPreview.simulate(takerPreviewManifest)}
-                  sendDisabled={!takerCounterSubintentManifest || isOfferExpired || isOfferCommitted || takerSubintent.isSending || isSettlingV2}
-                  simulateDisabled={!takerPreviewManifest || isOfferExpired || isOfferCommitted || acceptPreview.isSimulating || isSettlingV2}
-                  sending={takerSubintent.isSending || isSettlingV2}
-                  simulating={acceptPreview.isSimulating}
-                  sendLabel={labels.signTakerSubintentButton}
-                  sendingLabel={isSettlingV2 ? labels.settlingStatus : t.common.sending}
-                  blockedReason={isOfferCommitted ? labels.offerStatusCommitted : isOfferExpired ? labels.offerStatusExpired : undefined}
-                />
+                    <TxActions
+                      t={t}
+                      onSend={() => void handleAcceptAndSettleV2()}
+                      onSimulate={() => void acceptPreview.simulate(takerPreviewManifest)}
+                      sendDisabled={!takerCounterSubintentManifest || isOfferExpired || isOfferCommitted || takerSubintent.isSending || isSettlingV2}
+                      simulateDisabled={!takerPreviewManifest || isOfferExpired || isOfferCommitted || acceptPreview.isSimulating || isSettlingV2}
+                      sending={takerSubintent.isSending || isSettlingV2}
+                      simulating={acceptPreview.isSimulating}
+                      sendLabel={labels.signTakerSubintentButton}
+                      sendingLabel={isSettlingV2 ? labels.settlingStatus : t.common.sending}
+                      blockedReason={isOfferCommitted ? labels.offerStatusCommitted : isOfferExpired ? labels.offerStatusExpired : undefined}
+                    />
 
-                <SimulateResultCard t={t.simulate} preview={acceptPreview.preview} error={acceptPreview.error} onClose={acceptPreview.reset} />
+                    <SimulateResultCard t={t.simulate} preview={acceptPreview.preview} error={acceptPreview.error} onClose={acceptPreview.reset} />
 
-                {(takerSubintent.error || v2TxError) && (
-                  <p role="alert" className="text-xs font-semibold" style={{ color: 'var(--color-danger)' }}>
-                    {errorMessages[takerSubintent.error ?? v2TxError ?? ''] ?? takerSubintent.error ?? v2TxError}
-                  </p>
-                )}
+                    {(takerSubintent.error || v2TxError) && (
+                      <p role="alert" className="text-xs font-semibold" style={{ color: 'var(--color-danger)' }}>
+                        {resolveConsoleError(takerSubintent.error ?? v2TxError, errorMessages)}
+                      </p>
+                    )}
 
-                <TxResultBanner result={v2TxResult} error={null} t={t.common} />
-              </div>
+                    <TxResultBanner result={v2TxResult} error={null} t={t.common} />
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
-      )}
+      ) : (() => {
+        const pendingOffers = networkSavedOffers
+          .map((entry, idx) => ({
+            entry,
+            committed: savedStatusQueries[idx]?.data?.status === 'CommittedSuccess',
+            expired: savedStatusQueries[idx]?.data?.status !== 'CommittedSuccess' && entry.offer.expirationTimestamp * 1000 < nowMs,
+          }))
+          .filter((item) => !item.committed);
+        const committedLocalOffers = networkSavedOffers
+          .map((entry, idx) => ({
+            entry,
+            committed: savedStatusQueries[idx]?.data?.status === 'CommittedSuccess',
+            txid: savedStatusQueries[idx]?.data?.txid ?? null,
+            takerAccount: extractTakerAccountFromCommittedTx(
+              entry.offer.makerAccount,
+              savedStatusQueries[idx]?.data?.committedTx,
+            ),
+          }))
+          .filter((item) => item.committed);
+
+        return (
+          <div className="space-y-5">
+            <OptionButtons<'pending' | 'settled'>
+              size="md"
+              value={offersFilter}
+              onChange={setOffersFilter}
+              options={[
+                {
+                  value: 'pending',
+                  label: `${labels.offersSubtabPending} (${pendingOffers.length})`,
+                  description: labels.offersSubtabPendingDesc,
+                },
+                {
+                  value: 'settled',
+                  label: `${labels.offersSubtabSettled} (${committedLocalOffers.length})`,
+                  description: labels.offersSubtabSettledDesc,
+                },
+              ]}
+            />
+
+            {offersFilter === 'pending' ? (
+              pendingOffers.length === 0 ? (
+                <ToolSection title={labels.myOffersTitle} hint={labels.myOffersHint}>
+                  <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>
+                    {labels.myOffersEmpty}
+                  </p>
+                </ToolSection>
+              ) : (
+                pendingOffers.map(({ entry, expired }) => {
+                  const itemShareUrl = buildOfferShareUrl(encodeSwapOffer(entry.offer));
+
+                  return (
+                    <ToolSection
+                      key={entry.offer.subintentHash}
+                      title={labels.acceptSummaryTitle}
+                      hint={entry.offer.message || undefined}
+                      action={<OfferStatusBadge status={expired ? 'expired' : 'active'} labels={labels} />}
+                    >
+                      <SwapOfferAssetsGrid
+                        leftAssets={normalizeSwapAssets(entry.offer.offer)}
+                        leftLabel={labels.youGive}
+                        leftAccent="var(--color-primary)"
+                        rightAssets={normalizeSwapAssets(entry.offer.want)}
+                        rightLabel={labels.youReceive}
+                        rightAccent="var(--color-accent)"
+                        network={entry.offer.network}
+                      />
+
+                      <OfferMetadataBar
+                        makerAccount={entry.offer.makerAccount}
+                        takerAccount={null}
+                        subintentHash={entry.offer.subintentHash}
+                        network={entry.offer.network}
+                        expirationTimestamp={entry.offer.expirationTimestamp}
+                        language={language}
+                        borderedBottom
+                        labels={labels}
+                      />
+
+                      <div className="pt-1 sm:pt-2 flex flex-wrap items-center justify-between gap-3">
+                        <ShareTargets
+                          url={itemShareUrl}
+                          text={labels.offerReadyTitle}
+                          copyLabel={labels.copyShareLink}
+                          copiedLabel={t.common.copied}
+                          qr={{ label: 'QR', hint: labels.offerReadyHint, size: 300 }}
+                          size="panel"
+                        />
+
+                        <div className="flex flex-wrap items-center gap-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOfferCodeInput(entry.code);
+                              setTab('accept');
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold leading-none py-1 cursor-pointer hover:opacity-75 transition-opacity"
+                            style={{ color: 'var(--color-primary)' }}
+                          >
+                            <ExternalLink className="size-3.5 shrink-0" />
+                            <span>{labels.openOfferButton}</span>
+                          </button>
+                          {!expired ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                cancelTx.reset();
+                                setCancelingHash((prev) =>
+                                  prev === entry.offer.subintentHash ? null : entry.offer.subintentHash,
+                                );
+                              }}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold leading-none py-1 cursor-pointer hover:opacity-75 transition-opacity"
+                              style={{ color: 'var(--color-danger)' }}
+                            >
+                              <Ban className="size-3.5 shrink-0" />
+                              <span>{labels.cancelOfferButton}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => removeSavedSwapOffer(entry.offer.subintentHash)}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold leading-none py-1 cursor-pointer hover:opacity-75 transition-opacity"
+                              style={{ color: 'var(--color-text-muted)' }}
+                            >
+                              <Trash2 className="size-3.5 shrink-0" />
+                              <span>{labels.deleteOfferButton}</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {cancelingHash === entry.offer.subintentHash && !expired && (() => {
+                        const sameCancelAccount = !!cancelDestAccount && cancelDestAccount === entry.offer.makerAccount;
+                        const cancelManifest = cancelDestAccount
+                          ? buildCancelSwapMoveManifest(entry.offer.makerAccount, cancelDestAccount, entry.offer.offer)
+                          : '';
+                        return (
+                          <div
+                            className="pt-3 border-t space-y-3"
+                            style={{ borderColor: 'color-mix(in srgb, var(--color-danger) 30%, var(--color-card-border))' }}
+                          >
+                            <div className="space-y-1">
+                              <span className="block text-xs font-black" style={{ color: 'var(--color-danger)' }}>
+                                {labels.cancelOfferTitle}
+                              </span>
+                              <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                                {labels.cancelOfferNote}
+                              </p>
+                            </div>
+                            <div className="space-y-1.5">
+                              <span className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                                {labels.cancelMoveToAccount}
+                              </span>
+                              <AccountPicker value={cancelDestAccount} onChange={setCancelDestAccount} />
+                              {sameCancelAccount && (
+                                <p className="text-[11px] font-medium text-red-500">{t.accountMigrate.sameAccountError}</p>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4">
+                              <button
+                                type="button"
+                                disabled={!cancelManifest || cancelTx.isSending}
+                                onClick={() => {
+                                  void cancelTx.sendTransaction(cancelManifest).then((ok) => {
+                                    if (ok) {
+                                      removeSavedSwapOffer(entry.offer.subintentHash);
+                                      setCancelingHash(null);
+                                    }
+                                  });
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white cursor-pointer disabled:opacity-40"
+                                style={{ background: 'var(--color-danger)' }}
+                              >
+                                <Ban className="size-3.5" />
+                                {cancelTx.isSending ? t.common.sending : labels.cancelConfirmButton}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  removeSavedSwapOffer(entry.offer.subintentHash);
+                                  setCancelingHash(null);
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer hover:opacity-75 transition-opacity"
+                                style={{ color: 'var(--color-text-muted)' }}
+                              >
+                                <Trash2 className="size-3.5" />
+                                {labels.removeFromHistoryButton}
+                              </button>
+                            </div>
+                            <TxResultBanner result={cancelTx.result} error={cancelTx.error} t={t.common} />
+                          </div>
+                        );
+                      })()}
+                    </ToolSection>
+                  );
+                })
+              )
+            ) : committedLocalOffers.length === 0 ? (
+              <ToolSection title={labels.myOffersTitle} hint={labels.myOffersHint}>
+                <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>
+                  {labels.settledHistoryEmpty}
+                </p>
+              </ToolSection>
+            ) : (
+              <div className="space-y-5">
+                {committedLocalOffers.map(({ entry, txid, takerAccount: settledTaker }) => (
+                  <ToolSection
+                    key={entry.offer.subintentHash}
+                    title={labels.acceptSummaryTitle}
+                    hint={entry.offer.message || undefined}
+                    action={
+                      <div className="flex items-center gap-2">
+                        <OfferStatusBadge status="committed" labels={labels} />
+                        <button
+                          type="button"
+                          onClick={() => removeSavedSwapOffer(entry.offer.subintentHash)}
+                          className="inline-flex items-center p-1 rounded-lg cursor-pointer hover:opacity-80"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          title={labels.deleteOfferButton}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    }
+                  >
+                    <SwapOfferAssetsGrid
+                      leftAssets={normalizeSwapAssets(entry.offer.offer)}
+                      leftLabel={labels.youGive}
+                      leftAccent="var(--color-primary)"
+                      rightAssets={normalizeSwapAssets(entry.offer.want)}
+                      rightLabel={labels.youReceive}
+                      rightAccent="var(--color-accent)"
+                      network={entry.offer.network}
+                    />
+
+                    <OfferMetadataBar
+                      makerAccount={entry.offer.makerAccount}
+                      takerAccount={settledTaker}
+                      subintentHash={entry.offer.subintentHash}
+                      txid={txid}
+                      network={entry.offer.network}
+                      expirationTimestamp={entry.offer.expirationTimestamp}
+                      language={language}
+                      labels={labels}
+                    />
+                  </ToolSection>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
