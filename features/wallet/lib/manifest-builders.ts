@@ -1,22 +1,25 @@
+import { parseAtto, sumRadixDecimals, toRadixDecimal } from './radix-decimal';
+
 /**
  * Builds a manifest to stake XRD to a validator.
  */
 export const buildStakeManifest = (
   accountAddress: string,
   validatorAddress: string,
-  amountXrd: number,
+  amountXrd: number | string,
   xrdResourceAddress: string
 ): string => {
+  const amount = toRadixDecimal(amountXrd);
   return `
 CALL_METHOD
     Address("${accountAddress}")
     "withdraw"
     Address("${xrdResourceAddress}")
-    Decimal("${amountXrd}")
+    Decimal("${amount}")
 ;
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
-    Decimal("${amountXrd}")
+    Decimal("${amount}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -38,19 +41,20 @@ CALL_METHOD
 export const buildUnstakeManifest = (
   accountAddress: string,
   validatorAddress: string,
-  amountLsu: number,
+  amountLsu: number | string,
   lsuResourceAddress: string
 ): string => {
+  const amount = toRadixDecimal(amountLsu);
   return `
 CALL_METHOD
     Address("${accountAddress}")
     "withdraw"
     Address("${lsuResourceAddress}")
-    Decimal("${amountLsu}")
+    Decimal("${amount}")
 ;
 TAKE_FROM_WORKTOP
     Address("${lsuResourceAddress}")
-    Decimal("${amountLsu}")
+    Decimal("${amount}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -112,7 +116,7 @@ CALL_METHOD
 
 export interface BatchStakeItem {
   validatorAddress: string;
-  amountXrd: number;
+  amountXrd: number | string;
 }
 
 export const buildBatchStakeManifest = (
@@ -120,8 +124,12 @@ export const buildBatchStakeManifest = (
   items: BatchStakeItem[],
   xrdResourceAddress: string
 ): string => {
-  const totalXrd = items.reduce((acc, item) => acc + item.amountXrd, 0);
-  
+  const formattedItems = items.map((item) => ({
+    ...item,
+    amountStr: toRadixDecimal(item.amountXrd),
+  }));
+  const totalXrd = sumRadixDecimals(formattedItems.map((item) => item.amountStr));
+
   let manifest = `
 CALL_METHOD
     Address("${accountAddress}")
@@ -131,11 +139,11 @@ CALL_METHOD
 ;
 `;
 
-  items.forEach((item, index) => {
+  formattedItems.forEach((item, index) => {
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
-    Decimal("${item.amountXrd}")
+    Decimal("${item.amountStr}")
     Bucket("bucket${index + 1}")
 ;
 CALL_METHOD
@@ -158,7 +166,7 @@ CALL_METHOD
 
 export interface BatchUnstakeItem {
   validatorAddress: string;
-  amountLsu: number;
+  amountLsu: number | string;
   lsuResourceAddress: string;
 }
 
@@ -166,25 +174,29 @@ export const buildBatchUnstakeManifest = (
   accountAddress: string,
   items: BatchUnstakeItem[]
 ): string => {
+  const formattedItems = items.map((item) => ({
+    ...item,
+    amountStr: toRadixDecimal(item.amountLsu),
+  }));
   let manifest = '';
 
   // withdraw all LSUs needed
-  items.forEach((item) => {
+  formattedItems.forEach((item) => {
     manifest += `
 CALL_METHOD
     Address("${accountAddress}")
     "withdraw"
     Address("${item.lsuResourceAddress}")
-    Decimal("${item.amountLsu}")
+    Decimal("${item.amountStr}")
 ;
 `;
   });
 
-  items.forEach((item, index) => {
+  formattedItems.forEach((item, index) => {
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
-    Decimal("${item.amountLsu}")
+    Decimal("${item.amountStr}")
     Bucket("bucket${index + 1}")
 ;
 CALL_METHOD
@@ -257,10 +269,37 @@ CALL_METHOD
   return manifest;
 };
 
-export type MixedBatchItem = 
+export interface MixedOwnerStakeItem {
+  action: 'OwnerStake';
+  validatorAddress: string;
+  amountXrd: number | string;
+  lsuResourceAddress: string;
+  ownerBadgeId: string;
+  ownerBadgeResourceAddress: string;
+}
+
+export interface MixedOwnerUnstakeItem {
+  action: 'OwnerUnstake';
+  validatorAddress: string;
+  amountLsu: number | string;
+  ownerBadgeId: string;
+  ownerBadgeResourceAddress: string;
+}
+
+export interface MixedOwnerClaimItem {
+  action: 'OwnerClaim';
+  validatorAddress: string;
+  ownerBadgeId: string;
+  ownerBadgeResourceAddress: string;
+}
+
+export type MixedBatchItem =
   | (BatchStakeItem & { action: 'Stake' })
   | (BatchUnstakeItem & { action: 'Unstake' })
-  | (BatchClaimItem & { action: 'Claim' });
+  | (BatchClaimItem & { action: 'Claim' })
+  | MixedOwnerStakeItem
+  | MixedOwnerUnstakeItem
+  | MixedOwnerClaimItem;
 
 export const buildMixedBatchManifest = (
   accountAddress: string,
@@ -268,14 +307,48 @@ export const buildMixedBatchManifest = (
   xrdResourceAddress: string
 ): string => {
   let manifest = '';
-  
-  const stakeItems = items.filter(i => i.action === 'Stake') as (BatchStakeItem & { action: 'Stake' })[];
-  const unstakeItems = items.filter(i => i.action === 'Unstake') as (BatchUnstakeItem & { action: 'Unstake' })[];
-  const claimItems = items.filter(i => i.action === 'Claim') as (BatchClaimItem & { action: 'Claim' })[];
 
-  // 1. Withdrawals
-  const totalXrdStake = stakeItems.reduce((acc, item) => acc + item.amountXrd, 0);
-  if (totalXrdStake > 0) {
+  const ownerStakeItems = items
+    .filter((i): i is MixedOwnerStakeItem => i.action === 'OwnerStake')
+    .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountXrd) }));
+  const ownerUnstakeItems = items
+    .filter((i): i is MixedOwnerUnstakeItem => i.action === 'OwnerUnstake')
+    .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountLsu) }));
+  const ownerClaimItems = items.filter((i): i is MixedOwnerClaimItem => i.action === 'OwnerClaim');
+
+  const stakeItems = items
+    .filter((i): i is BatchStakeItem & { action: 'Stake' } => i.action === 'Stake')
+    .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountXrd) }));
+  const unstakeItems = items
+    .filter((i): i is BatchUnstakeItem & { action: 'Unstake' } => i.action === 'Unstake')
+    .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountLsu) }));
+  const claimItems = items.filter((i): i is BatchClaimItem & { action: 'Claim' } => i.action === 'Claim');
+
+  // 0. Owner badge proofs (deduplicated per resource + local id)
+  const seenBadges = new Set<string>();
+  for (const item of [...ownerStakeItems, ...ownerUnstakeItems, ...ownerClaimItems]) {
+    const key = `${item.ownerBadgeResourceAddress}:${item.ownerBadgeId}`;
+    if (seenBadges.has(key)) continue;
+    seenBadges.add(key);
+    manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "create_proof_of_non_fungibles"
+    Address("${item.ownerBadgeResourceAddress}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("${item.ownerBadgeId}")
+    )
+;
+`;
+  }
+
+  // 1. Withdrawals (exact 18-decimal sum so withdraw === sum of TAKE_FROM_WORKTOP)
+  const allXrdAmounts = [
+    ...ownerStakeItems.map((i) => i.amountStr),
+    ...stakeItems.map((i) => i.amountStr),
+  ];
+  const totalXrdStake = sumRadixDecimals(allXrdAmounts);
+  if (parseAtto(totalXrdStake) > 0n) {
     manifest += `
 CALL_METHOD
     Address("${accountAddress}")
@@ -286,18 +359,69 @@ CALL_METHOD
 `;
   }
 
-  unstakeItems.forEach(item => {
+  // 2. Bucket index tracking
+  let bucketIndex = 1;
+
+  // Owner stakes run BEFORE any LSU withdrawals or delegator stakes so that
+  // TAKE_ALL_FROM_WORKTOP only sweeps the freshly minted owner stake units.
+  ownerStakeItems.forEach((item) => {
+    const xrdBucket = `bucket${bucketIndex++}`;
+    const lsuBucket = `bucket${bucketIndex++}`;
+    manifest += `
+TAKE_FROM_WORKTOP
+    Address("${xrdResourceAddress}")
+    Decimal("${item.amountStr}")
+    Bucket("${xrdBucket}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "stake_as_owner"
+    Bucket("${xrdBucket}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${item.lsuResourceAddress}")
+    Bucket("${lsuBucket}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "lock_owner_stake_units"
+    Bucket("${lsuBucket}")
+;
+`;
+  });
+
+  ownerUnstakeItems.forEach((item) => {
+    manifest += `
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "start_unlock_owner_stake_units"
+    Decimal("${item.amountStr}")
+;
+`;
+  });
+
+  ownerClaimItems.forEach((item) => {
+    manifest += `
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "finish_unlock_owner_stake_units"
+;
+`;
+  });
+
+  // Delegator LSU & Claim NFT withdrawals
+  unstakeItems.forEach((item) => {
     manifest += `
 CALL_METHOD
     Address("${accountAddress}")
     "withdraw"
     Address("${item.lsuResourceAddress}")
-    Decimal("${item.amountLsu}")
+    Decimal("${item.amountStr}")
 ;
 `;
   });
 
-  claimItems.forEach(item => {
+  claimItems.forEach((item) => {
     if (item.claimNftLocalIds.length === 0) return;
     const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
     manifest += `
@@ -310,14 +434,12 @@ CALL_METHOD
 `;
   });
 
-  // 2. Actions (Bucket index tracking)
-  let bucketIndex = 1;
-
-  stakeItems.forEach(item => {
+  // Delegator actions
+  stakeItems.forEach((item) => {
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
-    Decimal("${item.amountXrd}")
+    Decimal("${item.amountStr}")
     Bucket("bucket${bucketIndex}")
 ;
 CALL_METHOD
@@ -329,11 +451,11 @@ CALL_METHOD
     bucketIndex++;
   });
 
-  unstakeItems.forEach(item => {
+  unstakeItems.forEach((item) => {
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
-    Decimal("${item.amountLsu}")
+    Decimal("${item.amountStr}")
     Bucket("bucket${bucketIndex}")
 ;
 CALL_METHOD
@@ -345,7 +467,7 @@ CALL_METHOD
     bucketIndex++;
   });
 
-  claimItems.forEach(item => {
+  claimItems.forEach((item) => {
     if (item.claimNftLocalIds.length === 0) return;
     const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
     manifest += `
@@ -387,12 +509,13 @@ CALL_METHOD
 export const buildOwnerStakeManifest = (
   accountAddress: string,
   validatorAddress: string,
-  amountXrd: number,
+  amountXrd: number | string,
   xrdResourceAddress: string,
   lsuResourceAddress: string,
   ownerBadgeId: string,
   ownerBadgeResourceAddress: string
 ): string => {
+  const amount = toRadixDecimal(amountXrd);
   return `
 CALL_METHOD
     Address("${accountAddress}")
@@ -406,11 +529,11 @@ CALL_METHOD
     Address("${accountAddress}")
     "withdraw"
     Address("${xrdResourceAddress}")
-    Decimal("${amountXrd}")
+    Decimal("${amount}")
 ;
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
-    Decimal("${amountXrd}")
+    Decimal("${amount}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -441,10 +564,11 @@ CALL_METHOD
 export const buildOwnerUnstakeManifest = (
   accountAddress: string,
   validatorAddress: string,
-  amountLsu: number,
+  amountLsu: number | string,
   ownerBadgeId: string,
   ownerBadgeResourceAddress: string
 ): string => {
+  const amount = toRadixDecimal(amountLsu);
   return `
 CALL_METHOD
     Address("${accountAddress}")
@@ -457,7 +581,7 @@ CALL_METHOD
 CALL_METHOD
     Address("${validatorAddress}")
     "start_unlock_owner_stake_units"
-    Decimal("${amountLsu}")
+    Decimal("${amount}")
 ;
 CALL_METHOD
     Address("${accountAddress}")

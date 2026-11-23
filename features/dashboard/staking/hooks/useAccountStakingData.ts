@@ -122,12 +122,13 @@ export const useAccountStakingData = (
         gcTime: CACHE_TIMES.LONG,
     });
 
-    const { 
-        xrdAmount, 
-        lsuTokens, 
+    const {
+        xrdAmount,
+        lsuTokens,
         stakingRows,
         activeNfts,
-        isLoading: isLoadingStats 
+        claimableNfts,
+        isLoading: isLoadingStats
     } = useAccountStats(accountAddress || '', networkName, entityData || null);
 
     const isOwner = validator?.ownerBadge 
@@ -166,21 +167,17 @@ export const useAccountStakingData = (
         const xrdBalance = parseFloat(xrdAmount) || 0;
         
         const lsuToken = lsuTokens.find(t => t.address === validator.lsuResource);
+        const lsuBalanceRaw = lsuToken?.amount ?? '0';
         const lsuBalance = lsuToken ? parseFloat(lsuToken.amount) : 0;
 
         const stakingRow = stakingRows.find(r => r.validatorAddress === validator.address);
         const claimableXrd = stakingRow ? stakingRow.xrdInClaim : 0;
         const pendingUnstake = stakingRow ? stakingRow.xrdInUnstake : 0;
 
-        const claimNftIds: string[] = [];
-        if (entityData?.non_fungible_resources?.items) {
-            const claimResource = entityData.non_fungible_resources.items.find(
-                nft => nft.resource_address === validator.claimTokenResourceAddress
-            );
-            if (claimResource && claimResource.vaults?.items?.[0]?.items) {
-                claimNftIds.push(...claimResource.vaults.items[0].items);
-            }
-        }
+        // Only NFTs whose claim_epoch <= currentEpoch: including one still unbonding aborts claim_xrd.
+        const maturedClaims = claimableNfts[validator.address];
+        const claimNftIds: string[] = maturedClaims?.ids ?? [];
+        const claimNftResourceAddress = maturedClaims?.resource || validator.claimTokenResourceAddress;
 
         const currentEpoch = (entityData as GatewayEntityDetails & { ledger_state?: { epoch: number } })?.ledger_state?.epoch ?? 0;
 
@@ -222,9 +219,11 @@ export const useAccountStakingData = (
         data = {
             xrdBalance,
             lsuBalance,
+            lsuBalanceRaw,
             pendingUnstake,
             claimableXrd,
             claimNftIds,
+            claimNftResourceAddress,
             ownerClaimNftIds: [], // Future: Implement if owner claim NFTs are separate
             unstakeTooltip,
             isOwner,

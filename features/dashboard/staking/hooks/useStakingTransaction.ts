@@ -59,7 +59,7 @@ export const useStakingTransaction = () => {
             validatorAddress: string,
             action: StakingAction,
             tab: StakingTab,
-            amount: number,
+            amount: number | string,
             lsuResourceAddress: string,
             claimNftIds?: string[],
             claimNftResourceAddress?: string,
