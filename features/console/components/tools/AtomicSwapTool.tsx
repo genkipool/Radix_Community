@@ -25,6 +25,7 @@ import {
   buildMakerSubintentPreviewManifest,
   buildTakerSubintentManifest,
   buildTakerV2SettlementManifest,
+  clampCustomExpirationMinutes,
   type CommittedSwapTransaction,
   decodeSwapOffer,
   encodeSwapOffer,
@@ -32,6 +33,8 @@ import {
   extractTakerAccountFromCommittedTx,
   getSavedSwapOffersServerSnapshot,
   getSavedSwapOffersSnapshot,
+  MAX_EXPIRATION_MINUTES,
+  MIN_EXPIRATION_MINUTES,
   normalizeSwapAssets,
   parseSubintentIdInput,
   reconstructOfferFromCommittedTx,
@@ -757,10 +760,13 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   const [customMinutes, setCustomMinutes] = useState('');
   const [message, setMessage] = useState('');
 
-  const parsedCustomMinutes = parseFloat(customMinutes.replace(',', '.'));
+  const parsedCustomMinutes = parseInt(customMinutes, 10);
   const effectiveExpirySec =
     customMinutes.trim() && Number.isFinite(parsedCustomMinutes) && parsedCustomMinutes > 0
-      ? Math.max(60, Math.round(parsedCustomMinutes * 60))
+      ? Math.min(
+          MAX_EXPIRATION_MINUTES * 60,
+          Math.max(MIN_EXPIRATION_MINUTES * 60, parsedCustomMinutes * 60),
+        )
       : Number(expirySec);
 
   const [offerCodeByNet, setOfferCodeByNet] = useState<Record<'mainnet' | 'stokenet', string>>(() => {
@@ -1125,9 +1131,11 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                   <input
                     type="text"
                     inputMode="numeric"
+                    maxLength={5}
                     value={customMinutes}
-                    onChange={(e) => setCustomMinutes(e.target.value)}
+                    onChange={(e) => setCustomMinutes(clampCustomExpirationMinutes(e.target.value))}
                     placeholder={labels.customExpiryPlaceholder}
+                    title={`1–${MAX_EXPIRATION_MINUTES} min`}
                     className="min-h-[56px] w-full px-3 rounded-xl border text-xs font-mono text-center outline-none focus:border-[var(--color-primary)]"
                     style={{
                       background: 'var(--color-surface)',

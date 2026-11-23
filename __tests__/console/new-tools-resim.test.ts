@@ -13,7 +13,11 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildMigrateBatches, type MigrateItem } from '@/features/console/lib/account-migrate';
 import { buildCleanupBatches, type CleanupItem } from '@/features/console/lib/account-cleanup';
-import { buildDirectAtomicSwapManifest } from '@/features/console/lib/atomic-swap';
+import {
+  buildCancelSwapMoveManifest,
+  buildDirectAtomicSwapManifest,
+  buildMakerSubintentPreviewManifest,
+} from '@/features/console/lib/atomic-swap';
 import { RESIM, ResimLedger, SIM_XRD, expectCommitted, type ResimAccount } from '../helpers/resim';
 
 describe.skipIf(!RESIM)('new console tools on resim', () => {
@@ -194,5 +198,53 @@ describe.skipIf(!RESIM)('new console tools on resim', () => {
     expect(ledger.balance(alice.address, coinA)).toBe('75');
     expect(ledger.balance(bob.address, coinA)).toBe('25');
     expect(ledger.show(alice.address)).toContain(nftB);
+  });
+
+  it('executes a multi-asset atomic swap and invalidates a pending Subintent offer via buildCancelSwapMoveManifest on resim', () => {
+    ledger.use(alice);
+    const token1 = ledger.newToken('300', 'MultiA1');
+    const token2 = ledger.newToken('150', 'MultiA2');
+    ledger.use(bob);
+    const token3 = ledger.newToken('500', 'MultiB1');
+    ledger.use(alice);
+
+    // 1. Verify Maker Subintent preview manifest executes cleanly on resim
+    const previewManifest = buildMakerSubintentPreviewManifest(alice.address, [
+      { kind: 'fungible', resourceAddress: token1, amount: '100' },
+      { kind: 'fungible', resourceAddress: token2, amount: '50' },
+    ]);
+    expectCommitted(ledger.run(previewManifest, alice.address), previewManifest);
+
+    // 2. Execute multi-asset atomic swap between Alice and Bob
+    const multiSwapManifest = buildDirectAtomicSwapManifest(
+      alice.address,
+      bob.address,
+      [
+        { kind: 'fungible', resourceAddress: token1, amount: '100' },
+        { kind: 'fungible', resourceAddress: token2, amount: '50' },
+      ],
+      [{ kind: 'fungible', resourceAddress: token3, amount: '200' }],
+    );
+    const multiSwapFile = join(ledger.home, 'multi-swap.rtm');
+    writeFileSync(
+      multiSwapFile,
+      `CALL_METHOD\n    Address("${alice.address}")\n    "lock_fee"\n    Decimal("500")\n;\n${multiSwapManifest}`,
+    );
+    const out = ledger.exec('run', '--signing-keys', `${alice.privateKey},${bob.privateKey}`, multiSwapFile);
+    expect(out).toContain('Transaction Status: COMMITTED SUCCESS');
+    expect(ledger.balance(alice.address, token1)).toBe('200');
+    expect(ledger.balance(alice.address, token2)).toBe('100');
+    expect(ledger.balance(alice.address, token3)).toBe('200');
+    expect(ledger.balance(bob.address, token1)).toBe('100');
+    expect(ledger.balance(bob.address, token2)).toBe('50');
+    expect(ledger.balance(bob.address, token3)).toBe('300');
+
+    // 3. Invalidate a shared Subintent offer by moving the remaining offered tokens to sink account
+    const cancelManifest = buildCancelSwapMoveManifest(alice.address, sink.address, [
+      { kind: 'fungible', resourceAddress: token1, amount: '200' },
+    ]);
+    expectCommitted(ledger.run(cancelManifest, alice.address), cancelManifest);
+    expect(ledger.balance(alice.address, token1)).toBe('0');
+    expect(ledger.balance(sink.address, token1)).toBe('200');
   });
 });
