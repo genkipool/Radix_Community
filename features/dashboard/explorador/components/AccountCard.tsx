@@ -241,12 +241,12 @@ export function AccountCard({
                                 </div>
 
                                 {/* Stats Rows - 5 grid items corresponding to main balance */}
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-start">
                                     <div>
                                         <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                             {accT?.total_xrd || 'TOTAL XRD'}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-start gap-0.5">
                                             <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
                                                 {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
                                             </span>
@@ -257,7 +257,7 @@ export function AccountCard({
                                         <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                             {accT?.total_lsu || 'TOTAL LSU'}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-start gap-0.5">
                                             <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
                                                 {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
                                             </span>
@@ -268,7 +268,7 @@ export function AccountCard({
                                         <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                             {accT?.stake_xrd || 'STAKE XRD'}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-start gap-0.5">
                                             <span className="text-sm font-bold text-[var(--color-primary)] font-mono">
                                                 {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
                                             </span>
@@ -279,7 +279,7 @@ export function AccountCard({
                                         <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                             {accT?.unstake_xrd || 'UNSTAKE XRD'}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-start gap-0.5">
                                             <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
                                                 {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
                                             </span>
@@ -290,7 +290,7 @@ export function AccountCard({
                                         <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                             {accT?.claim_xrd || 'CLAIM XRD'}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-start gap-0.5">
                                             <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
                                                 {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
                                             </span>
