@@ -21,6 +21,8 @@ interface BatchValidatorStakeActionProps {
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     children?: React.ReactNode;
     canDistribute?: boolean;
+    /** False when any selected non-owner validator has nothing staked to unstake. */
+    canUnstake?: boolean;
     /**
      * Drop the outer card and the title row because the host already provides
      * them. Used where these controls get a box of their own (the console),
@@ -46,6 +48,7 @@ export const BatchValidatorStakeAction = ({
     tt,
     children,
     canDistribute = true,
+    canUnstake = true,
     unstyled = false
 }: BatchValidatorStakeActionProps) => {
     const { t: contextT } = useLanguage();
@@ -137,12 +140,14 @@ export const BatchValidatorStakeAction = ({
             <div className="flex gap-2">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const isThisActionTransacting = isTransacting && transactingAction === action;
+                    const hasVisibleTotalStake =
+                        Number.isFinite(totalStakedXrdSelected) && Number(totalStakedXrdSelected.toFixed(2)) > 0;
                     const isDisabled =
                         isTransacting ||
                         selectedValidatorsCount === 0 ||
                         !canDistribute ||
-                        (action === 'Unstake' && totalStakedXrdSelected <= 0) ||
-                        (action === 'Claim' && totalClaimableXrdSelected <= 0) ||
+                        (action === 'Unstake' && (!canUnstake || !hasVisibleTotalStake)) ||
+                        (action === 'Claim' && !(totalClaimableXrdSelected > 0)) ||
                         (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0));
 
                     const label = action;
@@ -155,7 +160,7 @@ export const BatchValidatorStakeAction = ({
                             onClick={() => onBatchAction(action)}
                             disabled={isDisabled}
                             title={isDisabled ? buttonTitle : undefined}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

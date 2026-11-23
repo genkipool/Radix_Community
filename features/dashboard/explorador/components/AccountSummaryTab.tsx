@@ -397,6 +397,7 @@ export function AccountSummaryTab({
                                 onCopy={onCopy}
                                 copiedAddress={copiedAddress}
                                 isModal={isModal}
+                                alwaysShowControls={isModal}
                                 stakingErrors={stakingErrors}
                                 onOpenCsvModal={(addr) => setCsvModalAddress(addr)}
                             />
