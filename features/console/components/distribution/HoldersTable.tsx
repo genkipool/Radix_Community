@@ -60,7 +60,7 @@ export function HoldersTable({ t, holders, shareBase, received, receivedSymbol, 
             {holders.slice(0, rows).map((h, i) => (
               <tr
                 key={h.address}
-                className="border-b border-[var(--color-card-border)] last:border-b-0 transition-colors duration-150 hover:bg-[var(--color-primary)]/[0.06]"
+                className="border-b border-[var(--color-card-border)] last:border-b-0 hover:bg-[var(--color-surface-hover)]"
               >
                 <td className="py-3 px-4 font-mono text-xs tabular-nums text-[var(--color-text-muted)] whitespace-nowrap">
                   {i + 1}

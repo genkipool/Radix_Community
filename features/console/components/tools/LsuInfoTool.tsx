@@ -182,11 +182,11 @@ export default function LsuInfoTool({ t }: ConsoleToolProps) {
                           setPickerOpen(false);
                           setPickerSearch('');
                         }}
-                        className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[var(--color-primary)]/10 cursor-pointer"
+                        className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left hover:bg-[var(--color-surface-hover)] cursor-pointer"
                       >
                         <span className="flex items-center gap-2.5 min-w-0">
                           {v.iconUrl ? (
-                            <SafeImage src={v.iconUrl} alt={v.name} fallbackName={v.name} className="size-6 rounded-full shrink-0" />
+                            <SafeImage src={v.iconUrl} alt={v.name} fallbackName={v.name} zoomable={false} className="size-6 rounded-full shrink-0" />
                           ) : (
                             <span
                               className="size-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold"
@@ -261,6 +261,7 @@ export default function LsuInfoTool({ t }: ConsoleToolProps) {
                   src={lsu.validatorIconUrl || lsu.lsuIconUrl || ''}
                   alt={lsu.validatorName}
                   fallbackName={lsu.validatorName}
+                  zoomable={false}
                   className="size-11 rounded-xl shrink-0"
                 />
               )}

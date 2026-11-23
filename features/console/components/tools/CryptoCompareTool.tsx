@@ -23,9 +23,9 @@ import { ToolSection } from '../shared/ToolSection';
 
 function formatCompactFiat(value: number, currency: 'USD' | 'EUR', locale: string): string {
   const symbol = currency === 'EUR' ? '€' : '$';
-  if (value >= 1e12) return `${symbol}${formatNumber(value / 1e12, 2, locale)}T`;
-  if (value >= 1e9) return `${symbol}${formatNumber(value / 1e9, 2, locale)}B`;
-  if (value >= 1e6) return `${symbol}${formatNumber(value / 1e6, 2, locale)}M`;
+  if (value >= 1e12) return `${formatNumber(value / 1e12, 2, locale)}T ${symbol}`;
+  if (value >= 1e9) return `${formatNumber(value / 1e9, 2, locale)}B ${symbol}`;
+  if (value >= 1e6) return `${formatNumber(value / 1e6, 2, locale)}M ${symbol}`;
   return formatCurrency(value, currency, locale);
 }
 
@@ -33,7 +33,7 @@ function formatUnitFiat(value: number, currency: 'USD' | 'EUR', locale: string):
   if (value >= 100) return formatCurrency(value, currency, locale);
   const symbol = currency === 'EUR' ? '€' : '$';
   const decimals = value >= 1 ? 3 : value >= 0.01 ? 4 : 6;
-  return `${symbol}${formatNumber(value, decimals, locale)}`;
+  return `${formatNumber(value, decimals, locale)} ${symbol}`;
 }
 
 function CoinSelector({
@@ -95,117 +95,118 @@ function CoinSelector({
   const rate = currency === 'EUR' ? eurPerUsd : 1;
 
   return (
-    <div ref={containerRef} className="relative space-y-2">
+    <div ref={containerRef} className="space-y-2">
       <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
         {label}
       </span>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full h-[58px] flex items-center justify-between gap-3 px-3.5 rounded-xl border text-left transition-colors hover:border-[var(--color-primary)]/50 cursor-pointer"
-        style={{
-          background: 'var(--color-surface)',
-          borderColor: open ? 'var(--color-primary)' : 'var(--color-card-border)',
-        }}
-      >
-        {selected ? (
-          <span className="flex items-center gap-2.5 min-w-0">
-            {selected.image ? (
-              <SafeImage src={selected.image} alt={selected.name} fallbackName={selected.symbol} className="size-7 rounded-full shrink-0" />
-            ) : (
-              <span
-                className="size-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black"
-                style={{ background: 'var(--color-bg)', color: 'var(--color-primary)' }}
-              >
-                {selected.symbol.slice(0, 3)}
-              </span>
-            )}
-            <span className="min-w-0">
-              <span className="block text-sm font-bold truncate leading-tight" style={{ color: 'var(--color-text-main)' }}>
-                {selected.name}{' '}
-                <span className="font-mono text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>
-                  {selected.symbol}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full h-[58px] flex items-center justify-between gap-3 px-3.5 rounded-xl border text-left transition-colors hover:border-[var(--color-primary)]/50 cursor-pointer"
+          style={{
+            background: 'var(--color-surface)',
+            borderColor: open ? 'var(--color-primary)' : 'var(--color-card-border)',
+          }}
+        >
+          {selected ? (
+            <span className="flex items-center gap-2.5 min-w-0">
+              {selected.image ? (
+                <SafeImage src={selected.image} alt={selected.name} fallbackName={selected.symbol} zoomable={false} className="size-7 rounded-full shrink-0" />
+              ) : (
+                <span
+                  className="size-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black"
+                  style={{ background: 'var(--color-bg)', color: 'var(--color-primary)' }}
+                >
+                  {selected.symbol.slice(0, 3)}
+                </span>
+              )}
+              <span className="min-w-0">
+                <span className="block text-sm font-bold truncate leading-tight" style={{ color: 'var(--color-text-main)' }}>
+                  {selected.name}{' '}
+                  <span className="font-mono text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>
+                    {selected.symbol}
+                  </span>
+                </span>
+                <span className="block text-[11px] font-mono tabular-nums leading-tight mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                  {formatUnitFiat(selected.priceUsd * rate, currency, locale)} · {formatCompactFiat(selected.marketCapUsd * rate, currency, locale)}
                 </span>
               </span>
-              <span className="block text-[11px] font-mono tabular-nums leading-tight mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                {formatUnitFiat(selected.priceUsd * rate, currency, locale)} · {formatCompactFiat(selected.marketCapUsd * rate, currency, locale)}
-              </span>
             </span>
-          </span>
-        ) : (
-          <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>—</span>
-        )}
-        <ChevronDown
-          className={`size-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-          style={{ color: 'var(--color-text-muted)' }}
-        />
-      </button>
+          ) : (
+            <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>—</span>
+          )}
+          <ChevronDown
+            className={`size-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+            style={{ color: 'var(--color-text-muted)' }}
+          />
+        </button>
 
-      {open && (
-        <div
-          className="absolute z-30 mt-1.5 w-full rounded-xl border shadow-xl overflow-hidden"
-          style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)' }}
-        >
-          <div className="p-2 border-b flex items-center gap-2" style={{ borderColor: 'var(--color-card-border)' }}>
-            <Search className="size-3.5 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="w-full bg-transparent text-xs outline-none"
-              style={{ color: 'var(--color-text-main)' }}
-            />
-          </div>
-          <ul className="max-h-64 overflow-y-auto divide-y custom-scrollbar" style={{ borderColor: 'var(--color-card-border)' }}>
-            {filtered.length === 0 ? (
-              <li className="px-3 py-4 text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                {noResultsLabel}
-              </li>
-            ) : (
-              filtered.map((coin) => {
-                const active = coin.id === selected?.id;
-                return (
-                  <li key={coin.id} style={{ borderColor: 'var(--color-card-border)' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSelect(coin.id);
-                        setOpen(false);
-                        setQuery('');
-                      }}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--color-primary)]/10 cursor-pointer"
-                      style={{
-                        background: active ? 'color-mix(in srgb, var(--color-primary) 12%, transparent)' : undefined,
-                      }}
-                    >
-                      <span className="flex items-center gap-2 min-w-0">
-                        {coin.image ? (
-                          <SafeImage src={coin.image} alt={coin.name} fallbackName={coin.symbol} className="size-5 rounded-full shrink-0" />
-                        ) : (
-                          <span className="size-5 rounded-full shrink-0 text-[9px] font-bold flex items-center justify-center bg-[var(--color-bg)]">
-                            {coin.symbol.slice(0, 2)}
+        {open && (
+          <div
+            className="absolute top-full left-0 z-30 mt-1.5 w-full rounded-xl border shadow-xl overflow-hidden"
+            style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)' }}
+          >
+            <div className="p-2 border-b flex items-center gap-2" style={{ borderColor: 'var(--color-card-border)' }}>
+              <Search className="size-3.5 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full bg-transparent text-xs outline-none"
+                style={{ color: 'var(--color-text-main)' }}
+              />
+            </div>
+            <ul className="max-h-64 overflow-y-auto divide-y custom-scrollbar" style={{ borderColor: 'var(--color-card-border)' }}>
+              {filtered.length === 0 ? (
+                <li className="px-3 py-4 text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  {noResultsLabel}
+                </li>
+              ) : (
+                filtered.map((coin) => {
+                  const active = coin.id === selected?.id;
+                  return (
+                    <li key={coin.id} style={{ borderColor: 'var(--color-card-border)' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelect(coin.id);
+                          setOpen(false);
+                          setQuery('');
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left cursor-pointer ${
+                          active ? 'bg-[var(--color-surface-hover)]' : 'hover:bg-[var(--color-surface-hover)]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          {coin.image ? (
+                            <SafeImage src={coin.image} alt={coin.name} fallbackName={coin.symbol} zoomable={false} className="size-5 rounded-full shrink-0" />
+                          ) : (
+                            <span className="size-5 rounded-full shrink-0 text-[9px] font-bold flex items-center justify-center bg-[var(--color-bg)]">
+                              {coin.symbol.slice(0, 2)}
+                            </span>
+                          )}
+                          <span className="truncate text-xs font-semibold" style={{ color: 'var(--color-text-main)' }}>
+                            {coin.name}
                           </span>
-                        )}
-                        <span className="truncate text-xs font-semibold" style={{ color: 'var(--color-text-main)' }}>
-                          {coin.name}
+                          <span className="font-mono text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                            {coin.symbol}
+                          </span>
                         </span>
-                        <span className="font-mono text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                          {coin.symbol}
+                        <span className="shrink-0 font-mono text-[11px] tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
+                          {formatCompactFiat(coin.marketCapUsd * rate, currency, locale)}
                         </span>
-                      </span>
-                      <span className="shrink-0 font-mono text-[11px] tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
-                        {formatCompactFiat(coin.marketCapUsd * rate, currency, locale)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-        </div>
-      )}
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -384,8 +385,8 @@ export default function CryptoCompareTool({ t }: ConsoleToolProps) {
       {result && (
         <ToolSection className="space-y-6">
           {/* Hero projection & valuation split */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 items-center">
-            <div className="space-y-2 min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-stretch">
+            <div className="flex flex-col justify-between gap-3 min-w-0">
               <p
                 className="text-xs font-bold uppercase tracking-wider truncate"
                 style={{ color: 'var(--color-text-muted)' }}
@@ -416,49 +417,51 @@ export default function CryptoCompareTool({ t }: ConsoleToolProps) {
                 </span>
               </div>
 
-              <p className="text-xs font-mono tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="text-[11px] sm:text-xs tabular-nums leading-snug lg:whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
                 {labels.currentPriceLabel}: {formatUnitFiat(currentUnit, currency, language)} ({result.percentChange >= 0 ? '+' : ''}
                 {formatNumber(result.percentChange, 1, language)}%)
               </p>
             </div>
 
             <div
-              className="lg:pl-6 lg:border-l space-y-4"
+              className="flex flex-col justify-between gap-3 min-w-0 lg:pl-6 lg:border-l"
               style={{ borderColor: 'var(--color-card-border)' }}
             >
               <div className="grid grid-cols-2 gap-4">
                 <div className="min-w-0">
-                  <span className="block text-[11px] uppercase tracking-wider font-semibold truncate" style={{ color: 'var(--color-text-muted)' }}>
+                  <span className="block text-xs font-bold uppercase tracking-wider truncate" style={{ color: 'var(--color-text-muted)' }}>
                     {result.base.symbol} · {mode === 'mcap' ? labels.modeMcap : labels.modeFdv}
                   </span>
-                  <p className="text-lg font-bold font-mono tabular-nums mt-0.5" style={{ color: 'var(--color-text-main)' }}>
+                  <p className="text-lg font-bold font-mono tabular-nums mt-1" style={{ color: 'var(--color-text-main)' }}>
                     {formatCompactFiat(result.baseCapUsd * rate, currency, language)}
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-[11px] uppercase tracking-wider font-semibold truncate" style={{ color: 'var(--color-text-muted)' }}>
+                  <span className="block text-xs font-bold uppercase tracking-wider truncate" style={{ color: 'var(--color-text-muted)' }}>
                     {result.target.symbol} · {mode === 'mcap' ? labels.modeMcap : labels.modeFdv}
                   </span>
-                  <p className="text-lg font-bold font-mono tabular-nums mt-0.5" style={{ color: 'var(--color-primary)' }}>
+                  <p className="text-lg font-bold font-mono tabular-nums mt-1" style={{ color: 'var(--color-primary)' }}>
                     {formatCompactFiat(result.targetCapUsd * rate, currency, language)}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'var(--color-surface)' }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{ width: `${result.barSharePct}%`, background: 'linear-gradient(to right, var(--color-accent), var(--color-primary))' }}
-                  />
-                </div>
-                <p className="text-[11px] font-mono tabular-nums truncate" style={{ color: 'var(--color-text-muted)' }}>
-                  {labels.ratioNote
-                    .replace('{base}', result.base.symbol)
-                    .replace('{pct}', formatNumber((result.baseCapUsd / result.targetCapUsd) * 100, 4, language))
-                    .replace('{target}', result.target.symbol)}
-                </p>
+              <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'var(--color-surface)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${result.barSharePct}%`, background: 'linear-gradient(to right, var(--color-accent), var(--color-primary))' }}
+                />
               </div>
+
+              <p
+                className="text-[11px] sm:text-xs tabular-nums leading-snug lg:whitespace-nowrap"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                {labels.ratioNote
+                  .replace('{base}', result.base.symbol)
+                  .replace('{pct}', formatNumber((result.baseCapUsd / result.targetCapUsd) * 100, 4, language))
+                  .replace('{target}', result.target.symbol)}
+              </p>
             </div>
           </div>
 
