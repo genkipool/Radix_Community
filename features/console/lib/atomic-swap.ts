@@ -4,8 +4,10 @@
  *
  * Zero Redis commands, zero third-party contracts: relies solely on native
  * Radix Engine worktop assertions and Subintents (Pre-authorizations).
- * Supports single or multiple resources on both sides of the swap.
+ * Supports single or multiple resources and single or multiple accounts on both sides.
  */
+
+import Big from 'big.js';
 
 export type SwapAsset =
   | { kind: 'fungible'; resourceAddress: string; amount: string }
@@ -13,10 +15,20 @@ export type SwapAsset =
 
 export type SwapAssetInput = SwapAsset | SwapAsset[];
 
+export type PerAccountHoldingsMap = Record<
+  string,
+  {
+    fungibles: Array<{ resourceAddress: string; amount: string }>;
+    nonFungibles: Array<{ resourceAddress: string; ids: string[] }>;
+  }
+>;
+
 export interface AtomicSwapOffer {
   v: 1;
   network: 'mainnet' | 'stokenet';
   makerAccount: string;
+  /** All Maker accounts participating in a multi-account pre-authorization (primary first). */
+  makerAccounts?: string[];
   offer: SwapAssetInput;
   want: SwapAssetInput;
   subintentHash: string;
@@ -24,6 +36,23 @@ export interface AtomicSwapOffer {
   expirationTimestamp: number;
   /** Optional note attached by the Maker and shown when inspecting the offer. */
   message?: string;
+}
+
+/** Returns all unique Maker accounts for an offer, with the primary `makerAccount` first. */
+export function getOfferMakerAccounts(
+  offer: Pick<AtomicSwapOffer, 'makerAccount' | 'makerAccounts'>,
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const addr of [offer.makerAccount, ...(offer.makerAccounts ?? [])]) {
+    const trimmed = addr?.trim();
+    if (!trimmed || !trimmed.startsWith('account_')) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
 }
 
 export const EXPIRATION_PRESETS = [
@@ -61,12 +90,103 @@ export function normalizeSwapAssets(input: SwapAssetInput): SwapAsset[] {
   return Array.isArray(input) ? input : [input];
 }
 
+function normalizeAccounts(input: string | string[]): string[] {
+  const list = Array.isArray(input) ? input : [input];
+  return list.map((a) => a.trim()).filter((a) => a.startsWith('account_'));
+}
+
 function withdrawInstruction(account: string, asset: SwapAsset): string {
   if (asset.kind === 'fungible') {
     return `CALL_METHOD\n    Address("${account}")\n    "withdraw"\n    Address("${asset.resourceAddress}")\n    Decimal("${asset.amount}")\n;`;
   }
   const idsList = asset.ids.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
   return `CALL_METHOD\n    Address("${account}")\n    "withdraw_non_fungibles"\n    Address("${asset.resourceAddress}")\n    Array<NonFungibleLocalId>(${idsList})\n;`;
+}
+
+/**
+ * Generates one or more `withdraw` / `withdraw_non_fungibles` instructions across
+ * multiple selected accounts based on each account's actual holdings (`byAccount`).
+ * All withdrawn tokens/NFTs land on the worktop and are then gathered into the target bucket.
+ */
+function withdrawAcrossAccountsInstructions(
+  accounts: string[],
+  asset: SwapAsset,
+  byAccount?: PerAccountHoldingsMap,
+): string[] {
+  if (accounts.length <= 1 || !byAccount) {
+    return [withdrawInstruction(accounts[0], asset)];
+  }
+
+  if (asset.kind === 'fungible') {
+    let remaining: Big;
+    try {
+      remaining = new Big(asset.amount);
+    } catch {
+      return [withdrawInstruction(accounts[0], asset)];
+    }
+    const instructions: string[] = [];
+    for (const acct of accounts) {
+      if (remaining.lte(0)) break;
+      const heldStr = byAccount[acct]?.fungibles.find((f) => f.resourceAddress === asset.resourceAddress)?.amount;
+      if (!heldStr) continue;
+      let held: Big;
+      try {
+        held = new Big(heldStr);
+      } catch {
+        continue;
+      }
+      if (held.lte(0)) continue;
+      const take = held.gte(remaining) ? remaining : held;
+      instructions.push(
+        withdrawInstruction(acct, {
+          kind: 'fungible',
+          resourceAddress: asset.resourceAddress,
+          amount: take.toFixed(),
+        }),
+      );
+      remaining = remaining.minus(take);
+    }
+    if (remaining.gt(0)) {
+      instructions.push(
+        withdrawInstruction(accounts[0], {
+          kind: 'fungible',
+          resourceAddress: asset.resourceAddress,
+          amount: remaining.toFixed(),
+        }),
+      );
+    }
+    return instructions.length > 0 ? instructions : [withdrawInstruction(accounts[0], asset)];
+  }
+
+  const remainingIds = new Set(asset.ids);
+  const instructions: string[] = [];
+  for (const acct of accounts) {
+    if (remainingIds.size === 0) break;
+    const heldIds = new Set(
+      byAccount[acct]?.nonFungibles.find((nf) => nf.resourceAddress === asset.resourceAddress)?.ids ?? [],
+    );
+    const takeIds = asset.ids.filter((id) => remainingIds.has(id) && heldIds.has(id));
+    if (takeIds.length > 0) {
+      instructions.push(
+        withdrawInstruction(acct, {
+          kind: 'nft',
+          resourceAddress: asset.resourceAddress,
+          ids: takeIds,
+        }),
+      );
+      takeIds.forEach((id) => remainingIds.delete(id));
+    }
+  }
+  if (remainingIds.size > 0) {
+    instructions.push(
+      withdrawInstruction(accounts[0], {
+        kind: 'nft',
+        resourceAddress: asset.resourceAddress,
+        ids: [...remainingIds],
+      }),
+    );
+  }
+  return instructions.length > 0 ? instructions : [withdrawInstruction(accounts[0], asset)];
 }
 
 function assertWorktopInstruction(asset: SwapAsset): string {
@@ -101,19 +221,22 @@ function areValidSwapAssets(input: SwapAssetInput): boolean {
 
 /**
  * Builds the Maker's Subintent (Pre-authorization) manifest:
- * 1. Withdraws all Maker offered assets, takes them into buckets, and explicitly
- *    yields those buckets to the parent (`YIELD_TO_PARENT Bucket(...)`).
+ * 1. Withdraws all Maker offered assets (across one or more selected Maker accounts),
+ *    takes them into buckets, and explicitly yields those buckets to the parent.
  * 2. When resumed by the parent, asserts every wanted asset is on worktop.
- * 3. Deposits the wanted assets into Maker's account and yields cleanly.
+ * 3. Deposits the wanted assets into Maker's primary account and yields cleanly.
  */
 export function buildMakerSubintentManifest(
-  makerAccount: string,
+  makerAccount: string | string[],
   offer: SwapAssetInput,
   want: SwapAssetInput,
+  byAccount?: PerAccountHoldingsMap,
 ): string {
-  if (!makerAccount.startsWith('account_') || !areValidSwapAssets(offer) || !areValidSwapAssets(want)) {
+  const makerAccounts = normalizeAccounts(makerAccount);
+  if (makerAccounts.length === 0 || !areValidSwapAssets(offer) || !areValidSwapAssets(want)) {
     return '';
   }
+  const primaryMaker = makerAccounts[0];
   const offers = normalizeSwapAssets(offer);
   const wants = normalizeSwapAssets(want);
   const lines: string[] = [];
@@ -121,7 +244,7 @@ export function buildMakerSubintentManifest(
 
   offers.forEach((asset, idx) => {
     const bucket = `offer_${idx}`;
-    lines.push(withdrawInstruction(makerAccount, asset));
+    lines.push(...withdrawAcrossAccountsInstructions(makerAccounts, asset, byAccount));
     lines.push(takeBucketInstruction(asset, bucket));
     offerBuckets.push(`Bucket("${bucket}")`);
   });
@@ -131,7 +254,7 @@ export function buildMakerSubintentManifest(
     lines.push(assertWorktopInstruction(a));
   }
   lines.push(
-    `CALL_METHOD\n    Address("${makerAccount}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
+    `CALL_METHOD\n    Address("${primaryMaker}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
   );
   lines.push('YIELD_TO_PARENT;');
   return lines.join('\n');
@@ -139,19 +262,22 @@ export function buildMakerSubintentManifest(
 
 /**
  * Builds the Taker's Subintent manifest for 1-click V2 settlement:
- * 1. Withdraws all `want` assets, puts them into buckets, and explicitly yields
- *    them to the root orchestrator (`YIELD_TO_PARENT Bucket(...)`).
+ * 1. Withdraws all `want` assets (across one or more selected Taker accounts),
+ *    puts them into buckets, and explicitly yields them to the root orchestrator.
  * 2. When resumed, asserts Maker's `offer` assets arrived, deposits them into
- *    Taker's account, and yields cleanly.
+ *    Taker's primary account, and yields cleanly.
  */
 export function buildTakerSubintentManifest(
-  takerAccount: string,
+  takerAccount: string | string[],
   want: SwapAssetInput,
   offer: SwapAssetInput,
+  byAccount?: PerAccountHoldingsMap,
 ): string {
-  if (!takerAccount.startsWith('account_') || !areValidSwapAssets(want) || !areValidSwapAssets(offer)) {
+  const takerAccounts = normalizeAccounts(takerAccount);
+  if (takerAccounts.length === 0 || !areValidSwapAssets(want) || !areValidSwapAssets(offer)) {
     return '';
   }
+  const primaryTaker = takerAccounts[0];
   const wants = normalizeSwapAssets(want);
   const offers = normalizeSwapAssets(offer);
   const lines: string[] = [];
@@ -159,7 +285,7 @@ export function buildTakerSubintentManifest(
 
   wants.forEach((asset, idx) => {
     const bucket = `want_${idx}`;
-    lines.push(withdrawInstruction(takerAccount, asset));
+    lines.push(...withdrawAcrossAccountsInstructions(takerAccounts, asset, byAccount));
     lines.push(takeBucketInstruction(asset, bucket));
     wantBuckets.push(`Bucket("${bucket}")`);
   });
@@ -170,7 +296,7 @@ export function buildTakerSubintentManifest(
     lines.push(assertWorktopInstruction(a));
   }
   lines.push(
-    `CALL_METHOD\n    Address("${takerAccount}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
+    `CALL_METHOD\n    Address("${primaryTaker}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
   );
   lines.push('YIELD_TO_PARENT;');
   return lines.join('\n');
@@ -240,40 +366,45 @@ export function buildV2RootOrchestratorManifest(
  * payment when the Taker embeds and settles the Subintent).
  */
 export function buildMakerSubintentPreviewManifest(
-  makerAccount: string,
+  makerAccount: string | string[],
   offer: SwapAssetInput,
+  byAccount?: PerAccountHoldingsMap,
 ): string {
-  if (!makerAccount.startsWith('account_') || !areValidSwapAssets(offer)) {
+  const makerAccounts = normalizeAccounts(makerAccount);
+  if (makerAccounts.length === 0 || !areValidSwapAssets(offer)) {
     return '';
   }
+  const primaryMaker = makerAccounts[0];
   const offers = normalizeSwapAssets(offer);
   return [
-    ...offers.map((a) => withdrawInstruction(makerAccount, a)),
-    `CALL_METHOD\n    Address("${makerAccount}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
+    ...offers.flatMap((a) => withdrawAcrossAccountsInstructions(makerAccounts, a, byAccount)),
+    `CALL_METHOD\n    Address("${primaryMaker}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
   ].join('\n');
 }
 
 /**
  * Builds a standard V1 manifest that moves the offered assets out of the Maker's
- * account to another account they own, making a previously shared Subintent
+ * account(s) to another account they own, making a previously shared Subintent
  * unexecutable (InsufficientBalance) until its expiration window passes.
  */
 export function buildCancelSwapMoveManifest(
-  makerAccount: string,
+  makerAccount: string | string[],
   destinationAccount: string,
   offer: SwapAssetInput,
+  byAccount?: PerAccountHoldingsMap,
 ): string {
+  const makerAccounts = normalizeAccounts(makerAccount);
   if (
-    !makerAccount.startsWith('account_')
+    makerAccounts.length === 0
     || !destinationAccount.startsWith('account_')
-    || makerAccount === destinationAccount
+    || (makerAccounts.length === 1 && makerAccounts[0] === destinationAccount)
     || !areValidSwapAssets(offer)
   ) {
     return '';
   }
   const offers = normalizeSwapAssets(offer);
   return [
-    ...offers.map((a) => withdrawInstruction(makerAccount, a)),
+    ...offers.flatMap((a) => withdrawAcrossAccountsInstructions(makerAccounts, a, byAccount)),
     `CALL_METHOD\n    Address("${destinationAccount}")\n    "try_deposit_batch_or_abort"\n    Expression("ENTIRE_WORKTOP")\n    Enum<0u8>()\n;`,
   ].join('\n');
 }
@@ -283,10 +414,13 @@ export function buildCancelSwapMoveManifest(
  * signed subintent (`USE_CHILD` + `YIELD_TO_CHILD`).
  */
 export function buildTakerV2SettlementManifest(
-  takerAccount: string,
+  takerAccount: string | string[],
   offer: AtomicSwapOffer,
+  byAccount?: PerAccountHoldingsMap,
 ): string {
-  if (!takerAccount.startsWith('account_') || !offer.subintentHash) return '';
+  const takerAccounts = normalizeAccounts(takerAccount);
+  if (takerAccounts.length === 0 || !offer.subintentHash) return '';
+  const primaryTaker = takerAccounts[0];
   const offers = normalizeSwapAssets(offer.offer);
   const wants = normalizeSwapAssets(offer.want);
   const lines: string[] = [
@@ -299,14 +433,14 @@ export function buildTakerV2SettlementManifest(
     lines.push(assertWorktopInstruction(asset));
     lines.push(takeBucketInstruction(asset, bucket));
     lines.push(
-      `CALL_METHOD\n    Address("${takerAccount}")\n    "try_deposit_or_abort"\n    Bucket("${bucket}")\n    Enum<0u8>()\n;`,
+      `CALL_METHOD\n    Address("${primaryTaker}")\n    "try_deposit_or_abort"\n    Bucket("${bucket}")\n    Enum<0u8>()\n;`,
     );
   });
 
   const paymentBuckets: string[] = [];
   wants.forEach((asset, idx) => {
     const bucket = wants.length === 1 ? 'taker_payment' : `taker_payment_${idx}`;
-    lines.push(withdrawInstruction(takerAccount, asset));
+    lines.push(...withdrawAcrossAccountsInstructions(takerAccounts, asset, byAccount));
     lines.push(takeBucketInstruction(asset, bucket));
     paymentBuckets.push(`Bucket("${bucket}")`);
   });
@@ -315,31 +449,36 @@ export function buildTakerV2SettlementManifest(
     `YIELD_TO_CHILD\n    NamedIntent("maker_offer")\n    ${paymentBuckets.join('\n    ')}\n;`,
   );
   lines.push(
-    `CALL_METHOD\n    Address("${takerAccount}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
+    `CALL_METHOD\n    Address("${primaryTaker}")\n    "deposit_batch"\n    Expression("ENTIRE_WORKTOP")\n;`,
   );
   return lines.join('\n');
 }
 
 /**
- * Builds a single-transaction V1 atomic swap manifest between two accounts
- * (both accounts sign via Radix Wallet; executable directly on Mainnet & Stokenet).
+ * Builds a single-transaction V1 atomic swap manifest between accounts
+ * (all participating accounts sign via Radix Wallet; executable directly on Mainnet & Stokenet).
  */
 export function buildDirectAtomicSwapManifest(
-  makerAccount: string,
-  takerAccount: string,
+  makerAccount: string | string[],
+  takerAccount: string | string[],
   offer: SwapAssetInput,
   want: SwapAssetInput,
+  byAccount?: PerAccountHoldingsMap,
 ): string {
+  const makerAccounts = normalizeAccounts(makerAccount);
+  const takerAccounts = normalizeAccounts(takerAccount);
   if (
-    !makerAccount.startsWith('account_')
-    || !takerAccount.startsWith('account_')
-    || makerAccount === takerAccount
+    makerAccounts.length === 0
+    || takerAccounts.length === 0
+    || (makerAccounts.length === 1 && takerAccounts.length === 1 && makerAccounts[0] === takerAccounts[0])
     || !areValidSwapAssets(offer)
     || !areValidSwapAssets(want)
   ) {
     return '';
   }
 
+  const primaryMaker = makerAccounts[0];
+  const primaryTaker = takerAccounts[0];
   const offers = normalizeSwapAssets(offer);
   const wants = normalizeSwapAssets(want);
   const lines: string[] = [];
@@ -347,7 +486,7 @@ export function buildDirectAtomicSwapManifest(
   const offerBuckets: string[] = [];
   offers.forEach((asset, idx) => {
     const bucket = offers.length === 1 ? 'maker_offer' : `maker_offer_${idx}`;
-    lines.push(withdrawInstruction(makerAccount, asset));
+    lines.push(...withdrawAcrossAccountsInstructions(makerAccounts, asset, byAccount));
     lines.push(takeBucketInstruction(asset, bucket));
     offerBuckets.push(bucket);
   });
@@ -355,19 +494,19 @@ export function buildDirectAtomicSwapManifest(
   const wantBuckets: string[] = [];
   wants.forEach((asset, idx) => {
     const bucket = wants.length === 1 ? 'taker_payment' : `taker_payment_${idx}`;
-    lines.push(withdrawInstruction(takerAccount, asset));
+    lines.push(...withdrawAcrossAccountsInstructions(takerAccounts, asset, byAccount));
     lines.push(takeBucketInstruction(asset, bucket));
     wantBuckets.push(bucket);
   });
 
   for (const bucket of offerBuckets) {
     lines.push(
-      `CALL_METHOD\n    Address("${takerAccount}")\n    "try_deposit_or_abort"\n    Bucket("${bucket}")\n    Enum<0u8>()\n;`,
+      `CALL_METHOD\n    Address("${primaryTaker}")\n    "try_deposit_or_abort"\n    Bucket("${bucket}")\n    Enum<0u8>()\n;`,
     );
   }
   for (const bucket of wantBuckets) {
     lines.push(
-      `CALL_METHOD\n    Address("${makerAccount}")\n    "try_deposit_or_abort"\n    Bucket("${bucket}")\n    Enum<0u8>()\n;`,
+      `CALL_METHOD\n    Address("${primaryMaker}")\n    "try_deposit_or_abort"\n    Bucket("${bucket}")\n    Enum<0u8>()\n;`,
     );
   }
 
@@ -405,9 +544,11 @@ const unpackAsset = (c: CompactAsset): SwapAsset =>
 export function encodeSwapOffer(offer: AtomicSwapOffer): string {
   const offers = normalizeSwapAssets(offer.offer).map(packAsset);
   const wants = normalizeSwapAssets(offer.want).map(packAsset);
+  const makerList = getOfferMakerAccounts(offer);
+  const encodedMaker = makerList.length > 1 ? makerList : offer.makerAccount;
   const metaTuple = [
     offer.network === 'stokenet' ? 's' : 'm',
-    offer.makerAccount,
+    encodedMaker,
     offers.length === 1 ? offers[0] : offers,
     wants.length === 1 ? wants[0] : wants,
     offer.subintentHash,
@@ -445,7 +586,15 @@ export function decodeSwapOffer(code: string): AtomicSwapOffer | null {
       if (3 + metaLen >= bytes.length) return null;
       const metaTuple = JSON.parse(new TextDecoder().decode(bytes.subarray(3, 3 + metaLen))) as unknown[];
       if (!Array.isArray(metaTuple) || metaTuple.length < 6) return null;
-      const [net, makerAccount, rawOffer, rawWant, subintentHash, expirationTimestamp, rawMessage] = metaTuple;
+      const [net, rawMaker, rawOffer, rawWant, subintentHash, expirationTimestamp, rawMessage] = metaTuple;
+      const makerAccountsList =
+        typeof rawMaker === 'string' && rawMaker.startsWith('account_')
+          ? [rawMaker]
+          : Array.isArray(rawMaker)
+              && rawMaker.length > 0
+              && rawMaker.every((a): a is string => typeof a === 'string' && a.startsWith('account_'))
+            ? rawMaker
+            : null;
       const unpackField = (val: unknown): SwapAssetInput | null => {
         if (!Array.isArray(val) || val.length === 0) return null;
         if (val[0] === 'f' || val[0] === 'n') return unpackAsset(val as CompactAsset);
@@ -455,8 +604,7 @@ export function decodeSwapOffer(code: string): AtomicSwapOffer | null {
       const want = unpackField(rawWant);
       if (
         (net !== 'm' && net !== 's')
-        || typeof makerAccount !== 'string'
-        || !makerAccount.startsWith('account_')
+        || !makerAccountsList
         || typeof subintentHash !== 'string'
         || typeof expirationTimestamp !== 'number'
         || !offer
@@ -469,7 +617,8 @@ export function decodeSwapOffer(code: string): AtomicSwapOffer | null {
       return {
         v: 1,
         network: net === 's' ? 'stokenet' : 'mainnet',
-        makerAccount,
+        makerAccount: makerAccountsList[0],
+        ...(makerAccountsList.length > 1 ? { makerAccounts: makerAccountsList } : {}),
         offer,
         want,
         subintentHash,
@@ -539,31 +688,43 @@ export interface CommittedSwapTransaction {
 }
 
 /**
- * Extracts the Taker account address (`account_... !== makerAccount`) from a
+ * Extracts all unique Taker account addresses (`account_...` not in `makerAccounts`)
+ * from a committed V2 atomic swap transaction's balance changes or affected entities.
+ */
+export function extractTakerAccountsFromCommittedTx(
+  makerAccounts: string | string[],
+  tx: CommittedSwapTransaction | null | undefined,
+): string[] {
+  if (!tx) return [];
+  const makerSet = new Set(
+    (Array.isArray(makerAccounts) ? makerAccounts : [makerAccounts])
+      .filter(Boolean)
+      .map((a) => a.toLowerCase()),
+  );
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (addr: string) => {
+    if (!addr.startsWith('account_')) return;
+    const key = addr.toLowerCase();
+    if (makerSet.has(key) || seen.has(key)) return;
+    seen.add(key);
+    out.push(addr);
+  };
+  for (const c of tx.balance_changes?.fungible_balance_changes ?? []) push(c.entity_address);
+  for (const c of tx.balance_changes?.non_fungible_balance_changes ?? []) push(c.entity_address);
+  for (const addr of tx.affected_global_entities ?? []) push(addr);
+  return out;
+}
+
+/**
+ * Extracts the primary Taker account address (`account_... !== makerAccount`) from a
  * committed V2 atomic swap transaction's balance changes or affected entities.
  */
 export function extractTakerAccountFromCommittedTx(
-  makerAccount: string,
+  makerAccount: string | string[],
   tx: CommittedSwapTransaction | null | undefined,
 ): string | null {
-  if (!tx) return null;
-  const makerLower = makerAccount.toLowerCase();
-  for (const c of tx.balance_changes?.fungible_balance_changes ?? []) {
-    if (c.entity_address.startsWith('account_') && c.entity_address.toLowerCase() !== makerLower) {
-      return c.entity_address;
-    }
-  }
-  for (const c of tx.balance_changes?.non_fungible_balance_changes ?? []) {
-    if (c.entity_address.startsWith('account_') && c.entity_address.toLowerCase() !== makerLower) {
-      return c.entity_address;
-    }
-  }
-  for (const addr of tx.affected_global_entities ?? []) {
-    if (addr.startsWith('account_') && addr.toLowerCase() !== makerLower) {
-      return addr;
-    }
-  }
-  return null;
+  return extractTakerAccountsFromCommittedTx(makerAccount, tx)[0] ?? null;
 }
 
 /**
@@ -680,12 +841,33 @@ export function reconstructOfferFromCommittedTx(
     return null;
   }
 
+  const makerAccountsSet = new Set<string>();
+  const addMaker = (addr: string | undefined) => {
+    if (addr && addr.startsWith('account_')) makerAccountsSet.add(addr);
+  };
+  addMaker(makerAccount);
+  if (offerAssets.length > 0) {
+    const offerResourceSet = new Set(offerAssets.map((a) => a.resourceAddress));
+    for (const c of fungibleChanges) {
+      if (offerResourceSet.has(c.resource_address) && c.balance_change.startsWith('-')) {
+        addMaker(c.entity_address);
+      }
+    }
+    for (const c of nftChanges) {
+      if (offerResourceSet.has(c.resource_address) && (c.removed?.length ?? 0) > 0) {
+        addMaker(c.entity_address);
+      }
+    }
+  }
+  const makerAccountsList = [...makerAccountsSet];
+
   const confirmedEpochSec = tx.confirmed_at ? Math.floor(new Date(tx.confirmed_at).getTime() / 1000) : 0;
 
   return {
     v: 1,
     network,
     makerAccount,
+    ...(makerAccountsList.length > 1 ? { makerAccounts: makerAccountsList } : {}),
     offer: offerAssets.length === 1 ? offerAssets[0] : offerAssets,
     want: wantAssets.length === 1 ? wantAssets[0] : wantAssets,
     subintentHash,

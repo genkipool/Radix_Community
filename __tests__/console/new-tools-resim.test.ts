@@ -246,5 +246,45 @@ describe.skipIf(!RESIM)('new console tools on resim', () => {
     expectCommitted(ledger.run(cancelManifest, alice.address), cancelManifest);
     expect(ledger.balance(alice.address, token1)).toBe('0');
     expect(ledger.balance(sink.address, token1)).toBe('200');
+
+    // 4. Multi-account withdrawal: Alice holds 100 of token2 and Sink holds 200 of token1.
+    // Selecting [alice, sink] as maker accounts withdraws across both accounts and pools on the worktop.
+    const byAccount = {
+      [alice.address]: {
+        fungibles: [{ resourceAddress: token2, amount: '100' }],
+        nonFungibles: [],
+      },
+      [sink.address]: {
+        fungibles: [{ resourceAddress: token1, amount: '200' }],
+        nonFungibles: [],
+      },
+    };
+    const multiAccountSwapManifest = buildDirectAtomicSwapManifest(
+      [alice.address, sink.address],
+      [bob.address],
+      [
+        { kind: 'fungible', resourceAddress: token2, amount: '50' },
+        { kind: 'fungible', resourceAddress: token1, amount: '120' },
+      ],
+      [{ kind: 'fungible', resourceAddress: token3, amount: '90' }],
+      byAccount,
+    );
+    const multiAccFile = join(ledger.home, 'multi-account-swap.rtm');
+    writeFileSync(
+      multiAccFile,
+      `CALL_METHOD\n    Address("${alice.address}")\n    "lock_fee"\n    Decimal("500")\n;\n${multiAccountSwapManifest}`,
+    );
+    const multiAccOut = ledger.exec(
+      'run',
+      '--signing-keys',
+      `${alice.privateKey},${sink.privateKey},${bob.privateKey}`,
+      multiAccFile,
+    );
+    expect(multiAccOut).toContain('Transaction Status: COMMITTED SUCCESS');
+    expect(ledger.balance(alice.address, token2)).toBe('50');
+    expect(ledger.balance(sink.address, token1)).toBe('80');
+    expect(ledger.balance(alice.address, token3)).toBe('290');
+    expect(ledger.balance(bob.address, token2)).toBe('100');
+    expect(ledger.balance(bob.address, token1)).toBe('220');
   });
 });

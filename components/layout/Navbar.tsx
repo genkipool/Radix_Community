@@ -449,7 +449,7 @@ interface ConnectedWalletPopupContentProps {
   onOpenBuyModal?: () => void;
   networkId: RadixNetworkId | null;
   connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void;
-  disconnect: () => void;
+  disconnect: (network?: 'mainnet' | 'stokenet' | 'all') => void;
   sessions: Record<'mainnet' | 'stokenet', unknown>;
   switchNetwork: (network: 'mainnet' | 'stokenet') => void;
   isMobile?: boolean;
@@ -568,7 +568,7 @@ function ConnectedWalletPopupContent({
           </button>
           <button
             type="button"
-            onClick={() => disconnect()}
+            onClick={() => disconnect(activeNetwork)}
             className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-red-500 transition-colors rounded-lg"
           >
             <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
@@ -586,7 +586,7 @@ function ConnectedWalletPopupContent({
           </button>
           <button
             type="button"
-            onClick={() => disconnect()}
+            onClick={() => disconnect(activeNetwork)}
             className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
           >
             <LogOut className="size-3.5" />
@@ -1282,7 +1282,7 @@ export default function Navbar() {
                     }
                   >
                     <ConnectedWalletPopupContent
-                      disconnect={() => { disconnect(); setIsOpen(false); }}
+                      disconnect={(net) => { disconnect(net ?? activeNetwork); setIsOpen(false); }}
                       connect={(netId) => { connect(netId); setIsOpen(false); }}
                       networkId={networkId}
                       personaName={persona?.label}
