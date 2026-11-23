@@ -286,7 +286,7 @@ export function UnderlyingTokensTab({
                         </span>
                     </SummaryInlineRow>
                     <SummaryInlineRow
-                        label={accT?.contributed_tokens_redeemable || 'What you would receive on redeem'}
+                        label={accT?.contributed_tokens_redeemable ?? ''}
                         value={redeemableLine}
                         mono
                     />
@@ -294,7 +294,7 @@ export function UnderlyingTokensTab({
                         <>
                             <SummaryInlineRow label={accT?.contributed_tokens_put_in || 'Put in'} value={flowLine('putIn')} mono />
                             <SummaryInlineRow label={accT?.contributed_tokens_taken_out || 'Taken out'} value={flowLine('takenOut')} mono />
-                            <SummaryInlineRow label={accT?.contributed_tokens_result || 'Result'}>
+                            <SummaryInlineRow label={accT?.contributed_tokens_result ?? ''}>
                                 {resultEntries ? (
                                     <span className="text-xs font-mono font-semibold tabular-nums flex flex-wrap justify-end gap-x-1.5">
                                         {resultEntries.map((entry, idx) => (

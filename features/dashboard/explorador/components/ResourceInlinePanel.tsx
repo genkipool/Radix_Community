@@ -149,7 +149,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
     const tabs = RESOURCE_TABS.map(key => ({
         key,
         label: key === 'contributed_tokens'
-            ? (accT?.contributed_tokens_position || 'Your position')
+            ? (accT?.contributed_tokens_position ?? '')
             : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
         tooltip: key === 'contributed_tokens'
             ? tt?.tab_tokens_tooltip
@@ -236,12 +236,12 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                     <div className="border-t border-[var(--color-card-border)] mt-4 pt-3">
                                         <HeldResourcesList
                                             network={ledger}
-                                            title={tt?.summary_pool_resources || 'Pool resources'}
+                                            title={tt?.summary_pool_resources ?? ''}
                                             items={poolReserves}
                                             locale={locale || 'en-US'}
                                             copiedAddress={copiedAddress}
                                             onCopy={onCopy}
-                                            copyTitle={tt?.copy_address || 'Copy address'}
+                                            copyTitle={tt?.copy_address ?? ''}
                                         />
                                     </div>
                                 )}
