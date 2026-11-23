@@ -4,6 +4,7 @@ import Big from 'big.js';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { gatewayPost } from '@/services/gateway/bases';
 import { mapHoldings } from '../lib/account-holdings';
 import { browserCopyOptions, writeBrowserCopy } from '../lib/browser-copy';
 import type { AccountHoldings } from '../types/console.types';
@@ -19,7 +20,7 @@ export function useAccountResources(accountAddresses: string[] | string | null) 
 
   const addresses = Array.isArray(accountAddresses) ? accountAddresses : (accountAddresses ? [accountAddresses] : []);
 
-  const queryKey = ['console-account-resources', activeNetwork, addresses.join(',')];
+  const queryKey = ['console-account-resources', 'v2', activeNetwork, addresses.join(',')];
   return useQuery({
     queryKey,
     ...browserCopyOptions<AccountHoldings>(queryKey),
@@ -56,6 +57,36 @@ export function useAccountResources(accountAddresses: string[] | string | null) 
             mergedHoldings.nonFungibles.push(nf);
           }
         }
+      }
+
+      // Populate missing NFT collection iconUrl from the first held NFT's key_image_url / image_url
+      const missingIconNfts = mergedHoldings.nonFungibles.filter((nf) => !nf.iconUrl && nf.ids.length > 0);
+      if (missingIconNfts.length > 0) {
+        await Promise.all(
+          missingIconNfts.map(async (nf) => {
+            try {
+              const dataRes = await gatewayPost<{
+                non_fungible_ids?: Array<{
+                  data?: {
+                    programmatic_json?: {
+                      fields?: Array<{ field_name?: string; value?: string }>;
+                    };
+                  };
+                }>;
+              }>(activeNetwork, '/state/non-fungible/data', {
+                resource_address: nf.resourceAddress,
+                non_fungible_ids: [nf.ids[0]],
+              });
+              const fields = dataRes.non_fungible_ids?.[0]?.data?.programmatic_json?.fields ?? [];
+              const img = fields.find((f) => f.field_name === 'key_image_url' || f.field_name === 'image_url')?.value;
+              if (typeof img === 'string' && img.trim()) {
+                nf.iconUrl = img.trim();
+              }
+            } catch {
+              // Ignore individual NFT data fetch errors
+            }
+          }),
+        );
       }
 
       writeBrowserCopy(queryKey, mergedHoldings);

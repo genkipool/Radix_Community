@@ -44,7 +44,7 @@ describe('EntityPanelShared', () => {
         const tabBars = container.querySelectorAll('.overflow-x-auto');
         expect(tabBars).toHaveLength(2);
         for (const bar of tabBars) {
-            expect(bar.className).toContain('no-scrollbar');
+            expect(bar.className).toContain('custom-scrollbar');
             expect(bar.className).not.toContain('hide-scrollbar');
         }
     });

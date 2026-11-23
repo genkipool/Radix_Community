@@ -37,11 +37,6 @@ export const EXPIRATION_PRESETS = [
   { key: '24h', seconds: 24 * 60 * 60 },
 ] as const;
 
-export const XRD_RESOURCE_BY_NETWORK: Record<'mainnet' | 'stokenet', string> = {
-  mainnet: 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd',
-  stokenet: 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc',
-};
-
 export const STOKENET_FAUCET_ADDRESS =
   'component_tdx_2_1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxyulkzl';
 
@@ -125,15 +120,6 @@ export function buildMakerSubintentManifest(
   return lines.join('\n');
 }
 
-/**
- * Builds the Taker's Subintent manifest for 1-click V2 settlement.
- *
- * NOTE: Radix protocol forbids `lock_fee` inside a Subintent (Wallet rejects it
- * as a reserved instruction). Instead, the Taker withdraws a small XRD fee budget
- * (`V2_SETTLEMENT_FEE_XRD`) alongside `want`, puts them in buckets, and explicitly
- * yields them to the root intent (`YIELD_TO_PARENT Bucket("fee_xrd") ...`), which
- * deposits `fee_xrd` into the ephemeral virtual notary account and locks the fee.
- */
 /**
  * Builds the Taker's Subintent manifest for 1-click V2 settlement:
  * 1. Withdraws all `want` assets, puts them into buckets, and explicitly yields
@@ -251,6 +237,31 @@ export function buildMakerSubintentPreviewManifest(
 }
 
 /**
+ * Builds a standard V1 manifest that moves the offered assets out of the Maker's
+ * account to another account they own, making a previously shared Subintent
+ * unexecutable (InsufficientBalance) until its expiration window passes.
+ */
+export function buildCancelSwapMoveManifest(
+  makerAccount: string,
+  destinationAccount: string,
+  offer: SwapAssetInput,
+): string {
+  if (
+    !makerAccount.startsWith('account_')
+    || !destinationAccount.startsWith('account_')
+    || makerAccount === destinationAccount
+    || !areValidSwapAssets(offer)
+  ) {
+    return '';
+  }
+  const offers = normalizeSwapAssets(offer);
+  return [
+    ...offers.map((a) => withdrawInstruction(makerAccount, a)),
+    `CALL_METHOD\n    Address("${destinationAccount}")\n    "try_deposit_batch_or_abort"\n    Expression("ENTIRE_WORKTOP")\n    Enum<0u8>()\n;`,
+  ].join('\n');
+}
+
+/**
  * Builds the Taker's Transaction V2 settlement manifest that embeds the Maker's
  * signed subintent (`USE_CHILD` + `YIELD_TO_CHILD`).
  */
@@ -346,16 +357,61 @@ export function buildDirectAtomicSwapManifest(
   return lines.join('\n');
 }
 
-/** Encodes a signed offer into a compact URL-safe base64url string. */
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.trim();
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, '0');
+  return out;
+}
+
+type CompactAsset = ['f', string, string] | ['n', string, string[]];
+const packAsset = (a: SwapAsset): CompactAsset =>
+  a.kind === 'fungible' ? ['f', a.resourceAddress, a.amount] : ['n', a.resourceAddress, a.ids];
+const unpackAsset = (c: CompactAsset): SwapAsset =>
+  c[0] === 'f'
+    ? { kind: 'fungible', resourceAddress: c[1], amount: c[2] }
+    : { kind: 'nft', resourceAddress: c[1], ids: c[2] };
+
+/**
+ * Encodes a signed offer into a compact URL-safe base64url string (v2 binary
+ * framing: compact JSON header + raw signedPartialTransaction bytes — ~45-55%
+ * shorter than JSON+hex so QR codes scan cleanly).
+ */
 export function encodeSwapOffer(offer: AtomicSwapOffer): string {
-  const json = JSON.stringify(offer);
-  const bytes = new TextEncoder().encode(json);
+  const offers = normalizeSwapAssets(offer.offer).map(packAsset);
+  const wants = normalizeSwapAssets(offer.want).map(packAsset);
+  const metaTuple = [
+    offer.network === 'stokenet' ? 's' : 'm',
+    offer.makerAccount,
+    offers.length === 1 ? offers[0] : offers,
+    wants.length === 1 ? wants[0] : wants,
+    offer.subintentHash,
+    offer.expirationTimestamp,
+    ...(offer.message ? [offer.message] : []),
+  ];
+  const metaBytes = new TextEncoder().encode(JSON.stringify(metaTuple));
+  const txBytes = hexToBytes(offer.signedPartialTransaction);
+  const packed = new Uint8Array(3 + metaBytes.length + txBytes.length);
+  packed[0] = 0x02;
+  packed[1] = (metaBytes.length >> 8) & 0xff;
+  packed[2] = metaBytes.length & 0xff;
+  packed.set(metaBytes, 3);
+  packed.set(txBytes, 3 + metaBytes.length);
+
   let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < packed.length; i++) binary += String.fromCharCode(packed[i]);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** Decodes and validates a base64url OTC offer string. Returns null if malformed. */
+/** Decodes and validates a base64url OTC offer string (supports both compact v2 and legacy v1). */
 export function decodeSwapOffer(code: string): AtomicSwapOffer | null {
   try {
     const clean = code.trim().replace(/^.*offer=/, '').split('&')[0];
@@ -365,6 +421,48 @@ export function decodeSwapOffer(code: string): AtomicSwapOffer | null {
     const binary = atob(b64 + pad);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    // Compact v2 binary format (header byte 0x02)
+    if (bytes.length > 3 && bytes[0] === 0x02) {
+      const metaLen = (bytes[1] << 8) | bytes[2];
+      if (3 + metaLen >= bytes.length) return null;
+      const metaTuple = JSON.parse(new TextDecoder().decode(bytes.subarray(3, 3 + metaLen))) as unknown[];
+      if (!Array.isArray(metaTuple) || metaTuple.length < 6) return null;
+      const [net, makerAccount, rawOffer, rawWant, subintentHash, expirationTimestamp, rawMessage] = metaTuple;
+      const unpackField = (val: unknown): SwapAssetInput | null => {
+        if (!Array.isArray(val) || val.length === 0) return null;
+        if (val[0] === 'f' || val[0] === 'n') return unpackAsset(val as CompactAsset);
+        return (val as CompactAsset[]).map(unpackAsset);
+      };
+      const offer = unpackField(rawOffer);
+      const want = unpackField(rawWant);
+      if (
+        (net !== 'm' && net !== 's')
+        || typeof makerAccount !== 'string'
+        || !makerAccount.startsWith('account_')
+        || typeof subintentHash !== 'string'
+        || typeof expirationTimestamp !== 'number'
+        || !offer
+        || !want
+        || !areValidSwapAssets(offer)
+        || !areValidSwapAssets(want)
+      ) {
+        return null;
+      }
+      return {
+        v: 1,
+        network: net === 's' ? 'stokenet' : 'mainnet',
+        makerAccount,
+        offer,
+        want,
+        subintentHash,
+        signedPartialTransaction: bytesToHex(bytes.subarray(3 + metaLen)),
+        expirationTimestamp,
+        ...(typeof rawMessage === 'string' && rawMessage ? { message: rawMessage } : {}),
+      };
+    }
+
+    // Legacy v1 JSON format
     const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<AtomicSwapOffer>;
 
     if (
@@ -385,5 +483,295 @@ export function decodeSwapOffer(code: string): AtomicSwapOffer | null {
     return parsed as AtomicSwapOffer;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Parses a raw `subtxid_...` input and detects its network (`mainnet` vs `stokenet`).
+ */
+export function parseSubintentIdInput(input: string): {
+  subintentHash: string;
+  network: 'mainnet' | 'stokenet';
+} | null {
+  const trimmed = input.trim();
+  const match = trimmed.match(/^(subtxid_(rdx1|tdx_2_1)[a-z0-9]+)$/i);
+  if (!match) return null;
+  const subintentHash = match[1].toLowerCase();
+  const network = subintentHash.startsWith('subtxid_tdx_2_') ? 'stokenet' : 'mainnet';
+  return { subintentHash, network };
+}
+
+export interface CommittedSwapTransaction {
+  intent_hash?: string;
+  confirmed_at?: string;
+  manifest_instructions?: string;
+  affected_global_entities?: string[];
+  balance_changes?: {
+    fungible_balance_changes?: Array<{
+      entity_address: string;
+      resource_address: string;
+      balance_change: string;
+    }>;
+    non_fungible_balance_changes?: Array<{
+      entity_address: string;
+      resource_address: string;
+      added?: string[];
+      removed?: string[];
+    }>;
+  };
+}
+
+/**
+ * Extracts the Taker account address (`account_... !== makerAccount`) from a
+ * committed V2 atomic swap transaction's balance changes or affected entities.
+ */
+export function extractTakerAccountFromCommittedTx(
+  makerAccount: string,
+  tx: CommittedSwapTransaction | null | undefined,
+): string | null {
+  if (!tx) return null;
+  const makerLower = makerAccount.toLowerCase();
+  for (const c of tx.balance_changes?.fungible_balance_changes ?? []) {
+    if (c.entity_address.startsWith('account_') && c.entity_address.toLowerCase() !== makerLower) {
+      return c.entity_address;
+    }
+  }
+  for (const c of tx.balance_changes?.non_fungible_balance_changes ?? []) {
+    if (c.entity_address.startsWith('account_') && c.entity_address.toLowerCase() !== makerLower) {
+      return c.entity_address;
+    }
+  }
+  for (const addr of tx.affected_global_entities ?? []) {
+    if (addr.startsWith('account_') && addr.toLowerCase() !== makerLower) {
+      return addr;
+    }
+  }
+  return null;
+}
+
+/**
+ * Reconstructs an `AtomicSwapOffer` summary from an on-ledger committed V2 transaction
+ * (via `/transaction/committed-details`) when the user only has a raw `subtxid_...` hash.
+ */
+export function reconstructOfferFromCommittedTx(
+  subintentHash: string,
+  network: 'mainnet' | 'stokenet',
+  tx: CommittedSwapTransaction,
+): AtomicSwapOffer | null {
+  const offerAssets: SwapAsset[] = [];
+  const wantAssets: SwapAsset[] = [];
+  const manifest = tx.manifest_instructions ?? '';
+
+  if (manifest) {
+    const fungibleRe =
+      /TAKE_FROM_WORKTOP\s+Address\("(resource_[^"]+)"\)\s+Decimal\("([^"]+)"\)\s+Bucket\("([^"]+)"\)/g;
+    for (const m of manifest.matchAll(fungibleRe)) {
+      const [, resourceAddress, amount, bucket] = m;
+      const asset: SwapAsset = { kind: 'fungible', resourceAddress, amount };
+      if (bucket.startsWith('m_') || bucket.startsWith('maker_asset') || bucket.startsWith('offer_')) {
+        offerAssets.push(asset);
+      } else if (bucket.startsWith('t_') || bucket.startsWith('taker_payment') || bucket.startsWith('want_')) {
+        wantAssets.push(asset);
+      }
+    }
+
+    const nftRe =
+      /TAKE_NON_FUNGIBLES_FROM_WORKTOP\s+Address\("(resource_[^"]+)"\)\s+Array<NonFungibleLocalId>\(([\s\S]*?)\)\s+Bucket\("([^"]+)"\)/g;
+    for (const m of manifest.matchAll(nftRe)) {
+      const [, resourceAddress, rawIds, bucket] = m;
+      const ids = Array.from(rawIds.matchAll(/NonFungibleLocalId\("([^"]+)"\)/g), (x) => x[1]);
+      if (ids.length === 0) continue;
+      const asset: SwapAsset = { kind: 'nft', resourceAddress, ids };
+      if (bucket.startsWith('m_') || bucket.startsWith('maker_asset') || bucket.startsWith('offer_')) {
+        offerAssets.push(asset);
+      } else if (bucket.startsWith('t_') || bucket.startsWith('taker_payment') || bucket.startsWith('want_')) {
+        wantAssets.push(asset);
+      }
+    }
+  }
+
+  const fungibleChanges = tx.balance_changes?.fungible_balance_changes ?? [];
+  const nftChanges = tx.balance_changes?.non_fungible_balance_changes ?? [];
+
+  let makerAccount = '';
+  if (offerAssets.length > 0) {
+    const firstOffer = offerAssets[0];
+    if (firstOffer.kind === 'fungible') {
+      makerAccount =
+        fungibleChanges.find(
+          (c) =>
+            c.entity_address.startsWith('account_')
+            && c.resource_address === firstOffer.resourceAddress
+            && c.balance_change.startsWith('-'),
+        )?.entity_address ?? '';
+    } else {
+      makerAccount =
+        nftChanges.find(
+          (c) =>
+            c.entity_address.startsWith('account_')
+            && c.resource_address === firstOffer.resourceAddress
+            && (c.removed?.length ?? 0) > 0,
+        )?.entity_address ?? '';
+    }
+  }
+
+  if (!makerAccount) {
+    makerAccount =
+      fungibleChanges.find((c) => c.entity_address.startsWith('account_') && c.balance_change.startsWith('-'))
+        ?.entity_address
+      ?? nftChanges.find((c) => c.entity_address.startsWith('account_') && (c.removed?.length ?? 0) > 0)
+        ?.entity_address
+      ?? '';
+  }
+
+  if (makerAccount && (offerAssets.length === 0 || wantAssets.length === 0)) {
+    offerAssets.length = 0;
+    wantAssets.length = 0;
+    for (const c of fungibleChanges) {
+      if (c.entity_address !== makerAccount) continue;
+      if (c.balance_change.startsWith('-')) {
+        offerAssets.push({
+          kind: 'fungible',
+          resourceAddress: c.resource_address,
+          amount: c.balance_change.slice(1),
+        });
+      } else if (parseFloat(c.balance_change) > 0) {
+        wantAssets.push({
+          kind: 'fungible',
+          resourceAddress: c.resource_address,
+          amount: c.balance_change,
+        });
+      }
+    }
+    for (const c of nftChanges) {
+      if (c.entity_address !== makerAccount) continue;
+      if (c.removed && c.removed.length > 0) {
+        offerAssets.push({ kind: 'nft', resourceAddress: c.resource_address, ids: c.removed });
+      }
+      if (c.added && c.added.length > 0) {
+        wantAssets.push({ kind: 'nft', resourceAddress: c.resource_address, ids: c.added });
+      }
+    }
+  }
+
+  if (!makerAccount) {
+    const acctMatch = manifest.match(/Address\("(account_[^"]+)"\)/);
+    if (acctMatch) makerAccount = acctMatch[1];
+  }
+
+  if (!makerAccount.startsWith('account_') || offerAssets.length === 0 || wantAssets.length === 0) {
+    return null;
+  }
+
+  const confirmedEpochSec = tx.confirmed_at ? Math.floor(new Date(tx.confirmed_at).getTime() / 1000) : 0;
+
+  return {
+    v: 1,
+    network,
+    makerAccount,
+    offer: offerAssets.length === 1 ? offerAssets[0] : offerAssets,
+    want: wantAssets.length === 1 ? wantAssets[0] : wantAssets,
+    subintentHash,
+    signedPartialTransaction: '',
+    expirationTimestamp: Number.isFinite(confirmedEpochSec) && confirmedEpochSec > 0
+      ? confirmedEpochSec
+      : Math.floor(Date.now() / 1000),
+  };
+}
+
+/* ─── Local history of signed Subintent V2 offers (0 backend / 0 Redis) ─── */
+
+export interface SavedSwapOffer {
+  code: string;
+  offer: AtomicSwapOffer;
+  createdAt: number;
+}
+
+const SAVED_OFFERS_KEY = 'radix-community:otc-offers:v1';
+const MAX_SAVED_OFFERS = 30;
+const EMPTY_OFFERS: SavedSwapOffer[] = [];
+const listeners = new Set<() => void>();
+let cachedRaw: string | null = null;
+let cachedParsed: SavedSwapOffer[] = EMPTY_OFFERS;
+
+function notifySavedOffers(): void {
+  listeners.forEach((fn) => fn());
+}
+
+export function subscribeSavedSwapOffers(listener: () => void): () => void {
+  listeners.add(listener);
+  if (typeof window === 'undefined') return () => { listeners.delete(listener); };
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === SAVED_OFFERS_KEY) listener();
+  };
+  window.addEventListener('storage', onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('storage', onStorage);
+  };
+}
+
+export function getSavedSwapOffersSnapshot(): SavedSwapOffer[] {
+  if (typeof window === 'undefined') return EMPTY_OFFERS;
+  try {
+    const raw = window.localStorage.getItem(SAVED_OFFERS_KEY);
+    if (raw === cachedRaw) return cachedParsed;
+    cachedRaw = raw;
+    if (!raw) {
+      cachedParsed = EMPTY_OFFERS;
+      return cachedParsed;
+    }
+    const list = JSON.parse(raw) as unknown;
+    if (!Array.isArray(list)) {
+      cachedParsed = EMPTY_OFFERS;
+      return cachedParsed;
+    }
+    cachedParsed = list.filter(
+      (entry): entry is SavedSwapOffer =>
+        !!entry
+        && typeof entry === 'object'
+        && typeof (entry as SavedSwapOffer).code === 'string'
+        && typeof (entry as SavedSwapOffer).createdAt === 'number'
+        && !!decodeSwapOffer((entry as SavedSwapOffer).code),
+    );
+    return cachedParsed;
+  } catch {
+    return EMPTY_OFFERS;
+  }
+}
+
+export function getSavedSwapOffersServerSnapshot(): SavedSwapOffer[] {
+  return EMPTY_OFFERS;
+}
+
+export function saveSignedSwapOffer(offer: AtomicSwapOffer): void {
+  if (typeof window === 'undefined') return;
+  const code = encodeSwapOffer(offer);
+  const current = getSavedSwapOffersSnapshot().filter(
+    (entry) => entry.offer.subintentHash !== offer.subintentHash,
+  );
+  const next: SavedSwapOffer[] = [{ code, offer, createdAt: Date.now() }, ...current].slice(0, MAX_SAVED_OFFERS);
+  try {
+    const raw = JSON.stringify(next);
+    window.localStorage.setItem(SAVED_OFFERS_KEY, raw);
+    cachedRaw = raw;
+    cachedParsed = next;
+    notifySavedOffers();
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function removeSavedSwapOffer(subintentHash: string): void {
+  if (typeof window === 'undefined') return;
+  const next = getSavedSwapOffersSnapshot().filter((entry) => entry.offer.subintentHash !== subintentHash);
+  try {
+    const raw = JSON.stringify(next);
+    window.localStorage.setItem(SAVED_OFFERS_KEY, raw);
+    cachedRaw = raw;
+    cachedParsed = next;
+    notifySavedOffers();
+  } catch {
+    // Ignore storage errors
   }
 }

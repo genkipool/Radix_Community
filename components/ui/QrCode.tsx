@@ -34,8 +34,8 @@ export function QrCode({
     let cancelled = false;
     QRCode.toDataURL(value, {
       width: size * 2,
-      margin: 1,
-      errorCorrectionLevel: 'M',
+      margin: 2,
+      errorCorrectionLevel: value.length > 300 ? 'L' : 'M',
       color: { dark: '#000000', light: '#ffffff' },
     })
       .then((url) => {
@@ -63,7 +63,10 @@ export function QrCode({
       width={size}
       height={size}
       className={`rounded-2xl bg-white p-2 ${framed ? 'border' : ''}`}
-      style={framed ? { borderColor: 'var(--color-card-border)' } : undefined}
+      style={{
+        imageRendering: 'pixelated',
+        ...(framed ? { borderColor: 'var(--color-card-border)' } : {}),
+      }}
     />
   );
 

@@ -8,6 +8,9 @@ import {
   buildV2RootOrchestratorManifest,
   decodeSwapOffer,
   encodeSwapOffer,
+  extractTakerAccountFromCommittedTx,
+  parseSubintentIdInput,
+  reconstructOfferFromCommittedTx,
   type AtomicSwapOffer,
   type SwapAsset,
 } from '@/features/console/lib/atomic-swap';
@@ -110,5 +113,57 @@ describe('atomic-swap pure engine', () => {
     expect(out.ok).toBe(true);
     expect(out.intent_hash).toMatch(/^txid_tdx_2_1/);
     expect(out.notarized_transaction_hex?.length).toBeGreaterThan(500);
+  });
+
+  it('parses raw subtxid_ inputs and reconstructs an AtomicSwapOffer from a committed V2 transaction', () => {
+    const rawSubtx = 'subtxid_tdx_2_18l3lrjxa5vmhw335xnnz36h77qw4k7au788uzcwpc44sp9yz4xlshfjgxh';
+    expect(parseSubintentIdInput(rawSubtx)).toEqual({
+      subintentHash: rawSubtx,
+      network: 'stokenet',
+    });
+    expect(parseSubintentIdInput('subtxid_rdx1abc123')).toEqual({
+      subintentHash: 'subtxid_rdx1abc123',
+      network: 'mainnet',
+    });
+    expect(parseSubintentIdInput('not-a-subintent')).toBeNull();
+
+    const rootManifest = buildV2RootOrchestratorManifest(
+      rawSubtx,
+      'subtxid_tdx_2_1dqclndh5payfw40s36w7qcce92xjj84j032qx90em7xznl6l3g3sxxkvcu',
+      offerNft,
+      wantXrd,
+      'stokenet',
+    );
+    const reconstructed = reconstructOfferFromCommittedTx(rawSubtx, 'stokenet', {
+      intent_hash: 'txid_tdx_2_1j6hagl0zuxk4x04x0wwdjmzy2zzj6gvzarnqfr68tarhek9t29cqewek3g',
+      confirmed_at: '2026-11-23T04:30:00.000Z',
+      manifest_instructions: rootManifest,
+      balance_changes: {
+        fungible_balance_changes: [
+          { entity_address: MAKER, resource_address: XRD, balance_change: '500' },
+          { entity_address: TAKER, resource_address: XRD, balance_change: '-500' },
+        ],
+        non_fungible_balance_changes: [
+          { entity_address: MAKER, resource_address: NFT, removed: ['#1#', '#2#'] },
+          { entity_address: TAKER, resource_address: NFT, added: ['#1#', '#2#'] },
+        ],
+      },
+    });
+
+    expect(reconstructed).not.toBeNull();
+    expect(reconstructed?.makerAccount).toBe(MAKER);
+    expect(reconstructed?.offer).toEqual(offerNft);
+    expect(reconstructed?.want).toEqual(wantXrd);
+    expect(reconstructed?.network).toBe('stokenet');
+
+    const taker = extractTakerAccountFromCommittedTx(MAKER, {
+      balance_changes: {
+        fungible_balance_changes: [
+          { entity_address: MAKER, resource_address: XRD, balance_change: '500' },
+          { entity_address: TAKER, resource_address: XRD, balance_change: '-500' },
+        ],
+      },
+    });
+    expect(taker).toBe(TAKER);
   });
 });

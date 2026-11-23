@@ -182,7 +182,7 @@ export function PanelTabBar<T extends string>({
     const underlineLayoutId = `panelTabUnderline-${instanceId}`;
 
     return (
-        <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto no-scrollbar shrink-0">
+        <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto custom-scrollbar shrink-0">
             {tabs.map(tab => (
                 <m.button
                     key={tab.key}

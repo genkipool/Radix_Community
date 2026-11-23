@@ -13,6 +13,7 @@ type StakingErrorKind =
     | 'failedToSignTransaction'
     | 'failedToSubmitTransaction'
     | 'failedToCompileTransaction'
+    | 'wrongNetwork'
     | 'timeout';
 
 /** Recognised by what the error contains, once lower-cased and without spaces. */
@@ -22,6 +23,7 @@ const KINDS: ReadonlyArray<[StakingErrorKind, string]> = [
     ['failedToSignTransaction', 'failedtosign'],
     ['failedToSubmitTransaction', 'failedtosubmit'],
     ['failedToCompileTransaction', 'failedtocompile'],
+    ['wrongNetwork', 'wrongnetwork'],
     ['timeout', 'timeout'],
 ];
 
@@ -31,6 +33,7 @@ const FALLBACK: Record<StakingErrorKind, string> = {
     failedToSignTransaction: 'Failed to sign transaction.',
     failedToSubmitTransaction: 'Failed to submit transaction.',
     failedToCompileTransaction: 'Failed to compile transaction.',
+    wrongNetwork: 'The wallet is on another network. Switch it in Settings > App Settings > Gateways.',
     timeout: 'The wallet did not answer in time. Please try again.',
 };
 

@@ -53,6 +53,15 @@ function CopyValue({ value, copyLabel, copiedLabel }: { value: string; copyLabel
   );
 }
 
+/** Resolves a wallet/ledger error code or free-form message against the localized error map. */
+export function resolveConsoleError(code: string | null | undefined, errorMessages: Record<string, string>): string {
+  if (!code) return '';
+  if (errorMessages[code]) return errorMessages[code];
+  const lower = code.toLowerCase();
+  const matchedKey = Object.keys(errorMessages).find((k) => lower.includes(k.toLowerCase()));
+  return matchedKey ? errorMessages[matchedKey] : code;
+}
+
 /** Success / error result panel rendered after a console transaction. */
 export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, preview }: TxResultBannerProps) {
   const { language } = useLanguage();
@@ -77,7 +86,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
         <div className="min-w-0 pr-6">
           <p className="text-sm font-bold text-[var(--color-text-main)]">{t.txFailedTitle}</p>
           <p className="text-xs mt-1 break-words text-red-400">
-            {errorMessages[error] ?? error}
+            {resolveConsoleError(error, errorMessages)}
           </p>
         </div>
       </div>
