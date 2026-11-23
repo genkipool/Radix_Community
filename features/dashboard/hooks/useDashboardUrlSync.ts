@@ -10,7 +10,7 @@
  */
 import { useState, useDeferredValue, useEffect } from 'react';
 import type { DashboardView, Network } from '../types';
-import { segmentToView, type RankingKey } from '../lib/routes';
+import { resolveEntityKind, segmentToView, type RankingKey } from '../lib/routes';
 import { detectAddressNetwork, isRadixAddress } from '../utils/radixAddress';
 import { useDashboardNavigation } from './useDashboardNavigation';
 
@@ -88,6 +88,9 @@ export function useDashboardUrlSync({
     const trimmed = query.trim();
     if (isRadixAddress(trimmed)) {
       setActiveRanking(null);
+      if (activeView === 'staking' && resolveEntityKind(trimmed) !== 'validator') {
+        setActiveView('transactions');
+      }
       const detected = detectAddressNetwork(trimmed);
       if (detected && detected !== network) {
         setNetwork(detected);

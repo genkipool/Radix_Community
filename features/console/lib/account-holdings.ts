@@ -3,6 +3,7 @@
  * Shared by the console hooks (client) and the MCP ledger tools (server).
  */
 
+import Big from 'big.js';
 import { getMetadataString, type GatewayMetadataItem } from './metadata-manifests';
 import type { AccountHoldings, FungibleHolding, NonFungibleHolding } from '../types/console.types';
 
@@ -19,9 +20,16 @@ export interface GatewayResourceItem {
 
 function sumVaultAmounts(item: GatewayResourceItem): string {
   const vaults = item.vaults?.items;
-  if (!vaults) return String(item.amount ?? 0);
-  const total = vaults.reduce((acc, vault) => acc + Number(vault.amount ?? 0), 0);
-  return String(total);
+  if (!vaults) return String(item.amount ?? '0');
+  if (vaults.length === 1) return vaults[0].amount ?? '0';
+  const total = vaults.reduce((acc, vault) => {
+    try {
+      return acc.plus(new Big(vault.amount ?? '0'));
+    } catch {
+      return acc;
+    }
+  }, new Big(0));
+  return total.toFixed();
 }
 
 export function mapHoldings(details: Record<string, unknown>): AccountHoldings {

@@ -61,3 +61,6 @@ doctor.config.ts
 skills-lock.json
 
 certificates
+
+# Local Rust WASM build artifacts (compiled .wasm lives in public/wasm/)
+/wasm/*/target/

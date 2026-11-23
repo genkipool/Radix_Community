@@ -19,6 +19,9 @@ import { connectorTools } from './connector';
 import { walletTools } from './wallet';
 import { siteTools } from './site';
 import { olympiaTools } from './olympia';
+import { marketTools } from './market';
+import { accountOpsTools } from './accountOps';
+import { atomicSwapTools } from './atomicSwap';
 
 export const knowledgeTools = [searchRadixDocsTool, readRadixDocTool];
 
@@ -31,6 +34,9 @@ export function getMcpRegistry(): McpToolRegistry {
     ...knowledgeTools,
     ...ledgerTools,
     ...olympiaTools,
+    ...marketTools,
+    ...accountOpsTools,
+    ...atomicSwapTools,
     ...consoleTools,
     ...validatorTools,
     ...poolTools,

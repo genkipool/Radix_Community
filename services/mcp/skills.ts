@@ -126,6 +126,13 @@ Generic JSON client config:
    - **Cancelling in a web page leaves the request pending in the browser extension** (radixdlt/radix-dapp-toolkit#327): with dApp Toolkit 2.3.0, \`rdt.disconnect()\` (and any dApp cancel built on it) does not tell the Radix Connector extension, so its pending card stays and the wallet can still show the request; the cancel of the toolkit's connect button does. This site's cancel buttons go through that one. On another dApp, tell the user to cancel it from the card in the extension, or to answer it on the phone.
    - **A link removed in the wallet** (Settings → Linked Connectors) is forgotten at once by connectors ≥ 0.9.3; older ones keep trying it until restarted. If the user removed the link, pair again with \`pair_wallet\`.
 
+11. **Account migration, spam cleanup & P2P atomic swaps (V1 & V2 Subintents)**:
+   - **Account migration (\`prepare_account_migrate\`)**: automatically inspects resource roles and skips non-withdrawable soulbound/locked resources (\`withdrawer !== AllowAll\`), uses exact 18-decimal \`Big\` arithmetic so full-balance withdrawals never fail with \`InsufficientBalance\`, and splits large accounts into safe batches. Always keep an \`xrdReserve\` (default 5 XRD) unless draining completely.
+   - **Spam & dust cleanup (\`prepare_account_cleanup\`)**: inspects both \`withdrawer\` and \`burner\` roles — burnable tokens (\`burner === AllowAll\`) are destroyed via \`BURN_RESOURCE\`; non-burnable spam is routed to a burn/trash account, and optional \`denyDeposits: true\` adds \`set_resource_preference(..., Disallow)\` to block future spam of that resource.
+   - **P2P Atomic Swap (\`prepare_atomic_swap\`)**: supports multi-resource swaps (fungibles + NFTs) in two modes:
+     - **Direct V1**: both accounts sign the same transaction manifest (ideal for swapping between your own accounts or co-signing in one wallet).
+     - **Subintent V2 (Pre-Authorization)**: trustless OTC swap between two different people. Never put \`lock_fee\` inside a Subintent (the wallet rejects reserved instructions). A Subintent must explicitly pass withdrawn assets to the parent via \`TAKE_FROM_WORKTOP ... Bucket(...)\` + \`YIELD_TO_PARENT Bucket(...)\` (a bare \`YIELD_TO_PARENT;\` passes nothing). In the root V2 transaction, reference child intents with \`USE_CHILD NamedIntent("...") Intent("subtxid_...")\`, and never lock fees on a newly created virtual account's vault (\`LockUnmodifiedBaseOnNewSubstate\` — on Stokenet, the faucet \`component_tdx_2_1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxyulkzl\` can pay the root fee). The web console at \`${origin}/en/console/atomic-swap\` settles V2 swaps in 1 click client-side via WASM.
+
 ## Output format
 
 Every tool returns pre-formatted plain text (banner, aligned key/value rows,
@@ -168,6 +175,11 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"What are my accounts / show my balances"* (this server is stateless — it has no "connected wallet") → the local connector's \`request_accounts\` (no signature) to get the address(es) → \`get_account_balances\` for the chosen one.
 - *"Who holds token X? What NFTs exist in collection Y?"* → \`get_resource_holders\` (\`all: true\` for every holder), \`get_nft_data\`.
 - *"What methods does component_rdx1… expose? What's in its state?"* → \`get_component_blueprint\`, \`get_component_state\`, \`get_key_value_store\`.
+- *"What is this LSU worth in XRD? Which validator backs it?"* → \`inspect_lsu {"lsuResource": "resource_…", "amount": "100"}\`. Console: ${origin}/en/console/lsu-info.
+- *"What would XRD be worth with Solana's or Ethereum's market cap?"* → \`compare_crypto_marketcap {"base": "radix", "target": "solana", "amount": "10000"}\`. Console: ${origin}/en/console/crypto-compare.
+- *"Migrate all my tokens and NFTs from account A to account B"* → \`prepare_account_migrate {"fromAccount": "account_…", "toAccount": "account_…", "xrdReserve": "5"}\` → \`validate_transaction_manifest\` → \`preview_transaction\` → sign each batch in order. Console: ${origin}/en/console/account-migrate.
+- *"Clean up spam tokens / burn dust from my account and block future deposits"* → \`prepare_account_cleanup {"account": "account_…", "resources": ["resource_…"], "denyDeposits": true}\` → \`validate_transaction_manifest\` → \`preview_transaction\` → sign. Console: ${origin}/en/console/account-cleanup.
+- *"Swap 100 XRD for 500 HUG (or an NFT) atomically P2P"* → \`prepare_atomic_swap {"mode": "direct" | "subintent", "makerAccount": "account_…", "takerAccount": "account_…", "offer": {…}, "want": {…}}\` → \`validate_transaction_manifest\` → \`preview_transaction\` → sign (\`send_transaction\` for Direct V1, or \`request_pre_authorization\` for Subintent V2). Console: ${origin}/en/console/atomic-swap.
 
 # Tool reference
 

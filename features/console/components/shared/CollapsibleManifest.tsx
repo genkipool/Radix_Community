@@ -19,23 +19,26 @@ export function CollapsibleManifest({
   copyLabel,
 }: CollapsibleManifestProps) {
   const [showManifest, setShowManifest] = useState(false);
+  const isDisabled = !manifest.trim();
+  const isOpen = showManifest && !isDisabled;
 
   return (
     <div className="w-full">
       <div className="flex justify-end mt-2 mb-2">
         <button
           type="button"
-          onClick={() => setShowManifest(!showManifest)}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:opacity-80 transition-opacity"
+          disabled={isDisabled}
+          onClick={() => setShowManifest((prev) => !prev)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-opacity cursor-pointer hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ color: 'var(--color-text-muted)' }}
         >
           <FileCode2 className="size-4" />
-          {showManifest ? hideLabel : showLabel}
+          {isOpen ? hideLabel : showLabel}
         </button>
       </div>
 
-      {showManifest && (
-        <div 
+      {isOpen && (
+        <div
           className="rounded-2xl border p-4 overflow-x-auto relative mb-4 shadow-inner"
           style={{ borderColor: 'var(--color-card-border)', background: 'var(--code-bg)' }}
         >

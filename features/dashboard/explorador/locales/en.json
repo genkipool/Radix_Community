@@ -1180,8 +1180,10 @@
         "contributed_tokens_of_pool": "of {amount} in the pool",
         "contributed_tokens_no_reserves": "This pool holds nothing.",
         "contributed_tokens_position": "Your position",
+        "contributed_tokens_redeemable": "What you would receive on redeem",
         "contributed_tokens_put_in": "Put in",
         "contributed_tokens_taken_out": "Taken out",
+        "contributed_tokens_result": "Result",
         "contributed_tokens_redeem": "Redeem in the console"
       },
       "entity_type_pool": "Pool",

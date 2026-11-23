@@ -73,6 +73,22 @@ export function canWithdraw(resource: unknown): boolean {
 }
 
 /**
+ * Whether anyone holding the resource can withdraw it without presenting a
+ * special badge (`withdrawer === AllowAll`). False for both soulbound (`DenyAll`)
+ * and badge-gated (`Protected`) resources.
+ */
+export function isFreelyWithdrawable(resource: unknown): boolean {
+  const roles = obj(obj(obj(resource).details).role_assignments);
+  const entry = arr(roles.entries)
+    .map(obj)
+    .find((e) => obj(e.role_key).name === 'withdrawer' && (!obj(e.role_key).module || obj(e.role_key).module === 'Main'));
+  if (!entry) return true;
+  const assignment = obj(entry.assignment);
+  const rule = assignment.resolution === 'Owner' ? ownerRule(resource).rule : parseAccessRule(assignment.explicit_rule);
+  return rule.type === 'allowAll';
+}
+
+/**
  * The engine's global caller badge (`resource_…glcllr…`): a rule on it means
  * "only calls coming from this component", i.e. a smart contract manages the
  * entity, not a person with a badge.

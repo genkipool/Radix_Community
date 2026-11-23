@@ -1,5 +1,6 @@
 'use client';
 
+import Big from 'big.js';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -36,7 +37,11 @@ export function useAccountResources(accountAddresses: string[] | string | null) 
         for (const f of holdings.fungibles) {
           const existing = mergedHoldings.fungibles.find(e => e.resourceAddress === f.resourceAddress);
           if (existing) {
-            existing.amount = String(Number(existing.amount) + Number(f.amount));
+            try {
+              existing.amount = new Big(existing.amount).plus(new Big(f.amount)).toFixed();
+            } catch {
+              existing.amount = f.amount;
+            }
           } else {
             mergedHoldings.fungibles.push(f);
           }

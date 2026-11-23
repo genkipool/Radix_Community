@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Wallet } from 'lucide-react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { accountFromQuery } from '../../lib/console-query';
 import { OptionButtons } from './OptionButtons';
+
+const subscribeNoop = () => () => {};
 
 export type AccountPickerProps = {
   disabled?: boolean;
@@ -17,7 +19,13 @@ export type AccountPickerProps = {
 /** Selectable buttons for the accounts shared by the connected wallet. */
 export function AccountPicker(props: AccountPickerProps) {
   const { disabled, multiple } = props;
-  const { accounts } = useRadixWallet();
+  const { accounts: rawAccounts, activeNetwork } = useRadixWallet();
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
+
+  // Only show accounts belonging to the active network so stale SSR / other-network
+  // accounts can never flash during hydration or network switches.
+  const expectedPrefix = activeNetwork === 'stokenet' ? 'account_tdx_2_' : 'account_rdx';
+  const accounts = rawAccounts.filter((a) => a.address.startsWith(expectedPrefix));
 
   const value = props.value;
   const onChange = props.onChange;
@@ -31,7 +39,7 @@ export function AccountPicker(props: AccountPickerProps) {
   // Right after a page load the wallet lists its accounts in steps, so the
   // linked one may only show up after a first pick: it then replaces that pick.
   useEffect(() => {
-    if (accounts.length === 0) return;
+    if (!mounted || accounts.length === 0) return;
     const linked = accountFromQuery();
     const hasLinked = !!linked && accounts.some((a) => a.address === linked);
     const fallback = hasLinked ? linked! : accounts[0].address;
@@ -59,7 +67,16 @@ export function AccountPicker(props: AccountPickerProps) {
         strOnChange(fallback);
       }
     }
-  }, [accounts, multiple, value, onChange]);
+  }, [mounted, accounts, multiple, value, onChange]);
+
+  if (!mounted) {
+    return (
+      <div
+        className="h-[56px] w-full rounded-xl border animate-pulse"
+        style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)' }}
+      />
+    );
+  }
 
   const options = accounts.map((account, index) => ({
     value: account.address,

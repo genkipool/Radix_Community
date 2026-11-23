@@ -13,6 +13,8 @@ const TX_TIMEOUT_MS = 300_000;
 interface SendOptions {
   /** Hex-encoded blobs referenced by the manifest (e.g. package WASM) */
   blobs?: string[];
+  /** Optional plaintext transaction message attached on-ledger */
+  message?: string;
 }
 
 interface TxState {
@@ -71,7 +73,7 @@ export function useConsoleTransaction() {
 
   const sendTransaction = async (
     transactionManifest: string,
-    { blobs }: SendOptions = {},
+    { blobs, message }: SendOptions = {},
   ): Promise<ConsoleTxResult | null> => {
     if (!activeNetworkId) {
       setState({ ...INITIAL_STATE, error: 'wallet_not_connected' });
@@ -89,7 +91,12 @@ export function useConsoleTransaction() {
       const response = await sendToWallet(
         rdt,
         'transaction',
-        () => rdt.walletApi.sendTransaction({ transactionManifest, blobs, version: 1 }),
+        () => rdt.walletApi.sendTransaction({
+          transactionManifest,
+          blobs,
+          ...(message?.trim() ? { message: message.trim() } : {}),
+          version: 1,
+        }),
         { timeoutMs: TX_TIMEOUT_MS, signal: requests.signal() },
       );
 
