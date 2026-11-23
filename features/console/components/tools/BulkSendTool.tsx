@@ -71,6 +71,7 @@ export default function BulkSendTool({ t }: ConsoleToolProps) {
         onCsvChange={setCsv}
         defaultResource={defaultResource}
         onDefaultResourceChange={setDefaultResource}
+        holdings={holdings}
       />
 
       {parsed.rows.length > 0 && (

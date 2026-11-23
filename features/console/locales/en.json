@@ -5670,6 +5670,8 @@
       "account": "account_rdx1…",
       "resource": "Default resource",
       "value": "Amount or #id#",
+      "amount": "Amount",
+      "nftId": "#id#",
       "add": "Add recipient",
       "remove": "Remove recipient",
       "showAll": "Show the remaining {count}",

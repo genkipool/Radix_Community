@@ -41,7 +41,7 @@ import { RecipientRows } from '@/features/console/components/distribution/Recipi
 
 const accounts = () => screen.getAllByLabelText('account_rdx1…').map((i) => (i as HTMLInputElement).value);
 const resources = () => screen.getAllByLabelText('Recurso por defecto').map((i) => (i as HTMLInputElement).value);
-const amounts = () => screen.getAllByLabelText('Cantidad o #id#').map((i) => (i as HTMLInputElement).value);
+const amounts = () => screen.getAllByLabelText(/^(Cantidad o #id#|Cantidad|#id#)$/).map((i) => (i as HTMLInputElement).value);
 
 function Harness({ initial, onCsv, defaultResource }: { initial: string; onCsv?: (csv: string) => void; defaultResource?: string }) {
   const [csv, setCsv] = useState(initial);
@@ -95,7 +95,7 @@ describe('recipient rows', () => {
     const NFT = 'resource_tdx_2_1nfakenft';
     const FT = 'resource_tdx_2_1tfaketoken';
     render(<Harness initial={`account_a,${NFT},1\naccount_b,${FT},1`} />);
-    const [nftAmount, tokenAmount] = screen.getAllByLabelText('Cantidad o #id#');
+    const [nftAmount, tokenAmount] = screen.getAllByLabelText(/^(Cantidad|#id#)$/);
     fireEvent.blur(nftAmount);
     fireEvent.blur(tokenAmount);
     expect(amounts()).toEqual(['#1#', '1']);

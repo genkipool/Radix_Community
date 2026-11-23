@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { FileSpreadsheet, Users } from 'lucide-react';
 
+import type { AccountHoldings } from '../../types/console.types';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import { FileDropzone } from '../shared/FileDropzone';
 import { OptionButtons } from '../shared/OptionButtons';
@@ -21,6 +22,7 @@ interface RecipientListInputProps {
   onCsvChange: (csv: string) => void;
   defaultResource: string;
   onDefaultResourceChange: (resource: string) => void;
+  holdings?: AccountHoldings;
 }
 
 /**
@@ -29,7 +31,7 @@ interface RecipientListInputProps {
  * holder split can be reviewed and edited before anything is signed. It is
  * its own box, with the holder split's buttons under it.
  */
-export function RecipientListInput({ t, title, hint, csv, onCsvChange, defaultResource, onDefaultResourceChange }: RecipientListInputProps) {
+export function RecipientListInput({ t, title, hint, csv, onCsvChange, defaultResource, onDefaultResourceChange, holdings }: RecipientListInputProps) {
   const labels = t.bulkSend;
   const [source, setSource] = useState<ListSource>('csv');
   const [file, setFile] = useState<File | null>(null);
@@ -113,7 +115,7 @@ export function RecipientListInput({ t, title, hint, csv, onCsvChange, defaultRe
           <TextAreaField hint={labels.csvHint} value={csv} onChange={onCsvChange} rows={8} mono placeholder={labels.csvPlaceholder} />
         ) : (
           <>
-            <RecipientRows csv={csv} onCsvChange={onCsvChange} defaultResource={defaultResource} />
+            <RecipientRows csv={csv} onCsvChange={onCsvChange} defaultResource={defaultResource} holdings={holdings} />
             <p className="text-[11px] leading-tight" style={{ color: 'var(--color-text-muted)' }}>
               {labels.rowsHint}
             </p>

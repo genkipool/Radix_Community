@@ -12,6 +12,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { CARD_ENTITY_OPT_INS, gatewayPost } from '@/services/gateway/bases';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
+import { useCollectionNfts } from '../../hooks/useCollectionNfts';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { useSubintentRequest } from '../../hooks/useSubintentRequest';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
@@ -95,70 +96,6 @@ function useResourceInfo(resourceAddress: string, network: 'mainnet' | 'stokenet
     queryFn: () => fetchResourceSummary(trimmed, network),
   });
   return data ?? { isNft: heuristic, withdrawable: true, name: '', symbol: '' };
-}
-
-interface NftCardEntry {
-  id: string;
-  name?: string;
-  image?: string;
-}
-
-/** Fetches NFT IDs + individual names/images for any collection (even when not held locally). */
-function useCollectionNfts(
-  resourceAddress: string,
-  enabled: boolean,
-  network: 'mainnet' | 'stokenet',
-  localIds: string[],
-): { items: NftCardEntry[]; isLoading: boolean } {
-  const trimmed = resourceAddress.trim();
-  const { data, isLoading } = useQuery<NftCardEntry[]>({
-    queryKey: ['console', 'nft-collection-cards', network, trimmed, localIds.slice(0, 24).join(',')],
-    enabled: enabled && trimmed.startsWith('resource_') && trimmed.length >= 20,
-    staleTime: 60_000,
-    retry: false,
-    queryFn: async () => {
-      let ids = localIds.slice(0, 24);
-      if (ids.length === 0) {
-        const res = await gatewayPost<{ non_fungible_ids?: { items?: string[] } }>(
-          network,
-          '/state/non-fungible/ids',
-          { resource_address: trimmed },
-        );
-        ids = (res.non_fungible_ids?.items ?? []).slice(0, 24);
-      }
-      if (ids.length === 0) return [];
-
-      try {
-        const dataRes = await gatewayPost<{
-          non_fungible_ids?: Array<{
-            non_fungible_id: string;
-            data?: {
-              programmatic_json?: {
-                fields?: Array<{ field_name?: string; value?: string }>;
-              };
-            };
-          }>;
-        }>(network, '/state/non-fungible/data', {
-          resource_address: trimmed,
-          non_fungible_ids: ids,
-        });
-        const metaMap = new Map<string, { name?: string; image?: string }>();
-        for (const entry of dataRes.non_fungible_ids ?? []) {
-          const fields = entry.data?.programmatic_json?.fields ?? [];
-          const name = fields.find((f) => f.field_name === 'name')?.value;
-          const image = fields.find((f) => f.field_name === 'key_image_url' || f.field_name === 'image_url')?.value;
-          metaMap.set(entry.non_fungible_id, {
-            name: typeof name === 'string' ? name : undefined,
-            image: typeof image === 'string' ? image : undefined,
-          });
-        }
-        return ids.map((id) => ({ id, ...metaMap.get(id) }));
-      } catch {
-        return ids.map((id) => ({ id }));
-      }
-    },
-  });
-  return { items: data ?? localIds.map((id) => ({ id })), isLoading };
 }
 
 function parsePositiveBig(raw: string): Big | null {
