@@ -340,8 +340,8 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         isSuperiorToBoth ||
                         hasTxError ||
                         isNotOwnerWarning ||
-                        (action === 'Unstake' && stakedXrd <= 0) ||
-                        (action === 'Claim' && claimableXrd <= 0) ||
+                        (action === 'Unstake' && !(Number.isFinite(stakedXrd) && Number(stakedXrd.toFixed(2)) > 0)) ||
+                        (action === 'Claim' && !(claimableXrd > 0)) ||
                         (action !== 'Claim' && (!amountStr || parseFloat(amountStr) <= 0)) ||
                         (action === 'Claim' && (activeTab === 'delegator' ? stakingData.claimNftIds.length === 0 : false));
 
@@ -354,7 +354,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                                 handleAction(action);
                             }}
                             disabled={isDisabled}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]`}
+                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

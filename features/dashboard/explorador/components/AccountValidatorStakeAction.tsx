@@ -117,6 +117,8 @@ export const AccountValidatorStakeAction = ({
 
     const effectiveStakedXrd = ownerMode ? ownerLockedStakeXrd : stakedXrd;
     const effectiveClaimableXrd = ownerMode ? ownerUnlockedXrd : claimableXrd;
+    // Matches the 2-decimal display (`formatNumber(x, 2)`): sub-cent dust that renders as "0 XRD" cannot be unstaked.
+    const hasVisibleStake = Number.isFinite(effectiveStakedXrd) && Number(effectiveStakedXrd.toFixed(2)) > 0;
 
     const inputRef = useRef<HTMLInputElement>(null);
     const [actionError, setActionError] = useState<string | null>(null);
@@ -449,8 +451,9 @@ export const AccountValidatorStakeAction = ({
                         // Habilitar toggle off siempre. Toggle on solo si hay fondos.
                         if (!isSelected) {
                             isDisabled =
-                                (action === 'Unstake' && effectiveStakedXrd <= 0) ||
-                                (action === 'Claim' && effectiveClaimableXrd <= 0) ||
+                                isTransacting ||
+                                (action === 'Unstake' && !hasVisibleStake) ||
+                                (action === 'Claim' && !(effectiveClaimableXrd > 0)) ||
                                 (action === 'Claim' && !ownerMode && claimNftIds.length === 0);
                         }
                     } else {
@@ -458,8 +461,8 @@ export const AccountValidatorStakeAction = ({
                             !validator ||
                             isTransacting ||
                             hasTxError ||
-                            (action === 'Unstake' && effectiveStakedXrd <= 0) ||
-                            (action === 'Claim' && effectiveClaimableXrd <= 0) ||
+                            (action === 'Unstake' && !hasVisibleStake) ||
+                            (action === 'Claim' && !(effectiveClaimableXrd > 0)) ||
                             (action !== 'Claim' && (!currentInputVal || parseFloat(currentInputVal) <= 0)) ||
                             (action === 'Claim' && !ownerMode && claimNftIds.length === 0);
                     }
@@ -473,7 +476,7 @@ export const AccountValidatorStakeAction = ({
                                 handleAction(action);
                             }}
                             disabled={isDisabled && !isSelected}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

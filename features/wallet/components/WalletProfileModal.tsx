@@ -314,9 +314,15 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                         selectedAccountAddresses.length === 0 ||
                                                         selectedAccountAddresses.includes(account.address),
                                                 );
-                                                const inlineFilterInAccount = visibleAccounts.length === 1;
+                                                const firstVisibleSection = sectionOrder.find(
+                                                    (key) => visibleSections[key],
+                                                );
+                                                const filterAtTop = firstVisibleSection === 'filter';
+                                                const inlineFilterInAccount =
+                                                    visibleAccounts.length === 1 && !filterAtTop;
                                                 const filterAtBottom =
                                                     !inlineFilterInAccount &&
+                                                    !filterAtTop &&
                                                     sectionOrder[sectionOrder.length - 1] === 'filter';
                                                 const filterSectionNode = visibleSections.filter ? (
                                                     <div className={inlineFilterInAccount ? '' : 'mb-4'}>
@@ -332,11 +338,10 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                         <AnimatePresence initial={false}>
                                                             {isFilterOpen && (
                                                                 <m.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+                                                                    animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+                                                                    exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
                                                                     transition={{ duration: 0.2 }}
-                                                                    className="overflow-hidden"
                                                                 >
                                                                     <div className="flex items-center relative">
                                                                         <div className="flex-1 min-w-0">

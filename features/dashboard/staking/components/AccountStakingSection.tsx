@@ -202,7 +202,12 @@ export function AccountStakingSection({
         iconUrl: v.iconUrl
     })) || [];
 
-    const canDistribute = selectedValidatorAddresses.some(addr => !ownerModeAddresses.has(addr));
+    const nonOwnerSelectedAddresses = selectedValidatorAddresses.filter(addr => !ownerModeAddresses.has(addr));
+    const canDistribute = nonOwnerSelectedAddresses.length > 0;
+    const canBatchUnstake = nonOwnerSelectedAddresses.length > 0 && nonOwnerSelectedAddresses.every(addr => {
+        const staked = stakingRows.find(row => row.validatorAddress === addr)?.xrdInStake ?? 0;
+        return Number.isFinite(staked) && Number(staked.toFixed(2)) > 0;
+    });
 
     const handleBatchAction = async (actionToPerform: StakingAction) => {
         setActionError(null);
@@ -562,8 +567,8 @@ export function AccountStakingSection({
         <BatchValidatorStakeAction
             selectedValidatorsCount={selectedValidatorAddresses.length}
             xrdBalance={Number(xrdAmount) || 0}
-            totalStakedXrdSelected={selectedValidatorAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInStake || 0), 0)}
-            totalClaimableXrdSelected={selectedValidatorAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInClaim || 0), 0)}
+            totalStakedXrdSelected={nonOwnerSelectedAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInStake || 0), 0)}
+            totalClaimableXrdSelected={nonOwnerSelectedAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInClaim || 0), 0)}
             globalAmountStr={globalAmountStr}
             setGlobalAmountStr={(val) => {
                 setValidatorSelections({});
@@ -577,6 +582,7 @@ export function AccountStakingSection({
             clearError={clearError}
             tt={tt}
             canDistribute={canDistribute}
+            canUnstake={canBatchUnstake}
             // The host's box already frames this zone, so the panel drops its
             // own outer card rather than nesting a third one.
             unstyled={!!sectionWrapper}
@@ -799,11 +805,10 @@ export function AccountStakingSection({
                 <AnimatePresence initial={false}>
                     {sectionOpen && (
                         <m.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
+                            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+                            animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+                            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
                             transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
                         >
                             {batchControls && <div className="mb-6 space-y-4">{batchControls}</div>}
                             {validatorList}
