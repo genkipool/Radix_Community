@@ -135,6 +135,8 @@ interface AddressFieldProps extends Omit<TextFieldProps, 'type' | 'trailing' | '
   onPickerConfirm?: (addresses: string[]) => void;
   /** The picker leaves out resources that can never be sent (for send and airdrop inputs). */
   pickerSendableOnly?: boolean;
+  /** Optional account address(es) to scope the resource picker's wallet holdings to. */
+  pickerAccount?: string | string[] | null;
 }
 
 /**
@@ -144,7 +146,7 @@ interface AddressFieldProps extends Omit<TextFieldProps, 'type' | 'trailing' | '
  * the other network is flagged here, for every tool at once; the tool's own
  * error shows when the network is right.
  */
-export function AddressField({ categories, pickerSelected, onPickerConfirm, pickerSendableOnly, ...props }: AddressFieldProps) {
+export function AddressField({ categories, pickerSelected, onPickerConfirm, pickerSendableOnly, pickerAccount, ...props }: AddressFieldProps) {
   const t = useConsoleDictionary();
   const { activeNetwork } = useRadixWallet();
   const other = otherNetworkOf(props.value, activeNetwork);
@@ -164,6 +166,7 @@ export function AddressField({ categories, pickerSelected, onPickerConfirm, pick
           selected={pickerSelected ?? (props.value.trim() ? [props.value.trim()] : [])}
           onConfirm={onPickerConfirm}
           sendableOnly={pickerSendableOnly}
+          account={pickerAccount}
         />
       }
     />

@@ -94,6 +94,8 @@ export interface NonFungibleHolding {
 export interface AccountHoldings {
   fungibles: FungibleHolding[];
   nonFungibles: NonFungibleHolding[];
+  /** Per-account holdings breakdown when one or more accounts are queried. */
+  byAccount?: Record<string, { fungibles: FungibleHolding[]; nonFungibles: NonFungibleHolding[] }>;
 }
 
 /* ─── Badge proof (used by send & configure-metadata tools) ──────────────── */

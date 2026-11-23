@@ -113,6 +113,7 @@ export function AddressPickerButton({
   selected = [],
   onConfirm,
   sendableOnly = false,
+  account,
 }: {
   /** Address families this input accepts; the popup shows only these. */
   categories: AddressCategory[];
@@ -124,6 +125,8 @@ export function AddressPickerButton({
   onConfirm?: (addresses: string[]) => void;
   /** Leave out the account's resources that can never leave it (to send them). */
   sendableOnly?: boolean;
+  /** Optional specific account(s) to scope held resources to (instead of all wallet accounts). */
+  account?: string | string[] | null;
 }) {
   const { language } = useLanguage();
   const { entries } = useAddressBook();
@@ -159,8 +162,14 @@ export function AddressPickerButton({
   const load = open || warm;
 
   // Everything below is cached once loaded.
+  const scopedAccounts = Array.isArray(account)
+    ? account.filter(Boolean)
+    : account
+      ? [account]
+      : [];
+  const resourceOwnerAccounts = scopedAccounts.length > 0 ? scopedAccounts : accountAddresses;
   const { data: holdings, isFetching: holdingsLoading } = useAccountResources(
-    load && accepts('resource') ? accountAddresses : null,
+    load && accepts('resource') ? resourceOwnerAccounts : null,
   );
   // One lookup for pools and lockers together, shared by every picker on the
   // page and kept 30 minutes: the last 100 transactions of each account, a few

@@ -361,13 +361,10 @@ export function RadixWalletProvider({
       setSessions(prev => ({ ...prev, [target]: null }));
 
       // If we disconnected the active network and the other has a session, switch
-      setActiveNetwork(prev => {
-        if (prev === target) {
-          const other = target === 'mainnet' ? 'stokenet' : 'mainnet';
-          return other;
-        }
-        return prev;
-      });
+      const other = target === 'mainnet' ? 'stokenet' : 'mainnet';
+      if (sessions[other]) {
+        setActiveNetwork(prev => (prev === target ? other : prev));
+      }
     }
 
     setError(null);

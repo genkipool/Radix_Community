@@ -245,7 +245,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                disconnect();
+                                                disconnect(activeNetwork);
                                                 handleClose();
                                             }}
                                             className="flex items-center justify-end gap-2 text-[12px] font-medium text-red-500 opacity-80 hover:opacity-100 transition-all duration-300"

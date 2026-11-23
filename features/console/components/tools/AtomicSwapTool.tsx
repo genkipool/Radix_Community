@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import Big from 'big.js';
 import { useSearchParams } from 'next/navigation';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeftRight, Ban, BookmarkPlus, Check, Clock, ExternalLink, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Ban, BookmarkPlus, Check, ChevronDown, Clock, ExternalLink, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { ShareTargets } from '@/components/ui/ShareTargets';
@@ -30,7 +30,8 @@ import {
   decodeSwapOffer,
   encodeSwapOffer,
   EXPIRATION_PRESETS,
-  extractTakerAccountFromCommittedTx,
+  extractTakerAccountsFromCommittedTx,
+  getOfferMakerAccounts,
   getSavedSwapOffersServerSnapshot,
   getSavedSwapOffersSnapshot,
   MAX_EXPIRATION_MINUTES,
@@ -203,6 +204,7 @@ function getLegBalanceState(
 function formatBigForDisplay(val: Big, locale: string): string {
   const clamped = val.lt(0) ? new Big(0) : val;
   const num = Number(clamped.toFixed());
+  if (num > 0 && num < 0.0001) return formatNumber(num, 8, locale);
   return formatNumber(num, num >= 100 ? 2 : 4, locale);
 }
 
@@ -214,6 +216,7 @@ function AssetLegRow({
   canRemove,
   info,
   holdings,
+  pickerAccount,
   network,
   locale,
   labels,
@@ -225,6 +228,7 @@ function AssetLegRow({
   canRemove: boolean;
   info: ResourceSummary;
   holdings?: AccountHoldings;
+  pickerAccount?: string | string[] | null;
   network: 'mainnet' | 'stokenet';
   locale: string;
   labels: ConsoleToolProps['t']['atomicSwap'];
@@ -271,6 +275,7 @@ function AssetLegRow({
         onChange={(v) => onChange({ ...leg, resource: v, selectedNftIds: [], manualNftIds: '' })}
         categories={['resource']}
         pickerSendableOnly
+        pickerAccount={pickerAccount}
         placeholder={labels.resourcePlaceholder}
         error={!info.withdrawable ? labels.notWithdrawableError : undefined}
         reserveMessage
@@ -463,6 +468,7 @@ function EditableSwapSideColumn({
   onChangeLegs,
   infos,
   holdings,
+  pickerAccount,
   network,
   locale,
   labels,
@@ -474,6 +480,7 @@ function EditableSwapSideColumn({
   onChangeLegs: (updater: (prev: LegDraft[]) => LegDraft[]) => void;
   infos: ResourceSummary[];
   holdings?: AccountHoldings;
+  pickerAccount?: string | string[] | null;
   network: 'mainnet' | 'stokenet';
   locale: string;
   labels: ConsoleToolProps['t']['atomicSwap'];
@@ -498,6 +505,7 @@ function EditableSwapSideColumn({
             canRemove={legs.length > 1}
             info={infos[idx]}
             holdings={holdings}
+            pickerAccount={pickerAccount}
             network={network}
             locale={locale}
             labels={labels}
@@ -601,9 +609,96 @@ function OfferStatusBadge({
   );
 }
 
+function ExpandableAccountList({
+  accounts,
+  emptyLabel,
+  alignCenter = false,
+}: {
+  accounts: string[];
+  emptyLabel?: string;
+  alignCenter?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (accounts.length === 0) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none"
+        style={{ color: 'var(--color-text-muted)' }}
+      >
+        <span>{emptyLabel ?? '—'}</span>
+      </span>
+    );
+  }
+
+  const primary = accounts[0];
+  const rest = accounts.slice(1);
+
+  if (rest.length === 0) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none"
+        style={{ color: 'var(--color-text-main)' }}
+      >
+        <span>{truncateAddress(primary, 10, 6)}</span>
+        <CopyButton value={primary} size="xs" variant="ghost" className="-my-1" />
+      </span>
+    );
+  }
+
+  return (
+    <div className={`mt-2 flex flex-col gap-1.5 ${alignCenter ? 'sm:items-center' : ''}`}>
+      <span
+        className="inline-flex items-center gap-1.5 font-mono leading-none"
+        style={{ color: 'var(--color-text-main)' }}
+      >
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+          className="inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <span>{truncateAddress(primary, 10, 6)}</span>
+          <span
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-sans font-bold leading-none"
+            style={{
+              background: 'rgba(var(--color-primary-rgb), 0.12)',
+              color: 'var(--color-primary)',
+            }}
+          >
+            +{rest.length}
+            <ChevronDown
+              className={`size-3 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            />
+          </span>
+        </button>
+        <CopyButton value={primary} size="xs" variant="ghost" className="-my-1" />
+      </span>
+
+      {expanded && (
+        <div
+          className={`flex flex-col gap-1.5 pt-1.5 border-t ${alignCenter ? 'sm:items-center' : ''}`}
+          style={{ borderColor: 'var(--color-card-border)' }}
+        >
+          {rest.map((addr) => (
+            <span
+              key={addr}
+              className="inline-flex items-center gap-1.5 font-mono leading-none"
+              style={{ color: 'var(--color-text-main)' }}
+            >
+              <span>{truncateAddress(addr, 10, 6)}</span>
+              <CopyButton value={addr} size="xs" variant="ghost" className="-my-1" />
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OfferMetadataBar({
-  makerAccount,
-  takerAccount,
+  makerAccounts,
+  takerAccounts,
   subintentHash,
   txid,
   network,
@@ -612,8 +707,8 @@ function OfferMetadataBar({
   borderedBottom,
   labels,
 }: {
-  makerAccount: string;
-  takerAccount: string | null;
+  makerAccounts: string[];
+  takerAccounts: string[];
   subintentHash: string;
   txid?: string | null;
   network: 'mainnet' | 'stokenet';
@@ -624,36 +719,25 @@ function OfferMetadataBar({
 }) {
   return (
     <div
-      className={`${borderedBottom ? 'py-5 border-y' : 'pt-5 sm:pt-6 border-t'} flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 text-xs`}
+      className={`${borderedBottom ? 'py-5 border-y' : 'pt-5 sm:pt-6 border-t'} flex flex-wrap sm:flex-nowrap items-start justify-between gap-4 text-xs`}
       style={{ borderColor: 'var(--color-card-border)' }}
     >
       <div className="flex flex-col justify-center">
         <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
           {labels.makerLabel}
         </span>
-        <span className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none" style={{ color: 'var(--color-text-main)' }}>
-          <span>{truncateAddress(makerAccount, 10, 6)}</span>
-          <CopyButton value={makerAccount} size="xs" variant="ghost" className="-my-1" />
-        </span>
+        <ExpandableAccountList accounts={makerAccounts} />
       </div>
 
       <div className="flex flex-col justify-center sm:items-center">
         <span className="block text-[10px] uppercase font-bold tracking-wider leading-none" style={{ color: 'var(--color-text-muted)' }}>
           {labels.takerLabel}
         </span>
-        <span
-          className="inline-flex items-center gap-1.5 mt-2 font-mono leading-none"
-          style={{ color: takerAccount ? 'var(--color-text-main)' : 'var(--color-text-muted)' }}
-        >
-          {takerAccount ? (
-            <>
-              <span>{truncateAddress(takerAccount, 10, 6)}</span>
-              <CopyButton value={takerAccount} size="xs" variant="ghost" className="-my-1" />
-            </>
-          ) : (
-            <span>{labels.takerPending}</span>
-          )}
-        </span>
+        <ExpandableAccountList
+          accounts={takerAccounts}
+          emptyLabel={labels.takerPending}
+          alignCenter
+        />
       </div>
 
       <div className="flex flex-col justify-center sm:items-center">
@@ -734,10 +818,12 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   const [tab, setTab] = useState<TabMode>(initialOfferParam ? 'accept' : 'create');
   const [flow, setFlow] = useState<SwapFlow>('subintent');
 
-  const [makerAccountRaw, setMakerAccount] = useState<string | null>(null);
-  const [takerAccountRaw, setTakerAccount] = useState<string | null>(null);
-  const makerAccount = makerAccountRaw?.startsWith(expectedAccountPrefix) ? makerAccountRaw : null;
-  const takerAccount = takerAccountRaw?.startsWith(expectedAccountPrefix) ? takerAccountRaw : null;
+  const [makerAccountsRaw, setMakerAccounts] = useState<string[]>([]);
+  const [takerAccountsRaw, setTakerAccounts] = useState<string[]>([]);
+  const makerAccounts = makerAccountsRaw.filter((a) => a.startsWith(expectedAccountPrefix));
+  const takerAccounts = takerAccountsRaw.filter((a) => a.startsWith(expectedAccountPrefix));
+  const makerAccount = makerAccounts[0] ?? null;
+  const takerAccount = takerAccounts[0] ?? null;
 
   const [offerLegsByNet, setOfferLegsByNet] = useState<Record<'mainnet' | 'stokenet', LegDraft[]>>({
     mainnet: [{ id: 1, resource: '', amount: '', selectedNftIds: [], manualNftIds: '' }],
@@ -783,8 +869,9 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
     setOfferCodeByNet((prev) => ({ ...prev, [activeNetwork]: val }));
   };
 
-  const [acceptAccountRaw, setAcceptAccount] = useState<string | null>(null);
-  const acceptAccount = acceptAccountRaw?.startsWith(expectedAccountPrefix) ? acceptAccountRaw : null;
+  const [acceptAccountsRaw, setAcceptAccounts] = useState<string[]>([]);
+  const acceptAccounts = acceptAccountsRaw.filter((a) => a.startsWith(expectedAccountPrefix));
+  const acceptAccount = acceptAccounts[0] ?? null;
   const [isSettlingV2, setIsSettlingV2] = useState(false);
   const [v2TxResult, setV2TxResult] = useState<ConsoleTxResult | null>(null);
   const [v2TxError, setV2TxError] = useState<string | null>(null);
@@ -821,8 +908,9 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const { data: makerHoldings } = useAccountResources(makerAccount);
-  const { data: takerHoldings } = useAccountResources(flow === 'direct' ? takerAccount : null);
+  const { data: makerHoldings } = useAccountResources(makerAccounts);
+  const { data: takerHoldings } = useAccountResources(flow === 'direct' ? takerAccounts : null);
+  const { data: acceptHoldings } = useAccountResources(tab === 'accept' ? acceptAccounts : null);
 
   const offerInfos = useLegsResourceInfos(offerLegs, activeNetwork, expectedResourcePrefix);
   const wantInfos = useLegsResourceInfos(wantLegs, activeNetwork, expectedResourcePrefix);
@@ -851,17 +939,22 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
 
   const makerSubintentManifest =
     makerAccount && !hasLockedResource && !hasWrongNetworkResource
-      ? buildMakerSubintentManifest(makerAccount, offerAssets, wantAssets)
+      ? buildMakerSubintentManifest(makerAccounts, offerAssets, wantAssets, makerHoldings?.byAccount)
       : '';
 
   const makerSubintentPreviewManifest =
     makerAccount && !hasLockedResource && !hasWrongNetworkResource && makerSubintentManifest
-      ? buildMakerSubintentPreviewManifest(makerAccount, offerAssets)
+      ? buildMakerSubintentPreviewManifest(makerAccounts, offerAssets, makerHoldings?.byAccount)
       : '';
+
+  const combinedDirectByAccount = {
+    ...(makerHoldings?.byAccount ?? {}),
+    ...(takerHoldings?.byAccount ?? {}),
+  };
 
   const directSwapManifest =
     makerAccount && takerAccount && !hasLockedResource && !hasWrongNetworkResource
-      ? buildDirectAtomicSwapManifest(makerAccount, takerAccount, offerAssets, wantAssets)
+      ? buildDirectAtomicSwapManifest(makerAccounts, takerAccounts, offerAssets, wantAssets, combinedDirectByAccount)
       : '';
 
   const activeSubintentResult =
@@ -874,6 +967,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
           v: 1,
           network: activeNetwork === 'stokenet' ? 'stokenet' : 'mainnet',
           makerAccount,
+          ...(makerAccounts.length > 1 ? { makerAccounts } : {}),
           offer: offerAssets.length === 1 ? offerAssets[0] : offerAssets,
           want: wantAssets.length === 1 ? wantAssets[0] : wantAssets,
           subintentHash: activeSubintentResult.subintentHash,
@@ -937,23 +1031,32 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
   const isOfferExpired = decodedOffer ? decodedOffer.expirationTimestamp * 1000 < nowMs : false;
   const isOfferCommitted = subintentStatusInfo?.status === 'CommittedSuccess';
   const hasSignedPartialTx = Boolean(decodedOffer?.signedPartialTransaction);
-  const settledTakerAccount =
+  const settledTakerAccounts =
     decodedOffer && subintentStatusInfo?.committedTx
-      ? extractTakerAccountFromCommittedTx(decodedOffer.makerAccount, subintentStatusInfo.committedTx)
-      : null;
+      ? extractTakerAccountsFromCommittedTx(getOfferMakerAccounts(decodedOffer), subintentStatusInfo.committedTx)
+      : [];
 
   const takerSettlementManifest =
-    decodedOffer && hasSignedPartialTx && acceptAccount ? buildTakerV2SettlementManifest(acceptAccount, decodedOffer) : '';
+    decodedOffer && hasSignedPartialTx && acceptAccount
+      ? buildTakerV2SettlementManifest(acceptAccounts, decodedOffer, acceptHoldings?.byAccount)
+      : '';
 
   const takerCounterSubintentManifest =
-    decodedOffer && hasSignedPartialTx && acceptAccount ? buildTakerSubintentManifest(acceptAccount, decodedOffer.want, decodedOffer.offer) : '';
+    decodedOffer && hasSignedPartialTx && acceptAccount
+      ? buildTakerSubintentManifest(acceptAccounts, decodedOffer.want, decodedOffer.offer, acceptHoldings?.byAccount)
+      : '';
 
   // Simulate the full two-sided swap (Maker <-> Taker) so Preview displays the exact
   // real balance changes (-paid / +received for both accounts) using assume_all_signature_proofs.
   const takerPreviewManifest =
     decodedOffer && hasSignedPartialTx && acceptAccount
-      ? buildDirectAtomicSwapManifest(decodedOffer.makerAccount, acceptAccount, decodedOffer.offer, decodedOffer.want)
-        || buildMakerSubintentPreviewManifest(acceptAccount, decodedOffer.want)
+      ? buildDirectAtomicSwapManifest(
+          decodedOffer.makerAccount,
+          acceptAccounts,
+          decodedOffer.offer,
+          decodedOffer.want,
+          acceptHoldings?.byAccount,
+        ) || buildMakerSubintentPreviewManifest(acceptAccounts, decodedOffer.want, acceptHoldings?.byAccount)
       : '';
 
   const shareUrl =
@@ -972,6 +1075,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
       v: 1,
       network: activeNetwork === 'stokenet' ? 'stokenet' : 'mainnet',
       makerAccount,
+      ...(makerAccounts.length > 1 ? { makerAccounts } : {}),
       offer: offerAssets.length === 1 ? offerAssets[0] : offerAssets,
       want: wantAssets.length === 1 ? wantAssets[0] : wantAssets,
       subintentHash: signed.subintentHash,
@@ -1016,7 +1120,11 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
     }
   };
 
-  const sameAccountError = flow === 'direct' && !!makerAccount && !!takerAccount && makerAccount === takerAccount;
+  const sameAccountError =
+    flow === 'direct'
+    && makerAccounts.length === 1
+    && takerAccounts.length === 1
+    && makerAccounts[0] === takerAccounts[0];
   const directBlockedReason = sameAccountError
     ? t.accountMigrate.sameAccountError
     : hasLockedResource
@@ -1099,7 +1207,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
                   {labels.makerAccount}
                 </span>
-                <AccountPicker value={makerAccount} onChange={setMakerAccount} />
+                <AccountPicker multiple value={makerAccounts} onChange={setMakerAccounts} />
               </div>
 
               <div className="space-y-2">
@@ -1152,14 +1260,14 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
                   {labels.makerAccount}
                 </span>
-                <AccountPicker value={makerAccount} onChange={setMakerAccount} />
+                <AccountPicker multiple value={makerAccounts} onChange={setMakerAccounts} />
               </div>
 
               <div className="space-y-2">
                 <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
                   {labels.counterpartyAccount}
                 </span>
-                <AccountPicker value={takerAccount} onChange={setTakerAccount} />
+                <AccountPicker multiple value={takerAccounts} onChange={setTakerAccounts} />
                 <div className="min-h-[14px]">
                   {sameAccountError && (
                     <p className="text-[11px] leading-tight font-medium text-red-500">
@@ -1180,6 +1288,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
               onChangeLegs={setOfferLegs}
               infos={offerInfos}
               holdings={makerHoldings}
+              pickerAccount={makerAccounts}
               network={activeNetwork}
               locale={language}
               labels={labels}
@@ -1197,6 +1306,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
               onChangeLegs={setWantLegs}
               infos={wantInfos}
               holdings={flow === 'direct' ? takerHoldings : undefined}
+              pickerAccount={flow === 'direct' ? takerAccounts : undefined}
               network={activeNetwork}
               locale={language}
               labels={labels}
@@ -1391,8 +1501,8 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                 />
 
                 <OfferMetadataBar
-                  makerAccount={decodedOffer.makerAccount}
-                  takerAccount={isOfferCommitted ? settledTakerAccount : null}
+                  makerAccounts={getOfferMakerAccounts(decodedOffer)}
+                  takerAccounts={isOfferCommitted ? settledTakerAccounts : []}
                   subintentHash={decodedOffer.subintentHash}
                   txid={isOfferCommitted ? subintentStatusInfo?.txid : null}
                   network={decodedOffer.network}
@@ -1416,7 +1526,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
               {hasSignedPartialTx && !isOfferCommitted && (
                 <>
                   <ToolSection title={labels.takerAccount}>
-                    <AccountPicker value={acceptAccount} onChange={setAcceptAccount} />
+                    <AccountPicker multiple value={acceptAccounts} onChange={setAcceptAccounts} />
                   </ToolSection>
 
                   <div className="space-y-4">
@@ -1468,8 +1578,8 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
             entry,
             committed: savedStatusQueries[idx]?.data?.status === 'CommittedSuccess',
             txid: savedStatusQueries[idx]?.data?.txid ?? null,
-            takerAccount: extractTakerAccountFromCommittedTx(
-              entry.offer.makerAccount,
+            takerAccounts: extractTakerAccountsFromCommittedTx(
+              getOfferMakerAccounts(entry.offer),
               savedStatusQueries[idx]?.data?.committedTx,
             ),
           }))
@@ -1524,8 +1634,8 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                       />
 
                       <OfferMetadataBar
-                        makerAccount={entry.offer.makerAccount}
-                        takerAccount={null}
+                        makerAccounts={getOfferMakerAccounts(entry.offer)}
+                        takerAccounts={[]}
                         subintentHash={entry.offer.subintentHash}
                         network={entry.offer.network}
                         expirationTimestamp={entry.offer.expirationTimestamp}
@@ -1660,7 +1770,7 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
               </ToolSection>
             ) : (
               <div className="space-y-5">
-                {committedLocalOffers.map(({ entry, txid, takerAccount: settledTaker }) => (
+                {committedLocalOffers.map(({ entry, txid, takerAccounts: settledTakers }) => (
                   <ToolSection
                     key={entry.offer.subintentHash}
                     title={labels.acceptSummaryTitle}
@@ -1691,8 +1801,8 @@ export default function AtomicSwapTool({ t }: ConsoleToolProps) {
                     />
 
                     <OfferMetadataBar
-                      makerAccount={entry.offer.makerAccount}
-                      takerAccount={settledTaker}
+                      makerAccounts={getOfferMakerAccounts(entry.offer)}
+                      takerAccounts={settledTakers}
                       subintentHash={entry.offer.subintentHash}
                       txid={txid}
                       network={entry.offer.network}
