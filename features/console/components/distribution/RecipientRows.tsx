@@ -173,8 +173,12 @@ export function RecipientRows({ csv, onCsvChange, defaultResource = '', holdings
 
   const visible = showAll ? rows : rows.slice(0, VISIBLE_ROWS);
   // The token each amount is in: the row's own resource, else the default one.
-  const tokenOf = (row: Row) => row.resource.trim() || defaultResource.trim();
-  const symbols = useResourceLabels(visible.map(tokenOf).filter(Boolean));
+  const trimmedDefault = defaultResource.trim();
+  const tokenOf = (row: Row) => row.resource.trim() || trimmedDefault;
+  const symbols = useResourceLabels([...visible.map(tokenOf), trimmedDefault].filter(Boolean));
+  const defaultResourcePlaceholder = trimmedDefault
+    ? symbols[trimmedDefault] || truncateAddress(trimmedDefault, 10, 6)
+    : L.resource;
 
   return (
     <div className="space-y-2">
@@ -214,7 +218,7 @@ export function RecipientRows({ csv, onCsvChange, defaultResource = '', holdings
               className={`grid grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] gap-2 items-start ${
                 showNftCards
                   ? 'sm:grid-cols-[1.75rem_minmax(0,2fr)_minmax(0,1.5fr)_1.75rem]'
-                  : 'sm:grid-cols-[1.75rem_minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1.2fr)_1.75rem]'
+                  : 'sm:grid-cols-[1.75rem_minmax(0,1.9fr)_minmax(0,1.4fr)_minmax(0,1.4fr)_1.75rem]'
               }`}
             >
               <span className="pt-2.5 text-right text-xs tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
@@ -235,7 +239,7 @@ export function RecipientRows({ csv, onCsvChange, defaultResource = '', holdings
                   pickerSendableOnly
                   value={row.resource}
                   onChange={(v) => edit(row.id, 'resource', v)}
-                  placeholder={L.resource}
+                  placeholder={defaultResourcePlaceholder}
                   disabled={disabled}
                 />
               </div>
@@ -251,6 +255,7 @@ export function RecipientRows({ csv, onCsvChange, defaultResource = '', holdings
                     }}
                     placeholder={rowResource ? (isNft ? L.nftId : L.amount) : L.value}
                     disabled={disabled}
+                    reserveMessage
                     error={
                       isOverBalance && availableForRow
                         ? dict.atomicSwap.insufficientBalanceError.replace('{max}', fmtBig(availableForRow))
