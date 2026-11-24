@@ -16,6 +16,9 @@ import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/da
 import { useXrdPrice } from '@/features/games/hooks/useXrdPrice';
 import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 import { stakingErrorMessage } from '@/features/dashboard/staking/lib/stakingErrorMessage';
+import { useStakingLocale } from '../hooks/useStakingLocale';
+import { useLanguage } from '@/context/LanguageContext';
+import { formatNumber } from '@/utils/formatters';
 
 interface StakingPopupContentProps {
     validator: Validator;
@@ -51,8 +54,17 @@ interface StakingTranslations {
 
 export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) => {
     const queryClient = useQueryClient();
-    const { accounts, activeNetworkId, selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
+    const { accounts, activeNetworkId, selectedAccountAddresses } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<StakingTab>('delegator');
+    const [localAccountAddress, setLocalAccountAddress] = useState<string | null>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('stakingPopupLastAccount');
+            if (saved && accounts.some(a => a.address === saved)) {
+                return saved;
+            }
+        }
+        return null;
+    });
     const inputRef = useRef<HTMLInputElement>(null);
     const [amountStr, setAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
@@ -60,18 +72,35 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const [showOwnerClaimInfo, setShowOwnerClaimInfo] = useState(false);
     const { price } = useXrdPrice();
 
-    const activeAccount = selectedAccountAddresses.length > 0 
-        ? accounts.find(a => selectedAccountAddresses.includes(a.address)) || (accounts.length > 0 ? accounts[0] : null)
-        : (accounts.length > 0 ? accounts[0] : null);
+    const activeAccount =
+        (localAccountAddress ? accounts.find(a => a.address === localAccountAddress) : null) ||
+        (selectedAccountAddresses.length > 0
+            ? accounts.find(a => selectedAccountAddresses.includes(a.address))
+            : null) ||
+        (accounts.length > 0 ? accounts[0] : null);
 
     const handleAccountSelect = (account: WalletAccount) => {
-        setSelectedAccountAddresses([account.address]);
+        setLocalAccountAddress(account.address);
         if (typeof window !== 'undefined') {
             localStorage.setItem('stakingPopupLastAccount', account.address);
         }
     };
 
     const stakingT = t?.dashboard?.staking as unknown as StakingTranslations | undefined;
+    const { language } = useLanguage();
+    const stakingLocale = useStakingLocale();
+
+    const getActionButtonTitle = (action: StakingAction): string => {
+        const tooltips = stakingLocale.tooltips;
+        if (activeTab === 'validator') {
+            if (action === 'Stake') return tooltips.popup_owner_stake;
+            if (action === 'Unstake') return tooltips.popup_owner_unstake;
+            return tooltips.popup_owner_claim;
+        }
+        if (action === 'Stake') return tooltips.popup_delegator_stake;
+        if (action === 'Unstake') return tooltips.popup_delegator_unstake;
+        return tooltips.popup_delegator_claim;
+    };
 
     const { data: stakingData, isLoading: isLoadingData } = useAccountStakingData(
         activeAccount?.address || null,
@@ -80,12 +109,13 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
     const { submitTransaction, isTransacting, error, clearError } = useStakingTransaction();
 
-    const xrdPerLsu = validator.lsu2xrdFactor || 1;
+    const xrdPerLsu = stakingData.lsu2xrdFactor || validator.lsu2xrdFactor || 1;
 
     const isOwnerTab = activeTab === 'validator' && stakingData.isOwner;
-    const stakedXrd = isOwnerTab ? stakingData.ownerLockedStakeXrd : (stakingData.lsuBalance * xrdPerLsu);
+    const stakedXrd = isOwnerTab ? stakingData.ownerLockedStakeXrd : stakingData.stakedXrd;
     const pendingUnstakeXrd = isOwnerTab ? stakingData.ownerPendingUnlockXrd : stakingData.pendingUnstake;
     const claimableXrd = isOwnerTab ? stakingData.ownerUnlockedXrd : stakingData.claimableXrd;
+    const activeUnstakeTooltip = isOwnerTab ? stakingData.ownerUnstakeTooltip : stakingData.unstakeTooltip;
 
     const isEuroZone = () => {
         try {
@@ -237,7 +267,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
         pollOnce(1);
     };
 
-    const parsedAmount = parseFloat(amountStr || '0');
+    const parsedAmount = parseFloat(amountStr || '0') || 0;
     // Error is shown in real-time only if it exceeds BOTH available and staked (with a small margin for floating point rounding)
     const isSuperiorToBoth = parsedAmount > (stakingData.xrdBalance + 0.01) && parsedAmount > (stakedXrd + 0.01);
 
@@ -248,9 +278,8 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
     return (
         <div
-            className="flex flex-col gap-3 w-full sm:w-[420px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 shadow-2xl backdrop-blur-md"
+            className="flex flex-col gap-3 w-full sm:w-[420px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 shadow-2xl"
             onClick={e => e.stopPropagation()}
-            onMouseEnter={e => e.stopPropagation()}
         >
             <div className="flex border-b border-[var(--color-border)] mb-2">
                 <button
@@ -282,25 +311,25 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     <>
                         <div className="flex flex-col items-center">
                             <span className="text-[var(--color-text-muted)]">{stakingT?.available ?? 'Available'}</span>
-                            <span className="font-medium text-[var(--color-text)]">{stakingData.xrdBalance.toFixed(2)} XRD</span>
+                            <span className="font-medium text-[var(--color-text)]">{formatNumber(stakingData.xrdBalance, 2, language)} XRD</span>
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(stakingData.xrdBalance)}</span> : null}
                         </div>
                         <div className="w-px bg-[var(--color-border)]" />
                         <div className="flex flex-col items-center">
                             <span className="text-[var(--color-text-muted)]">{stakingT?.staked ?? 'Staked'}</span>
-                            <span className="font-medium text-[var(--color-text)]">{stakedXrd.toFixed(2)} XRD</span>
+                            <span className="font-medium text-[var(--color-text)]">{formatNumber(stakedXrd, 2, language)} XRD</span>
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(stakedXrd)}</span> : null}
                         </div>
                         <div className="w-px bg-[var(--color-border)]" />
-                        <div className="flex flex-col items-center" title={stakingData.unstakeTooltip || undefined}>
+                        <div className="flex flex-col items-center" title={activeUnstakeTooltip || undefined}>
                             <span className="text-[var(--color-text-muted)]">{stakingT?.unstaking ?? 'Unstaking'}</span>
-                            <span className="font-medium text-[var(--color-text)]">{pendingUnstakeXrd.toFixed(2)} XRD</span>
+                            <span className="font-medium text-[var(--color-text)]">{formatNumber(pendingUnstakeXrd, 2, language)} XRD</span>
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(pendingUnstakeXrd)}</span> : null}
                         </div>
                         <div className="w-px bg-[var(--color-border)]" />
                         <div className="flex flex-col items-center" title={isOwnerTab ? (stakingT?.claim_tooltip ?? 'The claimed LSU tokens are added to the delegator stake of this validator.') : undefined}>
                             <span className="text-[var(--color-text-muted)]">{stakingT?.claimable ?? 'Claimable'}</span>
-                            <span className="font-medium text-[var(--color-text)]">{claimableXrd.toFixed(2)} XRD</span>
+                            <span className="font-medium text-[var(--color-text)]">{formatNumber(claimableXrd, 2, language)} XRD</span>
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(claimableXrd)}</span> : null}
                         </div>
                     </>
@@ -324,7 +353,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
                         disabled={isNotOwnerWarning || hasTxError || isTransacting}
                         aria-label={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
-                        className={`w-full bg-[var(--color-bg)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth || error ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError || isTransacting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-[var(--color-bg)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${isSuperiorToBoth || error ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError || isTransacting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={e => e.stopPropagation()}
                     />
                     <button
@@ -356,12 +385,13 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         <button
                             type="button"
                             key={action}
+                            title={getActionButtonTitle(action)}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleAction(action);
                             }}
                             disabled={isDisabled}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]`}
+                            className="flex-1 py-2 text-xs font-bold rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]"
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

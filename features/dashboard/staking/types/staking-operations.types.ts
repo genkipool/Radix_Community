@@ -11,6 +11,10 @@ export interface StakingPopupState {
 export interface AccountStakingData {
     /** Available XRD balance to stake */
     xrdBalance: number;
+    /** Current delegator staked balance in XRD (single source of truth from useAccountStats) */
+    stakedXrd: number;
+    /** Live LSU-to-XRD conversion factor for this validator */
+    lsu2xrdFactor: number;
     /** Current staked balance (amount of LSU owned) */
     lsuBalance: number;
     /** Exact 18-decimal LSU balance string from the ledger, when available */
@@ -25,8 +29,10 @@ export interface AccountStakingData {
     claimNftResourceAddress?: string;
     /** Local IDs for the owner claim NFTs (if validator tab is active) */
     ownerClaimNftIds: string[];
-    /** Tooltip with epoch unlock info for pending unstake */
+    /** Tooltip with epoch unlock info for pending delegator unstake */
     unstakeTooltip: string;
+    /** Tooltip with epoch unlock info for pending owner unlock */
+    ownerUnstakeTooltip: string;
     /** Whether this account is the owner of the currently viewed validator */
     isOwner: boolean;
     /** Current owner staked balance in XRD */

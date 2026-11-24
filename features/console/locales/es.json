@@ -1502,30 +1502,117 @@
       },
       "staking": {
         "title": "Staking",
-        "description": "Gestiona el staking de tus cuentas: haz stake, unstake y claim en tus validadores con acciones individuales, por lotes o mixtas. El mismo panel que usa el perfil de la billetera.",
+        "description": "Gestiona el staking de tus cuentas y tus validadores propios: haz stake, unstake, claim y bloquea unidades de propietario con vista previa del manifiesto y simulación.",
         "guide": {
           "guideTitle": "Guía: Staking",
-          "guideDescription": "Panel completo de staking de XRD. Delega en uno o varios validadores, retira stake y reclama tus XRD desbloqueados. Soporta acciones globales por lotes (repartir una cantidad entre varios validadores), modo carrito para combinar operaciones distintas en una sola transacción y modo propietario para validadores que controlas.",
-          "guideSteps": [
-            "1. Cuenta: selecciona la cuenta cuya posición de staking quieres gestionar.",
-            "2. Validadores: verás una fila por cada validador donde ya tienes stake; usa el buscador para añadir validadores nuevos.",
-            "3. Acción individual: en cada fila puedes introducir una cantidad y elegir Stake, Unstake o Claim.",
-            "4. Acción global: introduce una cantidad arriba y se repartirá a partes iguales entre los validadores seleccionados.",
-            "5. Modo carrito: configura varias operaciones en distintas filas y se agruparán en una única transacción.",
-            "6. Enviar: pulsa \"Enviar a la billetera\" y firma la transacción en tu Radix Wallet."
+          "guideDescription": "Panel completo de staking de XRD para delegadores y propietarios de validadores. Puedes repartir una misma cantidad entre varios validadores (Staking distribuido) o configurar operaciones distintas por validador en una sola transacción (Multiple staking). Ambas pestañas son independientes entre sí, muestran el balance restante en tiempo real y te permiten simular e inspeccionar el manifiesto RTM antes de firmar.",
+          "guideTabs": [
+            {
+              "label": "Staking distribuido",
+              "steps": [
+                "1. Selecciona la cuenta desde la que quieres operar.",
+                "2. Añade o quita validadores en el selector superior. Verás tu balance disponible y los totales de Stake, Unstake y Claim de los validadores seleccionados.",
+                "3. Elige la acción que quieres aplicar a todos a la vez: Stake, Unstake o Claim.",
+                "4. Para Stake o Unstake, introduce el importe total de XRD (se dividirá a partes iguales entre los validadores seleccionados). El saldo restante dentro del input se actualiza al instante y se marca en rojo si te pasas.",
+                "5. Revisa el reparto exacto en la caja Resumen de operaciones, pulsa \"Simular\" para comprobar el resultado (o despliega el manifiesto abajo) y finalmente pulsa \"Enviar a la billetera\"."
+              ]
+            },
+            {
+              "label": "Multiple staking",
+              "steps": [
+                "1. Selecciona la cuenta y añade cualquier validador nuevo en el selector superior si aún no tienes posición en él.",
+                "2. En cada validador verás tu Balance XRD, Stake XRD, Unstake XRD y Claim XRD.",
+                "3. Introduce una cantidad y marca Stake, Unstake o Claim en cada validador que quieras incluir. Puedes combinar operaciones distintas en una sola transacción (por ejemplo, hacer Stake en uno, Unstake en otro y Claim en un tercero).",
+                "4. El saldo disponible que aparece junto a MAX se descuenta en tiempo real sumando todos los validadores; si el total supera tu balance, los inputs implicados se marcan en rojo.",
+                "5. Revisa el desglose en la caja Resumen de operaciones, pulsa \"Simular\" si quieres previsualizar los cambios de balance y pulsa \"Enviar a la billetera\" para firmar."
+              ]
+            },
+            {
+              "label": "Modo propietario",
+              "steps": [
+                "1. En la pestaña Multiple staking, los validadores cuya insignia de propietario está en tu cuenta muestran el selector [ Delegador | Propietario ].",
+                "2. Cambia a Propietario para ver los saldos de la bóveda bloqueada del propietario (Stake bloqueado, En desbloqueo y Listo para recoger).",
+                "3. Elige la operación que necesites: Staking (stake + bloqueo automático), Stake sin bloquear (solo stake_as_owner), Bloquear LSU (bloquea LSUs líquidos que ya tienes), Unstake (inicia el desbloqueo) o Claim (recoge lo desbloqueado).",
+                "4. La prueba de la insignia de propietario se añade automáticamente al manifiesto. Simula la transacción para verificarla y envíala a tu billetera."
+              ]
+            }
+          ],
+          "fields": [
+            {
+              "label": "Selector de validadores",
+              "description": "Barra compartida bajo las pestañas para añadir validadores nuevos o seleccionar con cuáles operar. Los validadores donde ya tienes stake aparecen automáticamente en Multiple staking."
+            },
+            {
+              "label": "Staking distribuido vs. Multiple staking",
+              "description": "Staking distribuido reparte una sola cantidad a partes iguales entre todos los validadores seleccionados. Multiple staking permite definir cantidades y operaciones distintas en cada validador dentro de una única transacción. Lo que configures en una pestaña nunca borra ni interfiere con la otra."
+            },
+            {
+              "label": "Balance restante en el input y botón MAX",
+              "description": "La cifra junto a MAX muestra el saldo que te queda disponible en tiempo real tras descontar lo que has escrito (incluyendo el resto de validadores en Stake). Pulsar MAX rellena exactamente lo que queda libre; si superas el saldo, el input se marca en rojo."
+            },
+            {
+              "label": "Delegador · Staking (stake)",
+              "description": "Delega XRD en el validador seleccionado y devuelve unidades de stake (LSU) a tu cuenta. Requiere que el validador acepte stake delegado público.",
+              "example": "1000 XRD"
+            },
+            {
+              "label": "Delegador · Unstake (unstake)",
+              "description": "Quema tus LSUs para retirar XRD del validador. Recibirás un NFT de reclamación que podrás canjear por XRD cuando termine el periodo de espera (~1 semana en mainnet).",
+              "example": "500 XRD"
+            },
+            {
+              "label": "Delegador · Claim (claim_xrd)",
+              "description": "Canjea automáticamente por XRD todos los NFT de reclamación de ese validador cuyo plazo de espera ya haya vencido."
+            },
+            {
+              "label": "Propietario · Staking (stake_as_owner + lock_owner_stake_units)",
+              "description": "Opción principal de propietario: hace stake de XRD como propietario (funciona incluso con delegación pública cerrada) y bloquea automáticamente las LSUs recién creadas en la bóveda bloqueada del propietario para que cuenten como Owner Stake.",
+              "example": "1000 XRD"
+            },
+            {
+              "label": "Propietario · Stake sin bloquear (stake_as_owner)",
+              "description": "Hace stake de XRD como propietario sin bloquear las LSUs resultantes. Te devuelve LSUs líquidos normales en tu cuenta (útiles si tienes la delegación cerrada pero quieres mantener liquidez). No suma al Owner Stake bloqueado.",
+              "example": "500 XRD"
+            },
+            {
+              "label": "Propietario · Bloquear LSU (lock_owner_stake_units)",
+              "description": "Bloquea en la bóveda del propietario la cantidad exacta de LSUs que escribas de las que ya tienes sueltas en tu cuenta, sin necesidad de stakear XRD nuevos. Pulsa MAX si quieres bloquear todas tus LSUs libres de ese validador.",
+              "example": "250 LSU"
+            },
+            {
+              "label": "Propietario · Unstake (start_unlock_owner_stake_units)",
+              "description": "Inicia el temporizador de desbloqueo para la cantidad indicada dentro de la bóveda bloqueada del propietario. Todavía no devuelve nada hasta que venza el plazo (~4 semanas en mainnet).",
+              "example": "200 XRD"
+            },
+            {
+              "label": "Propietario · Claim (finish_unlock_owner_stake_units)",
+              "description": "Recoge las unidades de stake de propietario cuyo desbloqueo ya ha finalizado. Devuelve LSUs líquidos a tu cuenta (que después puedes mantener, mover o retirar a XRD con un Unstake de delegador)."
+            },
+            {
+              "label": "Resumen de operaciones, Simular y Manifiesto",
+              "description": "La caja lateral resume cada operación antes de firmar. \"Simular\" ejecuta una prueba en seco contra el Gateway y muestra justo debajo si tendría éxito, la comisión estimada y los cambios exactos de balance. Debajo puedes desplegar y copiar el manifiesto RTM completo."
+            }
           ],
           "glossary": [
             {
-              "term": "LSU",
-              "definition": "Liquid Stake Units: el token que recibes al hacer stake y representa tu participación en el validador."
+              "group": "Conceptos generales",
+              "term": "LSU (Liquid Stake Units)",
+              "definition": "El token fungible que recibes al hacer stake. Representa tu participación en el pool del validador: su valor en XRD crece con cada época a medida que se acumulan las recompensas."
             },
             {
+              "group": "Conceptos generales",
               "term": "NFT de reclamación",
-              "definition": "Al hacer unstake recibes un NFT que podrás canjear por XRD cuando termine el periodo de espera."
+              "definition": "Al hacer unstake como delegador recibes un NFT que registra los XRD pendientes y la época en la que madura. Una vez vencido el plazo (~1 semana en mainnet), se canjea por XRD con Claim."
             },
             {
-              "term": "Modo propietario",
-              "definition": "Vista especial para validadores que controlas: muestra el stake bloqueado del propietario y sus desbloqueos."
+              "group": "Propietario de validador",
+              "term": "Bóveda bloqueada del propietario",
+              "definition": "Bóveda especial del componente validador destinada al stake comprometido del operador (Owner Stake). Su desbloqueo es en dos pasos (Unstake → Claim) con un plazo más largo (~4 semanas en mainnet)."
+            },
+            {
+              "group": "Propietario de validador",
+              "term": "Con bloqueo vs. sin bloqueo (ventajas y desventajas)",
+              "definition": "Con bloqueo (Staking o Bloquear LSU): cuenta oficialmente como Owner Stake ('skin in the game') visible en exploradores y listas de validadores como señal de confianza y sigue generando recompensas; a cambio, las LSUs no se pueden mover y desbloquearlas tarda ~4 semanas en mainnet (y al recogerlas vuelven como LSUs líquidos, no XRD directos). Sin bloqueo (Stake sin bloquear): funciona incluso con delegación pública cerrada y te deja LSUs líquidos que puedes transferir, usar en DeFi o deshacer en ~1 semana, pero NO cuenta como Owner Stake público."
             }
           ]
         }
@@ -1715,110 +1802,6 @@
             {
               "term": "Actualización parcial",
               "definition": "Solo los campos que rellenas emiten instrucción, así que puedes cambiar únicamente el icono sin reescribir el resto."
-            }
-          ]
-        }
-      },
-      "validator-staking": {
-        "title": "Staking del validador",
-        "description": "Stake, unstake, reclamación de NFT vencidos y gestión de las unidades de stake bloqueadas de los validadores que elijas.",
-        "guide": {
-          "guideTitle": "Guía: staking del validador",
-          "guideDescription": "Staking sobre un validador, por el lado del propietario y por el público, en el orden en que las cosas pasan de verdad. Activa lo que quieras y todo va en una sola transacción, con una excepción que impone el ledger: reclamar queda bloqueado mientras esté activo un unstake del mismo validador, porque canjear un NFT de reclamación minteado antes dentro de la misma transacción la aborta entera.",
-          "guideSteps": [
-            "1. Cuenta: la que pone los XRD y tiene las unidades de stake. Los bloques de propietario necesitan además su insignia.",
-            "2. Validador: elígelo y se te rellenan solos los recursos de unidades de stake y de NFT de reclamación que él mintea.",
-            "3. Activa las operaciones que quieras. Cada bloque gasta lo que la cuenta YA tiene: las unidades de stake creadas por un stake de esta misma transacción no llegan hasta el final, así que no se pueden deshacer en el mismo acto.",
-            "4. Para Reclamar XRD, elige los NFT en las tarjetas. Cada tarjeta dice de qué validador viene, y las que aún no han vencido salen deshabilitadas con la época en la que maduran.",
-            "5. Revisa el manifiesto, simula, y luego envía y firma."
-          ],
-          "fields": [
-            {
-              "label": "Stake — Como propietario / Público",
-              "description": "Como propietario usa la insignia y funciona aunque el validador esté cerrado a delegación. Público no necesita insignia, pero el validador debe aceptar stake delegado.",
-              "example": "Como propietario"
-            },
-            {
-              "label": "XRD a stakear",
-              "description": "Se retiran de la cuenta y se stakean. Recibes unidades de stake (LSU) que representan tu parte del pool y cuyo valor de rescate sube según se acumulan las emisiones.",
-              "example": "1000"
-            },
-            {
-              "label": "Recurso de unidades de stake (LSU)",
-              "description": "El recurso pool_unit del validador, que se lee del propio validador. La cuenta ya debe tener alguna: es lo que quema el unstake.",
-              "example": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t"
-            },
-            {
-              "label": "Unidades de stake (unstake)",
-              "description": "Cuántas unidades de stake quemar. Recibes un NFT de reclamación, canjeable por XRD cuando termine el plazo, no los XRD directamente.",
-              "example": "100"
-            },
-            {
-              "label": "Reclamar XRD (selector de NFT)",
-              "description": "Tus NFT de reclamación como tarjetas seleccionables, cada una atribuida al validador que la minteó. Si no, son indistinguibles —mismo tipo de recurso, id opaco— y canjear uno contra el validador equivocado falla; de ahí que la atribución sea lo importante.",
-              "example": "250 XRD · GenkiPool"
-            },
-            {
-              "label": "Bloquear unidades de propietario",
-              "description": "Mete unidades de stake en la bóveda bloqueada del propietario. Algunas redes exigen que el operador mantenga stake bloqueado como compromiso; así es como se pone ahí.",
-              "example": "500"
-            },
-            {
-              "label": "Iniciar desbloqueo",
-              "description": "Arranca el temporizador de desbloqueo de parte de la bóveda. Todavía no sale nada: esto solo pone el reloj en marcha.",
-              "example": "100"
-            },
-            {
-              "label": "Terminar desbloqueo",
-              "description": "Recoge lo que ya haya terminado de desbloquearse. Se puede dejar activado siempre: si el plazo no ha vencido, la llamada se confirma y simplemente no devuelve nada.",
-              "example": "(sin valor)"
-            }
-          ],
-          "example": [
-            {
-              "field": "Stake",
-              "type": "button-group",
-              "options": [
-                "Como propietario",
-                "Público"
-              ],
-              "selected": "Como propietario"
-            },
-            {
-              "field": "XRD a stakear",
-              "type": "input",
-              "value": "1000",
-              "isNumeric": true
-            },
-            {
-              "field": "Recurso de unidades de stake (LSU)",
-              "type": "input",
-              "value": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t",
-              "isAddress": true
-            },
-            {
-              "field": "Unidades de stake",
-              "type": "input",
-              "value": "100",
-              "isNumeric": true
-            }
-          ],
-          "glossary": [
-            {
-              "term": "LSU (unidad de stake)",
-              "definition": "El token fungible que recibes al hacer staking. Representa una parte del pool del validador, así que lo que sube con las emisiones es su valor en XRD, no su cantidad."
-            },
-            {
-              "term": "NFT de reclamación",
-              "definition": "Lo que devuelve el unstake. Registra una cantidad de XRD y la época a partir de la cual se puede canjear; antes de esa época no vale nada en el ledger."
-            },
-            {
-              "term": "Plazo de desvinculación",
-              "definition": "La espera entre hacer unstake y poder reclamar, alrededor de una semana en mainnet. Es la razón de que unstake y reclamar no puedan ir en la misma transacción."
-            },
-            {
-              "term": "Bóveda bloqueada del propietario",
-              "definition": "Una bóveda aparte para las unidades de stake del propio operador, con su desbloqueo en dos pasos: arrancar el temporizador y luego recoger."
             }
           ]
         }
@@ -4917,52 +4900,6 @@
               "hint": "Tu página pública sobre el validador."
             }
           }
-        },
-        "staking": {
-          "title": "Operaciones de staking",
-          "hint": "Activa lo que quieras hacer. Todo lo activado va en una sola transacción, y cada bloque gasta lo que la cuenta ya tiene.",
-          "stake": {
-            "title": "Stake",
-            "description": "Retira XRD de la cuenta y hace staking. Las unidades de stake vuelven a la cuenta.",
-            "optionOwner": "Como propietario",
-            "optionOwnerHint": "Usa la insignia de propietario; funciona aunque el validador esté cerrado a delegación.",
-            "optionPublic": "Público",
-            "optionPublicHint": "No necesita insignia, pero el validador debe aceptar stake delegado.",
-            "amountLabel": "XRD a stakear",
-            "optionPublicClosed": "Este validador está cerrado a delegación ahora mismo, así que un stake público sería rechazado."
-          },
-          "unstake": {
-            "title": "Unstake",
-            "description": "Quema unidades de stake y devuelve un NFT de reclamación, canjeable cuando termine el plazo.",
-            "resourceLabel": "Recurso de unidades de stake (LSU)",
-            "resourceHint": "El recurso pool_unit del validador, que la cuenta ya debe tener.",
-            "amountLabel": "Unidades de stake"
-          },
-          "lock": {
-            "title": "Bloquear unidades de propietario",
-            "description": "Mete unidades de stake en la bóveda bloqueada del propietario.",
-            "resourceLabel": "Recurso de unidades de stake (LSU)",
-            "amountLabel": "Unidades de stake"
-          },
-          "startUnlock": {
-            "title": "Iniciar desbloqueo",
-            "description": "Arranca el temporizador de desbloqueo de parte de la bóveda.",
-            "amountLabel": "Unidades de stake a desbloquear"
-          },
-          "finishUnlock": {
-            "title": "Terminar desbloqueo",
-            "description": "Recoge lo que ya haya terminado de desbloquearse.",
-            "note": "Se puede incluir siempre: si el plazo no ha vencido la llamada se confirma y simplemente no devuelve nada."
-          },
-          "claim": {
-            "title": "Reclamar XRD",
-            "description": "Canjea por XRD los NFT de reclamación ya vencidos.",
-            "lockedByUnstake": "No disponible mientras Unstake esté activo: el ledger aborta la transacción entera al canjear un NFT minteado antes dentro de ella. Manda la reclamación por separado.",
-            "noneFound": "Esta cuenta no tiene ningún NFT de reclamación.",
-            "notYet": "Todavía no se puede canjear: vence en la época {epoch}."
-          },
-          "resourceAutofilled": "Leído del validador; cámbialo solo si sabes por qué.",
-          "resourcePerValidator": "Se resuelve por validador desde el ledger, porque cada uno mintea el suyo."
         },
         "create": {
           "title": "Validador nuevo",

@@ -1,4 +1,14 @@
 import { parseAtto, sumRadixDecimals, toRadixDecimal } from './radix-decimal';
+import {
+  claimXrdInstruction,
+  finishUnlockOwnerStakeUnitsInstruction,
+  lockOwnerStakeUnitsInstruction,
+  signalProtocolUpdateReadinessInstruction,
+  stakeAsOwnerInstruction,
+  stakeInstruction,
+  startUnlockOwnerStakeUnitsInstruction,
+  unstakeInstruction,
+} from '@/features/console/lib/validator-manifests';
 
 /**
  * Builds a manifest to stake XRD to a validator.
@@ -21,13 +31,7 @@ TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
     Decimal("${amount}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "stake"
-    Bucket("bucket1")
-;
-CALL_METHOD
+;${stakeInstruction(validatorAddress, 'bucket1')}CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -56,13 +60,7 @@ TAKE_FROM_WORKTOP
     Address("${lsuResourceAddress}")
     Decimal("${amount}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "unstake"
-    Bucket("bucket1")
-;
-CALL_METHOD
+;${unstakeInstruction(validatorAddress, 'bucket1')}CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -96,13 +94,7 @@ TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${claimNftResourceAddress}")
     Array<NonFungibleLocalId>(${idsString})
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "claim_xrd"
-    Bucket("bucket1")
-;
-CALL_METHOD
+;${claimXrdInstruction(validatorAddress, 'bucket1')}CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -140,18 +132,13 @@ CALL_METHOD
 `;
 
   formattedItems.forEach((item, index) => {
+    const bucket = `bucket${index + 1}`;
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
     Decimal("${item.amountStr}")
-    Bucket("bucket${index + 1}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "stake"
-    Bucket("bucket${index + 1}")
-;
-`;
+    Bucket("${bucket}")
+;${stakeInstruction(item.validatorAddress, bucket)}`;
   });
 
   manifest += `
@@ -193,18 +180,13 @@ CALL_METHOD
   });
 
   formattedItems.forEach((item, index) => {
+    const bucket = `bucket${index + 1}`;
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
     Decimal("${item.amountStr}")
-    Bucket("bucket${index + 1}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "unstake"
-    Bucket("bucket${index + 1}")
-;
-`;
+    Bucket("${bucket}")
+;${unstakeInstruction(item.validatorAddress, bucket)}`;
   });
 
   manifest += `
@@ -245,18 +227,13 @@ CALL_METHOD
   items.forEach((item, index) => {
     if (item.claimNftLocalIds.length === 0) return;
     const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
+    const bucket = `bucket${index + 1}`;
     manifest += `
 TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${item.claimNftResourceAddress}")
     Array<NonFungibleLocalId>(${idsString})
-    Bucket("bucket${index + 1}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "claim_xrd"
-    Bucket("bucket${index + 1}")
-;
-`;
+    Bucket("${bucket}")
+;${claimXrdInstruction(item.validatorAddress, bucket)}`;
   });
 
   manifest += `
@@ -273,6 +250,17 @@ export interface MixedOwnerStakeItem {
   action: 'OwnerStake';
   validatorAddress: string;
   amountXrd: number | string;
+  lsuResourceAddress: string;
+  ownerBadgeId: string;
+  ownerBadgeResourceAddress: string;
+  /** Lock the minted owner stake units in the same transaction (defaults to true). */
+  lock?: boolean;
+}
+
+export interface MixedOwnerLockItem {
+  action: 'OwnerLock';
+  validatorAddress: string;
+  amountLsu: number | string;
   lsuResourceAddress: string;
   ownerBadgeId: string;
   ownerBadgeResourceAddress: string;
@@ -298,6 +286,7 @@ export type MixedBatchItem =
   | (BatchUnstakeItem & { action: 'Unstake' })
   | (BatchClaimItem & { action: 'Claim' })
   | MixedOwnerStakeItem
+  | MixedOwnerLockItem
   | MixedOwnerUnstakeItem
   | MixedOwnerClaimItem;
 
@@ -311,6 +300,9 @@ export const buildMixedBatchManifest = (
   const ownerStakeItems = items
     .filter((i): i is MixedOwnerStakeItem => i.action === 'OwnerStake')
     .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountXrd) }));
+  const ownerLockItems = items
+    .filter((i): i is MixedOwnerLockItem => i.action === 'OwnerLock')
+    .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountLsu) }));
   const ownerUnstakeItems = items
     .filter((i): i is MixedOwnerUnstakeItem => i.action === 'OwnerUnstake')
     .map((item) => ({ ...item, amountStr: toRadixDecimal(item.amountLsu) }));
@@ -326,7 +318,7 @@ export const buildMixedBatchManifest = (
 
   // 0. Owner badge proofs (deduplicated per resource + local id)
   const seenBadges = new Set<string>();
-  for (const item of [...ownerStakeItems, ...ownerUnstakeItems, ...ownerClaimItems]) {
+  for (const item of [...ownerStakeItems, ...ownerLockItems, ...ownerUnstakeItems, ...ownerClaimItems]) {
     const key = `${item.ownerBadgeResourceAddress}:${item.ownerBadgeId}`;
     if (seenBadges.has(key)) continue;
     seenBadges.add(key);
@@ -366,47 +358,45 @@ CALL_METHOD
   // TAKE_ALL_FROM_WORKTOP only sweeps the freshly minted owner stake units.
   ownerStakeItems.forEach((item) => {
     const xrdBucket = `bucket${bucketIndex++}`;
-    const lsuBucket = `bucket${bucketIndex++}`;
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
     Decimal("${item.amountStr}")
     Bucket("${xrdBucket}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "stake_as_owner"
-    Bucket("${xrdBucket}")
-;
+;${stakeAsOwnerInstruction(item.validatorAddress, xrdBucket)}`;
+    if (item.lock !== false) {
+      const lsuBucket = `bucket${bucketIndex++}`;
+      manifest += `
 TAKE_ALL_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
     Bucket("${lsuBucket}")
-;
+;${lockOwnerStakeUnitsInstruction(item.validatorAddress, lsuBucket)}`;
+    }
+  });
+
+  // Lock existing LSUs held by the account into the validator's owner vault.
+  ownerLockItems.forEach((item) => {
+    const lsuBucket = `bucket${bucketIndex++}`;
+    manifest += `
 CALL_METHOD
-    Address("${item.validatorAddress}")
-    "lock_owner_stake_units"
-    Bucket("${lsuBucket}")
+    Address("${accountAddress}")
+    "withdraw"
+    Address("${item.lsuResourceAddress}")
+    Decimal("${item.amountStr}")
 ;
-`;
+TAKE_FROM_WORKTOP
+    Address("${item.lsuResourceAddress}")
+    Decimal("${item.amountStr}")
+    Bucket("${lsuBucket}")
+;${lockOwnerStakeUnitsInstruction(item.validatorAddress, lsuBucket)}`;
   });
 
   ownerUnstakeItems.forEach((item) => {
-    manifest += `
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "start_unlock_owner_stake_units"
-    Decimal("${item.amountStr}")
-;
-`;
+    manifest += startUnlockOwnerStakeUnitsInstruction(item.validatorAddress, item.amountStr);
   });
 
   ownerClaimItems.forEach((item) => {
-    manifest += `
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "finish_unlock_owner_stake_units"
-;
-`;
+    manifest += finishUnlockOwnerStakeUnitsInstruction(item.validatorAddress);
   });
 
   // Delegator LSU & Claim NFT withdrawals
@@ -436,53 +426,35 @@ CALL_METHOD
 
   // Delegator actions
   stakeItems.forEach((item) => {
+    const bucket = `bucket${bucketIndex++}`;
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
     Decimal("${item.amountStr}")
-    Bucket("bucket${bucketIndex}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "stake"
-    Bucket("bucket${bucketIndex}")
-;
-`;
-    bucketIndex++;
+    Bucket("${bucket}")
+;${stakeInstruction(item.validatorAddress, bucket)}`;
   });
 
   unstakeItems.forEach((item) => {
+    const bucket = `bucket${bucketIndex++}`;
     manifest += `
 TAKE_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
     Decimal("${item.amountStr}")
-    Bucket("bucket${bucketIndex}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "unstake"
-    Bucket("bucket${bucketIndex}")
-;
-`;
-    bucketIndex++;
+    Bucket("${bucket}")
+;${unstakeInstruction(item.validatorAddress, bucket)}`;
   });
 
   claimItems.forEach((item) => {
     if (item.claimNftLocalIds.length === 0) return;
     const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
+    const bucket = `bucket${bucketIndex++}`;
     manifest += `
 TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${item.claimNftResourceAddress}")
     Array<NonFungibleLocalId>(${idsString})
-    Bucket("bucket${bucketIndex}")
-;
-CALL_METHOD
-    Address("${item.validatorAddress}")
-    "claim_xrd"
-    Bucket("bucket${bucketIndex}")
-;
-`;
-    bucketIndex++;
+    Bucket("${bucket}")
+;${claimXrdInstruction(item.validatorAddress, bucket)}`;
   });
 
   // 3. Deposit remainder
@@ -535,22 +507,10 @@ TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
     Decimal("${amount}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "stake_as_owner"
-    Bucket("bucket1")
-;
-TAKE_ALL_FROM_WORKTOP
+;${stakeAsOwnerInstruction(validatorAddress, 'bucket1')}TAKE_ALL_FROM_WORKTOP
     Address("${lsuResourceAddress}")
     Bucket("bucket2")
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "lock_owner_stake_units"
-    Bucket("bucket2")
-;
-CALL_METHOD
+;${lockOwnerStakeUnitsInstruction(validatorAddress, 'bucket2')}CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -577,13 +537,7 @@ CALL_METHOD
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("${ownerBadgeId}")
     )
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "start_unlock_owner_stake_units"
-    Decimal("${amount}")
-;
-CALL_METHOD
+;${startUnlockOwnerStakeUnitsInstruction(validatorAddress, amount)}CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -608,12 +562,7 @@ CALL_METHOD
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("${ownerBadgeId}")
     )
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "finish_unlock_owner_stake_units"
-;
-CALL_METHOD
+;${finishUnlockOwnerStakeUnitsInstruction(validatorAddress)}CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -633,9 +582,6 @@ export const buildSignalProtocolUpdateManifest = (
   ownerBadgeResourceAddress: string,
   protocolVersionName: string
 ): string => {
-  // The version name is an ops-controlled 32-char value; escape defensively so
-  // it can never break out of the string literal in the manifest.
-  const safeVersion = protocolVersionName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   return `
 CALL_METHOD
     Address("${accountAddress}")
@@ -644,13 +590,7 @@ CALL_METHOD
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("${ownerBadgeId}")
     )
-;
-CALL_METHOD
-    Address("${validatorAddress}")
-    "signal_protocol_update_readiness"
-    "${safeVersion}"
-;
-`;
+;${signalProtocolUpdateReadinessInstruction(validatorAddress, protocolVersionName)}`;
 };
 
 export interface TransferItem {

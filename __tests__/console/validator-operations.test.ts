@@ -255,7 +255,7 @@ describe('validator section wiring', () => {
   const SLUGS = [
     'validator-registration',
     'validator-profile',
-    'validator-staking',
+    'staking',
     'validator-create',
   ] as const;
 
@@ -285,7 +285,7 @@ describe('validator section wiring', () => {
         expect(tool?.description, slug).toBeTruthy();
       }
       const forms = locale.console.validator.forms;
-      for (const key of ['registration', 'profile', 'staking', 'create'] as const) {
+      for (const key of ['registration', 'profile', 'create'] as const) {
         expect(forms[key]?.title, key).toBeTruthy();
         expect(forms[key]?.hint, key).toBeTruthy();
       }
@@ -296,8 +296,6 @@ describe('validator section wiring', () => {
     for (const locale of [enLocale, esLocale]) {
       // create_validator travels alone
       expect(locale.console.validator.forms.create.standaloneNote).toBeTruthy();
-      // unstake + claim aborts on-ledger
-      expect(locale.console.validator.forms.staking.claim.lockedByUnstake).toBeTruthy();
       // the protocol version name is length-checked by the engine
       expect(locale.console.validator.forms.registration.voteLengthError).toBeTruthy();
     }

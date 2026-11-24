@@ -247,7 +247,7 @@ describe('WalletProfileModal regressions', () => {
     expect(screen.getByText(`${stakingTitleBase} (0)`)).toBeInTheDocument();
 
     // Open validator selector popup and add Alpha Validator
-    const validatorTrigger = screen.getByRole('button', { name: /Alpha Validator/i });
+    const validatorTrigger = screen.getByRole('button', { name: /Seleccionar validador|Select validator/i });
     fireEvent.click(validatorTrigger);
 
     // Select Alpha Validator in the popup and click Add

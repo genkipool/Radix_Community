@@ -45,6 +45,10 @@ interface AccountSummaryTabProps {
     filterSection?: React.ReactNode;
     visibleSections?: Partial<Record<WalletModalSectionKey, boolean>>;
     sectionOrder?: WalletModalSectionKey[];
+    /** Shared floating portal host used by WalletProfileModal to render staking summaries centered without overlapping. */
+    summaryPortalTarget?: HTMLElement | null;
+    /** Notifies WalletProfileModal when this account's floating summary opens or closes. */
+    onFloatingSummaryChange?: (address: string, active: boolean) => void;
 }
 
 interface ParsedResource {
@@ -84,6 +88,8 @@ export function AccountSummaryTab({
     filterSection,
     visibleSections,
     sectionOrder,
+    summaryPortalTarget,
+    onFloatingSummaryChange,
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
     const showFilter = visibleSections?.filter ?? true;
     const showSend = visibleSections?.send ?? true;
@@ -390,6 +396,7 @@ export function AccountSummaryTab({
                             <AccountStakingSection
                                 key="staking"
                                 address={address}
+                                accountLabel={entityName || undefined}
                                 entityData={entityData}
                                 network={network}
                                 locale={locale}
@@ -399,6 +406,8 @@ export function AccountSummaryTab({
                                 isModal={isModal}
                                 alwaysShowControls={isModal}
                                 stakingErrors={stakingErrors}
+                                summaryPortalTarget={summaryPortalTarget}
+                                onFloatingSummaryChange={onFloatingSummaryChange}
                                 onOpenCsvModal={(addr) => setCsvModalAddress(addr)}
                             />
                         ) : null;

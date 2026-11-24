@@ -5,6 +5,7 @@ import { X, User, LogOut, RefreshCcw, Wallet, ChevronDown } from 'lucide-react';
 import { SidePanelModal } from '@/components/shared/SidePanelModal';
 import { SidePanelControls } from '@/components/shared/SidePanelControls';
 import { useSidePanelControls } from '@/components/shared/hooks/useSidePanelControls';
+import { Portal } from '@/components/ui/Portal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { AccountSummaryTab } from '@/features/dashboard/explorador/components/AccountSummaryTab';
@@ -54,6 +55,8 @@ function WalletAccountSummaryWrapper({
     filterSection,
     visibleSections,
     sectionOrder,
+    summaryPortalTarget,
+    onFloatingSummaryChange,
 }: {
     address: string;
     entityName: string;
@@ -68,6 +71,8 @@ function WalletAccountSummaryWrapper({
     filterSection?: React.ReactNode;
     visibleSections?: WalletModalSectionsVisibility;
     sectionOrder?: WalletModalSectionKey[];
+    summaryPortalTarget?: HTMLElement | null;
+    onFloatingSummaryChange?: (address: string, active: boolean) => void;
 }) {
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
@@ -95,6 +100,8 @@ function WalletAccountSummaryWrapper({
             filterSection={filterSection}
             visibleSections={visibleSections}
             sectionOrder={sectionOrder}
+            summaryPortalTarget={summaryPortalTarget}
+            onFloatingSummaryChange={onFloatingSummaryChange}
         />
     );
 }
@@ -105,6 +112,18 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [isAddressBookVisible, setIsAddressBookVisible] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(true);
+    const [summaryPortalEl, setSummaryPortalEl] = useState<HTMLDivElement | null>(null);
+    const [activeSummaryAccounts, setActiveSummaryAccounts] = useState<Set<string>>(() => new Set());
+    const handleFloatingSummaryChange = (addr: string, active: boolean) => {
+        setActiveSummaryAccounts((prev) => {
+            const has = prev.has(addr);
+            if (active === has) return prev;
+            const next = new Set(prev);
+            if (active) next.add(addr);
+            else next.delete(addr);
+            return next;
+        });
+    };
     const {
         visibleSections,
         sectionOrder,
@@ -399,6 +418,8 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                                         filterSection={inlineFilterInAccount ? filterSectionNode : undefined}
                                                                         visibleSections={visibleSections}
                                                                         sectionOrder={sectionOrder}
+                                                                        summaryPortalTarget={isStandaloneMode ? null : summaryPortalEl}
+                                                                        onFloatingSummaryChange={isStandaloneMode ? undefined : handleFloatingSummaryChange}
                                                                     />
                                                                 </div>
                                                             ))}
@@ -414,6 +435,26 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
 
             </div>
         </SidePanelModal>
+
+            {isOpen && !isStandaloneMode && (
+                <Portal>
+                    <AnimatePresence>
+                        {activeSummaryAccounts.size > 0 && (
+                            <m.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="fixed inset-0 sm:right-[430px] z-[9000] pointer-events-none bg-black/50 backdrop-blur-sm"
+                            />
+                        )}
+                    </AnimatePresence>
+                    <div
+                        ref={setSummaryPortalEl}
+                        className="fixed inset-0 sm:right-[430px] z-[9005] pointer-events-none flex flex-wrap items-center justify-center content-center gap-4 p-4 overflow-y-auto"
+                    />
+                </Portal>
+            )}
 
             <UnderConstructionModal
                 isOpen={isConstructionOpen}

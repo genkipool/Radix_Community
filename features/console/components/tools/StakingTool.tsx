@@ -18,9 +18,12 @@ import dashboardStakingEs from '@/features/dashboard/staking/locales/es.json';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { accountFromQuery, consoleQueryParam } from '../../lib/console-query';
 import { useConsoleQueryState } from '../../hooks/useConsoleQueryState';
+import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
+import { CollapsibleManifest } from '../shared/CollapsibleManifest';
+import { SimulateResultCard } from '../shared/SimulatePanel';
 
 type StakingSectionTranslations = Parameters<typeof AccountStakingSection>[0]['tt'];
 type StakingSectionErrors = Parameters<typeof AccountStakingSection>[0]['stakingErrors'];
@@ -30,32 +33,36 @@ type StakingTab = 'distributed' | 'multiple';
 
 /**
  * Staking tool — the same per-validator staking section used in the wallet
- * profile modal (stake, unstake, claim, batch and owner mode), scoped to the
- * account picked in the console.
- *
- * The section emits two zones, and they answer different questions: the
- * distribution panel splits ONE amount equally across the validators you
- * select, while the validator list takes a DIFFERENT amount per validator and
- * combines them into a single transaction. Stacked they read as one long page
- * where the second half looks like a detail of the first; as tabs the choice
- * is explicit.
- *
- * Both stay mounted so the selected validators, the amounts typed and the
- * mixed-operation cart survive switching between them.
+ * profile modal (stake, unstake, claim, batch and owner mode), enhanced in
+ * console mode with full owner controls, shared full-width validator picker,
+ * operations summary on both tabs, and manifest preview + simulation.
  */
 export default function StakingTool({ t }: ConsoleToolProps) {
   const labels = t.staking;
   const { t: fullDictionary, language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
   const { copiedText, copy } = useCopyToClipboard();
+  const preview = useTransactionPreview();
 
   const [account, setAccount] = useConsoleQueryState<string | null>(accountFromQuery, null);
   const [tab, setTab] = useState<StakingTab>('distributed');
+  const [manifest, setManifest] = useState('');
   // `?validator=a,b` (from a validator's profile) starts with those selected.
   const [initialValidators] = useConsoleQueryState(
     () => (consoleQueryParam('validator') ?? '').split(',').map((v) => v.trim()).filter((v) => v.startsWith('validator_')),
     [],
   );
+
+  const handleAccountChange = (next: string | null) => {
+    setAccount(next);
+    setManifest('');
+    preview.reset();
+  };
+
+  const handleTabChange = (next: StakingTab) => {
+    setTab(next);
+    preview.reset();
+  };
 
   const { data: entityData } = useQuery({
     queryKey: entityKeys.detail(account ?? '', activeNetwork),
@@ -78,14 +85,14 @@ export default function StakingTool({ t }: ConsoleToolProps) {
   return (
     <div className="space-y-5">
       <ToolSection title={labels.accountTitle}>
-        <AccountPicker value={account} onChange={setAccount} />
+        <AccountPicker value={account} onChange={handleAccountChange} />
       </ToolSection>
 
       {account && (
         <>
           <OptionButtons<StakingTab>
             value={tab}
-            onChange={setTab}
+            onChange={handleTabChange}
             options={[
               {
                 value: 'distributed',
@@ -114,24 +121,53 @@ export default function StakingTool({ t }: ConsoleToolProps) {
             isModal
             alwaysShowControls
             summaryPlacement="side"
+            consoleMode
+            activeConsoleTab={tab}
+            onConsoleManifestChange={setManifest}
+            onConsoleSimulate={(nextManifest) => preview.simulate(nextManifest)}
+            isConsoleSimulating={preview.isSimulating}
+            consoleSimulateResult={
+              <SimulateResultCard
+                t={t.simulate}
+                preview={preview.preview}
+                error={preview.error}
+                onClose={preview.reset}
+              />
+            }
             stakingErrors={stakingErrors}
             listTitle={labels.sectionTitle}
             /*
              * Both zones are rendered on every pass and the inactive one is
              * hidden rather than unmounted: switching tabs must not reset the
              * validator selection or the amounts already typed.
+             * The shared validator selector (`selector`) stays visible above
+             * whichever tab is active, spanning the full width.
              */
             sectionWrapper={({ key, title, hint, action, children }) => (
-              <div key={key} className={TAB_OF_ZONE[key] === tab ? '' : 'hidden'}>
+              <div key={key} className={key === 'selector' || TAB_OF_ZONE[key] === tab ? '' : 'hidden'}>
                 <ToolSection
                   title={title}
-                  hint={hint ?? (key === 'batch' ? labels.tabDistributedHint : labels.tabMultipleHint)}
+                  hint={
+                    hint ??
+                    (key === 'batch'
+                      ? labels.tabDistributedHint
+                      : key === 'validators'
+                        ? labels.tabMultipleHint
+                        : undefined)
+                  }
                   action={action}
                 >
                   {children}
                 </ToolSection>
               </div>
             )}
+          />
+
+          <CollapsibleManifest
+            manifest={manifest}
+            showLabel={t.validator.showManifest}
+            hideLabel={t.validator.hideManifest}
+            copyLabel={t.common.copy}
           />
         </>
       )}

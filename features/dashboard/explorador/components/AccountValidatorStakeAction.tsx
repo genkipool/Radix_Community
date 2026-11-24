@@ -1,157 +1,98 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useLanguage } from '@/context/LanguageContext';
-import { useStakingTransaction } from '@/features/dashboard/staking/hooks/useStakingTransaction';
-import { StakingAction } from '@/features/dashboard/staking/types/staking-operations.types';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
-import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
-import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
-import { useQuery } from '@tanstack/react-query';
+import { useStakingLocale } from '@/features/dashboard/staking/hooks/useStakingLocale';
+import type { StakingAction } from '@/features/dashboard/staking/types/staking-operations.types';
 import type { TranslationsT } from '@/features/dashboard/types';
-import type { ValidatorEntityState } from '@/features/dashboard/staking/hooks/useAccountStakingData';
-import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
-import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
-import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
-import { stakingErrorMessage } from '@/features/dashboard/staking/lib/stakingErrorMessage';
-export type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
+
+export type ValidatorSelections = {
+    amountStr?: string;
+    stake?: string;
+    unstake?: string;
+    claim?: boolean;
+    /** Console-only owner mode: whether OwnerStake also locks minted LSUs (defaults to true). */
+    ownerLockOnStake?: boolean;
+    /** Console-only owner mode: existing liquid LSUs to lock into the owner vault. */
+    ownerLock?: string;
+};
+
+type ActiveTab = 'Stake' | 'Unstake' | 'Claim' | 'Lock' | null;
 
 const EMPTY_SELECTIONS: ValidatorSelections = {};
 
+/** Picks the next remaining active tab after toggling an action off, and syncs `amountStr`. */
+function pickNextActiveTab(selections: ValidatorSelections): ActiveTab {
+    if (selections.stake !== undefined) {
+        selections.amountStr = selections.stake;
+        return 'Stake';
+    }
+    if (selections.unstake !== undefined) {
+        selections.amountStr = selections.unstake;
+        return 'Unstake';
+    }
+    if (selections.ownerLock !== undefined) {
+        selections.amountStr = selections.ownerLock;
+        return 'Lock';
+    }
+    if (selections.claim) return 'Claim';
+    return null;
+}
+
 interface AccountValidatorStakeActionProps {
-    accountAddress: string;
-    validatorAddress: string;
-    network: 'mainnet' | 'stokenet';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    entityData: any;
     xrdBalance: number;
+    /** Total XRD already allocated to Stake in OTHER validator rows (for real-time remaining balance). */
+    otherValidatorsStakeXrd?: number;
+    /** Effective staked XRD for this row (owner locked stake when `ownerMode` is on, delegator stake otherwise). */
     stakedXrd: number;
+    /** Effective claimable XRD for this row (owner unlocked when `ownerMode` is on, matured claim NFTs otherwise). */
     claimableXrd: number;
-    /**
-     * The claim NFTs that have matured. When given, a claim carries only
-     * these (one still unbonding aborts the whole claim); without it every
-     * claim NFT of the validator is sent, as before.
-     */
+    /** Matured claim NFTs for this validator (delegator mode). */
     claimableNftIds?: string[];
     lsuBalance: number;
     ghostAmount?: string;
     selections?: ValidatorSelections;
-    onUpdateSelections?: (selections: ValidatorSelections) => void;
-    isMultiMode: boolean;
+    onUpdateSelections: (selections: ValidatorSelections) => void;
     ownerMode?: boolean;
+    /** Console-only: exposes Stake unlocked and Lock LSU in owner mode. */
+    advancedOwnerControls?: boolean;
+    isTransacting?: boolean;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
-    stakingErrors?: Record<string, string>;
 }
 
+/**
+ * Pure per-validator staking control bar (input + MAX + live remaining balance +
+ * action toggle buttons). All owner/delegator balances are computed by its parent
+ * `ValidatorStakingRow` and transaction execution lives in `AccountStakingSection`.
+ */
 export const AccountValidatorStakeAction = ({
-    accountAddress,
-    validatorAddress,
-    network,
-    entityData,
     xrdBalance,
+    otherValidatorsStakeXrd = 0,
     stakedXrd,
     claimableXrd,
-    claimableNftIds,
+    claimableNftIds = [],
     lsuBalance,
     ghostAmount,
     selections = EMPTY_SELECTIONS,
     onUpdateSelections,
-    isMultiMode,
     ownerMode = false,
+    advancedOwnerControls = false,
+    isTransacting = false,
     tt,
-    stakingErrors,
 }: AccountValidatorStakeActionProps) => {
-    const queryClient = useQueryClient();
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
-    const { activeNetworkId, accounts } = useRadixWallet();
-    const { data: validatorsData } = useValidatorsQuery(network);
-    const validator = validatorsData?.validators.find(v => v.address === validatorAddress);
-
-    const { data: validatorEntityData } = useQuery({
-        queryKey: dashboardKeys.entities.detail(validator?.address || '', network),
-        queryFn: () => apiFetchEntityDetails(validator!.address, network),
-        enabled: !!validator && ownerMode,
-        staleTime: CACHE_TIMES.SHORT,
-        gcTime: CACHE_TIMES.LONG,
-    });
-
-    const ownerLockedStakeXrd = (() => {
-        if (!ownerMode || !validatorEntityData || !validator) return 0;
-        const state = (validatorEntityData as ValidatorEntityState)?.details?.state;
-        if (!state) return 0;
-        const lsu2xrd = validator.lsu2xrdFactor || 1;
-        const lockedVaultAddress = state.locked_owner_stake_unit_vault?.entity_address;
-        let lockedLsu = 0;
-        const lsuResourceObj = (validatorEntityData as ValidatorEntityState)?.fungible_resources?.items?.find(
-            (item) => item.resource_address === validator.lsuResource
-        );
-        if (lsuResourceObj?.vaults?.items) {
-            for (const vault of lsuResourceObj.vaults.items) {
-                if (vault.vault_address === lockedVaultAddress) {
-                    lockedLsu = parseFloat(vault.amount) || 0;
-                }
-            }
-        }
-        return lockedLsu * lsu2xrd;
-    })();
-
-    const ownerUnlockedXrd = (() => {
-        if (!ownerMode || !validatorEntityData || !validator) return 0;
-        const state = (validatorEntityData as ValidatorEntityState)?.details?.state;
-        if (!state) return 0;
-        const lsu2xrd = validator.lsu2xrdFactor || 1;
-        const currentEpoch = (entityData as { ledger_state?: { epoch?: number } })?.ledger_state?.epoch ?? 0;
-        const alreadyUnlocked = parseFloat(state.already_unlocked_owner_stake_unit_amount || '0');
-        let totalClaimableLsu = alreadyUnlocked;
-        if (state.pending_owner_stake_unit_withdrawals) {
-            for (const w of state.pending_owner_stake_unit_withdrawals) {
-                const amt = parseFloat(w.stake_unit_amount || '0');
-                if (w.epoch_unlocked <= currentEpoch) {
-                    totalClaimableLsu += amt;
-                }
-            }
-        }
-        return totalClaimableLsu * lsu2xrd;
-    })();
-
-    const effectiveStakedXrd = ownerMode ? ownerLockedStakeXrd : stakedXrd;
-    const effectiveClaimableXrd = ownerMode ? ownerUnlockedXrd : claimableXrd;
-    // Matches the 2-decimal display (`formatNumber(x, 2)`): sub-cent dust that renders as "0 XRD" cannot be unstaked.
-    const hasVisibleStake = Number.isFinite(effectiveStakedXrd) && Number(effectiveStakedXrd.toFixed(2)) > 0;
+    const stakingT = useStakingLocale();
+    const tooltips = stakingT.tooltips;
 
     const inputRef = useRef<HTMLInputElement>(null);
-    const [actionError, setActionError] = useState<string | null>(null);
-    const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
+    const [activeTab, setActiveTab] = useState<ActiveTab>('Stake');
+    const showAdvancedOwner = ownerMode && advancedOwnerControls;
 
-    // Para modo multi: qué input estamos editando. Si no hay nada, por defecto Stake o Unstake si Stake no está disponible.
-    const [activeTab, setActiveTab] = useState<'Stake' | 'Unstake' | 'Claim' | null>('Stake');
+    // Matches the 2-decimal display (`formatNumber(x, 2)`): sub-cent dust that renders as "0 XRD" cannot be unstaked.
+    const hasVisibleStake = Number.isFinite(stakedXrd) && Number(stakedXrd.toFixed(2)) > 0;
 
-    const { submitTransaction, isTransacting, error, clearError } = useStakingTransaction();
-
-    const xrdPerLsu = validator?.lsu2xrdFactor || 1;
-
-    // Extract claimNftIds for this validator from the account's entity data
-    const claimNftIds: string[] = claimableNftIds ? [...claimableNftIds] : [];
-    if (!claimableNftIds && validator && entityData?.non_fungible_resources?.items) {
-        const claimResource = entityData.non_fungible_resources.items.find(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (nft: any) => nft.resource_address === validator.claimTokenResourceAddress
-        );
-        if (claimResource && claimResource.vaults?.items?.[0]?.items) {
-            claimNftIds.push(...claimResource.vaults.items[0].items);
-        }
-    }
-
-    const hasTxError = !!error || !!actionError;
-
-    const renderError = (err: string) => stakingErrorMessage(err, {
-        ...stakingErrors,
-        failedToPrepareTransaction: stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare,
-        rejectedByUser: stakingErrors?.rejectedByUser || accT?.rejected_by_user,
-    });
-
-    // Update activeTab when selections are completely cleared (e.g. from Reset button)
+    // Reset activeTab when selections are completely cleared (e.g. from Reset button)
     const [prevSelectionsLength, setPrevSelectionsLength] = useState(Object.keys(selections).length);
     const currentSelectionsLength = Object.keys(selections).length;
     if (prevSelectionsLength !== currentSelectionsLength) {
@@ -161,262 +102,205 @@ export const AccountValidatorStakeAction = ({
         }
     }
 
-    // Obtiene el valor a mostrar en el input según el modo y el tab activo
     const currentInputVal = activeTab === 'Stake' && selections.stake !== undefined
         ? selections.stake
         : activeTab === 'Unstake' && selections.unstake !== undefined
             ? selections.unstake
-            : activeTab === 'Claim'
-                ? ''
-                : selections.amountStr || '';
+            : activeTab === 'Lock' && selections.ownerLock !== undefined
+                ? selections.ownerLock
+                : activeTab === 'Claim'
+                    ? ''
+                    : selections.amountStr || '';
 
     const handleInputChange = (val: string) => {
-        setActionError(null);
-        if (clearError) clearError();
-
-        // Prevent negative numbers manually if they bypass input type
         if (val.includes('-')) return;
+        const next: ValidatorSelections = { ...selections, amountStr: val };
+        if (activeTab === 'Stake' && next.stake !== undefined) next.stake = val;
+        else if (activeTab === 'Unstake' && next.unstake !== undefined) next.unstake = val;
+        else if (activeTab === 'Lock' && next.ownerLock !== undefined) next.ownerLock = val;
 
-        if (onUpdateSelections) {
-            const newSelections = { ...selections };
-            newSelections.amountStr = val; // always sync to amountStr so it doesn't disappear
-
-            if (activeTab === 'Stake' && newSelections.stake !== undefined) {
-                newSelections.stake = val;
-            } else if (activeTab === 'Unstake' && newSelections.unstake !== undefined) {
-                newSelections.unstake = val;
-            }
-
-            if (val === '') {
-                if (activeTab === 'Stake') delete newSelections.stake;
-                if (activeTab === 'Unstake') delete newSelections.unstake;
-                delete newSelections.amountStr;
-            }
-            onUpdateSelections(newSelections);
+        if (val === '') {
+            if (activeTab === 'Stake') delete next.stake;
+            if (activeTab === 'Unstake') delete next.unstake;
+            if (activeTab === 'Lock') delete next.ownerLock;
+            delete next.amountStr;
         }
+        onUpdateSelections(next);
     };
 
-    const handleAction = async (actionToPerform: StakingAction) => {
-        setActionError(null);
-        if (clearError) clearError();
+    const handleOwnerStakeUnlockedAction = () => {
+        const next: ValidatorSelections = { ...selections };
+        if (selections.stake !== undefined && selections.ownerLockOnStake === false) {
+            delete next.stake;
+            delete next.ownerLockOnStake;
+            setActiveTab(pickNextActiveTab(next));
+        } else {
+            const raw = selections.stake !== undefined
+                ? selections.stake
+                : (selections.unstake !== undefined || selections.ownerLock !== undefined ? '' : (selections.amountStr || ''));
+            next.stake = raw;
+            next.amountStr = raw;
+            next.ownerLockOnStake = false;
+            setActiveTab('Stake');
+        }
+        onUpdateSelections(next);
+    };
 
+    const handleOwnerLockAction = () => {
+        const next: ValidatorSelections = { ...selections };
+        if (selections.ownerLock !== undefined) {
+            delete next.ownerLock;
+            setActiveTab(pickNextActiveTab(next));
+        } else {
+            const raw = selections.stake !== undefined || selections.unstake !== undefined ? '' : (selections.amountStr || '');
+            next.ownerLock = raw;
+            next.amountStr = raw;
+            setActiveTab('Lock');
+        }
+        onUpdateSelections(next);
+    };
+
+    const handleAction = (actionToPerform: StakingAction) => {
         let rawAmountStr = '';
         if (actionToPerform === 'Stake' && selections.stake !== undefined) {
             rawAmountStr = selections.stake;
         } else if (actionToPerform === 'Unstake' && selections.unstake !== undefined) {
             rawAmountStr = selections.unstake;
+        } else if (
+            (actionToPerform === 'Stake' && selections.unstake !== undefined) ||
+            (actionToPerform === 'Unstake' && selections.stake !== undefined)
+        ) {
+            rawAmountStr = '';
         } else {
-            // We are toggling ON a new action.
-            // If another amount action is already ON, start empty. Otherwise use amountStr.
-            if (actionToPerform === 'Stake' && selections.unstake !== undefined) {
-                rawAmountStr = '';
-            } else if (actionToPerform === 'Unstake' && selections.stake !== undefined) {
-                rawAmountStr = '';
+            rawAmountStr = selections.amountStr || '';
+        }
+
+        const next: ValidatorSelections = { ...selections };
+        if (actionToPerform === 'Claim') {
+            if (selections.claim) {
+                delete next.claim;
+                setActiveTab(pickNextActiveTab(next));
             } else {
-                rawAmountStr = selections.amountStr || '';
+                next.claim = true;
+                setActiveTab('Claim');
             }
-        }
-
-        if (isMultiMode && onUpdateSelections) {
-            const newSelections = { ...selections };
-
-            if (actionToPerform === 'Claim') {
-                if (selections.claim) {
-                    delete newSelections.claim;
-                    const newTab = newSelections.stake !== undefined ? 'Stake' : (newSelections.unstake !== undefined ? 'Unstake' : null);
-                    setActiveTab(newTab);
-                    if (newTab === 'Stake') newSelections.amountStr = newSelections.stake;
-                    else if (newTab === 'Unstake') newSelections.amountStr = newSelections.unstake;
-                } else {
-                    newSelections.claim = true;
-                    setActiveTab('Claim');
-                }
-            } else if (actionToPerform === 'Stake') {
-                if (selections.stake !== undefined) {
-                    delete newSelections.stake; // toggle off
-                    const newTab = newSelections.unstake !== undefined ? 'Unstake' : (newSelections.claim ? 'Claim' : null);
-                    setActiveTab(newTab);
-                    if (newTab === 'Unstake') newSelections.amountStr = newSelections.unstake;
-                } else {
-                    newSelections.stake = rawAmountStr; // toggle on with current amount
-                    newSelections.amountStr = rawAmountStr; // keep synced
-                    setActiveTab('Stake');
-                }
-            } else if (actionToPerform === 'Unstake') {
-                if (selections.unstake !== undefined) {
-                    delete newSelections.unstake; // toggle off
-                    const newTab = newSelections.stake !== undefined ? 'Stake' : (newSelections.claim ? 'Claim' : null);
-                    setActiveTab(newTab);
-                    if (newTab === 'Stake') newSelections.amountStr = newSelections.stake;
-                } else {
-                    newSelections.unstake = rawAmountStr; // toggle on with current amount
-                    newSelections.amountStr = rawAmountStr; // keep synced
-                    setActiveTab('Unstake');
-                }
-            }
-
-            onUpdateSelections(newSelections);
-            return;
-        }
-
-        // --- SINGLE MODE TRANSACTION ---
-        let amount = parseFloat(rawAmountStr || '0');
-
-        if (actionToPerform === 'Stake' && amount > xrdBalance) {
-            if (amount - xrdBalance <= 0.01) {
-                amount = xrdBalance;
+        } else if (actionToPerform === 'Stake') {
+            const isRowStakeSelected = selections.stake !== undefined && (!showAdvancedOwner || selections.ownerLockOnStake !== false);
+            if (isRowStakeSelected) {
+                delete next.stake;
+                delete next.ownerLockOnStake;
+                setActiveTab(pickNextActiveTab(next));
             } else {
-                setActionError(stakingErrors?.insufficient_balance || accT?.insufficient_balance_action || 'Insufficient balance for this action.');
-                return;
+                next.stake = rawAmountStr;
+                next.amountStr = rawAmountStr;
+                if (showAdvancedOwner) next.ownerLockOnStake = true;
+                setActiveTab('Stake');
             }
-        }
-
-        if (actionToPerform === 'Unstake' && amount > effectiveStakedXrd) {
-            if (amount - effectiveStakedXrd <= 0.01) {
-                amount = effectiveStakedXrd;
+        } else if (actionToPerform === 'Unstake') {
+            if (selections.unstake !== undefined) {
+                delete next.unstake;
+                setActiveTab(pickNextActiveTab(next));
             } else {
-                setActionError(stakingErrors?.insufficient_balance || accT?.insufficient_balance_action || 'Insufficient balance for this action.');
-                return;
+                next.unstake = rawAmountStr;
+                next.amountStr = rawAmountStr;
+                setActiveTab('Unstake');
             }
         }
 
-        setTransactingAction(actionToPerform);
-
-        let txAmount = amount;
-        if (actionToPerform === 'Unstake') {
-            if (ownerMode) {
-                txAmount = amount / xrdPerLsu;
-            } else if (amount === stakedXrd) {
-                txAmount = lsuBalance;
-            } else {
-                txAmount = amount / xrdPerLsu;
-            }
-        }
-
-        if (!validator) {
-            setActionError(accT?.validator_not_found || 'Validator not found');
-            return;
-        }
-
-        const hash = await submitTransaction(
-            accountAddress,
-            validator.address,
-            actionToPerform,
-            ownerMode ? 'validator' : 'delegator',
-            txAmount,
-            validator.lsuResource,
-            claimNftIds,
-            validator.claimTokenResourceAddress,
-            ownerMode ? validator.ownerBadge : undefined
-        );
-
-        if (hash) {
-            if (onUpdateSelections) onUpdateSelections({});
-            pollTransactionStatus(hash);
-        } else {
-            setTransactingAction(null);
-        }
+        onUpdateSelections(next);
     };
+
+    const availableStakeXrdForRow = Math.max(0, xrdBalance - otherValidatorsStakeXrd);
 
     const handleSetMax = () => {
-        if (onUpdateSelections) {
-            const newSelections = { ...selections };
-            if (activeTab === 'Stake') {
-                newSelections.stake = xrdBalance.toString();
-            } else if (activeTab === 'Unstake') {
-                newSelections.unstake = effectiveStakedXrd.toString();
-            } else {
-                const maxAmount = Math.max(xrdBalance, effectiveStakedXrd);
-                newSelections.amountStr = maxAmount.toString();
-            }
-            onUpdateSelections(newSelections);
+        const next: ValidatorSelections = { ...selections };
+        if (activeTab === 'Stake') {
+            next.stake = availableStakeXrdForRow.toString();
+            next.amountStr = availableStakeXrdForRow.toString();
+        } else if (activeTab === 'Unstake') {
+            next.unstake = stakedXrd.toString();
+            next.amountStr = stakedXrd.toString();
+        } else if (activeTab === 'Lock') {
+            next.ownerLock = lsuBalance.toString();
+            next.amountStr = lsuBalance.toString();
+        } else {
+            const maxAmount = Math.max(availableStakeXrdForRow, stakedXrd);
+            next.amountStr = maxAmount.toString();
         }
+        onUpdateSelections(next);
     };
-
-    const pollTransactionStatus = async (hash: string) => {
-        const networkName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-        const maxAttempts = 15; // 15 attempts * 2s = 30s max
-
-        const pollOnce = async (attempt: number) => {
-            if (attempt > maxAttempts) {
-                invalidateAccountStakingData(queryClient, accountAddress, networkName);
-                return;
-            }
-
-            try {
-                const details = await apiFetchTransactionDetails(hash, networkName);
-                if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
-                    // Wait 2 seconds for Gateway to sync new ledger state before refetching
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    try {
-                        await Promise.all((accounts || []).map(async (acc) => {
-                            await apiFetchEntityDetails(acc.address, networkName, true);
-                            invalidateAccountStakingData(queryClient, acc.address, networkName);
-                        }));
-                    } catch (e) {
-                        console.error('Failed to pre-fetch entity details after transaction for accounts', e);
-                    }
-                    setTransactingAction(null);
-                    return;
-                } else if (details && details.transaction_status === 'CommittedFailure') {
-                    setActionError(accT?.transaction_failed || 'Transaction failed.');
-                    setTransactingAction(null);
-                    return;
-                } else if (details && details.transaction_status === 'Rejected') {
-                    setActionError(accT?.transaction_rejected || 'Transaction rejected.');
-                    setTransactingAction(null);
-                    return;
-                }
-            } catch (err) {
-                console.error("Error polling transaction:", err);
-            }
-
-            setTimeout(() => pollOnce(attempt + 1), 2000);
-        };
-
-        pollOnce(1);
-    };
-
-    // Siempre mostramos el input
-    const showInput = true;
 
     let limitAmount = 0;
-    if (activeTab === 'Stake') limitAmount = xrdBalance;
-    else if (activeTab === 'Unstake') limitAmount = effectiveStakedXrd;
-    else if (activeTab === 'Claim') limitAmount = effectiveClaimableXrd;
-    else if (!activeTab) {
-        if (selections.claim) limitAmount = effectiveClaimableXrd;
-        else if (selections.unstake !== undefined) limitAmount = effectiveStakedXrd;
-        else limitAmount = xrdBalance; // defaults to stake context
+    let isStakeContext = false;
+    if (activeTab === 'Stake') {
+        limitAmount = availableStakeXrdForRow;
+        isStakeContext = true;
+    } else if (activeTab === 'Unstake') {
+        limitAmount = stakedXrd;
+    } else if (activeTab === 'Lock') {
+        limitAmount = lsuBalance;
+    } else if (activeTab === 'Claim') {
+        limitAmount = claimableXrd;
+    } else if (selections.claim) {
+        limitAmount = claimableXrd;
+    } else if (selections.ownerLock !== undefined) {
+        limitAmount = lsuBalance;
+    } else if (selections.unstake !== undefined) {
+        limitAmount = stakedXrd;
+    } else {
+        limitAmount = availableStakeXrdForRow;
+        isStakeContext = true;
     }
+
     const valAmount = parseFloat(currentInputVal || '0');
-    const isExceeded = currentInputVal !== '' && valAmount > limitAmount;
+    const isExceeded =
+        currentInputVal !== '' &&
+        (isStakeContext
+            ? otherValidatorsStakeXrd + valAmount > xrdBalance + 1e-6
+            : valAmount > limitAmount + 1e-6);
+    const displayedLimitAmount = activeTab === 'Claim' ? limitAmount : Math.max(0, limitAmount - valAmount);
+    const isLockTab = activeTab === 'Lock';
+    const placeholder = isLockTab
+        ? stakingT.lock_lsu_placeholder
+        : ghostAmount
+            ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})`
+            : `${accT?.amount_xrd || 'Amount of XRD'} ${activeTab && activeTab !== 'Claim' ? `(${activeTab})` : ''}`;
+
+    const getButtonTitle = (action: StakingAction) => {
+        if (ownerMode) {
+            if (action === 'Stake') return tooltips.owner_stake;
+            if (action === 'Unstake') return tooltips.owner_unstake;
+            return tooltips.owner_claim;
+        }
+        if (action === 'Stake') return tooltips.delegator_stake;
+        if (action === 'Unstake') return tooltips.delegator_unstake;
+        return tooltips.delegator_claim;
+    };
 
     return (
         <div className="w-full">
             <div style={{ display: 'none' }} data-prev-len={prevSelectionsLength} />
             <div className="flex flex-col gap-3 pt-4 border-t border-[var(--color-card-border)]/30">
-            {/* Input Row */}
-            {showInput && (
+                {/* Input Row */}
                 <div className="relative flex flex-col">
                     <div className="relative">
                         <input
                             ref={inputRef}
                             type="number"
                             min="0"
-                            aria-label={ghostAmount ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})` : `${accT?.amount_xrd || 'Amount of XRD'} ${isMultiMode && activeTab !== 'Claim' && activeTab ? `(${activeTab})` : ''}`}
+                            aria-label={placeholder}
                             value={currentInputVal}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
                             onWheel={(e) => (e.target as HTMLElement).blur()}
-                            placeholder={ghostAmount ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})` : `${accT?.amount_xrd || 'Amount of XRD'} ${isMultiMode && activeTab !== 'Claim' && activeTab ? `(${activeTab})` : ''}`}
+                            placeholder={placeholder}
                             disabled={isTransacting || activeTab === 'Claim'}
-                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-32 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${hasTxError || isExceeded ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !currentInputVal ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-bg)]'} ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-32 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${isExceeded ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !currentInputVal ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-bg)]'} ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={e => e.stopPropagation()}
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
                             <span className={`text-[10px] font-mono ${isExceeded ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
-                                {limitAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                                {displayedLimitAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                             </span>
                             <button
                                 type="button"
@@ -428,69 +312,81 @@ export const AccountValidatorStakeAction = ({
                             </button>
                         </div>
                     </div>
-                    {hasTxError && (
-                        <div className="text-[10px] text-red-500 mt-1 flex justify-between">
-                            <span>{actionError || renderError(error || '')}</span>
-                        </div>
-                    )}
                 </div>
-            )}
 
-            {/* Buttons Row */}
-            <div className="flex gap-2">
-                {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
-                    const label = action === 'Stake' ? 'Staking' : action;
-                    const isThisActionTransacting = isTransacting && transactingAction === action;
+                {/* Buttons Row 1 */}
+                <div className="flex gap-2">
+                    {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
+                        const label = action === 'Stake' ? 'Staking' : action;
+                        const isSelected = action === 'Stake'
+                            ? (selections.stake !== undefined && (!showAdvancedOwner || selections.ownerLockOnStake !== false))
+                            : action === 'Unstake'
+                                ? selections.unstake !== undefined
+                                : !!selections.claim;
 
-                    let isSelected = false;
-                    let isDisabled = false;
-
-                    if (isMultiMode) {
-                        isSelected = action === 'Stake' ? selections.stake !== undefined : action === 'Unstake' ? selections.unstake !== undefined : !!selections.claim;
-
-                        // Habilitar toggle off siempre. Toggle on solo si hay fondos.
-                        if (!isSelected) {
-                            isDisabled =
-                                isTransacting ||
-                                (action === 'Unstake' && !hasVisibleStake) ||
-                                (action === 'Claim' && !(effectiveClaimableXrd > 0)) ||
-                                (action === 'Claim' && !ownerMode && claimNftIds.length === 0);
-                        }
-                    } else {
-                        isDisabled =
-                            !validator ||
+                        const isDisabled = !isSelected && (
                             isTransacting ||
-                            hasTxError ||
                             (action === 'Unstake' && !hasVisibleStake) ||
-                            (action === 'Claim' && !(effectiveClaimableXrd > 0)) ||
-                            (action !== 'Claim' && (!currentInputVal || parseFloat(currentInputVal) <= 0)) ||
-                            (action === 'Claim' && !ownerMode && claimNftIds.length === 0);
-                    }
+                            (action === 'Claim' && !(claimableXrd > 0)) ||
+                            (action === 'Claim' && !ownerMode && claimableNftIds.length === 0)
+                        );
 
-                    return (
+                        return (
+                            <button
+                                type="button"
+                                key={action}
+                                title={getButtonTitle(action)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAction(action);
+                                }}
+                                disabled={isDisabled}
+                                className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Buttons Row 2 (Console Owner Mode) */}
+                {showAdvancedOwner && (
+                    <div className="flex gap-2">
                         <button
                             type="button"
-                            key={action}
+                            title={tooltips.owner_stake_unlocked}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleAction(action);
+                                handleOwnerStakeUnlockedAction();
                             }}
-                            disabled={isDisabled && !isSelected}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
+                            disabled={isTransacting}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed leading-tight cursor-pointer ${
+                                selections.stake !== undefined && selections.ownerLockOnStake === false
+                                    ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent'
+                                    : 'bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'
+                            }`}
                         >
-                            {isThisActionTransacting ? (
-                                <span className="flex items-center justify-center">
-                                    {label}
-                                    <span className="animate-pulse ml-0.5">...</span>
-                                </span>
-                            ) : (
-                                label
-                            )}
+                            {stakingT.stake_unlocked}
                         </button>
-                    );
-                })}
+                        <button
+                            type="button"
+                            title={tooltips.owner_lock_lsu}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOwnerLockAction();
+                            }}
+                            disabled={isTransacting || (selections.ownerLock === undefined && !(lsuBalance > 0))}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed leading-tight cursor-pointer ${
+                                selections.ownerLock !== undefined
+                                    ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent'
+                                    : 'bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'
+                            }`}
+                        >
+                            {stakingT.lock_lsu}
+                        </button>
+                    </div>
+                )}
             </div>
-        </div>
         </div>
     );
 };

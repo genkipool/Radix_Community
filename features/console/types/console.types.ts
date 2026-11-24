@@ -8,7 +8,6 @@ export const CONSOLE_TOOL_SLUGS = [
   'lsu-info',
   'validator-registration',
   'validator-profile',
-  'validator-staking',
   'validator-create',
   'account-deposits',
   'account-migrate',

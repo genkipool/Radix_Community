@@ -47,7 +47,10 @@ export function ValidatorCarouselSelector({
     const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
     const [tempValues, setTempValues] = useState<string[]>(selectedValues);
 
-    const activeLabel = options[activeIndex]?.label || ui.validators;
+    const showEmptyPrompt = selectedValues.length === 0 && cycledIndex === null;
+    const activeLabel = showEmptyPrompt
+        ? (headerTitle || ui.select_validator)
+        : (options[activeIndex]?.label || headerTitle || ui.select_validator);
 
     const cycle = (direction: 'next' | 'prev') => {
         let nextIdx;
@@ -122,10 +125,18 @@ export function ValidatorCarouselSelector({
                             }
                         }
                     }}
-                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${isOpen ? 'text-[var(--color-primary)]' : selectedValues.includes(options[activeIndex]?.value) ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}
+                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${
+                        isOpen
+                            ? 'text-[var(--color-primary)]'
+                            : showEmptyPrompt
+                                ? 'text-[var(--color-text-muted)]'
+                                : selectedValues.includes(options[activeIndex]?.value)
+                                    ? 'text-[var(--color-primary)]'
+                                    : 'text-[var(--color-text-main)]'
+                    }`}
                 >
                     {activeLabel}
-                    {selectedValues.includes(options[activeIndex]?.value) && <Check className="inline-block size-3 ml-1 mb-0.5" />}
+                    {!showEmptyPrompt && selectedValues.includes(options[activeIndex]?.value) && <Check className="inline-block size-3 ml-1 mb-0.5" />}
                 </button>
                 <button
                     type="button"
@@ -151,6 +162,7 @@ export function ValidatorCarouselSelector({
                         footer={{
                             label: footerActionText || ui.add,
                             onClick: () => {
+                                if (tempValues.length === 0) setCycledIndex(null);
                                 onChange(tempValues);
                                 if (onFooterAction) onFooterAction();
                                 else setIsOpen(false);

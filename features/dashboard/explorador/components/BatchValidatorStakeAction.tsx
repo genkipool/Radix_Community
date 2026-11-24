@@ -30,6 +30,12 @@ interface BatchValidatorStakeActionProps {
      * nested frames.
      */
     unstyled?: boolean;
+    /**
+     * Console-only: when set, the action buttons select the pending batch
+     * action instead of sending immediately (so the user can inspect the
+     * summary, preview the manifest, and simulate before signing).
+     */
+    selectedAction?: StakingAction;
 }
 
 export const BatchValidatorStakeAction = ({
@@ -49,12 +55,20 @@ export const BatchValidatorStakeAction = ({
     children,
     canDistribute = true,
     canUnstake = true,
-    unstyled = false
+    unstyled = false,
+    selectedAction,
 }: BatchValidatorStakeActionProps) => {
     const { t: contextT } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
 
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
+    const globalNum = parseFloat(globalAmountStr || '0');
+    const batchLimit = selectedAction === 'Unstake' ? totalStakedXrdSelected : xrdBalance;
+    const isBatchExceeded =
+        selectedAction !== 'Claim' &&
+        globalAmountStr !== '' &&
+        globalNum > batchLimit + 1e-6;
+    const batchRemaining = Math.max(0, batchLimit - globalNum);
 
     return (
         /*
@@ -72,6 +86,12 @@ export const BatchValidatorStakeAction = ({
         <div
             className={`flex flex-col gap-3 ${unstyled ? '' : 'mb-6 pb-4 border-b border-[var(--color-card-border)]'}`}
         >
+            {children && (
+                <div className="mb-1">
+                    {children}
+                </div>
+            )}
+
             {/* The console gets its title, hint and count from the ToolSection
                 wrapping this panel; here they have to be rendered inline. */}
             {!unstyled && (
@@ -90,12 +110,6 @@ export const BatchValidatorStakeAction = ({
                 </div>
             )}
 
-            {children && (
-                <div className="mb-2">
-                    {children}
-                </div>
-            )}
-
             <div className="relative flex flex-col">
                 <div className="relative">
                     <input
@@ -103,7 +117,7 @@ export const BatchValidatorStakeAction = ({
                         type="number"
                         min="0"
                         aria-label={accT?.batch_amount_placeholder || 'Amount of XRD to distribute'}
-                        value={globalAmountStr}
+                        value={selectedAction === 'Claim' ? '' : globalAmountStr}
                         onChange={(e) => {
                             if (e.target.value.includes('-')) return;
                             setGlobalAmountStr(e.target.value);
@@ -113,42 +127,66 @@ export const BatchValidatorStakeAction = ({
                         onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
                         onWheel={(e) => (e.target as HTMLElement).blur()}
                         placeholder={accT?.batch_amount_placeholder || 'Amount of XRD to distribute'}
-                        disabled={isTransacting}
-                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 bg-[var(--color-bg)] ${actionError ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isTransacting || selectedAction === 'Claim'}
+                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-32 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] bg-[var(--color-bg)] ${actionError || isBatchExceeded ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${isTransacting || selectedAction === 'Claim' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const maxAmount = Math.max(xrdBalance, totalStakedXrdSelected);
-                            setGlobalAmountStr(maxAmount.toString());
-                        }}
-                        disabled={isTransacting}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${isTransacting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
-                    >
-                        {accT?.max || 'MAX'}
-                    </button>
-                </div>
-                {actionError && (
-                    <div className="text-[10px] text-red-500 mt-1 flex justify-between">
-                        <span>{actionError}</span>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                        {selectedAction !== undefined && selectedAction !== 'Claim' && (
+                            <span className={`text-[10px] font-mono ${isBatchExceeded ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
+                                {batchRemaining.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const maxAmount = selectedAction === 'Stake'
+                                    ? xrdBalance
+                                    : selectedAction === 'Unstake'
+                                        ? totalStakedXrdSelected
+                                        : Math.max(xrdBalance, totalStakedXrdSelected);
+                                setGlobalAmountStr(maxAmount.toString());
+                            }}
+                            disabled={isTransacting || selectedAction === 'Claim'}
+                            className={`text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors pointer-events-auto ${isTransacting || selectedAction === 'Claim' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
+                        >
+                            {accT?.max || 'MAX'}
+                        </button>
                     </div>
-                )}
+                </div>
+                <div
+                    role={actionError ? 'alert' : undefined}
+                    aria-live="polite"
+                    className="min-h-[16px] mt-1 text-[10px] leading-4 text-red-500 flex justify-between"
+                >
+                    {actionError && <span>{actionError}</span>}
+                </div>
             </div>
 
             {/* Buttons Row */}
             <div className="flex gap-2">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
-                    const isThisActionTransacting = isTransacting && transactingAction === action;
+                    const isSelectMode = selectedAction !== undefined;
+                    const isSelected = isSelectMode && selectedAction === action;
+                    const isThisActionTransacting = !isSelectMode && isTransacting && transactingAction === action;
                     const hasVisibleTotalStake =
                         Number.isFinite(totalStakedXrdSelected) && Number(totalStakedXrdSelected.toFixed(2)) > 0;
-                    const isDisabled =
-                        isTransacting ||
-                        selectedValidatorsCount === 0 ||
-                        !canDistribute ||
-                        (action === 'Unstake' && (!canUnstake || !hasVisibleTotalStake)) ||
-                        (action === 'Claim' && !(totalClaimableXrdSelected > 0)) ||
-                        (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0));
+                    const isDisabled = isSelectMode
+                        ? (
+                            isTransacting ||
+                            (!isSelected && (
+                                (action === 'Unstake' && (!canUnstake || !hasVisibleTotalStake)) ||
+                                (action === 'Claim' && !(totalClaimableXrdSelected > 0))
+                            ))
+                        )
+                        : (
+                            isTransacting ||
+                            selectedValidatorsCount === 0 ||
+                            !canDistribute ||
+                            (action === 'Unstake' && (!canUnstake || !hasVisibleTotalStake)) ||
+                            (action === 'Claim' && !(totalClaimableXrdSelected > 0)) ||
+                            (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0))
+                        );
 
                     const label = action;
                     const buttonTitle = !canDistribute ? (accT?.batch_disabled_owner_tooltip || 'Owner mode is active on all selected validators. Batch distribution is not available.') : undefined;
@@ -160,7 +198,11 @@ export const BatchValidatorStakeAction = ({
                             onClick={() => onBatchAction(action)}
                             disabled={isDisabled}
                             title={isDisabled ? buttonTitle : undefined}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed leading-tight ${
+                                isSelected
+                                    ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent'
+                                    : 'bg-[var(--color-bg)] text-[var(--color-text-main)] enabled:hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'
+                            }`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

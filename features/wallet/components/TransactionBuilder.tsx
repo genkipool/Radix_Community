@@ -1622,16 +1622,22 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         const width = Math.min(Math.max(380, tabsWidth), vw - 24);
         // Above the wallet profile side panel (z-[9001]) so it is never covered.
         const zIndex = 10000;
+        // Fixed height (capped to available viewport space) so switching tabs
+        // or filtering never makes the popup jump in height.
+        const preferredHeight = 380;
         if (!anchorRect) {
-            return { position: 'fixed', left: Math.max(12, (vw - width) / 2), top: 72, width, maxHeight: vh - 144, zIndex };
+            const available = Math.max(220, vh - 144);
+            return { position: 'fixed', left: Math.max(12, (vw - width) / 2), top: 72, width, height: Math.min(preferredHeight, available), maxHeight: available, zIndex };
         }
         const left = Math.min(Math.max(12, anchorRect.right - width), Math.max(12, vw - width - 12));
         const spaceBelow = vh - anchorRect.bottom;
         const spaceAbove = anchorRect.top;
         const openBelow = spaceBelow >= 280 || spaceBelow >= spaceAbove;
+        const available = openBelow ? Math.max(220, vh - anchorRect.bottom - 16) : Math.max(220, anchorRect.top - 16);
+        const height = Math.min(preferredHeight, available);
         return openBelow
-            ? { position: 'fixed', left, top: anchorRect.bottom + 8, width, maxHeight: Math.max(220, vh - anchorRect.bottom - 16), zIndex }
-            : { position: 'fixed', left, bottom: vh - anchorRect.top + 8, width, maxHeight: Math.max(220, anchorRect.top - 16), zIndex };
+            ? { position: 'fixed', left, top: anchorRect.bottom + 8, width, height, maxHeight: available, zIndex }
+            : { position: 'fixed', left, bottom: vh - anchorRect.top + 8, width, height, maxHeight: available, zIndex };
     };
 
     const getSelectionPopup = (context: { assetId?: string | null, destTarget?: string | null }) => {

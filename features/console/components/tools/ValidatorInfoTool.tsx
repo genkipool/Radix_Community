@@ -156,7 +156,7 @@ function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps
     v?.onlineStatus === true ? [info.online, true] : v?.onlineStatus === false ? [info.offline, false] : null,
   ].filter((s): s is [string, boolean] => !!s);
 
-  const tool = (slug: 'staking' | 'validator-profile' | 'validator-registration' | 'validator-staking') => {
+  const tool = (slug: 'staking' | 'validator-profile' | 'validator-registration') => {
     // The tool opens with the same account and, for Staking, this validator already picked.
     const query = toolQuery({ validator: slug === 'staking' ? address : null, account });
     return {
@@ -192,7 +192,6 @@ function ValidatorInfoCard({ t, address, account, isOwner, onRemove }: CardProps
           ? [
               { ...tool('validator-profile'), icon: <Tags className="size-4" /> },
               { ...tool('validator-registration'), icon: <ShieldCheck className="size-4" /> },
-              { ...tool('validator-staking'), icon: <Landmark className="size-4" /> },
             ]
           : []),
         { href: `/${language}/dashboard/validator/${address}`, label: info.goDashboard, icon: <ExternalLink className="size-4" /> },
