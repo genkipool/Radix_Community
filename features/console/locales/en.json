@@ -1502,30 +1502,117 @@
       },
       "staking": {
         "title": "Staking",
-        "description": "Manage the staking of your accounts: stake, unstake and claim on your validators with individual, batch or mixed actions. The same panel the wallet profile uses.",
+        "description": "Manage staking for your accounts and owned validators: stake, unstake, claim and lock owner stake units with manifest preview and simulation.",
         "guide": {
           "guideTitle": "Guide: Staking",
-          "guideDescription": "Full XRD staking panel. Delegate to one or several validators, unstake and claim your unlocked XRD. Supports global batch actions (split an amount across validators), cart mode to combine different operations into a single transaction, and owner mode for validators you control.",
-          "guideSteps": [
-            "1. Account: pick the account whose staking position you want to manage.",
-            "2. Validators: you get one row per validator you already stake with; use the search to add new validators.",
-            "3. Individual action: on each row enter an amount and choose Stake, Unstake or Claim.",
-            "4. Global action: enter an amount at the top and it is split equally across the selected validators.",
-            "5. Cart mode: configure several operations on different rows and they are grouped into a single transaction.",
-            "6. Send: press \"Send to wallet\" and sign the transaction in your Radix Wallet."
+          "guideDescription": "Full XRD staking panel for delegators and validator owners. Split one amount equally across several validators (Distributed staking) or configure different operations per validator in a single transaction (Multiple staking). Both tabs are completely independent, show your remaining balance in real time, and let you simulate and inspect the RTM manifest before signing.",
+          "guideTabs": [
+            {
+              "label": "Distributed staking",
+              "steps": [
+                "1. Pick the account you want to stake from.",
+                "2. Add or remove validators in the top selector. You will see your available XRD balance alongside total Stake, Unstake and Claim across the selected validators.",
+                "3. Choose the action to apply to all selected validators at once: Stake, Unstake or Claim.",
+                "4. For Stake or Unstake, enter the total XRD amount (it is split equally across all selected validators). The remaining balance inside the input updates live and turns red if exceeded.",
+                "5. Review each validator's share in the Operation Summary box, click \"Simulate\" to preview the outcome (or expand the manifest below), and click \"Send to wallet\" to sign."
+              ]
+            },
+            {
+              "label": "Multiple staking",
+              "steps": [
+                "1. Pick your account and add any new validator in the top selector if you don't already have a position with it.",
+                "2. Each validator card displays your Balance XRD, Stake XRD, Unstake XRD and Claim XRD.",
+                "3. Enter an amount and toggle Stake, Unstake or Claim on each validator you want to include. You can mix different operations into one single transaction (e.g. Stake on one, Unstake on another, Claim on a third).",
+                "4. The remaining balance next to MAX updates in real time across all validators; if the combined total exceeds your balance, the affected inputs turn red.",
+                "5. Review the breakdown in the Operation Summary box, click \"Simulate\" to preview balance changes, and click \"Send to wallet\" to sign."
+              ]
+            },
+            {
+              "label": "Owner mode",
+              "steps": [
+                "1. In the Multiple staking tab, validators whose owner badge is held by your account show a [ Delegator | Owner ] switcher.",
+                "2. Switch to Owner to see your owner locked-vault figures (Locked stake, Pending unlock, and Ready to collect).",
+                "3. Pick any owner operation: Staking (stake + automatic lock), Stake unlocked (stake_as_owner only), Lock LSU (lock existing liquid LSUs), Unstake (start unlock timer), or Claim (collect unlocked units).",
+                "4. The owner badge proof is added to the manifest automatically. Simulate the transaction to verify it, then send it to your wallet."
+              ]
+            }
+          ],
+          "fields": [
+            {
+              "label": "Validator selector",
+              "description": "Shared bar below the tabs to add new validators or choose which ones to interact with. Validators you already stake with appear automatically in Multiple staking."
+            },
+            {
+              "label": "Distributed staking vs. Multiple staking",
+              "description": "Distributed staking splits one total amount equally across every selected validator. Multiple staking lets you set different amounts and operations per validator in a single transaction. Selections in one tab never overwrite or conflict with the other."
+            },
+            {
+              "label": "Live remaining balance & MAX button",
+              "description": "The figure next to MAX updates in real time as you type (subtracting amounts allocated to other validators too). Clicking MAX fills the exact remaining amount; exceeding your balance highlights the input in red."
+            },
+            {
+              "label": "Delegator · Staking (stake)",
+              "description": "Delegates XRD to the selected validator and returns liquid stake units (LSU) to your account. Requires the validator to accept public delegated stake.",
+              "example": "1000 XRD"
+            },
+            {
+              "label": "Delegator · Unstake (unstake)",
+              "description": "Burns your LSUs to withdraw XRD from the validator. You receive a claim NFT redeemable for XRD once the unbonding period ends (~1 week on mainnet).",
+              "example": "500 XRD"
+            },
+            {
+              "label": "Delegator · Claim (claim_xrd)",
+              "description": "Automatically redeems all matured claim NFTs for that validator into XRD."
+            },
+            {
+              "label": "Owner · Staking (stake_as_owner + lock_owner_stake_units)",
+              "description": "Primary owner action: stakes XRD as owner (works even when public delegation is closed) and automatically locks the newly minted LSUs into the owner locked vault so they count as Owner Stake.",
+              "example": "1000 XRD"
+            },
+            {
+              "label": "Owner · Stake unlocked (stake_as_owner)",
+              "description": "Stakes XRD as owner without locking the minted LSUs. Returns regular liquid LSUs to your account (useful when delegation is closed but you want to keep liquidity). Does not add to locked Owner Stake.",
+              "example": "500 XRD"
+            },
+            {
+              "label": "Owner · Lock LSU (lock_owner_stake_units)",
+              "description": "Locks the exact amount of liquid LSUs you enter from those already held in your account into the owner vault, without staking new XRD. Click MAX to lock all your liquid LSUs for that validator.",
+              "example": "250 LSU"
+            },
+            {
+              "label": "Owner · Unstake (start_unlock_owner_stake_units)",
+              "description": "Starts the unlock timer for the specified amount inside the owner locked vault. Nothing is returned until the unlock delay elapses (~4 weeks on mainnet).",
+              "example": "200 XRD"
+            },
+            {
+              "label": "Owner · Claim (finish_unlock_owner_stake_units)",
+              "description": "Collects owner stake units whose unlock period has finished. Returns liquid LSUs to your account (which you can then hold, transfer, or unstake to XRD via delegator Unstake)."
+            },
+            {
+              "label": "Operation Summary, Simulate & Manifest",
+              "description": "The side box summarizes every pending operation. \"Simulate\" dry-runs the manifest against the Gateway and displays directly below whether it succeeds, the estimated fee, and exact balance changes. Below the panel you can expand and copy the full RTM manifest."
+            }
           ],
           "glossary": [
             {
-              "term": "LSU",
-              "definition": "Liquid Stake Units: the token you receive when staking, representing your share in the validator."
+              "group": "General concepts",
+              "term": "LSU (Liquid Stake Units)",
+              "definition": "The fungible token you receive when staking. It represents your share of the validator's pool: its XRD redemption value grows every epoch as rewards accrue."
             },
             {
+              "group": "General concepts",
               "term": "Claim NFT",
-              "definition": "When unstaking you receive an NFT redeemable for XRD once the waiting period ends."
+              "definition": "Unstaking as a delegator mints an NFT recording the pending XRD and the epoch it matures. Once the unbonding period (~1 week on mainnet) finishes, redeem it for XRD with Claim."
             },
             {
-              "term": "Owner mode",
-              "definition": "Special view for validators you control: shows the owner locked stake and its unlocks."
+              "group": "Validator owner",
+              "term": "Owner locked vault",
+              "definition": "A dedicated vault on the validator component holding the operator's committed stake (Owner Stake). Unlocking is a two-step process (Unstake → Claim) with a longer delay (~4 weeks on mainnet)."
+            },
+            {
+              "group": "Validator owner",
+              "term": "Locked vs. unlocked owner stake (pros & cons)",
+              "definition": "Locked (Staking or Lock LSU): counts officially as Owner Stake ('skin in the game') displayed on explorers and validator lists as a trust signal and keeps earning rewards; however, the LSUs cannot be moved and unlocking takes ~4 weeks on mainnet (returning liquid LSUs, not raw XRD). Unlocked (Stake unlocked): works even when public delegation is closed and gives you liquid LSUs you can transfer, use in DeFi, or unstake in ~1 week, but does NOT count as public Owner Stake."
             }
           ]
         }
@@ -1715,110 +1802,6 @@
             {
               "term": "Partial update",
               "definition": "Only the fields you fill in emit an instruction, so you can change just the icon without retyping the rest."
-            }
-          ]
-        }
-      },
-      "validator-staking": {
-        "title": "Validator staking",
-        "description": "Stake, unstake, claim matured NFTs, and manage the owner locked stake units of the validators you pick.",
-        "guide": {
-          "guideTitle": "Guide: validator staking",
-          "guideDescription": "Staking against one validator, both the owner side and the public side, in the order things actually happen. Switch on what you want and it all travels in a single transaction — with one exception the ledger enforces: claiming is locked while an unstake of the same validator is on, because redeeming a claim NFT minted earlier in the same transaction aborts the whole thing.",
-          "guideSteps": [
-            "1. Account: the one that puts up the XRD and holds the stake units. Owner-side blocks also need its owner badge.",
-            "2. Validator: pick it; the stake unit and claim NFT resources it mints are then filled in for you.",
-            "3. Switch on the operations you want. Each block spends what the account ALREADY holds — stake units created by a stake in this same transaction only land at the end, so they cannot be unstaked in the same breath.",
-            "4. For Claim XRD, pick the NFTs from the cards. Each card names the validator it came from, and the ones still unbonding are disabled with the epoch they mature at.",
-            "5. Check the manifest, simulate, then send and sign."
-          ],
-          "fields": [
-            {
-              "label": "Stake — As owner / Public",
-              "description": "As owner uses the owner badge and works even when the validator is closed to delegation. Public needs no badge but the validator must accept delegated stake.",
-              "example": "As owner"
-            },
-            {
-              "label": "XRD to stake",
-              "description": "Withdrawn from the account and staked. You get stake units (LSU) back representing your share of the pool, which grow in redemption value as emissions accrue.",
-              "example": "1000"
-            },
-            {
-              "label": "Stake unit resource (LSU)",
-              "description": "The validator's pool_unit resource, read from the validator for you. The account must already hold some — this is what unstaking burns.",
-              "example": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t"
-            },
-            {
-              "label": "Stake units (unstake)",
-              "description": "How many stake units to burn. You get a claim NFT back, redeemable for XRD once the unbonding period ends — not the XRD itself.",
-              "example": "100"
-            },
-            {
-              "label": "Claim XRD (NFT picker)",
-              "description": "Your stake claim NFTs as selectable cards, each attributed to the validator that minted it. They are otherwise indistinguishable — same resource shape, opaque id — and redeeming one against the wrong validator fails, so the attribution is the point.",
-              "example": "250 XRD · GenkiPool"
-            },
-            {
-              "label": "Lock owner stake units",
-              "description": "Moves stake units into the owner locked vault. Some networks require owners to keep stake locked as skin in the game; this is how you put it there.",
-              "example": "500"
-            },
-            {
-              "label": "Start owner unlock",
-              "description": "Begins the unlock timer for part of the locked vault. Nothing comes out yet — this only starts the clock.",
-              "example": "100"
-            },
-            {
-              "label": "Finish owner unlock",
-              "description": "Collects whatever has finished unlocking. Safe to leave switched on at any time: if the timer has not elapsed the call commits and simply returns nothing.",
-              "example": "(no value)"
-            }
-          ],
-          "example": [
-            {
-              "field": "Stake",
-              "type": "button-group",
-              "options": [
-                "As owner",
-                "Public"
-              ],
-              "selected": "As owner"
-            },
-            {
-              "field": "XRD to stake",
-              "type": "input",
-              "value": "1000",
-              "isNumeric": true
-            },
-            {
-              "field": "Stake unit resource (LSU)",
-              "type": "input",
-              "value": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t",
-              "isAddress": true
-            },
-            {
-              "field": "Stake units",
-              "type": "input",
-              "value": "100",
-              "isNumeric": true
-            }
-          ],
-          "glossary": [
-            {
-              "term": "LSU (stake unit)",
-              "definition": "The fungible token you receive when staking. It represents a share of the validator pool, so its XRD value rises as emissions accrue rather than its quantity."
-            },
-            {
-              "term": "Claim NFT",
-              "definition": "What unstaking returns. It records an XRD amount and the epoch from which it can be redeemed; before that epoch it is worth nothing on-ledger."
-            },
-            {
-              "term": "Unbonding period",
-              "definition": "The wait between unstaking and claiming, roughly a week on mainnet. It is why unstake and claim cannot share a transaction."
-            },
-            {
-              "term": "Owner locked vault",
-              "definition": "A separate vault for the operator's own stake units, with its own two-step unlock: start the timer, then collect."
             }
           ]
         }
@@ -4917,52 +4900,6 @@
               "hint": "Your public page about the validator."
             }
           }
-        },
-        "staking": {
-          "title": "Staking operations",
-          "hint": "Switch on what you want to do. Everything switched on travels in a single transaction, and each block spends what the account already holds.",
-          "stake": {
-            "title": "Stake",
-            "description": "Withdraws XRD from the account and stakes it. The stake units come back to the account.",
-            "optionOwner": "As owner",
-            "optionOwnerHint": "Uses the owner badge; works even when the validator is closed to delegation.",
-            "optionPublic": "Public",
-            "optionPublicHint": "Needs no badge, but the validator must accept delegated stake.",
-            "amountLabel": "XRD to stake",
-            "optionPublicClosed": "This validator is closed to delegation right now, so a public stake would be rejected."
-          },
-          "unstake": {
-            "title": "Unstake",
-            "description": "Burns stake units and returns a claim NFT, redeemable once the unbonding period ends.",
-            "resourceLabel": "Stake unit resource (LSU)",
-            "resourceHint": "The validator's pool_unit resource, which the account must already hold.",
-            "amountLabel": "Stake units"
-          },
-          "lock": {
-            "title": "Lock owner stake units",
-            "description": "Moves stake units into the owner locked vault.",
-            "resourceLabel": "Stake unit resource (LSU)",
-            "amountLabel": "Stake units"
-          },
-          "startUnlock": {
-            "title": "Start owner unlock",
-            "description": "Starts the unlock timer for part of the locked vault.",
-            "amountLabel": "Stake units to unlock"
-          },
-          "finishUnlock": {
-            "title": "Finish owner unlock",
-            "description": "Collects whatever has finished unlocking.",
-            "note": "Safe to include at any time: if the timer has not elapsed the call commits and simply returns nothing."
-          },
-          "claim": {
-            "title": "Claim XRD",
-            "description": "Redeems matured claim NFTs for XRD.",
-            "lockedByUnstake": "Not available while Unstake is on: the ledger aborts the whole transaction when a claim NFT minted earlier in it is redeemed. Send the claim separately.",
-            "noneFound": "This account holds no stake claim NFTs.",
-            "notYet": "Not redeemable yet — matures at epoch {epoch}."
-          },
-          "resourceAutofilled": "Read from the validator; change it only if you know why.",
-          "resourcePerValidator": "Resolved per validator from the ledger, since each one mints its own."
         },
         "create": {
           "title": "New validator",

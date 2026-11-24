@@ -23,16 +23,28 @@ vi.mock('@/features/wallet/hooks/useRadixWallet', () => ({
     }),
 }));
 
+vi.mock('@/context/LanguageContext', () => ({
+    useLanguage: () => ({ t: {}, language: 'en' }),
+}));
+
 vi.mock('@/features/dashboard/staking/hooks/useAccountStakingData', () => ({
     useAccountStakingData: () => ({
         data: {
             xrdBalance: 1000,
+            stakedXrd: 500,
+            lsu2xrdFactor: 1,
             lsuBalance: 500,
             pendingUnstake: 100,
             claimableXrd: 50,
             claimNftIds: ['nft1'],
             ownerClaimNftIds: [],
+            unstakeTooltip: '',
+            ownerUnstakeTooltip: '',
             isOwner: false,
+            ownerLockedStakeXrd: 0,
+            ownerPendingUnlockXrd: 0,
+            ownerUnlockedLsu: 0,
+            ownerUnlockedXrd: 0,
         },
         isLoading: false,
     }),

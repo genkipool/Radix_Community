@@ -43,7 +43,6 @@ import SendTransactionTool from './tools/SendTransactionTool';
 import StakingTool from './tools/StakingTool';
 import ValidatorRegistrationTool from './tools/ValidatorRegistrationTool';
 import ValidatorProfileTool from './tools/ValidatorProfileTool';
-import ValidatorStakingTool from './tools/ValidatorStakingTool';
 import ValidatorCreateTool from './tools/ValidatorCreateTool';
 import CreateTokenTool from './tools/CreateTokenTool';
 import BuildManifestTool from './tools/BuildManifestTool';
@@ -96,7 +95,6 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'lsu-info': LsuInfoTool,
   'validator-registration': ValidatorRegistrationTool,
   'validator-profile': ValidatorProfileTool,
-  'validator-staking': ValidatorStakingTool,
   'validator-create': ValidatorCreateTool,
   'pool-info': PoolInfoTool,
   'component-info': ComponentInfoTool,

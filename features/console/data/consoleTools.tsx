@@ -103,14 +103,6 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     requiresWallet: true,
     wide: true,
   },
-  'validator-staking': {
-    slug: 'validator-staking',
-    icon: <Landmark className="size-5" />,
-    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    accentRgb: '168,85,247',
-    requiresWallet: true,
-    wide: true,
-  },
   'validator-create': {
     slug: 'validator-create',
     icon: <BadgePlus className="size-5" />,
@@ -463,7 +455,6 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
       'send-transaction',
       'atomic-swap',
       'bulk-send',
-      'staking',
       'lsu-info',
       'create-token',
       'my-resources',
@@ -476,13 +467,11 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     ],
   },
   {
-    // Validator: the node operator's section. Split by what the engine lets
-    // share a transaction, so each tool is one legal transaction's worth of
-    // settings and no form can express a combination the ledger would garble.
+    // Validator: staking and node-operator tools together.
     id: 'validator',
     icon: <ShieldCheck className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['validator-info', 'validator-create', 'validator-registration', 'validator-profile', 'validator-staking'],
+    tools: ['validator-info', 'staking', 'validator-create', 'validator-registration', 'validator-profile'],
   },
   {
     // Pools: the native pool blueprints, one tool per thing a pool lets you

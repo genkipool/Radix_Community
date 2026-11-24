@@ -53,7 +53,11 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
             left = rect.left + window.scrollX;
         }
 
-        setCoords({ top, left, right, isUp });
+        setCoords((prev) =>
+            prev.top === top && prev.left === left && prev.right === right && prev.isUp === isUp
+                ? prev
+                : { top, left, right, isUp }
+        );
     };
 
     const handleMouseEnter = () => {
@@ -61,6 +65,11 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         calculateCoords();
         setIsOpen(true);
+    };
+
+    const handlePopupMouseEnter = () => {
+        wantsCloseRef.current = false;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
 
     /**
@@ -147,7 +156,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
                                 left: coords.left,
                                 transform: coords.isUp ? 'translateY(-100%)' : 'none'
                             }}
-                            onMouseEnter={handleMouseEnter}
+                            onMouseEnter={handlePopupMouseEnter}
                             onMouseLeave={handleMouseLeave}
                         >
                             {/* Puente invisible / Invisible bridge to prevent mouseLeave when moving between trigger and popup */}

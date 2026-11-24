@@ -9,7 +9,6 @@ const SLUGS = [
   'validator-create',
   'validator-registration',
   'validator-profile',
-  'validator-staking',
   'pool-info',
   'pool-create',
   'pool-contribute',
