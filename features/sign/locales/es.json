@@ -579,7 +579,7 @@
         },
         "network": {
           "mainnet": "Mainnet · Producción",
-          "stokenet": "Stokenet · Pruebas",
+          "stokenet": "Stokenet",
           "stokenetNotice": "Entorno de pruebas (Stokenet): los registros mostrados pertenecen a cuentas de test y no constituyen evidencia productiva."
         },
         "header": {

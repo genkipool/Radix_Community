@@ -3,30 +3,17 @@
 import { useState } from 'react';
 import {
   Building2,
-  ExternalLink,
   FileSearch,
-  FlaskConical,
   RefreshCw,
   ShieldAlert,
 } from 'lucide-react';
-import { CopyButton } from '@/components/ui/CopyButton';
 import { useLanguage } from '@/context/LanguageContext';
-import { downloadTextFile } from '@/features/console/lib/file-utils';
 import { networkOfAddress } from '@/features/dashboard/lib/routes';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { truncateAddress } from '@/utils/formatters';
-import { SEAL_IMAGE_PATH } from '../../constants/seal';
+import { useAuditExport } from '../../hooks/useAuditExport';
 import { useCollectionAudit } from '../../hooks/useCollectionAudit';
 import { useDomainVerification } from '../../hooks/useDomainVerification';
-import {
-  buildAuditJsonPackage,
-  recordsToAuditCsv,
-  signersToAuditCsv,
-} from '../../lib/audit-export';
-import { buildAuditReportPdf } from '../../lib/audit-pdf';
-import { downloadBytes } from '../../lib/certificate';
 import {
   DEFAULT_AUDIT_FILTERS,
   computeAuditKpis,
@@ -35,26 +22,22 @@ import {
   hasActiveAuditFilters,
   type AuditFilterState,
 } from '../../lib/collection-audit';
-import { readBrandAccent } from '../../lib/pdf-layout';
 import {
   RADIX_RESOURCE_RE,
   networkIdFromResource,
-  networkNameForId,
 } from '../../lib/network';
 import type { UserSignCollection } from '../../services/sealDiscovery';
 import { DomainVerificationDrawer } from '../collection/DomainVerificationDrawer';
 import {
   buildAuditShareUrl,
-  entityExplorerHref,
   explorerNetworkForId,
-  formatUtcTimestamp,
   type AuditLabels,
   type DomainVerifyLabels,
 } from './AuditFormatters';
 import { AuditFilterBar } from './AuditFilterBar';
-import { AuditHeader, type AuditExportFormat } from './AuditHeader';
+import { AuditHeader } from './AuditHeader';
 import { AuditIntegrityTab } from './AuditIntegrityTab';
-import { AuditKpiStrip } from './AuditKpiStrip';
+import { AuditOverviewTab } from './AuditOverviewTab';
 import { AuditRecordsTable } from './AuditRecordsTable';
 import { AuditSignersDirectory } from './AuditSignersDirectory';
 
@@ -62,13 +45,9 @@ type SubTab = 'records' | 'signers' | 'overview' | 'integrity' | 'external';
 type SourceMode = 'owned' | 'external';
 
 /**
- * Institutional Audit & Registry view for Radix Seal signing collections.
- *
- * Works in two zero-friction modes:
- *  - Institution Mode (wallet connected): auto-loads the active collection and
- *    lets the operator switch across their owned collections.
- *  - External Auditor Mode (no wallet required): inspects any public collection
- *    address or shared audit URL in read-only mode against the Radix ledger.
+ * Audit & Registry workspace for Radix Seal signing collections.
+ * Supports wallet-connected multi-collection mode and wallet-free external
+ * read-only auditing across Mainnet and Stokenet.
  */
 export function CollectionAuditTab({
   labels,
@@ -115,14 +94,11 @@ export function CollectionAuditTab({
     toDate: initialToDate ?? '',
   });
   const [includeAliases, setIncludeAliases] = useState(false);
-  const [exporting, setExporting] = useState<AuditExportFormat | null>(null);
   const [domainDrawerOpen, setDomainDrawerOpen] = useState(false);
 
   const effectiveMode: SourceMode =
     !isConnected && mode === 'owned' ? 'external' : mode;
 
-  // Keep owned collections strictly scoped to the active wallet network so
-  // switching between Mainnet and Stokenet never mixes resources.
   const networkOwnedCollections = ownedCollections.filter(
     (c) =>
       activeNetworkId == null ||
@@ -141,19 +117,16 @@ export function CollectionAuditTab({
 
   const targetCollection =
     effectiveMode === 'owned'
-      ? validOwnedSelection ??
+      ? (validOwnedSelection ??
         validActiveOwned ??
         networkOwnedCollections[0]?.resourceAddress ??
-        null
+        null)
       : externalTarget || null;
 
-  // Derive the ledger strictly from the collection's own Bech32 prefix
-  // (`resource_rdx1…` → Mainnet 1, `resource_tdx_2_1…` → Stokenet 2).
   const targetNetworkId = targetCollection
     ? networkIdFromResource(targetCollection)
     : null;
 
-  // Clear any signer filter whose account prefix belongs to the other ledger.
   const expectedNet =
     targetNetworkId != null ? explorerNetworkForId(targetNetworkId) : undefined;
   const signerMatchesLedger =
@@ -164,13 +137,10 @@ export function CollectionAuditTab({
     ? filters
     : { ...filters, signerFilter: '' };
 
-  const {
-    audit,
-    loading,
-    error,
-    loadingOlder,
-    loadOlder,
-  } = useCollectionAudit(targetNetworkId, targetCollection);
+  const { audit, loading, error, loadingOlder, loadOlder } = useCollectionAudit(
+    targetNetworkId,
+    targetCollection,
+  );
 
   const liveDomain = useDomainVerification({
     orgUrl: audit?.found ? audit.issuer.orgUrl : null,
@@ -260,74 +230,18 @@ export function CollectionAuditTab({
     }
   };
 
-  const handleExport = async (format: AuditExportFormat) => {
-    if (!audit || !audit.found) return;
-    setExporting(format);
-    const shortId = audit.collection.slice(-8);
-    const netTag = networkNameForId(audit.networkId);
-    try {
-      if (format === 'csv-records') {
-        const csv = recordsToAuditCsv(audit, filteredRecords, {
-          includeAliases,
-          aliasOf,
-        });
-        downloadTextFile(
-          `radix-seal-audit-${netTag}-records-${shortId}.csv`,
-          csv,
-          'text/csv',
-        );
-      } else if (format === 'csv-signers') {
-        const csv = signersToAuditCsv(audit, filteredSigners, {
-          includeAliases,
-          aliasOf,
-        });
-        downloadTextFile(
-          `radix-seal-audit-${netTag}-signers-${shortId}.csv`,
-          csv,
-          'text/csv',
-        );
-      } else if (format === 'json') {
-        const pkg = await buildAuditJsonPackage(
-          audit,
-          filteredRecords,
-          filteredSigners,
-          effectiveFilters,
-          { includeAliases, aliasOf },
-        );
-        downloadTextFile(
-          `radix-seal-audit-${netTag}-${shortId}.json`,
-          JSON.stringify(pkg, null, 2),
-          'application/json',
-        );
-      } else if (format === 'pdf') {
-        const origin =
-          typeof window !== 'undefined' ? window.location.origin : undefined;
-        const pdfBytes = await buildAuditReportPdf({
-          audit,
-          records: filteredRecords,
-          signers: filteredSigners,
-          kpis,
-          filters: effectiveFilters,
-          labels: labels.pdf,
-          kindLabels: labels.records.kinds,
-          locale: language,
-          origin,
-          sealImageUrl: origin ? `${origin}${SEAL_IMAGE_PATH}` : undefined,
-          auditUrl: shareUrl() || undefined,
-          includeAliases,
-          aliasOf,
-          accent: readBrandAccent(),
-        });
-        downloadBytes(
-          pdfBytes,
-          `radix-seal-audit-${netTag}-${shortId}.pdf`,
-          'application/pdf',
-        );
-      }
-    } finally {
-      setExporting(null);
-    }
-  };
+  const { exporting, handleExport } = useAuditExport({
+    audit,
+    filteredRecords,
+    filteredSigners,
+    kpis,
+    effectiveFilters,
+    labels,
+    language,
+    includeAliases,
+    aliasOf,
+    shareUrl,
+  });
 
   const externalAuditorForm = (
     <form onSubmit={handleExternalSubmit} className="space-y-3 py-1">
@@ -356,28 +270,31 @@ export function CollectionAuditTab({
         </p>
       ) : (
         <p className="text-xs text-[var(--color-text-muted)]">
-          {!isConnected ? labels.selector.connectTip : labels.selector.externalHint}
+          {!isConnected
+            ? labels.selector.connectTip
+            : labels.selector.externalHint}
         </p>
       )}
-      {isConnected && effectiveMode === 'external' && networkOwnedCollections.length > 0 && (
-        <button
-          type="button"
-          onClick={() => {
-            setMode('owned');
-            setSubTab('records');
-          }}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline"
-        >
-          <Building2 className="size-3.5" />
-          {labels.selector.myCollections}
-        </button>
-      )}
+      {isConnected &&
+        effectiveMode === 'external' &&
+        networkOwnedCollections.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode('owned');
+              setSubTab('records');
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+          >
+            <Building2 className="size-3.5" />
+            {labels.selector.myCollections}
+          </button>
+        )}
     </form>
   );
 
   return (
     <div className="space-y-5">
-      {/* Loading / Error / Not Found States */}
       {loading && targetCollection && (
         <div className="flex items-center gap-2.5 border-t border-[var(--color-card-border)] py-10 text-sm text-[var(--color-text-muted)]">
           <RefreshCw className="size-4 animate-spin text-[var(--color-primary)]" />
@@ -398,13 +315,14 @@ export function CollectionAuditTab({
             <p className="font-bold text-[var(--color-text-main)]">
               {labels.states.notFound}
             </p>
-            <p className="text-[var(--color-text-muted)]">{labels.states.notFoundHint}</p>
+            <p className="text-[var(--color-text-muted)]">
+              {labels.states.notFoundHint}
+            </p>
           </div>
           {externalAuditorForm}
         </div>
       )}
 
-      {/* No collection loaded yet (disconnected or account without collections) */}
       {!loading && !targetCollection && (
         <div className="space-y-3">
           {isConnected && networkOwnedCollections.length === 0 && (
@@ -416,7 +334,6 @@ export function CollectionAuditTab({
         </div>
       )}
 
-      {/* Main audited collection workspace */}
       {!loading && audit && audit.found && (
         <div className="space-y-5">
           <AuditHeader
@@ -440,7 +357,6 @@ export function CollectionAuditTab({
             onExport={handleExport}
           />
 
-          {/* 5-tab segmentation: Records | Signers & NFTs | Overview | Integrity & Privacy | External Auditor */}
           <div className="flex flex-wrap gap-x-6 gap-y-2 border-b border-[var(--color-card-border)]">
             {(
               [
@@ -477,8 +393,8 @@ export function CollectionAuditTab({
             ))}
           </div>
 
-          {subTab === 'records' && (
-            audit.totalSupply === 0 ? (
+          {subTab === 'records' &&
+            (audit.totalSupply === 0 ? (
               <div className="py-8 space-y-1 text-center">
                 <p className="text-sm font-bold text-[var(--color-text-main)]">
                   {labels.states.emptyCollection}
@@ -500,7 +416,6 @@ export function CollectionAuditTab({
                   }
                   highlightedDays={highlightedDays}
                 />
-
                 <AuditRecordsTable
                   records={filteredRecords}
                   totalInCollection={audit.totalSupply}
@@ -516,8 +431,7 @@ export function CollectionAuditTab({
                   onLoadOlder={() => void loadOlder()}
                 />
               </div>
-            )
-          )}
+            ))}
 
           {subTab === 'signers' && (
             <AuditSignersDirectory
@@ -535,82 +449,16 @@ export function CollectionAuditTab({
           )}
 
           {subTab === 'overview' && (
-            <div className="space-y-5">
-              {audit.networkId === RadixNetworkId.Stokenet && (
-                <div className="flex items-start gap-2.5 border-l-2 border-[var(--color-warning)] pl-3 py-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
-                  <FlaskConical className="mt-0.5 size-4 shrink-0 text-[var(--color-warning)]" />
-                  <span>{labels.network.stokenetNotice}</span>
-                </div>
-              )}
-
-              <AuditKpiStrip
-                kpis={kpis}
-                labels={labels}
-                onSelectAnomalies={() => {
-                  setSubTab('records');
-                  setFilters({ ...effectiveFilters, status: 'anomaly' });
-                }}
-              />
-
-              <dl className="border-y border-[var(--color-card-border)] divide-y divide-[var(--color-card-border)] text-xs">
-                {audit.issuer.account && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                    <dt className="text-[var(--color-text-muted)]" title={labels.tooltips.issuerAccount}>
-                      {labels.header.issuerLabel}
-                    </dt>
-                    <dd className="inline-flex items-center gap-1.5 font-mono">
-                      <a
-                        href={entityExplorerHref(language, audit.issuer.account, audit.networkId)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={audit.issuer.account}
-                        className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline"
-                      >
-                        {truncateAddress(audit.issuer.account, 10, 6)}
-                        <ExternalLink className="size-3" />
-                      </a>
-                      <CopyButton value={audit.issuer.account} variant="minimal" size="xs" />
-                    </dd>
-                  </div>
-                )}
-
-                {audit.issuer.orgUrl && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                    <dt className="text-[var(--color-text-muted)]">Web</dt>
-                    <dd>
-                      <a
-                        href={audit.issuer.orgUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-medium text-[var(--color-primary)] hover:underline"
-                      >
-                        {audit.issuer.orgUrl}
-                        <ExternalLink className="size-3" />
-                      </a>
-                    </dd>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                  <dt className="text-[var(--color-text-muted)]" title={labels.tooltips.ledgerCutoff}>
-                    {labels.header.ledgerCutoff}
-                  </dt>
-                  <dd className="tabular-nums text-[var(--color-text-main)]">
-                    <strong>
-                      {audit.ledgerStateVersion != null
-                        ? `#${audit.ledgerStateVersion.toLocaleString(language)}`
-                        : '-'}
-                    </strong>{' '}
-                    · {formatUtcTimestamp(audit.ledgerTimestamp, language).utc}
-                  </dd>
-                </div>
-              </dl>
-
-              <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
-                <strong className="text-[var(--color-text-main)]">{labels.intro.title}.</strong>{' '}
-                {labels.intro.body}
-              </p>
-            </div>
+            <AuditOverviewTab
+              audit={audit}
+              kpis={kpis}
+              labels={labels}
+              locale={language}
+              onSelectAnomalies={() => {
+                setSubTab('records');
+                setFilters({ ...effectiveFilters, status: 'anomaly' });
+              }}
+            />
           )}
 
           {subTab === 'integrity' && (

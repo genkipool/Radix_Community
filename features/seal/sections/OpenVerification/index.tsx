@@ -3,42 +3,33 @@
  *
  * "Verifiable by anyone, forever" banner: the three artifacts that make a
  * Radix Seal signature independently checkable (self-contained PDF, public
- * request key, on-ledger chain of custody), with a CTA into the verify flow.
+ * request key, on-ledger chain of custody), with API, official brand, and
+ * custody-free domain verification reference panels.
  */
 import Link from 'next/link';
 import {
   ArrowUpRight,
-  BadgeCheck,
   FileCheck2,
-  Globe,
   KeySquare,
   Link2,
   ShieldCheck,
   Terminal,
 } from 'lucide-react';
-import { CopyButton } from '@/components/ui/CopyButton';
 import { SectionHeader } from '@/components/layout/SectionHeader';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { FadeIn } from '@/components/ui/FadeIn';
+import { DomainVerificationPanel } from '../../components/DomainVerificationPanel';
 import { FeatureCard } from '../../components/FeatureCard';
 import { SealResourceAddresses } from '../../components/SealResourceAddresses';
 import { SEAL_LINKS } from '../../data/links';
 import type { SealLocaleSectionProps } from '../../types';
 
-/** Docs for the standard, including the full verification API contract. */
 const SEAL_DOCS_URL =
   'https://github.com/genkipool/Radix_Community/tree/main/doc/radix-seal#81-verification-api';
 
-/** Ready-to-run verification call, shown and copied verbatim. */
 const VERIFY_CURL = `jq '{envelope: .}' document.radixsig.json \\
   | curl -X POST https://radix-community.genkipool.com/api/sign/verify \\
       -H 'Content-Type: application/json' --data-binary @-`;
-
-const WELL_KNOWN_EXAMPLE = `{
-  "v": 1,
-  "collections": ["resource_rdx1..."]
-}`;
-
-const DNS_TXT_EXAMPLE = `_radix-seal.example.org  TXT  "v=radix-seal1 collection=resource_rdx1..."`;
 
 const CARD_ICONS = [
   <FileCheck2 key="pdf" className="size-10 text-[var(--color-primary)]" />,
@@ -50,7 +41,10 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
   const verify = t.seal.verifyOpen;
 
   return (
-    <section id="open-verification" className="py-24 bg-[var(--color-surface)]/50 relative overflow-hidden">
+    <section
+      id="open-verification"
+      className="py-24 bg-[var(--color-surface)]/50 relative overflow-hidden"
+    >
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
           icon={<ShieldCheck className="size-3.5 text-[var(--color-primary)]" />}
@@ -83,8 +77,6 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
           </Link>
         </FadeIn>
 
-        {/* The two reference panels sit side by side from `lg` up: how to
-            verify by API, and which brand resource is the genuine one. */}
         <div className="mt-16 grid grid-cols-1 items-stretch gap-8 lg:grid-cols-2">
           <FadeIn delay={0.3} className="h-full">
             <div
@@ -126,7 +118,6 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
                   </span>
                   <CopyButton value={VERIFY_CURL} variant="minimal" size="sm" />
                 </div>
-                {/* Wide content scrolls inside its own box, never the page. */}
                 <pre
                   className="overflow-x-auto rounded-2xl border p-4 text-[11px] leading-relaxed"
                   style={{
@@ -146,7 +137,6 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
                 {verify.apiNote}
               </p>
 
-              {/* Pinned to the bottom so both panels end on the same line. */}
               <a
                 href={SEAL_DOCS_URL}
                 target="_blank"
@@ -170,128 +160,16 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
           </FadeIn>
         </div>
 
-        {/* Custody-free domain verification panel (.well-known & DNS TXT) */}
-        <FadeIn delay={0.45} className="mt-8">
-          <div
-            className="flex flex-col gap-6 rounded-3xl border p-6 sm:p-8"
-            style={{
-              background: 'var(--color-card-bg)',
-              borderColor: 'var(--color-card-border)',
-            }}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span
-                  className="flex size-10 shrink-0 items-center justify-center rounded-xl"
-                  style={{ background: 'var(--color-surface)' }}
-                >
-                  <Globe className="size-5 text-[var(--color-primary)]" />
-                </span>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3
-                      className="text-base font-bold sm:text-lg"
-                      style={{ color: 'var(--color-text-main)' }}
-                    >
-                      {verify.domainTitle}
-                    </h3>
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                      style={{
-                        background:
-                          'color-mix(in srgb, var(--color-success) 14%, transparent)',
-                        color: 'var(--color-success)',
-                      }}
-                    >
-                      <BadgeCheck className="size-3.5" />
-                      {verify.domainBadge}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <Link
-                href={`/${locale}${SEAL_LINKS.collection}?tab=identity`}
-                className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-primary)] transition-opacity hover:opacity-80"
-              >
-                {verify.domainCta}
-                <ArrowUpRight className="size-4" />
-              </Link>
-            </div>
-
-            <p
-              className="text-sm leading-relaxed"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              {verify.domainHint}
-            </p>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="min-w-0 space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span
-                    className="text-[11px] font-black uppercase tracking-wider"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    {verify.domainWellKnownLabel}
-                  </span>
-                  <CopyButton
-                    value={WELL_KNOWN_EXAMPLE}
-                    variant="minimal"
-                    size="sm"
-                  />
-                </div>
-                <pre
-                  className="overflow-x-auto rounded-2xl border p-4 text-[11px] leading-relaxed"
-                  style={{
-                    background: 'var(--color-surface)',
-                    borderColor: 'var(--color-card-border)',
-                    color: 'var(--color-text-main)',
-                  }}
-                >
-                  <code className="font-mono whitespace-pre">
-                    {WELL_KNOWN_EXAMPLE}
-                  </code>
-                </pre>
-              </div>
-
-              <div className="min-w-0 space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span
-                    className="text-[11px] font-black uppercase tracking-wider"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    {verify.domainDnsLabel}
-                  </span>
-                  <CopyButton
-                    value={DNS_TXT_EXAMPLE}
-                    variant="minimal"
-                    size="sm"
-                  />
-                </div>
-                <pre
-                  className="overflow-x-auto rounded-2xl border p-4 text-[11px] leading-relaxed"
-                  style={{
-                    background: 'var(--color-surface)',
-                    borderColor: 'var(--color-card-border)',
-                    color: 'var(--color-text-main)',
-                  }}
-                >
-                  <code className="font-mono whitespace-pre">
-                    {DNS_TXT_EXAMPLE}
-                  </code>
-                </pre>
-                <p
-                  className="pt-1 text-xs leading-relaxed"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  {verify.domainNote}
-                </p>
-              </div>
-            </div>
-          </div>
-        </FadeIn>
-
+        <DomainVerificationPanel
+          locale={locale}
+          title={verify.domainTitle}
+          badge={verify.domainBadge}
+          hint={verify.domainHint}
+          wellKnownLabel={verify.domainWellKnownLabel}
+          dnsLabel={verify.domainDnsLabel}
+          note={verify.domainNote}
+          cta={verify.domainCta}
+        />
       </div>
     </section>
   );

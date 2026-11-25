@@ -24,9 +24,8 @@ import {
   downloadCertificate,
 } from '../lib/certificate';
 import { deliverSignedArtifacts } from '../lib/signed-pdf';
-import { accountPrefixForNetwork } from '../lib/network';
+import { accountPrefixForNetwork, networkIdFromResource } from '../lib/network';
 import { randomNonceHex } from '../lib/hash';
-import { networkIdFromResource } from '../lib/share';
 import { ShareLinkSection } from './ShareLinkSection';
 import { RequestTransactionLinks } from './RequestTransactionLinks';
 import { requestPdfName } from '../lib/file';
