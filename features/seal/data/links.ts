@@ -6,6 +6,7 @@ export const SEAL_LINKS = {
   console: '/console',
   collection: '/console/sign-collection',
   sign: '/console/sign-document',
+  audit: '/console/sign-audit',
   encrypt: '/console/encrypt-document',
   chat: '/console/chat',
 } as const;

@@ -13,11 +13,33 @@
  *   3. PAdES       — the X.509 signature, LAST: any later byte change would
  *                    invalidate it
  */
-import type { AttestationEnvelope } from '../types/sign.types';
+import type { AttestationEnvelope, OutputFormat } from '../types/sign.types';
+import type { SignDictionary } from '../types/dictionary';
+import {
+  downloadBytes,
+  downloadCertificate,
+  isFullySigned,
+} from './certificate';
+import { signedPdfName } from './file';
 import { embedCertificateInPdf } from './pdf-embed';
-import type { CertificatePageOptions } from './pdf-signature-page';
+import {
+  signaturePageOptions,
+  type CertificatePageOptions,
+} from './pdf-signature-page';
 import { applyWatermark, type WatermarkOptions } from './pdf-watermark';
 import { signPdfWithP12 } from './pdf-pades';
+
+/** True when a file/result represents a PDF by MIME type or `.pdf` suffix. */
+export function isPdfFile(file: {
+  fileType?: string;
+  type?: string;
+  fileName?: string;
+  name?: string;
+}): boolean {
+  const mime = file.fileType ?? file.type ?? '';
+  const name = file.fileName ?? file.name ?? '';
+  return mime === 'application/pdf' || name.toLowerCase().endsWith('.pdf');
+}
 
 /** The certificate-signing inputs, as collected by the UI. */
 export interface PadesDelivery {
@@ -79,4 +101,76 @@ export async function buildDeliverablePdf({
     location: pades.location.trim() || undefined,
     name: envelope.signatures[0]?.disclosedName ?? undefined,
   });
+}
+
+export interface DeliverArtifactsInput {
+  envelope: AttestationEnvelope;
+  fileBytes: Uint8Array | null;
+  fileName: string;
+  fileType: string;
+  outputs: OutputFormat[];
+  t: SignDictionary;
+  locale: string;
+  watermark?: WatermarkOptions;
+  pades?: PadesDelivery | null;
+  /** Called when a requested PAdES signature fails (instead of silent fallback). */
+  onPadesError?: (err: unknown) => void;
+}
+
+/**
+ * Single source of truth for delivering signed artifacts to the browser
+ * (embedded PDF with watermark + visible page + optional PAdES, and/or
+ * detached `.radixsig.json` certificate).
+ */
+export async function deliverSignedArtifacts({
+  envelope,
+  fileBytes,
+  fileName,
+  fileType,
+  outputs,
+  t,
+  locale,
+  watermark,
+  pades,
+  onPadesError,
+}: DeliverArtifactsInput): Promise<void> {
+  const padesActive = !!pades?.enabled;
+  let deliveredPdf = false;
+
+  if (
+    outputs.includes('embedded') &&
+    fileBytes &&
+    isPdfFile({ fileType, fileName })
+  ) {
+    try {
+      const pdf = await buildDeliverablePdf({
+        fileBytes,
+        envelope,
+        watermark,
+        pageOptions: await signaturePageOptions(
+          envelope,
+          t,
+          locale,
+          padesActive,
+        ),
+        pades: padesActive ? pades : null,
+      });
+      downloadBytes(
+        pdf,
+        signedPdfName(fileName, isFullySigned(envelope)),
+        'application/pdf',
+      );
+      deliveredPdf = true;
+    } catch (err) {
+      // A PAdES failure must surface instead of silently delivering an unsigned PDF.
+      if (padesActive) {
+        onPadesError?.(err);
+        return;
+      }
+    }
+  }
+
+  if (outputs.includes('detached') || !deliveredPdf) {
+    downloadCertificate(envelope);
+  }
 }

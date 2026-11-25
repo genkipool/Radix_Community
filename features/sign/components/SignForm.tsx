@@ -1,20 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  CheckCircle2,
-  Circle,
-  Download,
-  ExternalLink,
-  FileSignature,
-  RotateCcw,
-  TriangleAlert,
-  UsersRound,
-} from 'lucide-react';
+import { FileSignature } from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
-import { StringListField } from '@/features/console/components/shared/StringListField';
 import {
   SimulateButton,
   SimulateResultCard,
@@ -23,37 +13,37 @@ import { useTransactionPreview } from '@/features/console/hooks/useTransactionPr
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { useWalletRequests } from '@/features/wallet/hooks/useWalletRequests';
 import { useDocumentSign } from '../hooks/useDocumentSign';
+import { usePadesCertificate } from '../hooks/usePadesCertificate';
 import { useSealRequest, useSealSetup, useSealSetups } from '../hooks/useSealRequest';
 import { findSealAndCollection } from '../services/sealDiscovery';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { OnChainSignPanel } from './OnChainSignPanel';
-import { ShareLinkSection } from './ShareLinkSection';
-import { RequestTransactionLinks } from './RequestTransactionLinks';
 import { SealOnboarding } from './SealOnboarding';
 import { SignErrorText } from './SignErrorText';
-import { signedPdfName } from '../lib/file';
+import { SignCoSignView } from './SignCoSignView';
+import { ResultPanel, padesErrorCode } from './SignResultPanel';
 import {
-  downloadBytes,
-  downloadCertificate,
+  MultiModeSection,
+  OutputFormatSection,
+  WatermarkSection,
+} from './SignDeliverySections';
+
+export { ResultPanel };
+import {
+  createAttestationPayload,
   isFullySigned,
+  looksLikeEnvelope,
 } from '../lib/certificate';
-import { signaturePageOptions } from '../lib/pdf-signature-page';
-import { buildDeliverablePdf } from '../lib/signed-pdf';
-import { readP12Info, type P12Info } from '../lib/pdf-pades';
-import {
-  PadesSignSection,
-  emptyPadesConfig,
-  type PadesConfig,
-  type PadesStatus,
-} from './PadesSignSection';
+import { deliverSignedArtifacts } from '../lib/signed-pdf';
+import type { P12Info } from '../lib/pdf-pades';
+import { PadesSignSection } from './PadesSignSection';
 import type { WatermarkKind, WatermarkOptions } from '../lib/pdf-watermark';
 import {
-  buildSignCollectionCreateManifest,
   buildSignRequestManifest,
   buildSignatureMintManifest,
   nftGlobalId,
+  resolveRequestSigners,
 } from '../lib/sign-request';
 import { fetchLedgerNow, fetchTransactionTime } from '../lib/ledger-time';
 import {
@@ -64,8 +54,7 @@ import {
 import { blake2b256Hex, randomNonceHex } from '../lib/hash';
 import type { SharedWatermark } from '../lib/share';
 import { extractRadixAttachments, isPdfBytes } from '../lib/pdf-extract';
-import { radixSealAddress, sealImageUrl } from '../constants/seal';
-import { explorerTxUrl } from '../lib/explorer';
+import { sealImageUrl } from '../constants/seal';
 import type { SignDictionary } from '../types/dictionary';
 import type {
   AttestationEnvelope,
@@ -75,9 +64,6 @@ import type {
 } from '../types/sign.types';
 
 type IdentityOpt = IdentityOption;
-
-const isPdfResult = (r: { fileType: string; fileName: string }) =>
-  r.fileType === 'application/pdf' || r.fileName.toLowerCase().endsWith('.pdf');
 
 /**
  * Records the X.509 identity on the signer's OWN (newest) signature entry, so
@@ -101,34 +87,6 @@ function withSignerCertificate(res: SignResult, info: P12Info | null): SignResul
     },
   };
   return { ...res, envelope: { ...res.envelope, signatures: updated } };
-}
-
-/** Maps a PAdES/p12 signing failure to a dictionary error code. */
-function padesErrorCode(err: unknown): string {
-  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-  return /mac|password|pkcs12|invalid|decrypt/.test(msg)
-    ? 'wrong_password'
-    : 'generic';
-}
-
-
-
-export function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
-  if (!v || typeof v !== 'object') return false;
-  const e = v as Record<string, unknown>;
-  const payload = e.payload as Record<string, unknown> | undefined;
-  return (
-    typeof payload?.docHash === 'string' &&
-    Array.isArray(payload?.signers) &&
-    Array.isArray(e.signatures)
-  );
-}
-
-/** True when every required signer has signed (open certificates need one). */
-export function envelopeComplete(env: AttestationEnvelope): boolean {
-  const required = env.payload.signers;
-  const signed = new Set(env.signatures.map((s) => s.signerAccount));
-  return required.length === 0 ? signed.size > 0 : required.every((a) => signed.has(a));
 }
 
 export function SignForm({
@@ -212,19 +170,17 @@ export function SignForm({
   // ('sign'), or only issues invitations without signing ('send').
   const [inviteMode, setInviteMode] = useState<'sign' | 'send'>('sign');
   const [result, setResult] = useState<SignResult | null>(null);
-  // Optional PAdES / X.509 certificate signing (advanced, PDF output only).
-  const [pades, setPades] = useState<PadesConfig>(emptyPadesConfig);
-  const [padesError, setPadesError] = useState('');
-  const [padesStatus, setPadesStatus] = useState<PadesStatus>('idle');
-  // Separate from `padesStatus` so a re-check never clears the current verdict.
-  const [padesChecking, setPadesChecking] = useState(false);
-  // Certificate identity from the validated .p12, printed on the visible page.
-  const [padesCert, setPadesCert] = useState<P12Info | null>(null);
-  /**
-   * On-ledger prerequisite the signing account turned out to be missing. It
-   * cannot come from a hook's error state: it is decided here, between the
-   * wallet's proof and the mint.
-   */
+  const {
+    pades,
+    setPades,
+    padesError,
+    setPadesError,
+    padesStatus,
+    padesChecking,
+    padesCert,
+    padesActive,
+    padesBlocking,
+  } = usePadesCertificate(pdfOk);
   const [setupError, setSetupError] = useState('');
   /**
    * The account the wallet actually signed with when it turned out to have no
@@ -300,7 +256,7 @@ export function SignForm({
   const coSignComplete =
     coSignMode &&
     loadedCert!.payload.signers.length > 0 &&
-    envelopeComplete(loadedCert!);
+    isFullySigned(loadedCert!);
   // An inherited watermark wins: the document's look was decided by whoever
   // started it, and every co-signer must reproduce it exactly.
   const watermarkOptions: WatermarkOptions = inheritedWatermark ?? {
@@ -358,57 +314,6 @@ export function SignForm({
     cosignEligible.resolved &&
     cosignEligible.ready.length === 0;
 
-  // Validate the PAdES certificate + password the moment both are present, so
-  // signing is blocked (and an error shown) BEFORE the wallet signs — never
-  // after. Debounced so it does not run on every keystroke. All state updates
-  // happen inside the timer (never synchronously in the effect body).
-  useEffect(() => {
-    let cancelled = false;
-    const file = pades.file;
-    const password = pades.password;
-    const ready = pades.enabled && !!file && !!password;
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      if (!ready || !file) {
-        setPadesStatus('idle');
-        setPadesError('');
-        setPadesCert(null);
-        return;
-      }
-      // Only the spinner flag changes here: the previous verdict (and its
-      // message) STAYS on screen while re-checking, so typing never makes the
-      // error box disappear and reappear (which shifted the page and flickered).
-      setPadesChecking(true);
-      try {
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        // Reading the identity IS the validation: null means wrong password or
-        // an unreadable file, and the details feed the visible page.
-        const info = await readP12Info(bytes, password);
-        if (cancelled) return;
-        setPadesCert(info);
-        setPadesStatus(info ? 'valid' : 'invalid');
-        setPadesError(info ? '' : 'wrong_password');
-      } catch {
-        if (cancelled) return;
-        setPadesCert(null);
-        setPadesStatus('invalid');
-        setPadesError('wrong_password');
-      } finally {
-        if (!cancelled) setPadesChecking(false);
-      }
-    }, ready ? 400 : 0);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [pades.enabled, pades.file, pades.password]);
-
-  // Certificate signing applies to any PDF (every PDF now gets a signed PDF
-  // artifact). It blocks signing until the certificate is verified, so a bad
-  // password can never reach the wallet step.
-  const padesActive = pades.enabled && pdfOk;
-  const padesBlocking = padesActive && padesStatus !== 'valid';
-
   // "Signature only" is the ABSENCE of the other two, not a third switch to
   // tick alongside them — see lib/identity-options for the rule.
   const identityValue = identitySelection({ disclosure, includeEmail });
@@ -456,40 +361,19 @@ export function SignForm({
   };
 
   const deliver = async (res: SignResult, chosen: OutputFormat[]) => {
-    let delivered = false;
-    if (chosen.includes('embedded') && isPdfResult(res)) {
-      try {
-        setPadesError('');
-        const pdf = await buildDeliverablePdf({
-          fileBytes: res.fileBytes,
-          envelope: res.envelope,
-          watermark: watermarkOptions,
-          pageOptions: await signaturePageOptions(
-            res.envelope,
-            t,
-            language,
-            padesActive,
-          ),
-          pades: padesActive ? pades : null,
-        });
-        downloadBytes(
-          pdf,
-          signedPdfName(res.fileName, isFullySigned(res.envelope)),
-          'application/pdf',
-        );
-        delivered = true;
-      } catch (err) {
-        // A certificate failure must surface, never silently hand over a PDF
-        // missing the requested signature; other failures fall back to the JSON.
-        if (padesActive) {
-          setPadesError(padesErrorCode(err));
-          return;
-        }
-      }
-    }
-    if (chosen.includes('detached') || !delivered) {
-      downloadCertificate(res.envelope);
-    }
+    setPadesError('');
+    await deliverSignedArtifacts({
+      envelope: res.envelope,
+      fileBytes: res.fileBytes,
+      fileName: res.fileName,
+      fileType: res.fileType,
+      outputs: chosen,
+      t,
+      locale: language,
+      watermark: watermarkOptions,
+      pades: padesActive ? pades : null,
+      onPadesError: (err) => setPadesError(padesErrorCode(err)),
+    });
   };
 
   // Initiator of a multi-party on-ledger signing (not a co-signer arriving via a
@@ -508,20 +392,19 @@ export function SignForm({
     if (sendOnly) {
       finalRes = {
         envelope: {
-          payload: {
-            v: 1,
+          payload: createAttestationPayload({
             docHash,
-            hashAlg: 'blake2b-256',
             fileName: file.name,
             fileSize: file.size,
             message: message.trim(),
             disclosure,
             email: includeEmail,
             signers: cleanCoSigners,
-            timestamp: new Date().toISOString(),
+            sortSigners: true,
+            timestamp: await fetchLedgerNow(activeNetworkId),
             networkId: activeNetworkId,
             nonce: randomNonceHex(),
-          },
+          }),
           signatures: [],
           onChain: null,
         },
@@ -551,12 +434,11 @@ export function SignForm({
       finalRes = padesActive ? withSignerCertificate(res, padesCert) : res;
     }
 
-    // On-ledger required signer set: for "sign and send" the initiator is a
-    // required signer too (so their signature counts and resolves on-ledger).
-    const requestSigners =
-      !sendOnly && onchainAccount
-        ? [...new Set([onchainAccount, ...cleanCoSigners])]
-        : cleanCoSigners;
+    const requestSigners = resolveRequestSigners(
+      onchainAccount,
+      cleanCoSigners,
+      !sendOnly,
+    );
 
     // Multi on-ledger: issue the invitation NFTs (permission) and, when the
     // initiator also signs, mint their own record NFT in the same transaction.
@@ -621,12 +503,16 @@ export function SignForm({
     await deliver(finalRes, effectiveOutputs);
   };
 
-  // Preview the invitation transaction (multi on-ledger).
   const onSimulateInvite = async () => {
     if (!docHash || activeNetworkId == null || !setup.seal || !setup.collection || !onchainAccount)
       return;
-    const cleanCoSigners = coSigners.map((s) => s.trim()).filter(Boolean);
-    if (cleanCoSigners.length === 0) return;
+    const alsoSign = inviteMode === 'sign';
+    const requestSigners = resolveRequestSigners(
+      onchainAccount,
+      coSigners,
+      alsoSign,
+    );
+    if (requestSigners.length === 0) return;
     invitePreview.simulate(
       buildSignRequestManifest({
         issuedAt: await fetchLedgerNow(activeNetworkId),
@@ -636,8 +522,8 @@ export function SignForm({
         nextId: setup.collection.totalSupply + 1,
         docHash,
         networkId: activeNetworkId,
-        requiredSigners: cleanCoSigners,
-        alsoSign: inviteMode === 'sign',
+        requiredSigners: requestSigners,
+        alsoSign,
         imageUrl: sealImageUrl(window.location.origin),
       }),
     );
@@ -761,44 +647,21 @@ export function SignForm({
     await deliver(res, effectiveOutputs);
   };
 
-  // Deliver the already-complete certificate as a signed artifact: for a PDF,
-  // the original with the certificate embedded (verifies on its own); otherwise
-  // the detached certificate JSON.
   const downloadSignedDoc = async () => {
     if (!loadedCert) return;
-    const isPdf =
-      !!file &&
-      (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
-    if (isPdf && coSignBytes) {
-      try {
-        setPadesError('');
-        const pdf = await buildDeliverablePdf({
-          fileBytes: coSignBytes,
-          envelope: loadedCert,
-          watermark: watermarkOptions,
-          pageOptions: await signaturePageOptions(
-            loadedCert,
-            t,
-            language,
-            padesActive,
-          ),
-          pades: padesActive ? pades : null,
-        });
-        downloadBytes(
-          pdf,
-          signedPdfName(file.name, isFullySigned(loadedCert)),
-          'application/pdf',
-        );
-        return;
-      } catch (err) {
-        if (padesActive) {
-          setPadesError(padesErrorCode(err));
-          return;
-        }
-        // Fall back to the detached certificate below.
-      }
-    }
-    downloadCertificate(loadedCert);
+    setPadesError('');
+    await deliverSignedArtifacts({
+      envelope: loadedCert,
+      fileBytes: coSignBytes,
+      fileName: file?.name ?? loadedCert.payload.fileName,
+      fileType: file?.type ?? '',
+      outputs: ['embedded'],
+      t,
+      locale: language,
+      watermark: watermarkOptions,
+      pades: padesActive ? pades : null,
+      onPadesError: (err) => setPadesError(padesErrorCode(err)),
+    });
   };
 
   const startOver = () => {
@@ -867,90 +730,31 @@ export function SignForm({
   );
 
   const outputBox = (
-    <ToolSection title={t.options.outputTitle} hint={t.options.outputHint}>
-      <OptionButtons<OutputFormat>
-        multiple
-        value={effectiveOutputs}
-        onChange={(v) => {
-          // At least one output format must stay selected.
-          if (v.length === 0) return;
-          setOutputsPicked(true);
-          setOutputs(v);
-        }}
-        disabled={busy}
-        options={[
-          {
-            value: 'detached',
-            label: t.options.outputDetached,
-            description: t.options.outputDetachedDesc,
-          },
-          {
-            value: 'embedded',
-            label: t.options.outputEmbedded,
-            description: t.options.outputEmbeddedDesc,
-            disabled: !pdfOk,
-            title: pdfOk ? undefined : t.options.embeddedPdfOnly,
-          },
-        ]}
-      />
-    </ToolSection>
+    <OutputFormatSection
+      t={t}
+      outputs={effectiveOutputs}
+      pdfOk={pdfOk}
+      busy={busy}
+      onChange={(v) => {
+        if (v.length === 0) return;
+        setOutputsPicked(true);
+        setOutputs(v);
+      }}
+    />
   );
 
   // Hidden once the document already carries one (see `inheritedWatermark`).
   const watermarkBox = pdfOk && !inheritedWatermark && (
-    <ToolSection title={t.seal.watermarkTitle} hint={t.seal.watermarkHint}>
-      <OptionButtons<WatermarkKind>
-        value={watermark}
-        onChange={setWatermark}
-        disabled={busy}
-        options={[
-          {
-            value: 'none',
-            label: t.seal.watermarkNone,
-            description: t.seal.watermarkNoneDesc,
-          },
-          {
-            value: 'seal',
-            label: t.seal.watermarkSeal,
-            description: t.seal.watermarkSealDesc,
-          },
-          {
-            value: 'own',
-            label: t.seal.watermarkOwn,
-            description: t.seal.watermarkOwnDesc,
-          },
-        ]}
-      />
-      {watermark === 'own' && (
-        <div className="space-y-2">
-          <input
-            value={watermarkText}
-            onChange={(e) => setWatermarkText(e.target.value)}
-            maxLength={60}
-            disabled={busy}
-            placeholder={t.seal.watermarkTextPlaceholder}
-            className="w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none disabled:opacity-50"
-            style={{
-              background: 'var(--color-input-bg, var(--color-card-bg))',
-              borderColor: 'var(--color-card-border)',
-              color: 'var(--color-text-main)',
-            }}
-          />
-          <FileDropzone
-            extension=""
-            accept="image/png,image/jpeg"
-            label=""
-            prompt={t.seal.watermarkImagePrompt}
-            file={watermarkImageFile}
-            onFile={onWatermarkImage}
-            disabled={busy}
-          />
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {t.seal.watermarkImageHint}
-          </p>
-        </div>
-      )}
-    </ToolSection>
+    <WatermarkSection
+      t={t}
+      watermark={watermark}
+      onWatermarkChange={setWatermark}
+      watermarkText={watermarkText}
+      onWatermarkTextChange={setWatermarkText}
+      watermarkImageFile={watermarkImageFile}
+      onWatermarkImage={onWatermarkImage}
+      busy={busy}
+    />
   );
 
   // Certificate signing makes sense for any PDF — including when co-signing,
@@ -970,163 +774,39 @@ export function SignForm({
   return (
     <div className="space-y-5">
       {coSignMode ? (
-        <>
-          {cosignBox}
-          <SignerProgress t={t} envelope={loadedCert!} />
-          {hashMismatch && (
-            <p
-              className="rounded-xl border px-4 py-3 text-sm"
-              style={{
-                borderColor: 'var(--color-danger, #dc2626)',
-                color: 'var(--color-danger, #dc2626)',
-              }}
-            >
-              {t.cosign.fileMismatch}
-            </p>
-          )}
-          {failure && (
-            <p
-              className="rounded-xl border px-4 py-3 text-sm"
-              style={{
-                borderColor: 'var(--color-danger, #dc2626)',
-                color: 'var(--color-danger, #dc2626)',
-              }}
-            >
-              <SignErrorText t={t} code={failure} />
-            </p>
-          )}
-          {/* A co-signer gets the same PDF options as the initiator: their own
-              watermark and, above all, their OWN certificate. */}
-          {watermarkBox}
-          {padesBox}
-          {coSignComplete ? (
-            // Everyone required has already signed: no signature to add, just
-            // hand over the finished signed document.
-            <button
-              type="button"
-              onClick={() => void downloadSignedDoc()}
-              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow-md transition-all hover:opacity-90 active:scale-95"
-            >
-              <Download className="size-4" />
-              {t.actions.downloadSigned}
-            </button>
-          ) : (
-            <>
-              {/* An invited account with no collection cannot record anything
-                  on the ledger, so it must not be asked for a signature: it
-                  would get a certificate the verifier reads as unsigned. Say
-                  which account is missing what, and offer the one-time setup
-                  right here.
-
-                  Shown both when NO invited account of this wallet can sign and
-                  when the signer picked, inside the wallet, an invited account
-                  that cannot — the button stays live in that second case, since
-                  another of their accounts still can. */}
-              {(cosignNeedsSetup || (!!blockedAccount && !!setupError)) &&
-                cosignAccount && (
-                  <>
-                    <div
-                      className="space-y-2 rounded-xl border px-4 py-3"
-                      style={{
-                        borderColor: 'var(--color-warning, #b45309)',
-                        background: 'var(--color-surface)',
-                      }}
-                    >
-                      <p
-                        className="flex items-center gap-2 text-sm font-bold"
-                        style={{ color: 'var(--color-text-main)' }}
-                      >
-                        <TriangleAlert
-                          className="size-4 shrink-0"
-                          style={{ color: 'var(--color-warning, #b45309)' }}
-                        />
-                        {t.cosign.needsCollectionTitle}
-                      </p>
-                      {/* The address is a line of its own: it is the one piece
-                          the reader has to compare against their wallet, and
-                          inside a paragraph it was unreadable. */}
-                      {t.cosign.needsCollection
-                        .split('{account}')
-                        .map((part, i) => (
-                          <span key={i}>
-                            {i > 0 && (
-                              <span
-                                className="mb-1 block font-mono text-[11px] break-all"
-                                style={{ color: 'var(--color-text-main)' }}
-                              >
-                                {cosignAccount}
-                              </span>
-                            )}
-                            <span
-                              className="block text-sm leading-relaxed"
-                              style={{ color: 'var(--color-text-muted)' }}
-                            >
-                              {part.trim()}
-                            </span>
-                          </span>
-                        ))}
-                    </div>
-                    <SealOnboarding
-                      t={t}
-                      account={cosignAccount}
-                      onAccountChange={() => {}}
-                      setup={cosignSetup}
-                      lockedAccount
-                      consoleT={consoleT}
-                    />
-                  </>
-                )}
-              <div
-                className={
-                  cosignRequest ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''
-                }
-              >
-                <button
-                  type="button"
-                  disabled={
-                    !coSignBytes ||
-                    hashMismatch ||
-                    busy ||
-                    padesBlocking ||
-                    cosignNeedsSetup ||
-                    // Held shut while the ledger is still being asked whether
-                    // the invited account can record a signature at all.
-                    (!!cosignRequest &&
-                      cosignCandidates.length > 0 &&
-                      !cosignEligible.resolved)
-                  }
-                  onClick={handleCoSign}
-                  className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  {busy ? (
-                    <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                  ) : (
-                    <FileSignature className="size-4" />
-                  )}
-                  {busy ? t.actions.signing : t.cosign.addSignature}
-                </button>
-                {/* Co-signing an on-ledger certificate mints a signature NFT,
-                    so it gets the same dry run as every other transaction. */}
-                {cosignRequest && (
-                  <SimulateButton
-                    t={consoleT.simulate}
-                    onClick={onSimulateCoSign}
-                    disabled={busy || cosignNeedsSetup || !cosignSetup.collection}
-                    loading={invitePreview.isSimulating}
-                  />
-                )}
-              </div>
-              {cosignRequest && (
-                <SimulateResultCard
-                  t={consoleT.simulate}
-                  preview={invitePreview.preview}
-                  error={invitePreview.error}
-                  onClose={invitePreview.reset}
-                />
-              )}
-            </>
-          )}
-        </>
+        <SignCoSignView
+          t={t}
+          consoleT={consoleT}
+          cosignBox={cosignBox}
+          loadedCert={loadedCert!}
+          hashMismatch={hashMismatch}
+          failure={failure}
+          watermarkBox={watermarkBox}
+          padesBox={padesBox}
+          coSignComplete={coSignComplete}
+          onDownloadSigned={() => void downloadSignedDoc()}
+          showOnboarding={cosignNeedsSetup || (!!blockedAccount && !!setupError)}
+          cosignAccount={cosignAccount}
+          cosignSetup={cosignSetup}
+          hasCosignRequest={!!cosignRequest}
+          canCoSign={
+            !!coSignBytes &&
+            !hashMismatch &&
+            !busy &&
+            !padesBlocking &&
+            !cosignNeedsSetup &&
+            !(
+              !!cosignRequest &&
+              cosignCandidates.length > 0 &&
+              !cosignEligible.resolved
+            )
+          }
+          busy={busy}
+          onCoSign={handleCoSign}
+          onSimulateCoSign={onSimulateCoSign}
+          canSimulate={!busy && !cosignNeedsSetup && !!cosignSetup.collection}
+          preview={invitePreview}
+        />
       ) : sharedRequestId ? (
         // Invited co-signer (shared link or carrier PDF): straight to the
         // on-ledger request. No message/identity/output boxes — the first two
@@ -1219,126 +899,19 @@ export function SignForm({
 
           {padesBox}
 
-          <ToolSection title={t.options.multiTitle} hint={t.options.multiHint}>
-            <OptionButtons<'single' | 'multiple'>
-              value={multi ? 'multiple' : 'single'}
-              onChange={(v) => setMulti(v === 'multiple')}
-              disabled={busy}
-              options={[
-                {
-                  value: 'single',
-                  label: t.options.multiSingle,
-                  description: t.options.multiSingleDesc,
-                },
-                {
-                  value: 'multiple',
-                  label: t.options.multiMultiple,
-                  description: t.options.multiMultipleDesc,
-                },
-              ]}
-            />
-            {/* The signing method is the same alone or with others — only
-                the address list below changes. */}
-            <div className="space-y-1.5">
-              <p
-                className="text-xs font-bold uppercase tracking-wider"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                {t.onchain.modeTitle}
-              </p>
-              <OptionButtons<'off' | 'on'>
-                value={onchainMode ? 'on' : 'off'}
-                onChange={(v) => onOnchainChange(v === 'on')}
-                disabled={busy}
-                options={[
-                  {
-                    value: 'off',
-                    label: t.onchain.off,
-                    description: t.onchain.offDesc,
-                  },
-                  {
-                    value: 'on',
-                    label: t.onchain.on,
-                    description: t.onchain.onDesc,
-                  },
-                ]}
-              />
-            </div>
-            {multi && (
-              <>
-                <StringListField
-                  label={t.options.coSignersLabel}
-                  values={coSigners}
-                  onChange={setCoSigners}
-                  addLabel={t.options.addSigner}
-                  placeholder={t.options.signerPlaceholder}
-                  disabled={busy}
-                  categories={['account']}
-                />
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                  {onchainMode
-                    ? t.options.onchainSignersHint
-                    : t.options.coSignersHint}
-                </p>
-                {multiLedger && (
-                  <OptionButtons<'sign' | 'send'>
-                    value={inviteMode}
-                    onChange={setInviteMode}
-                    disabled={busy}
-                    options={[
-                      {
-                        value: 'sign',
-                        label: t.onchain.inviteSign,
-                        description: t.onchain.inviteSignDesc,
-                      },
-                      {
-                        value: 'send',
-                        label: t.onchain.inviteSend,
-                        description: t.onchain.inviteSendDesc,
-                      },
-                    ]}
-                  />
-                )}
-              </>
-            )}
-            {multi && (
-              <div
-                className="rounded-xl border p-3.5 space-y-1.5"
-                style={{
-                  background: 'var(--color-surface)',
-                  borderColor: 'var(--color-card-border)',
-                }}
-              >
-                <p
-                  className="text-xs font-bold"
-                  style={{ color: 'var(--color-text-main)' }}
-                >
-                  {onchainMode ? t.ledgerSteps.title : t.steps.title}
-                </p>
-                <ol
-                  className="text-xs leading-relaxed list-decimal pl-4 space-y-0.5"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  {onchainMode ? (
-                    <>
-                      <li>{t.ledgerSteps.s1}</li>
-                      <li>{t.ledgerSteps.s2}</li>
-                      <li>{t.ledgerSteps.s3}</li>
-                      <li>{t.ledgerSteps.s4}</li>
-                    </>
-                  ) : (
-                    <>
-                      <li>{t.steps.s1}</li>
-                      <li>{t.steps.s2}</li>
-                      <li>{t.steps.s3}</li>
-                      <li>{t.steps.s4}</li>
-                      <li>{t.steps.s5}</li>
-                    </>
-                  )}
-                </ol>
-              </div>
-            )}
-          </ToolSection>
+          <MultiModeSection
+            t={t}
+            multi={multi}
+            onMultiChange={setMulti}
+            onchainMode={onchainMode}
+            onOnchainChange={onOnchainChange}
+            coSigners={coSigners}
+            onCoSignersChange={setCoSigners}
+            multiLedger={multiLedger}
+            inviteMode={inviteMode}
+            onInviteModeChange={setInviteMode}
+            busy={busy}
+          />
 
           {failure && (
             <p
@@ -1402,509 +975,6 @@ export function SignForm({
           )}
         </>
       )}
-    </div>
-  );
-}
-
-// ─── Signer progress (shared) ─────────────────────────────────────────────────
-
-function SignerProgress({
-  t,
-  envelope,
-}: {
-  t: SignDictionary;
-  envelope: AttestationEnvelope;
-}) {
-  const required = envelope.payload.signers;
-  const signed = new Set(envelope.signatures.map((s) => s.signerAccount));
-  const open = required.length === 0;
-  const complete = open ? signed.size > 0 : required.every((a) => signed.has(a));
-  // Show everyone who has signed (e.g. the initiator) plus any required signer
-  // still pending — not just the required list, so a signature never hides.
-  const rows = open
-    ? Array.from(signed)
-    : [...new Set([...required, ...signed])];
-
-  return (
-    <ToolSection title={t.progress.signaturesTitle}>
-      <p
-        className="text-sm font-semibold"
-        style={{
-          color: complete ? 'var(--color-success)' : 'var(--color-text-muted)',
-        }}
-      >
-        {open
-          ? `${signed.size} ${t.progress.signaturesTitle.toLowerCase()}`
-          : `${required.filter((a) => signed.has(a)).length} ${t.progress.of} ${required.length}`}{' '}
-        · {complete ? t.progress.allSigned : t.progress.partial}
-      </p>
-      <ul className="space-y-1.5 text-sm">
-        {rows.map((acc) => (
-          <li key={acc} className="flex items-center gap-2">
-            {signed.has(acc) ? (
-              <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0" />
-            ) : (
-              <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
-            )}
-            <span
-              className="font-mono text-[12px] break-all"
-              style={{ color: 'var(--color-text-main)' }}
-            >
-              {acc}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {!complete && (
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          {t.progress.passToNext}
-        </p>
-      )}
-    </ToolSection>
-  );
-}
-
-// ─── Result panel ─────────────────────────────────────────────────────────────
-
-export function ResultPanel({
-  t,
-  consoleT,
-  result,
-  outputs,
-  onReset,
-  allowAnchor = true,
-  pades,
-  watermark,
-  padesError,
-  onPadesError,
-}: {
-  t: SignDictionary;
-  consoleT: ConsoleDictionary;
-  result: SignResult;
-  outputs: OutputFormat[];
-  onReset: () => void;
-  /** Basic mode hides the on-ledger anchoring option entirely. */
-  allowAnchor?: boolean;
-  /** PAdES/X.509 config lifted from the form, so downloads keep the cert. */
-  pades?: PadesConfig | null;
-  /** Watermark lifted from the form, so downloads keep it too. */
-  watermark?: WatermarkOptions;
-  padesError?: string;
-  onPadesError?: (code: string) => void;
-}) {
-  const [envelope, setEnvelope] = useState<AttestationEnvelope>(result.envelope);
-  const { anchor, phase, error } = useDocumentSign();
-  const preview = useTransactionPreview();
-  const { language, t: common } = useLanguage();
-  const { activeNetworkId } = useRadixWallet();
-  const anchoring = phase === 'anchoring';
-  const { inWallet } = useWalletRequests();
-  // Starting over unmounts this panel, which drops the anchoring from the
-  // extension (useWalletRequestScope); on the phone the person rejects it.
-  const anchorInWallet = anchoring && inWallet;
-
-  // Without an on-ledger request the share link still exists: it delivers the
-  // signed artifact itself over the P2P channel. For PDFs that is the signed
-  // PDF (certificate embedded), so the receiver can verify or co-sign from
-  // one file; otherwise the original document travels as-is.
-  const [shareArtifact, setShareArtifact] = useState<{
-    bytes: Uint8Array;
-    name: string;
-    type: string;
-  } | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      if (isPdfResult(result)) {
-        try {
-          // The shared artifact is the SAME file the download button produces:
-          // watermark, visible page, attachments and certificate signature.
-          const pdf = await buildDeliverablePdf({
-            fileBytes: result.fileBytes,
-            envelope,
-            watermark,
-            pageOptions: await signaturePageOptions(
-              envelope,
-              t,
-              language,
-              !!pades?.enabled,
-            ),
-            pades,
-          });
-          if (!cancelled) {
-            setShareArtifact({
-              bytes: pdf,
-              name: signedPdfName(result.fileName, isFullySigned(envelope)),
-              type: 'application/pdf',
-            });
-          }
-          return;
-        } catch {
-          // Fall back to sharing the original document below.
-        }
-      }
-      if (!cancelled) {
-        setShareArtifact({
-          bytes: result.fileBytes,
-          name: result.fileName,
-          type: result.fileType,
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [envelope, result, language, t, pades, watermark]);
-
-  const { payload } = envelope;
-  /** The signature this session just produced (the last one appended). */
-  const lastSignature = envelope.signatures[envelope.signatures.length - 1];
-  const padesErrorMsg = padesError
-    ? (t.pades.errors as Record<string, string>)[padesError] ?? t.pades.errors.generic
-    : '';
-  // Always offer BOTH artifacts: the signed PDF is the self-contained one and
-  // the JSON travels to other tools, so hiding either only costs the user a
-  // round trip through the options.
-  const pdfBtn = isPdfResult(result);
-  const certBtn = true;
-
-  const signed = new Set(envelope.signatures.map((s) => s.signerAccount));
-  const complete = isFullySigned(envelope);
-  // A request-based (multi on-ledger) certificate records each signer's NFT as
-  // they sign, so it never needs the stand-alone anchor step.
-  const canAnchor =
-    allowAnchor && complete && !envelope.onChain && !envelope.request;
-
-  const anchorSigners = [...signed];
-  const anchorAccount = anchorSigners[0] ?? null;
-  // Anchoring mints the signature into the signer's Seal-owned collection, so
-  // that account needs its Seal + collection first. If missing, we show the
-  // onboarding inline before the anchor button.
-  const setup = useSealSetup(anchorAccount);
-  const needsSetup = canAnchor && setup.ready && (!setup.seal || !setup.collection);
-
-  const onSimulate = async () => {
-    if (!anchorAccount || activeNetworkId == null || !setup.seal) return;
-    const imageUrl = sealImageUrl(window.location.origin);
-    // Preview the SAME manifest the anchor will submit: a stand-alone signature
-    // (`request=''`) minted into the signer's Seal-owned collection (model 1).
-    const issuedAt = await fetchLedgerNow(activeNetworkId);
-    const manifest = setup.collection
-      ? buildSignatureMintManifest({
-          issuedAt,
-          account: anchorAccount,
-          sealGlobalId: setup.seal.globalId,
-          collection: setup.collection.resourceAddress,
-          nextId: setup.collection.totalSupply + 1,
-          docHash: payload.docHash,
-          networkId: activeNetworkId,
-          request: '',
-          imageUrl,
-        })
-      : buildSignCollectionCreateManifest({
-          account: anchorAccount,
-          sealGlobalId: setup.seal.globalId,
-          sealAddress: radixSealAddress(activeNetworkId),
-          networkId: activeNetworkId,
-          collectionName: '',
-          imageUrl,
-          firstSignature: {
-            docHash: payload.docHash,
-            request: '',
-            signedAt: new Date().toISOString(),
-          },
-        });
-    preview.simulate(manifest);
-  };
-
-  const onAnchor = async () => {
-    const res = await anchor(
-      envelope,
-      result.fileBytes,
-      result.fileName,
-      result.fileType,
-    );
-    if (res) {
-      setEnvelope(res.envelope);
-      downloadCertificate(res.envelope);
-    }
-  };
-
-  const downloadPdf = async () => {
-    try {
-      onPadesError?.('');
-      // Identical pipeline to the auto-download and the shared artifact, so the
-      // watermark and the certificate signature are never silently dropped.
-      const pdf = await buildDeliverablePdf({
-        fileBytes: result.fileBytes,
-        envelope,
-        watermark,
-        pageOptions: await signaturePageOptions(
-          envelope,
-          t,
-          language,
-          !!pades?.enabled,
-        ),
-        pades,
-      });
-      downloadBytes(
-        pdf,
-        signedPdfName(result.fileName, complete),
-        'application/pdf',
-      );
-    } catch (err) {
-      if (pades?.enabled) {
-        onPadesError?.(padesErrorCode(err));
-        return;
-      }
-      downloadCertificate(envelope);
-    }
-  };
-
-  return (
-    <div className="space-y-5">
-      <ToolSection>
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-primary)]">
-            <UsersRound className="size-5 text-white" />
-          </div>
-          <h3
-            className="text-base font-bold"
-            style={{ color: 'var(--color-text-main)' }}
-          >
-            {t.result.title}
-          </h3>
-        </div>
-
-        <dl className="grid gap-2 text-sm">
-          <Row label={t.result.timestamp} value={new Date(payload.timestamp).toLocaleString()} />
-          <Row label={t.result.hash} value={payload.docHash} mono />
-          {payload.message && (
-            <Row label={t.result.message} value={payload.message} />
-          )}
-          {/* What the wallet actually disclosed for the signature just made —
-              the same text the certificate page prints. Shown here because a
-              certificate is read long after the wallet prompt, and "the name
-              is not the one I expected" is otherwise only discoverable by
-              opening the PDF. */}
-          {lastSignature?.disclosedName && (
-            <Row label={t.result.name} value={lastSignature.disclosedName} />
-          )}
-          {lastSignature?.disclosedEmail && (
-            <Row label={t.result.email} value={lastSignature.disclosedEmail} />
-          )}
-        </dl>
-        {payload.disclosure !== 'none' && !lastSignature?.disclosedName && (
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            {t.result.nameMissing}
-          </p>
-        )}
-      </ToolSection>
-
-      <SignerProgress t={t} envelope={envelope} />
-
-      {envelope.request && !complete ? (
-        // Multi-party on-ledger, still missing signatures: the link co-signers
-        // open to see the request and co-sign, with the direct document channel
-        // available by default.
-        //
-        // Once the last signature lands there is nobody left to invite, so the
-        // box below takes over and shares the finished document instead. It
-        // used to keep offering "share this link with the signers" on a
-        // document nobody could still sign.
-        // It carries the SIGNED PDF once we have it (it holds the certificate,
-        // the signatures so far and the intact original in one file, and the
-        // receiver's dropzone recovers the original from it), falling back to
-        // the plain document while it is still being built.
-        <ShareLinkSection
-          t={t}
-          requestKey={envelope.request.requestId}
-          docName={payload.fileName}
-          fileName={shareArtifact?.name ?? result.fileName}
-          fileType={shareArtifact?.type ?? result.fileType}
-          bytes={shareArtifact?.bytes ?? result.fileBytes}
-          outputs={outputs}
-          networkId={envelope.request.networkId}
-        >
-          {/* The transaction that put this request on the ledger, beside the
-              link that points at it. */}
-          {envelope.request.transactionIntentHash && (
-            <RequestTransactionLinks
-              t={t}
-              txId={envelope.request.transactionIntentHash}
-              networkId={envelope.request.networkId}
-            />
-          )}
-        </ShareLinkSection>
-      ) : (
-        shareArtifact && (
-          // Every other signing still gets a share link + QR: it delivers the
-          // signed artifact directly, browser to browser.
-          <ShareLinkSection
-            t={t}
-            docName={shareArtifact.name}
-            fileName={shareArtifact.name}
-            fileType={shareArtifact.type}
-            bytes={shareArtifact.bytes}
-            outputs={outputs}
-            networkId={payload.networkId}
-            tab="sign"
-            title={t.onchain.shareDocTitle}
-            hint={t.onchain.shareDocHint}
-          >
-            {/* A completed on-ledger document still points at the transaction
-                that opened it: the record does not stop being useful once the
-                invitations are spent. */}
-            {envelope.request?.transactionIntentHash && (
-              <RequestTransactionLinks
-                t={t}
-                txId={envelope.request.transactionIntentHash}
-                networkId={envelope.request.networkId}
-              />
-            )}
-          </ShareLinkSection>
-        )
-      )}
-
-      {canAnchor && needsSetup && (
-        <SealOnboarding
-          t={t}
-          account={anchorAccount}
-          onAccountChange={() => {}}
-          setup={setup}
-          lockedAccount
-          consoleT={consoleT}
-        />
-      )}
-
-      {canAnchor && !needsSetup && (
-        <ToolSection title={t.options.anchorTitle} hint={t.options.anchorHint}>
-          <p className="text-xs" style={{ color: 'var(--color-warning, #b45309)' }}>
-            ⚠ {t.options.anchorWarning}
-          </p>
-          {error && (
-            <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
-              <SignErrorText t={t} code={error} />
-            </p>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              disabled={anchoring}
-              onClick={onAnchor}
-              className="flex w-full items-center justify-center gap-2 px-6 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {anchoring ? (
-                <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              ) : (
-                <ExternalLink className="size-4" />
-              )}
-              {anchoring ? t.actions.anchoringNow : t.actions.anchorNow}
-            </button>
-            <SimulateButton
-              t={consoleT.simulate}
-              onClick={onSimulate}
-              disabled={anchoring}
-              loading={preview.isSimulating}
-            />
-          </div>
-          <SimulateResultCard
-            t={consoleT.simulate}
-            preview={preview.preview}
-            error={preview.error}
-            onClose={preview.reset}
-          />
-        </ToolSection>
-      )}
-
-      {padesErrorMsg && (
-        <p
-          className="rounded-xl border px-4 py-3 text-sm"
-          style={{
-            borderColor: 'var(--color-danger, #dc2626)',
-            color: 'var(--color-danger, #dc2626)',
-          }}
-        >
-          {padesErrorMsg}
-        </p>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        {certBtn && (
-          <button
-            type="button"
-            onClick={() => downloadCertificate(envelope)}
-            className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
-          >
-            <Download className="size-4" />
-            {t.actions.downloadCert}
-          </button>
-        )}
-        {pdfBtn && (
-          <button
-            type="button"
-            onClick={downloadPdf}
-            className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
-          >
-            <Download className="size-4" />
-            {t.actions.downloadPdf}
-          </button>
-        )}
-
-        {envelope.onChain && (
-          <a
-            href={explorerTxUrl(language, envelope.onChain.transactionIntentHash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
-            style={{
-              borderColor: 'var(--color-card-border)',
-              color: 'var(--color-text-main)',
-            }}
-          >
-            <ExternalLink className="size-4" />
-            {t.actions.viewOnLedger}
-          </a>
-        )}
-      </div>
-
-      <button
-        type="button"
-        onClick={onReset}
-        title={anchorInWallet ? common.nav?.wallet_request_in_wallet : undefined}
-        className="flex items-center justify-center gap-2 mx-auto text-sm font-semibold"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <RotateCcw className="size-4" />
-        {t.actions.newSignature}
-      </button>
-    </div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:gap-3">
-      <dt
-        className="sm:w-40 shrink-0 font-semibold"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        {label}
-      </dt>
-      <dd
-        className={`break-all ${mono ? 'font-mono text-[12px]' : ''}`}
-        style={{ color: 'var(--color-text-main)' }}
-      >
-        {value}
-      </dd>
     </div>
   );
 }

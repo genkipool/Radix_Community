@@ -130,7 +130,7 @@ describe('MCP audit_seal_collection tool', () => {
     expect(summaryText).toContain('Ministerio de Economía (Demo)');
     expect(summaryText).toContain('1/1');
     expect(summaryText).toContain(
-      `https://radix.example/es/console/sign-collection?tab=audit&collection=${COLLECTION_STOKENET}`,
+      `https://radix.example/es/console/sign-audit?collection=${COLLECTION_STOKENET}`,
     );
 
     const csv = await getMcpRegistry().call(
@@ -438,5 +438,44 @@ describe('MCP Radix Seal registry & signing tools', () => {
         expect(text).toContain(SEAL_RUID);
       }
     }
+  });
+
+  it('builds sign_document inline with collection creation when account holds a Seal but no collection yet (Web parity)', async () => {
+    const SEAL_BRAND_STOKENET =
+      'resource_tdx_2_1nt7fs75249xwepan05v4uyp0hq7ret6tlwu4n32tl05tsualxz3x7j';
+    const SEAL_RUID =
+      '{0123456789abcdef-0123456789abcdef-0123456789abcdef-0123456789abcdef}';
+    const SEAL_GLOBAL = `${SEAL_BRAND_STOKENET}:${SEAL_RUID}`;
+
+    vi.spyOn(auditServer, 'getSealAccountState').mockResolvedValue({
+      account: SIGNER_A,
+      networkId: 2,
+      sealResource: SEAL_BRAND_STOKENET,
+      seals: [{ localId: SEAL_RUID, globalId: SEAL_GLOBAL }],
+      collections: [],
+    });
+    vi.spyOn(custody, 'fetchLedgerTimestampNow').mockResolvedValue(
+      '2026-11-25T19:00:00.000Z',
+    );
+
+    const res = await getMcpRegistry().call(
+      'build_seal_manifest',
+      {
+        operation: 'sign_document',
+        account: SIGNER_A,
+        sealResource: SEAL_BRAND_STOKENET,
+        docHash: DOC_HASH,
+        request: `${COLLECTION_STOKENET}:#1#`,
+      },
+      ctx,
+    );
+    expect(res.isError, res.content[0]?.text).toBeUndefined();
+    const text = res.content[0].text;
+    expect(text).toContain('(created inline with first signature #1#)');
+    expect(text).toContain('CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY');
+    expect(text).toContain(DOC_HASH);
+    expect(text).toContain(`${COLLECTION_STOKENET}:#1#`);
+    expect(text).toContain('statically validated by the Radix Engine Toolkit');
+    expect(text).not.toContain('lock_fee');
   });
 });

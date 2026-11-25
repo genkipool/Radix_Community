@@ -3,30 +3,22 @@
 import { useState } from 'react';
 import { FileSignature } from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
-import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
+import { useLanguage } from '@/context/LanguageContext';
 import { useDocumentSign } from '../hooks/useDocumentSign';
 import type { DocumentFile } from '../hooks/useDocumentFile';
-import { looksLikeEnvelope, ResultPanel } from './SignForm';
-import { useLanguage } from '@/context/LanguageContext';
-import { signedPdfName } from '../lib/file';
-import {
-  downloadBytes,
-  downloadCertificate,
-  isFullySigned,
-} from '../lib/certificate';
-import { buildDeliverablePdf } from '../lib/signed-pdf';
-import { signaturePageOptions } from '../lib/pdf-signature-page';
+import { looksLikeEnvelope } from '../lib/certificate';
+import { deliverSignedArtifacts } from '../lib/signed-pdf';
+import { OutputFormatSection } from './SignDeliverySections';
+import { SignErrorText } from './SignErrorText';
+import { ResultPanel } from './SignResultPanel';
 import type { SignDictionary } from '../types/dictionary';
 import type {
   AttestationEnvelope,
   OutputFormat,
   SignResult,
 } from '../types/sign.types';
-
-const isPdfResult = (r: { fileType: string; fileName: string }) =>
-  r.fileType === 'application/pdf' || r.fileName.toLowerCase().endsWith('.pdf');
 
 /**
  * Minimal signing flow: drop a file (tool level), optionally load a
@@ -49,9 +41,6 @@ export function BasicSignForm({
   const [loadedCert, setLoadedCert] = useState<AttestationEnvelope | null>(null);
   const [certError, setCertError] = useState('');
   const [outputs, setOutputs] = useState<OutputFormat[]>(['detached']);
-  // Until the user picks for themselves, a PDF also gets the embedded PDF: it
-  // is the self-contained artifact (certificate + original + visible page in
-  // one file), so it should not take an extra click to obtain.
   const [outputsPicked, setOutputsPicked] = useState(false);
   const [result, setResult] = useState<SignResult | null>(null);
 
@@ -61,9 +50,10 @@ export function BasicSignForm({
   const coSignMode = !!loadedCert;
 
   const effectiveOutputs: OutputFormat[] =
-    !outputsPicked && pdfOk ? [...new Set([...outputs, 'embedded' as const])] : outputs;
+    !outputsPicked && pdfOk
+      ? [...new Set([...outputs, 'embedded' as const])]
+      : outputs;
 
-  // At least one output format must stay selected.
   const onOutputsChange = (v: OutputFormat[]) => {
     if (v.length === 0) return;
     setOutputsPicked(true);
@@ -93,32 +83,6 @@ export function BasicSignForm({
     }
   };
 
-  const deliver = async (res: SignResult, chosen: OutputFormat[]) => {
-    let delivered = false;
-    if (chosen.includes('embedded') && isPdfResult(res)) {
-      try {
-        // Same single pipeline as the advanced flow: the original bytes are
-        // embedded intact so the PDF verifies on its own.
-        const pdf = await buildDeliverablePdf({
-          fileBytes: res.fileBytes,
-          envelope: res.envelope,
-          pageOptions: await signaturePageOptions(res.envelope, t, language),
-        });
-        downloadBytes(
-          pdf,
-          signedPdfName(res.fileName, isFullySigned(res.envelope)),
-          'application/pdf',
-        );
-        delivered = true;
-      } catch {
-        // Fall back to the detached certificate below.
-      }
-    }
-    if (chosen.includes('detached') || !delivered) {
-      downloadCertificate(res.envelope);
-    }
-  };
-
   const handleSign = async () => {
     if (!bytes || !docHash || !doc.file) return;
     const res = coSignMode
@@ -137,7 +101,15 @@ export function BasicSignForm({
         });
     if (res) {
       setResult(res);
-      await deliver(res, effectiveOutputs);
+      await deliverSignedArtifacts({
+        envelope: res.envelope,
+        fileBytes: res.fileBytes,
+        fileName: res.fileName,
+        fileType: res.fileType,
+        outputs: effectiveOutputs,
+        t,
+        locale: language,
+      });
     }
   };
 
@@ -162,9 +134,6 @@ export function BasicSignForm({
     );
   }
 
-  const errorMsg = error
-    ? ((t.errors as Record<string, string>)[error] ?? t.errors.generic)
-    : '';
   const hashMismatch =
     coSignMode && !!docHash && docHash !== loadedCert!.payload.docHash;
 
@@ -182,28 +151,13 @@ export function BasicSignForm({
         />
       </ToolSection>
 
-      <ToolSection title={t.options.outputTitle} hint={t.options.outputHint}>
-        <OptionButtons<OutputFormat>
-          multiple
-          value={effectiveOutputs}
-          onChange={onOutputsChange}
-          disabled={busy}
-          options={[
-            {
-              value: 'detached',
-              label: t.options.outputDetached,
-              description: t.options.outputDetachedDesc,
-            },
-            {
-              value: 'embedded',
-              label: t.options.outputEmbedded,
-              description: t.options.outputEmbeddedDesc,
-              disabled: !pdfOk,
-              title: pdfOk ? undefined : t.options.embeddedPdfOnly,
-            },
-          ]}
-        />
-      </ToolSection>
+      <OutputFormatSection
+        t={t}
+        outputs={effectiveOutputs}
+        pdfOk={pdfOk}
+        busy={busy}
+        onChange={onOutputsChange}
+      />
 
       {hashMismatch && (
         <p
@@ -216,7 +170,7 @@ export function BasicSignForm({
           {t.cosign.fileMismatch}
         </p>
       )}
-      {errorMsg && (
+      {error && (
         <p
           className="rounded-xl border px-4 py-3 text-sm"
           style={{
@@ -224,7 +178,7 @@ export function BasicSignForm({
             color: 'var(--color-danger, #dc2626)',
           }}
         >
-          {errorMsg}
+          <SignErrorText t={t} code={error} />
         </p>
       )}
 

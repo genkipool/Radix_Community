@@ -16,6 +16,7 @@ import type {
   NfRecord,
   SignerBatchResult,
 } from './onchain-custody';
+import type { DomainVerificationResult } from './domain-verify';
 import { instantOf, issuedAtAgrees } from './timestamp';
 
 /* ─── Contracts ───────────────────────────────────────────────────────────── */
@@ -104,6 +105,8 @@ export interface AuditIssuerInfo {
   orgName: string | null;
   orgUrl: string | null;
   iconUrl: string | null;
+  /** Custody-free domain proof (`/.well-known/radix-seal.json` or DNS TXT). */
+  domainVerification?: DomainVerificationResult | null;
 }
 
 export interface CollectionAuditResponse {
@@ -764,4 +767,32 @@ export function filterAuditSigners(
     for (const s of r.requiredSigners) visible.add(s);
   }
   return signers.filter((s) => visible.has(s.account));
+}
+
+export interface IntegritySummary {
+  standardOk: boolean;
+  custodyOk: boolean;
+  immutableOk: boolean;
+  allOk: boolean;
+}
+
+/**
+ * Single source of truth for evaluating the 3 cryptographic integrity pillars
+ * of a Radix Seal collection across Web UI, PDF reports, and MCP tools.
+ */
+export function evaluateIntegritySummary(
+  integrity: CollectionIntegrity,
+): IntegritySummary {
+  const standardOk = integrity.hasMarker && integrity.officialBrand;
+  const custodyOk = integrity.ownerLocked && integrity.issuerVerified;
+  const immutableOk =
+    integrity.burnDenied &&
+    integrity.dataImmutable &&
+    integrity.totalBurned === 0;
+  return {
+    standardOk,
+    custodyOk,
+    immutableOk,
+    allOk: standardOk && custodyOk && immutableOk,
+  };
 }

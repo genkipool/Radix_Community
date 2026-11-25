@@ -456,6 +456,10 @@
         "subtitle": "La colección pertenece a tu seal, así que hace falta la wallet que lo custodia para verla y gestionarla."
       },
       "accountLabel": "Cuenta",
+      "stokenetFill": {
+        "label": "Rellenar prueba",
+        "title": "Solo en Stokenet: rellena los campos editables con datos aleatorios coherentes para hacer pruebas rápidas"
+      },
       "seals": {
         "title": "Tu seal",
         "hint": "La insignia soulbound que manda sobre tus colecciones. No se puede transferir ni quemar.",
@@ -473,7 +477,13 @@
         "active": "Activa",
         "use": "Usar esta",
         "severalNote": "Tienes más de una colección. Las invitaciones y firmas ya emitidas se quedan en la suya: cambiar de activa no las mueve, solo decide dónde se acuñan las próximas.",
-        "untitled": "Colección sin nombre"
+        "untitled": "Colección sin nombre",
+        "domainVerified": "Verificado",
+        "domainUnverified": "No verificado",
+        "domainChecking": "Comprobando…",
+        "domainVerifiedTooltip": "Dominio verificado: {domain} (confirmado vía {method})",
+        "domainUnverifiedTooltip": "El dominio {domain} todavía no publica la declaración de esta colección. Configúralo en Identidad de emisor.",
+        "domainNoUrlTooltip": "Sin web de organización configurada. Añade una URL HTTPS en Identidad de emisor para verificar tu dominio."
       },
       "create": {
         "title": "Nueva colección de firma",
@@ -526,11 +536,35 @@
         "editableBadge": "Editable",
         "otherTitle": "Resto de metadatos de la colección",
         "otherHint": "Todo lo demás que lleva la colección en la cadena, incluido lo que añadiste tú al crearla. Lo bloqueado no se puede cambiar nunca, ni por ti.",
-        "saveHint": "Al pulsar recibirás una petición de firma en la wallet del móvil. Nada cambia en la cadena hasta que la apruebes."
+        "saveHint": "Al pulsar recibirás una petición de firma en la wallet del móvil. Nada cambia en la cadena hasta que la apruebes.",
+        "domainVerify": {
+          "title": "Verificación de dominio",
+          "hint": "Demuestra que esta colección pertenece oficialmente a tu dominio web sin depender de ningún intermediario ni NFT extra. Funciona igual en Mainnet y Stokenet y cualquier verificador (web o MCP) lo comprueba automáticamente en vivo.",
+          "verifiedBadge": "Verificado",
+          "unverifiedBadge": "No verificado",
+          "checkingBadge": "Comprobando…",
+          "badgeTooltip": "Pulsa para ver el estado y las instrucciones de verificación de dominio",
+          "closeLabel": "Cerrar panel",
+          "collectionLabel": "Colección",
+          "needUrl": "Guarda una URL HTTPS en «Web de la organización» (p. ej. https://tuempresa.com) para generar las instrucciones de verificación de dominio.",
+          "checkNow": "Comprobar ahora",
+          "checking": "Comprobando…",
+          "verifiedStatus": "Dominio verificado: {domain} (confirmado vía {method})",
+          "unverifiedStatus": "Aún no se encontró la declaración en {domain}. Publica una de las dos opciones y vuelve a comprobar.",
+          "checkError": "No se pudo consultar el dominio en este momento. Inténtalo de nuevo en unos segundos.",
+          "wellKnownTitle": "Opción A · Archivo JSON en tu web (.well-known)",
+          "dnsTitle": "Opción B · Registro DNS TXT",
+          "note": "Basta con publicar una de las dos opciones. Al ser 100% descentralizado, si cambias de colección solo actualizas tu archivo o DNS y el cambio surte efecto al instante.",
+          "accountOptionalNote": "No hace falta incluir tu cuenta: vincular solo la colección es lo recomendado si una misma cuenta gestiona varias identidades (opcionalmente también se admite \"accounts\" en JSON o account=account_… en DNS TXT)."
+        }
       },
       "audit": {
+        "domainVerified": {
+          "badge": "Dominio verificado",
+          "tooltip": "Propiedad del dominio {domain} confirmada en vivo mediante {method}"
+        },
         "intro": {
-          "title": "Auditoría y registro institucional",
+          "title": "Auditoría y registro de firmas",
           "body": "Registro de cumplimiento en solo lectura reconstruido directamente desde el ledger público de Radix. Cada lote de invitaciones se cruza con la colección Seal de cada firmante para verificar firmas reales, marcas de tiempo de consenso e integridad de custodia sin ningún servidor central."
         },
         "selector": {
@@ -555,16 +589,18 @@
           "refresh": "Actualizar",
           "refreshing": "Actualizando…",
           "copyLink": "Compartir auditoría",
+          "copyLinkTooltip": "Copia un enlace directo de solo lectura a esta auditoría (con las fechas seleccionadas) para que cualquier auditor o cliente pueda consultarla sin conectar wallet.",
           "linkCopied": "Enlace copiado",
           "explorerLink": "Explorador",
           "exportButton": "Exportar informe",
+          "exportTooltip": "Descarga esta auditoría en informe oficial PDF, tablas CSV (expedientes o firmantes) o paquete verificable JSON con SHA-256.",
           "exportPdf": "Informe Oficial de Auditoría (PDF)",
           "exportCsvRecords": "Registro de Expedientes (CSV)",
           "exportCsvSigners": "Directorio de Firmantes (CSV)",
           "exportJson": "Paquete Verificable (JSON + SHA-256)",
           "includeAliasesLabel": "Incluir alias locales de mi Agenda",
           "includeAliasesHint": "Los nombres locales viven solo en este navegador (RGPD) y nunca se escriben en la cadena.",
-          "customMetaTitle": "Metadatos institucionales en cadena"
+          "customMetaTitle": "Metadatos personalizados en cadena"
         },
         "integrity": {
           "title": "Integridad criptográfica",
@@ -595,6 +631,18 @@
           },
           "from": "Desde",
           "to": "Hasta",
+          "dateRangePlaceholder": "Seleccionar fechas",
+          "calendar": {
+            "month": "Mes",
+            "year": "Año",
+            "weekdays": ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
+            "reset_button": "Limpiar fechas",
+            "apply_button": "Aplicar",
+            "start_date": "Fecha inicio",
+            "end_date": "Fecha fin",
+            "range_placeholder": "Seleccionar fechas"
+          },
+          "closePopup": "Cerrar",
           "categoryLabel": "Tipo de operación",
           "categories": {
             "all": "Todos los tipos",
@@ -613,7 +661,11 @@
           },
           "searchPlaceholder": "Buscar por hash, txid, clave, dirección o alias local…",
           "fileLookupButton": "Localizar archivo",
-          "fileLookupHint": "Calcula el hash en tu navegador (nunca se sube) para localizar sus expedientes.",
+          "fileLookupHint": "Selecciona un archivo de tu equipo para calcular su huella BLAKE2b-256 localmente (nunca se sube a ningún servidor) y filtrar al instante los expedientes de ese documento.",
+          "categoryTooltip": "Filtra los expedientes según el tipo de operación grabada en el ledger (solicitud multi-parte, firma directa, cofirma o cifrado).",
+          "statusTooltip": "Filtra los expedientes por su estado de cumplimiento (completados, pendientes/parciales, registrados o con alertas).",
+          "periodTooltip": "Filtra los expedientes por rango de fechas de confirmación en el ledger (UTC). Los días resaltados tienen actividad.",
+          "clearAllTooltip": "Borra la búsqueda, las fechas, el archivo seleccionado y todos los filtros activos.",
           "fileLookupMatched": "Filtrando por hash del archivo ({name})",
           "fileLookupClear": "Quitar archivo",
           "clearAll": "Restablecer filtros",
@@ -621,8 +673,28 @@
           "clearSigner": "Quitar"
         },
         "subtabs": {
-          "records": "Registro de expedientes",
-          "signers": "Directorio de firmantes"
+          "overview": "Resumen",
+          "records": "Expedientes",
+          "signers": "Firmantes y NFTs",
+          "integrity": "Integridad y privacidad"
+        },
+        "tooltips": {
+          "collectionAddress": "Dirección pública en Radix de esta colección de firma (recurso NFT).",
+          "issuerAccount": "Cuenta Radix verificada que posee la insignia Seal dueña de esta colección.",
+          "ledgerCutoff": "Versión de estado exacta del ledger de Radix en la que se tomó esta fotografía de auditoría.",
+          "colDate": "Fecha y hora exactas en las que la red Radix confirmó esta operación por consenso (UTC).",
+          "colType": "Tipo de registro en cadena: solicitud multi-parte, firma directa, cofirma o custodia cifrada.",
+          "colDocument": "Huella criptográfica BLAKE2b-256 del documento. El archivo original nunca se sube a la blockchain.",
+          "colStatus": "Estado global del expediente en la blockchain (completo, parcial, pendiente, registrado o con alerta).",
+          "colSignatures": "Detalle de firmas o autorizaciones: cuántas están completadas y cuántas siguen pendientes de firmar.",
+          "colTx": "Identificador de la transacción en el ledger de Radix (haz clic para abrirla en el explorador).",
+          "colDetails": "Despliega los firmantes, NFTs asociados y, si faltan firmas, el enlace directo y canal P2P.",
+          "colParticipant": "Cuenta Radix participante y su etiqueta local opcional (guardada solo en tu navegador).",
+          "colSeal": "Indica si la cuenta posee una insignia oficial Radix Seal verificada y colección propia de firma.",
+          "colNfts": "Insignia Seal, colecciones propias y NFTs de invitación o firma asociados a esta cuenta.",
+          "colActivity": "Resumen de firmas completadas frente a invitaciones pendientes en esta colección.",
+          "colLastActivity": "Fecha UTC de la última invitación o firma registrada para esta cuenta.",
+          "colSignerActions": "Filtra la pestaña de Expedientes para ver únicamente los documentos de esta cuenta."
         },
         "records": {
           "empty": "Esta colección todavía no tiene registros en la cadena.",
@@ -632,6 +704,7 @@
             "type": "Operación",
             "document": "Huella del documento",
             "compliance": "Estado",
+            "signatures": "Firmas",
             "tx": "Transacción",
             "actions": "Detalle"
           },
@@ -643,6 +716,14 @@
             "cipher_invite": "Autorización de descifrado",
             "cipher_receipt": "Acuse de descifrado"
           },
+          "kindDescriptions": {
+            "multi_request": "Lote de invitaciones en cadena para que una o varias cuentas firmen el mismo documento.",
+            "solo_signature": "Firma individual registrada directamente por el titular sin invitación previa.",
+            "cosign_signature": "Firma emitida en respuesta a una solicitud creada desde otra colección.",
+            "cipher_signature": "Registro en cadena de un documento cifrado para acreditar su integridad.",
+            "cipher_invite": "Permiso en cadena que autoriza a cuentas concretas a descifrar y abrir este archivo protegido con su wallet.",
+            "cipher_receipt": "Acuse en cadena que certifica la recepción o el descifrado del archivo."
+          },
           "status": {
             "complete": "Completo",
             "partial": "Parcial",
@@ -650,14 +731,56 @@
             "recorded": "Registrado",
             "anomaly": "Alerta"
           },
+          "statusDescriptions": {
+            "complete": "Todos los firmantes invitados han completado su firma en la blockchain.",
+            "partial": "Algunos firmantes ya han firmado, pero todavía quedan firmas pendientes para cerrar el expediente.",
+            "pending": "Las invitaciones ya están grabadas en la blockchain, pero todavía ningún firmante ha firmado.",
+            "recorded": "Operación individual confirmada en la blockchain (firma directa o registro de cifrado; no requiere firmas adicionales).",
+            "anomaly": "Se ha detectado una alerta de integridad en este expediente. Despliega la fila para revisar el motivo."
+          },
           "progress": "{signed}/{total} firmados",
+          "pendingProgress": "Pendiente {signed}/{total}",
+          "signedProgress": "Firmado {signed}/{total}",
+          "pendingShort": "{count} pendiente(s)",
+          "authorized": "Autorizado",
+          "signatureDescriptions": {
+            "multiComplete": "Todos los firmantes requeridos ({signed} de {total}) han registrado su firma en la blockchain.",
+            "multiPending": "{signed} de {total} firmantes ya han firmado. Falta(n) {pending} firma(s) pendiente(s) por completar.",
+            "solo": "Firma individual registrada y verificada directamente en el ledger por su titular (sin invitación multi-parte).",
+            "authorized": "Permiso grabado en la blockchain para que la cuenta destinataria pueda abrir y descifrar este archivo protegido usando su wallet Radix. No requiere ninguna firma.",
+            "cipherRecorded": "Huella criptográfica de un archivo cifrado registrada en la blockchain para acreditar su existencia e integridad (no requiere firmas)."
+          },
           "signedOn": "Firmado",
           "pendingSigners": "Pendiente de firma",
           "requestKeyLabel": "Clave de solicitud",
+          "requestKeyTooltip": "Copia esta clave de solicitud para enviársela a otro usuario; podrá pegarla en la pestaña Verificar (en la caja «Consultar una firma en el ledger») para comprobar quiénes han firmado el archivo y que está registrado en el ledger.",
           "nftIdsLabel": "NFTs en colección",
+          "inviteNftLabel": "NFT invitación",
+          "signatureNftLabel": "NFT firma",
           "openVerifier": "Abrir en Verificador",
           "viewTx": "Ver tx",
           "viewNft": "Ver NFT",
+          "pendingPanel": {
+            "title": "Faltan {count} firma(s) pendiente(s)",
+            "hint": "Comparte este enlace o código QR con los firmantes pendientes. Si ya tienen el archivo en su equipo pueden firmar directamente; si lo adjuntas a la izquierda, lo recibirán automáticamente al abrir el enlace.",
+            "openToSign": "Abrir para firmar",
+            "copyLink": "Copiar enlace de firma",
+            "copied": "Copiado",
+            "shareNative": "Compartir",
+            "qrLabel": "Mostrar código QR de firma",
+            "qrHint": "Escanea con el móvil para abrir la solicitud de firma.",
+            "p2pTitle": "1. Enviar archivo por canal directo P2P (opcional)",
+            "p2pHint": "Para firmar con el enlace compartido, el destinatario debe tener el documento en su equipo. Si aún no se lo has enviado por correo u otra vía, adjunta aquí el archivo original para abrir un canal cifrado navegador-a-navegador y luego comparte el enlace de la derecha.",
+            "p2pSelectFile": "Adjuntar archivo y abrir canal P2P",
+            "p2pReadyBanner": "¡Archivo verificado y canal P2P listo! Ya puedes compartir el enlace o código QR de la derecha (mantén esta pestaña abierta mientras lo descargan y firman el archivo).",
+            "p2pHashMismatch": "El archivo seleccionado no coincide con la huella BLAKE2b-256 de este expediente.",
+            "p2pWaiting": "Esperando a que un firmante abra el enlace…",
+            "p2pSending": "Enviando documento cifrado P2P…",
+            "p2pDelivered": "Entregado directamente a {count} firmante(s) · canal sigue abierto",
+            "p2pError": "Reconectando canal P2P…",
+            "p2pStop": "Cerrar canal",
+            "p2pResume": "Reanudar canal"
+          },
           "anomalies": {
             "incomplete_invite_batch": "Lote de invitaciones incompleto: el número de firmantes esperado no coincide con los NFTs intactos.",
             "clock_mismatch": "La fecha declarada en el NFT discrepa de la hora de consenso de la red."
@@ -675,6 +798,7 @@
           "columns": {
             "participant": "Participante y dirección",
             "seal": "Estado Radix Seal",
+            "activity": "Actividad",
             "invited": "Invitado",
             "signed": "Firmado",
             "pending": "Pendiente",
@@ -691,7 +815,51 @@
           "aliasPlaceholder": "p. ej. Ana García — Intervención",
           "saveToBook": "Guardar en Agenda",
           "savedInBook": "En tu Agenda",
-          "filterBySigner": "Ver expedientes"
+          "filterBySigner": "Ver expedientes",
+          "columns_nfts": "NFTs y colecciones",
+          "sealNftLabel": "Insignia Seal",
+          "ownCollectionLabel": "Colección propia",
+          "inviteNftBadge": "Invitación",
+          "signatureNftBadge": "Firma",
+          "noNftsYet": "Sin NFTs registrados aún",
+          "nftsToggle": "{count} NFT(s)"
+        },
+        "integrityTab": {
+          "checksTitle": "Controles de integridad criptográfica",
+          "checksSubtitle": "Verificados en tiempo real contra las reglas de roles y metadatos del recurso en el ledger de Radix.",
+          "checkDetails": {
+            "standardMarker": "Marcador de protocolo (radix_sign_collection = v1)",
+            "officialBrand": "Vinculada a la insignia oficial Radix Seal de esta red",
+            "ownerLocked": "Regla de propietario bloqueada permanentemente (solo acuña la insignia Seal)",
+            "issuerVerified": "Cuenta emisora verificada como poseedora actual de la insignia Seal",
+            "burnDenied": "Quema de NFTs denegada en el recurso (imposible borrar registros)",
+            "dataImmutable": "Datos de cada NFT inmutables tras su emisión",
+            "zeroBurned": "Cero NFTs quemados en todo el histórico de la colección",
+            "domainTitleOk": "Dominio web verificado sin custodia",
+            "domainTitleUnverified": "Verificación de dominio (opcional)",
+            "domainStatusVerified": "VERIFICADO",
+            "domainStatusUnverified": "NO VERIFICADO",
+            "domainUrlConfigured": "Web de la organización configurada (org_url)",
+            "domainProofLive": "Declaración pública confirmada en vivo (.well-known o DNS TXT)",
+            "domainOpenGuide": "Ver instrucciones y comprobar dominio",
+            "yes": "Cumple",
+            "no": "No cumple"
+          },
+          "domainSummaryLabel": "Verificación de dominio",
+          "metadataTitle": "Metadatos personalizados en cadena",
+          "metadataTooltip": "Campos opcionales clave-valor (por ejemplo, departamento, proyecto o referencia interna) definidos al crear la colección y grabados directamente en los metadatos del recurso en la blockchain.",
+          "noMetadata": "Esta colección no declara campos de metadatos personalizados adicionales.",
+          "collectionSummaryTitle": "Datos técnicos de la colección",
+          "totalSupplyLabel": "NFTs emitidos (total supply)",
+          "burnedLabel": "NFTs quemados",
+          "networkLabel": "Red del ledger",
+          "privacyTitle": "Origen de los datos y privacidad (RGPD)",
+          "onchainTitle": "100% verificado en blockchain",
+          "onchainBody": "Todos los expedientes, huellas BLAKE2b-256, invitaciones, firmas, NFTs, cuentas Radix y marcas de tiempo de consenso se leen directamente del ledger público de Radix. No existe ninguna base de datos central.",
+          "browserTitle": "Solo en tu navegador (local)",
+          "browserBody": "Únicamente los nombres o cargos que asignes en tu Agenda local (localStorage) y el envío P2P de archivos por WebRTC (en memoria RAM mientras la pestaña esté abierta) permanecen en tu dispositivo.",
+          "sensitiveTitle": "¿Se guarda información sensible en la blockchain?",
+          "sensitiveBody": "No. Ni el documento original ni datos personales (nombres, DNI, correos) se escriben jamás en la cadena. En el ledger solo quedan hashes criptográficos irreversibles (BLAKE2b-256) y direcciones públicas Radix."
         },
         "states": {
           "loading": "Auditando colección contra el ledger de Radix…",
@@ -702,11 +870,12 @@
           "emptyCollectionHint": "La colección supera los controles de integridad; los expedientes aparecerán aquí en cuanto se firmen documentos o se envíen solicitudes."
         },
         "pdf": {
-          "title": "Radix Seal · Informe Institucional de Auditoría",
+          "title": "Radix Seal · Informe de Auditoría",
           "tagline": "Registro verificable en ledger — generado localmente sin custodia central",
           "testnetWarning": "ENTORNO DE PRUEBAS (STOKENET) — SOLO REGISTROS DE TEST, NO EVIDENCIA PRODUCTIVA",
           "scopeSection": "1. Alcance de auditoría y corte del ledger",
-          "institution": "Institución",
+          "institution": "Titular / Emisor",
+          "verifiedDomain": "Dominio verificado",
           "collection": "Colección de firma",
           "issuerAccount": "Cuenta emisora verificada",
           "network": "Red",

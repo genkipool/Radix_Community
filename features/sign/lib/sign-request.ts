@@ -32,6 +32,8 @@ import {
   MetadataType,
   sanitizeSymbol,
 } from './nf-manifest-helpers';
+import { splitNftGlobalId } from './network';
+import { buildSealMintManifest } from './radix-seal-manifest';
 import {
   DEFAULT_COLLECTION_NAME,
   DEFAULT_COLLECTION_SYMBOL,
@@ -417,10 +419,8 @@ ${updates}`;
 
 /** Splits a seal global id into resource address + local id. */
 export function splitGlobalId(globalId: string): { resource: string; localId: string } {
-  const idx = globalId.indexOf(':');
-  return idx === -1
-    ? { resource: globalId, localId: '' }
-    : { resource: globalId.slice(0, idx), localId: globalId.slice(idx + 1) };
+  if (!globalId.includes(':')) return { resource: globalId, localId: '' };
+  return splitNftGlobalId(globalId);
 }
 
 const sealProof = (account: string, sealGlobalId: string) => {
@@ -485,6 +485,26 @@ export interface SignRequestInput {
   imageUrl: string;
   /** Ledger time to record as `issued_at` (see lib/ledger-time). */
   issuedAt: string;
+}
+
+/**
+ * Single source of truth for resolving the required-signer list of an on-ledger
+ * signing request across Web UI (`SignForm`, `OnChainSignPanel`) and MCP
+ * (`build_seal_manifest`).
+ *
+ * Trims and deduplicates signers while preserving order, and guarantees the
+ * initiator `account` is included when `alsoSign` is true so their inline
+ * signature NFT always counts toward completion.
+ */
+export function resolveRequestSigners(
+  account: string | null | undefined,
+  signers: string[],
+  alsoSign: boolean,
+): string[] {
+  const clean = signers.map((s) => s.trim()).filter(Boolean);
+  const combined =
+    alsoSign && account?.trim() ? [account.trim(), ...clean] : clean;
+  return [...new Set(combined)];
 }
 
 /**
@@ -802,4 +822,112 @@ CALL_METHOD
     Enum<0u8>()
 ;
 `;
+}
+
+export interface SignatureOrFirstCollectionInput {
+  account: string;
+  sealGlobalId: string;
+  /** Official Radix Seal brand address (used when creating the collection inline). */
+  sealAddress: string;
+  /** Existing signing collection address, or null/undefined to create it inline with `#1#`. */
+  collection?: string | null;
+  /** Next free integer id when minting into an existing collection (ignored when creating). */
+  nextId?: number;
+  docHash: string;
+  networkId: number;
+  /** Request key being answered (`''` for a solo signature). */
+  request: string;
+  imageUrl: string;
+  issuedAt: string;
+  /** Optional display metadata used only when creating a new collection inline. */
+  collectionName?: string;
+  symbol?: string;
+  issuer?: IssuerMeta;
+  extraMetadata?: CollectionMetaField[];
+}
+
+/**
+ * Single source of truth for on-ledger document signing across Web UI and MCP:
+ *  - When the signer already owns a signing collection, mints the signature NFT
+ *    into it (`#nextId#`).
+ *  - When the signer owns a Radix Seal but has NO signing collection yet,
+ *    creates the collection WITH the first signature (`#1#`) bundled in a
+ *    single atomic transaction.
+ */
+export function buildSignatureOrFirstCollectionManifest(
+  input: SignatureOrFirstCollectionInput,
+): string {
+  if (input.collection) {
+    return buildSignatureMintManifest({
+      account: input.account,
+      sealGlobalId: input.sealGlobalId,
+      collection: input.collection,
+      nextId: input.nextId ?? 1,
+      docHash: input.docHash,
+      networkId: input.networkId,
+      request: input.request,
+      imageUrl: input.imageUrl,
+      issuedAt: input.issuedAt,
+    });
+  }
+  return buildSignCollectionCreateManifest({
+    account: input.account,
+    sealGlobalId: input.sealGlobalId,
+    sealAddress: input.sealAddress,
+    networkId: input.networkId,
+    collectionName: input.collectionName ?? '',
+    symbol: input.symbol,
+    imageUrl: input.imageUrl,
+    issuer: input.issuer,
+    extraMetadata: input.extraMetadata,
+    firstSignature: {
+      docHash: input.docHash,
+      request: input.request,
+      signedAt: input.issuedAt,
+    },
+  });
+}
+
+export interface ProvisionPreviewInput {
+  account: string;
+  networkId: number;
+  /** Official Radix Seal brand resource address. */
+  sealResource: string;
+  /** Existing Seal global id to reuse, or null when a new Seal must be minted first. */
+  sealGlobalId: string | null;
+  collectionName: string;
+  symbol?: string;
+  imageUrl: string;
+  issuer?: IssuerMeta;
+  extraMetadata?: CollectionMetaField[];
+}
+
+/**
+ * Single source of truth for dry-running the next provisioning transaction
+ * (shared by `SealOnboarding` and `CollectionCreateTab`):
+ *  - When a Seal is available to reuse, previews `create_collection`.
+ *  - Otherwise previews `mint_seal` (returns `null` if brand is undeployed).
+ */
+export function buildProvisionPreviewManifest(
+  input: ProvisionPreviewInput,
+): string | null {
+  if (!input.sealGlobalId) {
+    if (!input.sealResource) return null;
+    return buildSealMintManifest({
+      account: input.account,
+      sealResource: input.sealResource,
+      imageUrl: input.imageUrl,
+    });
+  }
+  return buildSignCollectionCreateManifest({
+    account: input.account,
+    sealGlobalId: input.sealGlobalId,
+    sealAddress: input.sealResource,
+    networkId: input.networkId,
+    collectionName: input.collectionName,
+    symbol: input.symbol,
+    imageUrl: input.imageUrl,
+    issuer: input.issuer,
+    extraMetadata: input.extraMetadata,
+  });
 }

@@ -90,6 +90,10 @@
         "title": "Colección de Firma",
         "description": "Crea y gestiona la colección de Radix Seal donde viven tus firmas e invitaciones, y la identidad de emisor que ve quien las recibe."
       },
+      "sign-audit": {
+        "title": "Auditoría y Registro",
+        "description": "Inspecciona expedientes, firmantes, NFTs e integridad criptográfica de todas tus colecciones Radix Seal o audita cualquier colección pública en solo lectura."
+      },
       "sign-document": {
         "title": "Firmar Documento",
         "description": "Firma un archivo con tu wallet de Radix, fuera de cadena o anclado en el ledger como NFT soulbound. El archivo se hashea localmente y nunca se sube.",

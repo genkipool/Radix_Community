@@ -12,12 +12,13 @@ import { deriveChallenge, randomNonceHex } from '../lib/hash';
 import {
   appendSignature,
   buildEnvelope,
+  createAttestationPayload,
   extractDisclosedName,
   extractDisclosedEmail,
 } from '../lib/certificate';
 import {
-  buildSignCollectionCreateManifest,
-  buildSignatureMintManifest,
+  buildSignatureOrFirstCollectionManifest,
+  nftGlobalId,
 } from '../lib/sign-request';
 import {
   findSealAndCollection,
@@ -229,27 +230,19 @@ export function useDocumentSign() {
     const localIdNum = collection ? collection.totalSupply + 1 : 1;
     // A stand-alone anchor has no on-ledger invitation, so `request` is empty;
     // verification (`findSignerSignature`) keys on kind + doc hash + signer only.
-    const manifest = collection
-      ? buildSignatureMintManifest({
-          account,
-          sealGlobalId: seal.globalId,
-          collection: collection.resourceAddress,
-          nextId: localIdNum,
-          docHash: input.docHash,
-          networkId,
-          request: '',
-          imageUrl,
-          issuedAt,
-        })
-      : buildSignCollectionCreateManifest({
-          account,
-          sealGlobalId: seal.globalId,
-          sealAddress,
-          networkId,
-          collectionName: input.collectionName || '',
-          imageUrl,
-          firstSignature: { docHash: input.docHash, request: '', signedAt: issuedAt },
-        });
+    const manifest = buildSignatureOrFirstCollectionManifest({
+      account,
+      sealGlobalId: seal.globalId,
+      sealAddress,
+      collection: collection?.resourceAddress ?? null,
+      nextId: localIdNum,
+      docHash: input.docHash,
+      networkId,
+      request: '',
+      imageUrl,
+      issuedAt,
+      collectionName: input.collectionName || '',
+    });
 
     const tx = await sendTransaction(manifest);
     if (!tx) throw new Error('onchain_failed');
@@ -269,7 +262,7 @@ export function useDocumentSign() {
       nfts: [
         {
           signerAccount: account,
-          nftGlobalId: `${resourceAddress}:${localId}`,
+          nftGlobalId: nftGlobalId(resourceAddress, localIdNum),
           localId,
         },
       ],
@@ -292,24 +285,17 @@ export function useDocumentSign() {
     }
 
     const isMulti = input.coSigners.length > 0;
-    // Required signers are fixed before the first signature (they are hashed
-    // into the challenge). Sorted so every party derives the same challenge.
-    const signers = isMulti
-      ? [...new Set([input.signerAccount ?? '', ...input.coSigners])]
-          .filter(Boolean)
-          .sort()
-      : [];
-
-    const payload: AttestationPayload = {
-      v: 1,
+    const payload: AttestationPayload = createAttestationPayload({
       docHash: input.docHash,
-      hashAlg: 'blake2b-256',
       fileName: input.fileName,
       fileSize: input.fileSize,
       message: input.message,
       disclosure: input.disclosure,
       email: input.includeEmail,
-      signers,
+      // Required signers are fixed before the first signature (they are hashed
+      // into the challenge). Sorted so every party derives the same challenge.
+      signers: isMulti ? [input.signerAccount ?? '', ...input.coSigners] : [],
+      sortSigners: isMulti,
       // The network's clock, not this browser's. It sits INSIDE the payload, so
       // the ROLA proof commits to it — but a value the signer's own machine
       // made up is only ever a signed assertion, and this one a verifier can
@@ -317,7 +303,7 @@ export function useDocumentSign() {
       timestamp: await fetchLedgerNow(activeNetworkId),
       networkId: activeNetworkId,
       nonce: randomNonceHex(),
-    };
+    });
     const challenge = deriveChallenge(payload);
 
     try {

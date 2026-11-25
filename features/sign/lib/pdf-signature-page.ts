@@ -21,11 +21,12 @@
 import type { PDFDocument } from 'pdf-lib';
 import type { AttestationEnvelope, SignatureEntry } from '../types/sign.types';
 import type { SignDictionary } from '../types/dictionary';
-import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
+import { NETWORKS } from '@/features/wallet/constants/network';
 import type { Network } from '@/features/dashboard/types';
 import { SEAL_IMAGE_PATH } from '../constants/seal';
 import { findCollectionIssuer, findCollectionProfile } from '../services/sealDiscovery';
 import { explorerTxUrl } from './explorer';
+import { optionalNetworkNameForId, splitNftGlobalId } from './network';
 import { buildShareUrl, parseRequestKey } from './share';
 import { pdfSafeText } from './pdf-text';
 import {
@@ -174,7 +175,7 @@ export function signatureNftOf(
 
 /** The collection out of an NFT address: `resource_…:#7#` → `resource_…`. */
 function nftResource(globalId: string): string {
-  return globalId.split(':')[0] || globalId;
+  return splitNftGlobalId(globalId).resource;
 }
 
 /**
@@ -248,13 +249,6 @@ async function signatureNftNames(
   return Object.fromEntries(named.filter(([, name]) => name));
 }
 
-/** The explorer's name for a network id, or undefined when it has no page. */
-function explorerNetworkOf(networkId: number): Network | undefined {
-  if (networkId === RadixNetworkId.Mainnet) return 'mainnet';
-  if (networkId === RadixNetworkId.Stokenet) return 'stokenet';
-  return undefined;
-}
-
 /**
  * Builds the visible signature-certificate page options for an embedded PDF:
  * localised labels, the certificate's own network name, a verify URL (also
@@ -284,7 +278,7 @@ export async function signaturePageOptions(
     verifyUrl: verifyUrlFor(env, origin, locale),
     networkName:
       NETWORKS[env.payload.networkId]?.networkName ?? `#${env.payload.networkId}`,
-    network: explorerNetworkOf(env.payload.networkId),
+    network: optionalNetworkNameForId(env.payload.networkId),
     locale,
     sealImageUrl: origin ? `${origin}${SEAL_IMAGE_PATH}` : undefined,
     origin: origin || undefined,

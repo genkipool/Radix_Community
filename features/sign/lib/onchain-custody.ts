@@ -25,6 +25,25 @@ import {
   RESERVED_COLLECTION_METADATA_KEYS,
   SIGN_NFT_FIELDS,
 } from './sign-request';
+import {
+  allAccountNonFungibleResources,
+  entityDetails,
+  entityDetailsWithLedger,
+  fetchLedgerTimestampNow,
+  metadataString,
+  sealFromOwnerRule,
+  type EntityDetailsItem,
+} from './gateway-seal';
+
+export {
+  allAccountNonFungibleResources,
+  entityDetails,
+  entityDetailsWithLedger,
+  fetchLedgerTimestampNow,
+  metadataString,
+  sealFromOwnerRule,
+  type EntityDetailsItem,
+};
 
 const MAX_CANDIDATE_RESOURCES = 30;
 /** How many of an account's signatures for one document we carry back. */
@@ -97,47 +116,6 @@ interface NfLocationResponse {
   }>;
 }
 
-export interface EntityDetailsItem {
-  address?: string;
-  metadata?: {
-    items?: Array<{
-      key?: string;
-      value?: { typed?: { type?: string; value?: unknown; values?: string[] } };
-      is_locked?: boolean;
-    }>;
-  };
-  details?: {
-    type?: string;
-    total_supply?: string;
-    total_minted?: string;
-    total_burned?: string;
-    non_fungible_data_mutable_fields?: string[];
-    role_assignments?: {
-      owner?: { rule?: unknown; updater?: string };
-      entries?: Array<{
-        role_key?: { module?: string; name?: string };
-        assignment?: { resolution?: string; explicit_rule?: unknown };
-        updater_roles?: unknown[];
-      }>;
-    };
-  };
-  non_fungible_resources?: {
-    items?: Array<{
-      resource_address?: string;
-      vaults?: { items?: Array<{ items?: string[] }> };
-    }>;
-    next_cursor?: string;
-  };
-}
-
-interface EntityDetailsResponse {
-  ledger_state?: {
-    state_version?: number;
-    proposer_round_timestamp?: string;
-  };
-  items?: EntityDetailsItem[];
-}
-
 export function nfFieldMap(
   nf: NonNullable<NfDataResponse['non_fungible_ids']>[number] | undefined,
 ): Record<string, string> {
@@ -146,55 +124,6 @@ export function nfFieldMap(
     if (f.field_name && typeof f.value === 'string') out[f.field_name] = f.value;
   }
   return out;
-}
-
-export function metadataString(item: EntityDetailsItem | undefined, key: string): string {
-  const typed = item?.metadata?.items?.find((m) => m.key === key)?.value?.typed;
-  return typeof typed?.value === 'string' ? typed.value : '';
-}
-
-export async function entityDetailsWithLedger(
-  network: Network,
-  addresses: string[],
-  optIns?: Record<string, unknown>,
-): Promise<{
-  items: EntityDetailsItem[];
-  ledgerStateVersion: number | null;
-  ledgerTimestamp: string | null;
-}> {
-  if (addresses.length === 0) {
-    return { items: [], ledgerStateVersion: null, ledgerTimestamp: null };
-  }
-  const items: EntityDetailsItem[] = [];
-  let ledgerStateVersion: number | null = null;
-  let ledgerTimestamp: string | null = null;
-  for (let i = 0; i < addresses.length; i += 20) {
-    const data = await gatewayPost<EntityDetailsResponse>(
-      network,
-      '/state/entity/details',
-      {
-        addresses: addresses.slice(i, i + 20),
-        aggregation_level: 'Vault',
-        ...(optIns ? { opt_ins: optIns } : {}),
-      },
-    );
-    items.push(...(data.items ?? []));
-    if (ledgerStateVersion == null && typeof data.ledger_state?.state_version === 'number') {
-      ledgerStateVersion = data.ledger_state.state_version;
-    }
-    if (ledgerTimestamp == null && typeof data.ledger_state?.proposer_round_timestamp === 'string') {
-      ledgerTimestamp = data.ledger_state.proposer_round_timestamp;
-    }
-  }
-  return { items, ledgerStateVersion, ledgerTimestamp };
-}
-
-export async function entityDetails(
-  network: Network,
-  addresses: string[],
-  optIns?: Record<string, unknown>,
-): Promise<EntityDetailsItem[]> {
-  return (await entityDetailsWithLedger(network, addresses, optIns)).items;
 }
 
 /** One NFT's locked fields together with the ledger point it was minted at. */
@@ -294,36 +223,6 @@ export async function ledgerTimestamp(
   stateVersion: number,
 ): Promise<string | null> {
   return (await ledgerCommit(network, stateVersion)).confirmedAt;
-}
-
-/**
- * Extracts the seal NFT global id from a collection's LOCKED owner rule.
- * Returns null unless the rule requires exactly a non-fungible (no AllowAll
- * escape hatch a forger could hide behind).
- */
-export function sealFromOwnerRule(
-  item: EntityDetailsItem | undefined,
-): { resource: string; localId: string } | null {
-  const owner = item?.details?.role_assignments?.owner;
-  if (!owner) return null;
-  const json = JSON.stringify(owner);
-  if (/AllowAll/.test(json)) return null;
-  let resource: string | null = null;
-  let localId: string | null = null;
-  const walk = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return;
-    const obj = node as Record<string, unknown>;
-    if (
-      typeof obj.resource_address === 'string' &&
-      obj.resource_address.startsWith('resource_')
-    ) {
-      resource = obj.resource_address;
-    }
-    if (typeof obj.simple_rep === 'string') localId = obj.simple_rep;
-    for (const v of Object.values(obj)) walk(v);
-  };
-  walk(owner);
-  return resource && localId ? { resource, localId } : null;
 }
 
 /** Account that holds (unburned) `localId` of `resource`, or null. */
@@ -573,56 +472,6 @@ export async function ledgerCommitsBatch(
     for (const [v, commit] of resolved) out.set(v, commit);
   }
   return out;
-}
-
-/**
- * Current consensus time as ISO-8601 from `/status/gateway-status`, falling back
- * to the local clock only if the Gateway is temporarily unreachable.
- */
-export async function fetchLedgerTimestampNow(network: Network): Promise<string> {
-  try {
-    const status = await gatewayPost<{
-      ledger_state?: { proposer_round_timestamp?: string };
-    }>(network, '/status/gateway-status', {});
-    const stamp = status.ledger_state?.proposer_round_timestamp;
-    if (stamp && !Number.isNaN(Date.parse(stamp))) return stamp;
-  } catch {
-    /* fallback below */
-  }
-  return new Date().toISOString();
-}
-
-/**
- * Fetches every non-fungible resource held by `account`, following pagination
- * so signers with many NFT resources do not push their signing collection off
- * the first page.
- */
-export async function allAccountNonFungibleResources(
-  network: Network,
-  account: string,
-  optIns?: Record<string, unknown>,
-): Promise<Array<{ resource_address?: string; vaults?: { items?: Array<{ items?: string[] }> } }>> {
-  const [accountItem] = await entityDetails(network, [account], optIns);
-  const first = accountItem?.non_fungible_resources;
-  const items = [...(first?.items ?? [])];
-  let cursor = first?.next_cursor;
-  let pages = 0;
-  while (cursor && pages < 10) {
-    pages += 1;
-    const page = await gatewayPost<{
-      items?: Array<{ resource_address?: string; vaults?: { items?: Array<{ items?: string[] }> } }>;
-      next_cursor?: string;
-    }>(network, '/state/entity/page/non-fungibles/', {
-      address: account,
-      aggregation_level: 'Vault',
-      cursor,
-      ...(optIns ? { opt_ins: optIns } : {}),
-    }).catch(() => null);
-    if (!page) break;
-    items.push(...(page.items ?? []));
-    cursor = page.next_cursor;
-  }
-  return items;
 }
 
 function numericNftId(localId: string): number {

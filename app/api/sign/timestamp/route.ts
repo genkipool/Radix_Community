@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { RATE_LIMITS, clientIp, rateLimit } from '@/lib/rateLimit';
+import { enforceSignRateLimit } from '@/features/sign/lib/rate-limit.server';
 import { fetchTimeStampToken } from '@/features/sign/lib/tsa';
 import { verifyTimeStampToken } from '@/features/sign/lib/tsa-verify';
 
@@ -26,13 +26,8 @@ const bodySchema = z
   .strict();
 
 export async function POST(req: NextRequest) {
-  const rl = await rateLimit(RATE_LIMITS.sign, clientIp(req.headers));
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'rate_limited' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
-    );
-  }
+  const limited = await enforceSignRateLimit(req);
+  if (limited) return limited;
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

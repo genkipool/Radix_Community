@@ -120,6 +120,47 @@ export function buildEnvelope(
 }
 
 /**
+ * Single source of truth for building a canonical `AttestationPayload`.
+ *
+ * Guarantees `v: 1`, `hashAlg: 'blake2b-256'`, and a deduplicated, sorted
+ * `signers` array when `sortSigners` is enabled (used for ROLA multi-party
+ * challenges so every signer derives the exact same challenge hash).
+ */
+export function createAttestationPayload(input: {
+  docHash: string;
+  fileName: string;
+  fileSize: number;
+  message?: string;
+  disclosure?: AttestationPayload['disclosure'];
+  email?: boolean;
+  signers?: string[];
+  /** Deduplicate and sort `signers` so ROLA challenges are deterministic. */
+  sortSigners?: boolean;
+  timestamp: string;
+  networkId: number;
+  nonce: string;
+}): AttestationPayload {
+  const rawSigners = (input.signers ?? []).map((s) => s.trim()).filter(Boolean);
+  const signers = input.sortSigners
+    ? [...new Set(rawSigners)].sort()
+    : rawSigners;
+  return {
+    v: 1,
+    docHash: input.docHash,
+    hashAlg: 'blake2b-256',
+    fileName: input.fileName,
+    fileSize: input.fileSize,
+    message: input.message ?? '',
+    disclosure: input.disclosure ?? 'none',
+    email: input.email ?? false,
+    signers,
+    timestamp: input.timestamp,
+    networkId: input.networkId,
+    nonce: input.nonce,
+  };
+}
+
+/**
  * Builds a certificate for an ON-LEDGER (multi-party) signing, so every mode
  * yields a downloadable artifact. Its signatures carry NO ROLA proof
  * (`proof: null`): each is proven by the signer's on-chain signature NFT, which
@@ -161,20 +202,15 @@ export function buildOnChainCertificate(input: {
   createdAt?: string | null;
 }): AttestationEnvelope {
   const now = new Date().toISOString();
-  const payload: AttestationPayload = {
-    v: 1,
+  const payload = createAttestationPayload({
     docHash: input.docHash,
-    hashAlg: 'blake2b-256',
     fileName: input.fileName,
     fileSize: input.fileSize,
-    message: '',
-    disclosure: 'none',
-    email: false,
     signers: input.requiredSigners,
     timestamp: input.createdAt || now,
     networkId: input.networkId,
     nonce: input.nonce,
-  };
+  });
   return {
     payload,
     signatures: input.signedAccounts.map(({ account, signedAt, txId, nft }) => ({
@@ -218,6 +254,18 @@ export function signedAccounts(envelope: AttestationEnvelope): string[] {
 export function pendingSigners(envelope: AttestationEnvelope): string[] {
   const signed = new Set(signedAccounts(envelope));
   return envelope.payload.signers.filter((a) => !signed.has(a));
+}
+
+/** Structural type guard for a parsed `.radixsig.json` attestation envelope. */
+export function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
+  if (!v || typeof v !== 'object') return false;
+  const e = v as Record<string, unknown>;
+  const payload = e.payload as Record<string, unknown> | undefined;
+  return (
+    typeof payload?.docHash === 'string' &&
+    Array.isArray(payload?.signers) &&
+    Array.isArray(e.signatures)
+  );
 }
 
 /**

@@ -20,12 +20,8 @@
  * is that it is now a falsifiable one.
  */
 import { gatewayPost } from '@/services/gateway/bases';
-import type { Network } from '@/services/gateway/client';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
-
-interface GatewayStatusResponse {
-  ledger_state?: { proposer_round_timestamp?: string };
-}
+import { fetchLedgerTimestampNow } from './gateway-seal';
+import { networkNameForId } from './network';
 
 interface CommittedDetailsResponse {
   transaction?: { confirmed_at?: string; round_timestamp?: string };
@@ -48,8 +44,7 @@ export async function fetchTransactionTime(
   intentHash: string,
 ): Promise<string | null> {
   if (!intentHash) return null;
-  const net: Network =
-    networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+  const net = networkNameForId(networkId);
   try {
     const data = await gatewayPost<CommittedDetailsResponse>(
       net,
@@ -72,19 +67,5 @@ export async function fetchTransactionTime(
  * two clocks agree to within seconds in the normal case anyway.
  */
 export async function fetchLedgerNow(networkId: number): Promise<string> {
-  const net: Network =
-    networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-  try {
-    const status = await gatewayPost<GatewayStatusResponse>(
-      net,
-      '/status/gateway-status',
-      {},
-    );
-    const stamp = status.ledger_state?.proposer_round_timestamp;
-    // Only accept something that actually parses as a date.
-    if (stamp && !Number.isNaN(Date.parse(stamp))) return stamp;
-  } catch {
-    /* fall through to the local clock */
-  }
-  return new Date().toISOString();
+  return fetchLedgerTimestampNow(networkNameForId(networkId));
 }

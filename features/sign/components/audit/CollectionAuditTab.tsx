@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, FileSearch, RefreshCw, ShieldAlert } from 'lucide-react';
+import {
+  Building2,
+  ExternalLink,
+  FileSearch,
+  FlaskConical,
+  RefreshCw,
+  ShieldAlert,
+} from 'lucide-react';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { useLanguage } from '@/context/LanguageContext';
 import { downloadTextFile } from '@/features/console/lib/file-utils';
 import { networkOfAddress } from '@/features/dashboard/lib/routes';
@@ -11,6 +19,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { SEAL_IMAGE_PATH } from '../../constants/seal';
 import { useCollectionAudit } from '../../hooks/useCollectionAudit';
+import { useDomainVerification } from '../../hooks/useDomainVerification';
 import {
   buildAuditJsonPackage,
   recordsToAuditCsv,
@@ -27,23 +36,30 @@ import {
   type AuditFilterState,
 } from '../../lib/collection-audit';
 import { readBrandAccent } from '../../lib/pdf-layout';
-import { networkIdFromResource } from '../../lib/share';
+import {
+  RADIX_RESOURCE_RE,
+  networkIdFromResource,
+  networkNameForId,
+} from '../../lib/network';
 import type { UserSignCollection } from '../../services/sealDiscovery';
+import { DomainVerificationDrawer } from '../collection/DomainVerificationDrawer';
 import {
   buildAuditShareUrl,
+  entityExplorerHref,
   explorerNetworkForId,
+  formatUtcTimestamp,
   type AuditLabels,
+  type DomainVerifyLabels,
 } from './AuditFormatters';
 import { AuditFilterBar } from './AuditFilterBar';
 import { AuditHeader, type AuditExportFormat } from './AuditHeader';
+import { AuditIntegrityTab } from './AuditIntegrityTab';
 import { AuditKpiStrip } from './AuditKpiStrip';
 import { AuditRecordsTable } from './AuditRecordsTable';
 import { AuditSignersDirectory } from './AuditSignersDirectory';
 
-type SubTab = 'records' | 'signers';
+type SubTab = 'records' | 'signers' | 'overview' | 'integrity' | 'external';
 type SourceMode = 'owned' | 'external';
-
-const COLLECTION_RE = /^resource_(rdx|tdx_2_)1[a-z0-9]+$/;
 
 /**
  * Institutional Audit & Registry view for Radix Seal signing collections.
@@ -56,6 +72,7 @@ const COLLECTION_RE = /^resource_(rdx|tdx_2_)1[a-z0-9]+$/;
  */
 export function CollectionAuditTab({
   labels,
+  domainVerifyLabels,
   isConnected,
   ownedCollections,
   activeCollection,
@@ -64,6 +81,7 @@ export function CollectionAuditTab({
   initialToDate,
 }: {
   labels: AuditLabels;
+  domainVerifyLabels: DomainVerifyLabels;
   isConnected: boolean;
   ownedCollections: UserSignCollection[];
   activeCollection: string | null;
@@ -76,7 +94,7 @@ export function CollectionAuditTab({
   const { entries, addEntry, updateEntry, deleteEntry } = useAddressBook();
 
   const initialExternal =
-    initialCollection && COLLECTION_RE.test(initialCollection.trim())
+    initialCollection && RADIX_RESOURCE_RE.test(initialCollection.trim())
       ? initialCollection.trim()
       : '';
 
@@ -88,7 +106,9 @@ export function CollectionAuditTab({
   const [externalTarget, setExternalTarget] = useState(initialExternal);
   const [externalError, setExternalError] = useState('');
 
-  const [subTab, setSubTab] = useState<SubTab>('records');
+  const [subTab, setSubTab] = useState<SubTab>(
+    !isConnected && !initialExternal ? 'external' : 'records',
+  );
   const [filters, setFilters] = useState<AuditFilterState>({
     ...DEFAULT_AUDIT_FILTERS,
     fromDate: initialFromDate ?? '',
@@ -96,6 +116,7 @@ export function CollectionAuditTab({
   });
   const [includeAliases, setIncludeAliases] = useState(false);
   const [exporting, setExporting] = useState<AuditExportFormat | null>(null);
+  const [domainDrawerOpen, setDomainDrawerOpen] = useState(false);
 
   const effectiveMode: SourceMode =
     !isConnected && mode === 'owned' ? 'external' : mode;
@@ -146,12 +167,20 @@ export function CollectionAuditTab({
   const {
     audit,
     loading,
-    fetching,
     error,
     loadingOlder,
     loadOlder,
-    refresh,
   } = useCollectionAudit(targetNetworkId, targetCollection);
+
+  const liveDomain = useDomainVerification({
+    orgUrl: audit?.found ? audit.issuer.orgUrl : null,
+    collection: audit?.found ? audit.collection : null,
+    account: audit?.found ? audit.issuer.account : null,
+    initialData: audit?.found ? audit.issuer.domainVerification : null,
+  });
+  const effectiveDomainVerification =
+    liveDomain.result ??
+    (audit?.found ? (audit.issuer.domainVerification ?? null) : null);
 
   const aliasOf = (account: string): string | undefined =>
     entries.find(
@@ -180,12 +209,14 @@ export function CollectionAuditTab({
   const handleExternalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const clean = externalInput.trim();
-    if (!COLLECTION_RE.test(clean)) {
+    if (!RADIX_RESOURCE_RE.test(clean)) {
       setExternalError(labels.selector.invalidAddress);
       return;
     }
     setExternalError('');
+    setMode('external');
     setExternalTarget(clean);
+    setSubTab('records');
   };
 
   const filteredRecords =
@@ -193,6 +224,14 @@ export function CollectionAuditTab({
       ? filterAuditRecords(audit.records, effectiveFilters, aliasOf)
       : [];
   const kpis = computeAuditKpis(filteredRecords);
+
+  const highlightedDays = new Set<string>();
+  if (audit && audit.found) {
+    for (const r of audit.records) {
+      const iso = r.committedAt ?? r.issuedAt;
+      if (iso && iso.length >= 10) highlightedDays.add(iso.slice(0, 10));
+    }
+  }
 
   const hasFilters = hasActiveAuditFilters(effectiveFilters);
   const filteredSigners =
@@ -225,8 +264,7 @@ export function CollectionAuditTab({
     if (!audit || !audit.found) return;
     setExporting(format);
     const shortId = audit.collection.slice(-8);
-    const netTag =
-      audit.networkId === RadixNetworkId.Stokenet ? 'stokenet' : 'mainnet';
+    const netTag = networkNameForId(audit.networkId);
     try {
       if (format === 'csv-records') {
         const csv = recordsToAuditCsv(audit, filteredRecords, {
@@ -291,193 +329,90 @@ export function CollectionAuditTab({
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Intro & source selector (Institution vs External Auditor) */}
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            <strong style={{ color: 'var(--color-text-main)' }}>
-              {labels.intro.title}.
-            </strong>{' '}
-            {labels.intro.body}
-          </p>
-
-          {isConnected && (
-            <div
-              className="inline-flex shrink-0 rounded-xl border p-0.5 text-xs"
-              style={{
-                background: 'var(--color-surface)',
-                borderColor: 'var(--color-card-border)',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setMode('owned')}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-colors"
-                style={{
-                  background:
-                    effectiveMode === 'owned' ? 'var(--color-card-bg)' : 'transparent',
-                  color:
-                    effectiveMode === 'owned'
-                      ? 'var(--color-text-main)'
-                      : 'var(--color-text-muted)',
-                }}
-              >
-                <Building2 className="size-3.5" />
-                {labels.selector.myCollections}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('external')}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-colors"
-                style={{
-                  background:
-                    effectiveMode === 'external' ? 'var(--color-card-bg)' : 'transparent',
-                  color:
-                    effectiveMode === 'external'
-                      ? 'var(--color-text-main)'
-                      : 'var(--color-text-muted)',
-                }}
-              >
-                <FileSearch className="size-3.5" />
-                {labels.selector.externalMode}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Source bar */}
-        {effectiveMode === 'owned' ? (
-          networkOwnedCollections.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {networkOwnedCollections.map((c) => {
-                const isSelected = c.resourceAddress === targetCollection;
-                return (
-                  <button
-                    key={c.resourceAddress}
-                    type="button"
-                    onClick={() => setSelectedOwned(c.resourceAddress)}
-                    className="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors"
-                    style={{
-                      background: isSelected
-                        ? 'color-mix(in srgb, var(--color-primary) 12%, transparent)'
-                        : 'var(--color-surface)',
-                      borderColor: isSelected
-                        ? 'var(--color-primary)'
-                        : 'var(--color-card-border)',
-                      color: isSelected
-                        ? 'var(--color-primary)'
-                        : 'var(--color-text-main)',
-                    }}
-                  >
-                    <span>{c.name || truncateAddress(c.resourceAddress, 8, 6)}</span>
-                    <span
-                      className="font-mono text-[10px] tabular-nums"
-                      style={{ color: 'var(--color-text-muted)' }}
-                    >
-                      ({c.totalSupply})
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <p
-              className="rounded-xl border px-4 py-3 text-xs leading-relaxed"
-              style={{
-                background: 'var(--color-surface)',
-                borderColor: 'var(--color-card-border)',
-                color: 'var(--color-text-muted)',
-              }}
-            >
-              {labels.selector.noOwnedCollections}
-            </p>
-          )
-        ) : (
-          <form onSubmit={handleExternalSubmit} className="space-y-2">
-            {!isConnected && (
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.selector.connectTip}
-              </p>
-            )}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                value={externalInput}
-                onChange={(e) => {
-                  setExternalInput(e.target.value);
-                  setExternalError('');
-                }}
-                placeholder={labels.selector.externalPlaceholder}
-                className="h-10 flex-1 rounded-xl border px-3 font-mono text-xs outline-none focus:border-[var(--color-primary)]"
-                style={{
-                  background: 'var(--color-card-bg)',
-                  borderColor: 'var(--color-card-border)',
-                  color: 'var(--color-text-main)',
-                }}
-              />
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow-sm transition-opacity hover:opacity-90"
-              >
-                <FileSearch className="size-3.5" />
-                {labels.selector.externalLoad}
-              </button>
-            </div>
-            {externalError ? (
-              <p className="text-xs font-medium" style={{ color: 'var(--color-danger)' }}>
-                {externalError}
-              </p>
-            ) : (
-              <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.selector.externalHint}
-              </p>
-            )}
-          </form>
-        )}
+  const externalAuditorForm = (
+    <form onSubmit={handleExternalSubmit} className="space-y-3 py-1">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          type="text"
+          value={externalInput}
+          onChange={(e) => {
+            setExternalInput(e.target.value);
+            setExternalError('');
+          }}
+          placeholder={labels.selector.externalPlaceholder}
+          className="h-9 flex-1 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card-bg)] px-3 font-mono text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)]"
+        />
+        <button
+          type="submit"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-bold text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow-sm transition-opacity hover:opacity-90"
+        >
+          <FileSearch className="size-3.5" />
+          {labels.selector.externalLoad}
+        </button>
       </div>
+      {externalError ? (
+        <p className="text-xs font-medium text-[var(--color-danger)]">
+          {externalError}
+        </p>
+      ) : (
+        <p className="text-xs text-[var(--color-text-muted)]">
+          {!isConnected ? labels.selector.connectTip : labels.selector.externalHint}
+        </p>
+      )}
+      {isConnected && effectiveMode === 'external' && networkOwnedCollections.length > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setMode('owned');
+            setSubTab('records');
+          }}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+        >
+          <Building2 className="size-3.5" />
+          {labels.selector.myCollections}
+        </button>
+      )}
+    </form>
+  );
 
+  return (
+    <div className="space-y-5">
       {/* Loading / Error / Not Found States */}
       {loading && targetCollection && (
-        <div
-          className="flex items-center gap-2.5 border-t py-10 text-sm"
-          style={{
-            borderColor: 'var(--color-card-border)',
-            color: 'var(--color-text-muted)',
-          }}
-        >
-          <RefreshCw className="size-4 animate-spin" style={{ color: 'var(--color-primary)' }} />
+        <div className="flex items-center gap-2.5 border-t border-[var(--color-card-border)] py-10 text-sm text-[var(--color-text-muted)]">
+          <RefreshCw className="size-4 animate-spin text-[var(--color-primary)]" />
           <span>{labels.states.loading}</span>
         </div>
       )}
 
       {!loading && error && (
-        <div
-          className="flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs"
-          style={{
-            borderColor: 'var(--color-danger)',
-            background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
-            color: 'var(--color-danger)',
-          }}
-        >
+        <div className="flex items-start gap-2.5 border-l-2 border-[var(--color-danger)] pl-3 py-1 text-xs text-[var(--color-danger)]">
           <ShieldAlert className="mt-0.5 size-4 shrink-0" />
           <span>{labels.states.error.replace('{message}', error)}</span>
         </div>
       )}
 
       {!loading && audit && !audit.found && (
-        <div
-          className="rounded-xl border px-4 py-4 space-y-1 text-xs"
-          style={{
-            borderColor: 'var(--color-warning)',
-            background: 'color-mix(in srgb, var(--color-warning) 8%, transparent)',
-          }}
-        >
-          <p className="font-bold" style={{ color: 'var(--color-text-main)' }}>
-            {labels.states.notFound}
-          </p>
-          <p style={{ color: 'var(--color-text-muted)' }}>{labels.states.notFoundHint}</p>
+        <div className="space-y-4">
+          <div className="border-l-2 border-[var(--color-warning)] pl-3 py-1 space-y-1 text-xs">
+            <p className="font-bold text-[var(--color-text-main)]">
+              {labels.states.notFound}
+            </p>
+            <p className="text-[var(--color-text-muted)]">{labels.states.notFoundHint}</p>
+          </div>
+          {externalAuditorForm}
+        </div>
+      )}
+
+      {/* No collection loaded yet (disconnected or account without collections) */}
+      {!loading && !targetCollection && (
+        <div className="space-y-3">
+          {isConnected && networkOwnedCollections.length === 0 && (
+            <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
+              {labels.selector.noOwnedCollections}
+            </p>
+          )}
+          {externalAuditorForm}
         </div>
       )}
 
@@ -487,88 +422,85 @@ export function CollectionAuditTab({
           <AuditHeader
             audit={audit}
             labels={labels}
+            domainVerifyLabels={domainVerifyLabels}
+            domainVerification={effectiveDomainVerification}
+            domainChecking={liveDomain.checking}
+            onOpenDomainDrawer={() => setDomainDrawerOpen(true)}
             locale={language}
-            fetching={fetching}
             exporting={exporting}
             includeAliases={includeAliases}
+            ownedCollections={networkOwnedCollections}
+            onSelectCollection={(addr) => {
+              setMode('owned');
+              setSelectedOwned(addr);
+              setSubTab((prev) => (prev === 'external' ? 'records' : prev));
+            }}
             onToggleIncludeAliases={setIncludeAliases}
-            onRefresh={() => void refresh()}
             onCopyShareLink={handleCopyShareLink}
             onExport={handleExport}
           />
 
-          <AuditKpiStrip
-            kpis={kpis}
-            labels={labels}
-            onSelectAnomalies={() => {
-              setSubTab('records');
-              setFilters({ ...effectiveFilters, status: 'anomaly' });
-            }}
-          />
-
-          {audit.totalSupply === 0 ? (
-            <div
-              className="border-t py-8 space-y-1 text-center"
-              style={{ borderColor: 'var(--color-card-border)' }}
-            >
-              <p className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
-                {labels.states.emptyCollection}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.states.emptyCollectionHint}
-              </p>
-            </div>
-          ) : (
-            <>
-              <AuditFilterBar
-                filters={effectiveFilters}
-                onChange={setFilters}
-                labels={labels}
-                signerAlias={
-                  effectiveFilters.signerFilter
-                    ? aliasOf(effectiveFilters.signerFilter)
-                    : undefined
-                }
-              />
-
-              {/* Sub-tabs: Records Registry vs Signers Directory */}
-              <div
-                className="flex gap-6 border-b"
-                style={{ borderColor: 'var(--color-card-border)' }}
+          {/* 5-tab segmentation: Records | Signers & NFTs | Overview | Integrity & Privacy | External Auditor */}
+          <div className="flex flex-wrap gap-x-6 gap-y-2 border-b border-[var(--color-card-border)]">
+            {(
+              [
+                ['records', `${labels.subtabs.records} (${filteredRecords.length})`],
+                ['signers', `${labels.subtabs.signers} (${filteredSigners.length})`],
+                ['overview', labels.subtabs.overview],
+                ['integrity', labels.subtabs.integrity],
+                ['external', labels.selector.externalMode],
+              ] as const
+            ).map(([key, text]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSubTab(key)}
+                className="relative pb-2.5 text-xs font-bold transition-colors sm:text-sm"
+                style={{
+                  color:
+                    subTab === key
+                      ? 'var(--color-text-main)'
+                      : 'var(--color-text-muted)',
+                }}
               >
-                {(
-                  [
-                    ['records', `${labels.subtabs.records} (${filteredRecords.length})`],
-                    ['signers', `${labels.subtabs.signers} (${filteredSigners.length})`],
-                  ] as const
-                ).map(([key, text]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSubTab(key)}
-                    className="relative pb-2.5 text-xs font-bold transition-colors sm:text-sm"
+                {text}
+                {subTab === key && (
+                  <span
+                    className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
                     style={{
-                      color:
-                        subTab === key
-                          ? 'var(--color-text-main)'
-                          : 'var(--color-text-muted)',
+                      background:
+                        'linear-gradient(to right, var(--color-accent), var(--color-primary))',
                     }}
-                  >
-                    {text}
-                    {subTab === key && (
-                      <span
-                        className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
-                        style={{
-                          background:
-                            'linear-gradient(to right, var(--color-accent), var(--color-primary))',
-                        }}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
+                  />
+                )}
+              </button>
+            ))}
+          </div>
 
-              {subTab === 'records' ? (
+          {subTab === 'records' && (
+            audit.totalSupply === 0 ? (
+              <div className="py-8 space-y-1 text-center">
+                <p className="text-sm font-bold text-[var(--color-text-main)]">
+                  {labels.states.emptyCollection}
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {labels.states.emptyCollectionHint}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <AuditFilterBar
+                  filters={effectiveFilters}
+                  onChange={setFilters}
+                  labels={labels}
+                  signerAlias={
+                    effectiveFilters.signerFilter
+                      ? aliasOf(effectiveFilters.signerFilter)
+                      : undefined
+                  }
+                  highlightedDays={highlightedDays}
+                />
+
                 <AuditRecordsTable
                   records={filteredRecords}
                   totalInCollection={audit.totalSupply}
@@ -583,22 +515,129 @@ export function CollectionAuditTab({
                   aliasOf={aliasOf}
                   onLoadOlder={() => void loadOlder()}
                 />
-              ) : (
-                <AuditSignersDirectory
-                  signers={filteredSigners}
-                  networkId={audit.networkId}
-                  locale={language}
-                  labels={labels}
-                  entries={entries}
-                  onSaveAlias={handleSaveAlias}
-                  onFilterBySigner={(account) => {
-                    setFilters({ ...filters, signerFilter: account });
-                    setSubTab('records');
-                  }}
-                />
-              )}
-            </>
+              </div>
+            )
           )}
+
+          {subTab === 'signers' && (
+            <AuditSignersDirectory
+              signers={filteredSigners}
+              networkId={audit.networkId}
+              locale={language}
+              labels={labels}
+              entries={entries}
+              onSaveAlias={handleSaveAlias}
+              onFilterBySigner={(account) => {
+                setFilters({ ...filters, signerFilter: account });
+                setSubTab('records');
+              }}
+            />
+          )}
+
+          {subTab === 'overview' && (
+            <div className="space-y-5">
+              {audit.networkId === RadixNetworkId.Stokenet && (
+                <div className="flex items-start gap-2.5 border-l-2 border-[var(--color-warning)] pl-3 py-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                  <FlaskConical className="mt-0.5 size-4 shrink-0 text-[var(--color-warning)]" />
+                  <span>{labels.network.stokenetNotice}</span>
+                </div>
+              )}
+
+              <AuditKpiStrip
+                kpis={kpis}
+                labels={labels}
+                onSelectAnomalies={() => {
+                  setSubTab('records');
+                  setFilters({ ...effectiveFilters, status: 'anomaly' });
+                }}
+              />
+
+              <dl className="border-y border-[var(--color-card-border)] divide-y divide-[var(--color-card-border)] text-xs">
+                {audit.issuer.account && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                    <dt className="text-[var(--color-text-muted)]" title={labels.tooltips.issuerAccount}>
+                      {labels.header.issuerLabel}
+                    </dt>
+                    <dd className="inline-flex items-center gap-1.5 font-mono">
+                      <a
+                        href={entityExplorerHref(language, audit.issuer.account, audit.networkId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={audit.issuer.account}
+                        className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline"
+                      >
+                        {truncateAddress(audit.issuer.account, 10, 6)}
+                        <ExternalLink className="size-3" />
+                      </a>
+                      <CopyButton value={audit.issuer.account} variant="minimal" size="xs" />
+                    </dd>
+                  </div>
+                )}
+
+                {audit.issuer.orgUrl && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                    <dt className="text-[var(--color-text-muted)]">Web</dt>
+                    <dd>
+                      <a
+                        href={audit.issuer.orgUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-[var(--color-primary)] hover:underline"
+                      >
+                        {audit.issuer.orgUrl}
+                        <ExternalLink className="size-3" />
+                      </a>
+                    </dd>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <dt className="text-[var(--color-text-muted)]" title={labels.tooltips.ledgerCutoff}>
+                    {labels.header.ledgerCutoff}
+                  </dt>
+                  <dd className="tabular-nums text-[var(--color-text-main)]">
+                    <strong>
+                      {audit.ledgerStateVersion != null
+                        ? `#${audit.ledgerStateVersion.toLocaleString(language)}`
+                        : '-'}
+                    </strong>{' '}
+                    · {formatUtcTimestamp(audit.ledgerTimestamp, language).utc}
+                  </dd>
+                </div>
+              </dl>
+
+              <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
+                <strong className="text-[var(--color-text-main)]">{labels.intro.title}.</strong>{' '}
+                {labels.intro.body}
+              </p>
+            </div>
+          )}
+
+          {subTab === 'integrity' && (
+            <AuditIntegrityTab
+              audit={audit}
+              locale={language}
+              labels={labels}
+              domainVerifyLabels={domainVerifyLabels}
+              domainVerification={effectiveDomainVerification}
+              domainChecking={liveDomain.checking}
+              onOpenDomainDrawer={() => setDomainDrawerOpen(true)}
+            />
+          )}
+
+          {subTab === 'external' && externalAuditorForm}
+
+          <DomainVerificationDrawer
+            isOpen={domainDrawerOpen}
+            onClose={() => setDomainDrawerOpen(false)}
+            labels={domainVerifyLabels}
+            collection={audit.collection}
+            domain={liveDomain.domain}
+            result={effectiveDomainVerification}
+            checking={liveDomain.checking}
+            error={liveDomain.error}
+            onCheckNow={() => void liveDomain.refetch()}
+          />
         </div>
       )}
     </div>

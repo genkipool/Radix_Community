@@ -1,115 +1,79 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import {
-  BadgeCheck,
-  Check,
-  Layers,
-  Lock,
-  LockOpen,
-  Plus,
-  Trash2,
-  TriangleAlert,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { CollectionAuditTab } from '@/features/sign/components/audit/CollectionAuditTab';
-import { useTransactionPreview } from '../../hooks/useTransactionPreview';
-import {
-  SimulateButton,
-  SimulateResultCard,
-} from '../shared/SimulatePanel';
-import { buildSealMintManifest } from '@/features/sign/lib/radix-seal-manifest';
-import {
-  buildCollectionMetadataManifest,
-  buildSignCollectionCreateManifest,
-  isReservedCollectionMetadataKey,
-  MAX_COLLECTION_META_FIELDS,
-  type CollectionMetaField,
-} from '@/features/sign/lib/sign-request';
 import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGate';
-import { SafeImage } from '@/components/ui/SafeImage';
-import { useNftData } from '../../hooks/useNftData';
-import { truncateAddress } from '@/utils/formatters';
-import { RadixIcon } from '@/components/shared/RadixIcon';
 import {
-  ICON_URL_KEY,
-  ORG_NAME_KEY,
-  ORG_URL_KEY,
-  radixSealAddress,
-  sealImageUrl,
-} from '@/features/sign/constants/seal';
-import {
-  MAX_SYMBOL_LENGTH,
-  sanitizeSymbol,
-} from '@/features/sign/lib/nf-manifest-helpers';
-import {
-  useCollectionProfile,
-  useSealRequest,
   useSealSetup,
   useSignCollections,
   useUserSeals,
 } from '@/features/sign/hooks/useSealRequest';
 import type { SignDictionary } from '@/features/sign/types/dictionary';
+import { CollectionsListTab } from '@/features/sign/components/collection/CollectionsListTab';
+import { CollectionCreateTab } from '@/features/sign/components/collection/CollectionCreateTab';
+import { CollectionIdentityTab } from '@/features/sign/components/collection/CollectionIdentityTab';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
-import { OptionButtons } from '../shared/OptionButtons';
-import { TextField } from '../shared/fields';
 
-type Tab = 'collections' | 'create' | 'identity' | 'audit';
+type Tab = 'collections' | 'create' | 'identity';
 
 /**
  * Radix Seal · Collection.
  *
- * The signing model made visible: a soulbound SEAL owns a signing COLLECTION,
- * and every invitation and signature is an NFT inside it. That chain is what
- * makes an on-ledger signature attributable, and until now it had no screen of
- * its own — the collection was created inside the signing tool's onboarding and
- * never mentioned again, its issuer identity could only be set at creation, and
- * an account that ended up with two collections had no way to see or choose.
- *
- * This tool does NOT replace that onboarding: someone with no seal and no
- * collection still gets them from the sign and encrypt tools, in one click,
- * without coming here first.
+ * Orchestrates the 3 collection management tabs:
+ *  - Collections & Seals overview (`CollectionsListTab`)
+ *  - Create a new signing collection (`CollectionCreateTab`)
+ *  - Edit collection issuer identity & metadata (`CollectionIdentityTab`)
  */
 export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
-  const { t: full } = useLanguage();
+  const { t: full, language } = useLanguage();
   const t = full.sign as SignDictionary;
   const labels = t?.collection;
   const { isConnected, accounts } = useRadixWallet();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const tabParam = searchParams.get('tab');
-  const collectionParam = searchParams.get('collection') ?? undefined;
-  const fromParam = searchParams.get('from') ?? undefined;
-  const toParam = searchParams.get('to') ?? undefined;
+  const collectionParam = searchParams.get('collection');
+  const fromParam = searchParams.get('from');
+  const toParam = searchParams.get('to');
+
+  // Legacy links to `/console/sign-collection?tab=audit&collection=...` redirect
+  // seamlessly to the dedicated `/console/sign-audit` tool.
+  useEffect(() => {
+    if (tabParam === 'audit' || collectionParam) {
+      const next = new URLSearchParams();
+      if (collectionParam) next.set('collection', collectionParam);
+      if (fromParam) next.set('from', fromParam);
+      if (toParam) next.set('to', toParam);
+      const qs = next.toString();
+      router.replace(`/${language}/console/sign-audit${qs ? `?${qs}` : ''}`);
+    }
+  }, [tabParam, collectionParam, fromParam, toParam, language, router]);
+
   const initialTab: Tab =
     tabParam === 'collections' ||
     tabParam === 'create' ||
-    tabParam === 'identity' ||
-    tabParam === 'audit'
+    tabParam === 'identity'
       ? tabParam
-      : collectionParam
-        ? 'audit'
-        : 'collections';
+      : 'collections';
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [account, setAccount] = useState<string | null>(null);
   const effectiveAccount = account ?? accounts[0]?.address ?? null;
 
   const setup = useSealSetup(effectiveAccount);
-  const { collections, loading: collectionsLoading, refetch: refetchCollections } =
-    useSignCollections(effectiveAccount, isConnected && !!effectiveAccount);
+  const {
+    collections,
+    loading: collectionsLoading,
+    refetch: refetchCollections,
+  } = useSignCollections(effectiveAccount, isConnected && !!effectiveAccount);
   const { seals, refetch: refetchSeals } = useUserSeals(effectiveAccount);
   const [settling, setSettling] = useState(false);
 
-  /**
-   * After creating: the list query is cached, and the Gateway needs a moment to
-   * index a brand-new resource, so one refetch can still come back without it.
-   * Poll until it lands instead of leaving the user to reload the page.
-   */
   const showNewCollection = async (resourceAddress: string) => {
     setSettling(true);
     try {
@@ -138,7 +102,6 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
             ['collections', labels.tabs.collections],
             ['create', labels.tabs.create],
             ['identity', labels.tabs.identity],
-            ['audit', labels.tabs.audit],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -148,7 +111,9 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
             className="relative pb-2.5 text-sm font-bold transition-colors"
             style={{
               color:
-                tab === key ? 'var(--color-text-main)' : 'var(--color-text-muted)',
+                tab === key
+                  ? 'var(--color-text-main)'
+                  : 'var(--color-text-muted)',
             }}
           >
             {label}
@@ -165,1086 +130,64 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
         ))}
       </div>
 
-      {tab === 'audit' ? (
-        <CollectionAuditTab
-          labels={labels.audit}
-          isConnected={isConnected}
-          ownedCollections={collections}
-          activeCollection={setup.activeAddress}
-          initialCollection={collectionParam}
-          initialFromDate={fromParam}
-          initialToDate={toParam}
-        />
-      ) : (
-        <>
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            <strong style={{ color: 'var(--color-text-main)' }}>{labels.intro.title}.</strong>{' '}
-            {labels.intro.body}
-          </p>
-
-          <WalletConnectGate
-            title={labels.connect.title}
-            subtitle={labels.connect.subtitle}
-            mainnetLabel={t.connect?.mainnet ?? 'Mainnet'}
-            stokenetLabel={t.connect?.stokenet ?? 'Stokenet'}
-          >
-            <div className="space-y-6">
-              <ToolSection title={labels.accountLabel}>
-                <AccountPicker value={account} onChange={setAccount} />
-              </ToolSection>
-
-              {tab === 'collections' && (
-                <CollectionsTab
-                  labels={labels}
-                  setup={setup}
-                  seals={seals}
-                  collections={collections}
-                  loading={collectionsLoading || settling}
-                  onCreate={() => setTab('create')}
-                />
-              )}
-              {tab === 'create' && (
-                <CreateTab
-                  labels={labels}
-                  t={t}
-                  consoleT={consoleT}
-                  account={effectiveAccount}
-                  seals={seals}
-                  hasCollections={collections.length > 0}
-                  onCreated={(resourceAddress) => {
-                    // Pin the account that just created it: `account` may still be
-                    // null (nothing picked), in which case the shown one follows
-                    // accounts[0] and would drift if the wallet re-emits its list
-                    // in another order.
-                    if (effectiveAccount) setAccount(effectiveAccount);
-                    setTab('collections');
-                    void showNewCollection(resourceAddress);
-                  }}
-                />
-              )}
-              {tab === 'identity' && (
-                <IdentityTab
-                  labels={labels}
-                  t={t}
-                  consoleT={consoleT}
-                  account={effectiveAccount}
-                  setup={setup}
-                />
-              )}
-            </div>
-          </WalletConnectGate>
-        </>
-      )}
-    </div>
-  );
-}
-
-type Labels = NonNullable<SignDictionary['collection']>;
-type Setup = ReturnType<typeof useSealSetup>;
-type Seal = ReturnType<typeof useUserSeals>['seals'][number];
-type Collection = ReturnType<typeof useSignCollections>['collections'][number];
-/** The editable metadata keys, shared by the form state and the manifest. */
-type ProfileKey = 'name' | 'symbol' | 'iconUrl' | 'orgName' | 'orgUrl';
-
-/** Wallet/ledger failures come back as codes; the sign namespace names them. */
-function errorText(t: SignDictionary, code: string): string {
-  return (t.errors as Record<string, string>)[code] ?? t.errors.generic;
-}
-
-/** A RUID is 68 characters of hex; nobody reads one, so show its head and tail. */
-function shortLocalId(localId: string): string {
-  const bare = localId.replace(/^[#<[{]|[#>\]}]$/g, '');
-  return bare.length > 18 ? `${bare.slice(0, 8)}…${bare.slice(-6)}` : bare;
-}
-
-/**
- * States, in one glance, whether the ledger will still accept a change to a key.
- *
- * A locked key is not "read-only for now": it can never change again, by
- * anyone, the owner included. That is worth saying plainly next to each field
- * rather than in a paragraph underneath, which is what the screen did before
- * and which left the user to work out for themselves which of the values in
- * front of them were already set in stone.
- */
-function LockBadge({ locked, lockedLabel, editableLabel }: {
-  locked: boolean;
-  lockedLabel: string;
-  editableLabel: string;
-}) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-semibold"
-      style={{
-        borderColor: locked ? 'var(--color-card-border)' : 'var(--color-primary)',
-        color: locked ? 'var(--color-text-muted)' : 'var(--color-primary)',
-      }}
-    >
-      {locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
-      {locked ? lockedLabel : editableLabel}
-    </span>
-  );
-}
-
-/* ─── Tab 1: what this account has ────────────────────────────────────────── */
-
-function CollectionsTab({
-  labels,
-  setup,
-  seals,
-  collections,
-  loading,
-  onCreate,
-}: {
-  labels: Labels;
-  setup: Setup;
-  seals: Seal[];
-  collections: Collection[];
-  loading: boolean;
-  onCreate: () => void;
-}) {
-  // The seal's own NFT data: its image and name, so the card is recognisable.
-  const sealResource = seals[0]?.globalId.split(':')[0] ?? null;
-  const { data: sealData } = useNftData(
-    sealResource,
-    seals.map((s) => s.localId),
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* The seals. Normally one; the brand is open-mint and soulbound, so an
-          account that minted a second is stuck with it and needs to know which
-          one is actually doing the work. */}
-      <ToolSection title={labels.seals.title} hint={labels.seals.hint}>
-        {seals.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.seals.none}
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            {seals.map((seal) => {
-              const inUse = setup.seal?.globalId === seal.globalId;
-              const data = sealData?.find((d) => d.id === seal.localId);
-              return (
-                <div
-                  key={seal.globalId}
-                  className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5"
-                  style={{
-                    borderColor: inUse
-                      ? 'var(--color-primary)'
-                      : 'var(--color-card-border)',
-                    background: 'var(--color-surface)',
-                  }}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <SafeImage
-                      src={data?.imageUrl}
-                      alt={data?.name || labels.seals.title}
-                      fallbackName={data?.name || 'Radix Seal'}
-                      className="size-11 shrink-0 rounded-lg object-cover"
-                    />
-                    <span className="min-w-0">
-                      <span
-                        className="block truncate text-sm font-bold"
-                        style={{ color: 'var(--color-text-main)' }}
-                      >
-                        {data?.name || labels.seals.title}
-                      </span>
-                      <span
-                        className="block truncate font-mono text-[11px]"
-                        style={{ color: 'var(--color-text-muted)' }}
-                        title={seal.localId}
-                      >
-                        {shortLocalId(seal.localId)}
-                      </span>
-                    </span>
-                  </span>
-                  {inUse && (
-                    <span
-                      className="flex shrink-0 items-center gap-1 text-[11px] font-semibold"
-                      style={{ color: 'var(--color-primary)' }}
-                    >
-                      <BadgeCheck className="size-3.5" />
-                      {labels.seals.inUse}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-            {seals.length > 1 && (
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.seals.severalNote}
-              </p>
-            )}
-          </div>
-        )}
-      </ToolSection>
-
-      <ToolSection title={labels.list.title} hint={labels.list.hint}>
-        {/* Also while waiting for a just-created collection to be indexed, so
-            the list on screen is visibly not the final answer yet. */}
-        {loading && (
-          <p
-            className="flex items-center gap-2 text-sm"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            <span className="size-3.5 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
-            {labels.list.loading}
-          </p>
-        )}
-        {!loading && collections.length === 0 && (
-          <div className="space-y-3">
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              {labels.list.none}
-            </p>
-            <button
-              type="button"
-              onClick={onCreate}
-              className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
-            >
-              <Plus className="size-4" />
-              {labels.list.createFirst}
-            </button>
-          </div>
-        )}
-        {collections.length > 0 && (
-          <div className="space-y-1.5">
-            {collections.map((collection) => {
-              const isActive = collection.resourceAddress === setup.activeAddress;
-              return (
-                <button
-                  key={collection.resourceAddress}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() =>
-                    !isActive && setup.selectCollection(collection.resourceAddress)
-                  }
-                  title={collection.resourceAddress}
-                  className={`flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                    isActive ? 'cursor-default' : 'cursor-pointer hover:border-[var(--color-primary)]'
-                  }`}
-                  style={{
-                    borderColor: isActive
-                      ? 'var(--color-primary)'
-                      : 'var(--color-card-border)',
-                    background: 'var(--color-surface)',
-                  }}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <SafeImage
-                      src={collection.iconUrl}
-                      alt={collection.name || labels.list.untitled}
-                      fallbackName={collection.name || collection.resourceAddress}
-                      className="size-11 shrink-0 rounded-lg object-cover"
-                    />
-                    <span className="min-w-0">
-                      <span
-                        className="block truncate text-sm font-bold"
-                        style={{ color: 'var(--color-text-main)' }}
-                      >
-                        {collection.name || labels.list.untitled}
-                      </span>
-                      <span
-                        className="block truncate font-mono text-[11px]"
-                        style={{ color: 'var(--color-text-muted)' }}
-                      >
-                        {truncateAddress(collection.resourceAddress)}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-3">
-                    <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-                      {labels.list.records.replace(
-                        '{count}',
-                        String(collection.totalSupply),
-                      )}
-                    </span>
-                    <span
-                      className="flex items-center gap-1 text-[11px] font-semibold"
-                      style={{
-                        color: isActive
-                          ? 'var(--color-primary)'
-                          : 'var(--color-text-muted)',
-                      }}
-                    >
-                      {isActive && <Check className="size-3.5" />}
-                      {isActive ? labels.list.active : labels.list.use}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-            {collections.length > 1 && (
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                {labels.list.severalNote}
-              </p>
-            )}
-          </div>
-        )}
-      </ToolSection>
-    </div>
-  );
-}
-
-/* ─── Tab 2: create another one ───────────────────────────────────────────── */
-
-function CreateTab({
-  labels,
-  t,
-  consoleT,
-  account,
-  seals,
-  hasCollections,
-  onCreated,
-}: {
-  labels: Labels;
-  t: SignDictionary;
-  consoleT: ConsoleToolProps['t'];
-  account: string | null;
-  seals: Seal[];
-  hasCollections: boolean;
-  onCreated: (resourceAddress: string) => void;
-}) {
-  const { provisionCollection, createCollection, phase, error } = useSealRequest();
-  const { activeNetworkId } = useRadixWallet();
-  const preview = useTransactionPreview();
-
-  const [sealGlobalId, setSealGlobalId] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [symbol, setSymbol] = useState('');
-  const [orgName, setOrgName] = useState('');
-  const [orgUrl, setOrgUrl] = useState('');
-  const [logoUrl, setLogoUrl] = useState('');
-  /** Off by default: reuse the insignia the account already has. */
-  const [newSeal, setNewSeal] = useState(false);
-  const [created, setCreated] = useState<string | null>(null);
-  /** Free-form metadata, same shape the token creator uses. */
-  const [customMeta, setCustomMeta] = useState<CustomMetaField[]>([]);
-
-  const addCustomMeta = () =>
-    setCustomMeta((prev) =>
-      prev.length >= MAX_COLLECTION_META_FIELDS
-        ? prev
-        : [
-            ...prev,
-            { id: crypto.randomUUID(), key: '', value: '', locked: false },
-          ],
-    );
-  const removeCustomMeta = (id: string) =>
-    setCustomMeta((prev) => prev.filter((field) => field.id !== id));
-  const setCustomMetaField = (id: string, part: 'key' | 'value', value: string) =>
-    setCustomMeta((prev) =>
-      prev.map((field) => (field.id === id ? { ...field, [part]: value } : field)),
-    );
-  const toggleCustomMetaLock = (id: string) =>
-    setCustomMeta((prev) =>
-      prev.map((field) =>
-        field.id === id ? { ...field, locked: !field.locked } : field,
-      ),
-    );
-
-  /** Only complete, non-reserved entries reach the manifest. */
-  const metaFields = (): CollectionMetaField[] =>
-    customMeta
-      .filter(
-        (field) =>
-          field.key.trim() &&
-          field.value.trim() &&
-          !isReservedCollectionMetadataKey(field.key),
-      )
-      .map(({ key, value, locked }) => ({ key: key.trim(), value: value.trim(), locked }));
-
-  const busy = phase === 'minting-seal' || phase === 'creating-collection';
-  const sealResource = seals[0]?.globalId.split(':')[0] ?? null;
-  const { data: sealData } = useNftData(
-    sealResource,
-    seals.map((seal) => seal.localId),
-  );
-
-  const chosenSeal = seals.find((s) => s.globalId === sealGlobalId) ?? seals[0] ?? null;
-  // One image for the whole creation: the collection's icon and, when the seal
-  // has to be minted first, its insignia. Empty falls back to the Radix Seal
-  // image inside the manifest builders, never to nothing.
-  const imageUrl =
-    logoUrl.trim() ||
-    (typeof window !== 'undefined' ? sealImageUrl(window.location.origin) : '');
-
-  /**
-   * Dry-run whatever the create button would send FIRST: without a seal that is
-   * the seal mint, with one it is the collection itself. Same rule the sign
-   * onboarding follows, so the simulation always matches the next confirmation.
-   */
-  const onSimulate = () => {
-    if (!account || activeNetworkId == null) return;
-    const sealResource = radixSealAddress(activeNetworkId);
-    if (!chosenSeal || newSeal) {
-      if (sealResource) {
-        preview.simulate(buildSealMintManifest({ account, sealResource }));
-      }
-      return;
-    }
-    preview.simulate(
-      buildSignCollectionCreateManifest({
-        account,
-        sealGlobalId: chosenSeal.globalId,
-        sealAddress: sealResource,
-        networkId: activeNetworkId,
-        collectionName: name.trim(),
-        symbol: symbol.trim() || undefined,
-        imageUrl,
-        issuer: issuerMeta(),
-        extraMetadata: metaFields(),
-      }),
-    );
-  };
-
-  const issuerMeta = () =>
-    orgName.trim() || orgUrl.trim() || logoUrl.trim()
-      ? {
-          orgName: orgName.trim(),
-          orgWebsite: orgUrl.trim(),
-          // Only ever the COLLECTION's icon. The insignia keeps the Radix Seal
-          // image whatever is typed here.
-          orgLogoUrl: logoUrl.trim() || undefined,
-        }
-      : undefined;
-
-  const onSubmit = async () => {
-    if (!account) return;
-    const issuer = issuerMeta();
-    const extraMetadata = metaFields();
-    // With a seal in hand the collection is one transaction; without one, the
-    // seal is minted first and its id read back (same path the onboarding uses).
-    const resource = chosenSeal && !newSeal
-      ? await createCollection({
-          account,
-          sealGlobalId: chosenSeal.globalId,
-          collectionName: name.trim(),
-          symbol: symbol.trim() || undefined,
-          imageUrl,
-          issuer,
-          extraMetadata,
-        })
-      : await provisionCollection({
-          account,
-          existingSeal: null,
-          forceNewSeal: newSeal,
-          collectionName: name.trim(),
-          symbol: symbol.trim() || undefined,
-          imageUrl,
-          issuer,
-          extraMetadata,
-        });
-    if (resource) {
-      setCreated(resource);
-      onCreated(resource);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Creating a second collection is legitimate (a separate issuer
-          identity), but it splits the account's history in two, and whoever
-          holds an invitation from the old one keeps seeing the old issuer. Say
-          so before the button, not after. */}
-      {hasCollections && (
-        <div
-          className="flex gap-3 rounded-2xl border px-4 py-3"
-          style={{ borderColor: 'var(--color-warning, #eab308)', background: 'var(--color-surface)' }}
-        >
-          <TriangleAlert
-            className="mt-0.5 size-4 shrink-0"
-            style={{ color: 'var(--color-warning, #eab308)' }}
-          />
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.create.duplicateWarning}
-          </p>
-        </div>
-      )}
-
-      <ToolSection title={labels.create.title} hint={labels.create.hint}>
-        {seals.length > 0 && (
-          <div className="space-y-2">
-            <p
-              className="text-xs font-bold uppercase tracking-wide"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              {labels.create.sealModeLabel}
-            </p>
-            <OptionButtons<'reuse' | 'new'>
-              value={newSeal ? 'new' : 'reuse'}
-              onChange={(mode) => setNewSeal(mode === 'new')}
-              disabled={busy}
-              options={[
-                {
-                  value: 'reuse',
-                  label: labels.create.reuseSeal,
-                  description: labels.create.reuseSealHint,
-                  icon: <BadgeCheck className="size-4" />,
-                },
-                {
-                  value: 'new',
-                  label: labels.create.newSeal,
-                  description: labels.create.newSealHint,
-                  icon: <Plus className="size-4" />,
-                },
-              ]}
-            />
-            {/* The buttons keep one-line descriptions, as everywhere else in
-                the console; the consequence that cannot be undone is spelled
-                out here instead of being cut off by an ellipsis. */}
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-              {newSeal ? labels.create.newSealNote : labels.create.reuseSealNote}
-            </p>
-          </div>
-        )}
-        {seals.length > 1 && (
-          <div className="space-y-2">
-            <p
-              className="text-xs font-bold uppercase tracking-wide"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              {labels.create.sealLabel}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {seals.map((seal) => {
-                const data = sealData?.find((d) => d.id === seal.localId);
-                // Choosing a fresh insignia deselects every option here and
-                // locks them, rather than hiding the block: the remembered
-                // choice comes back the moment "reuse" is picked again.
-                const isChosen = !newSeal && chosenSeal?.globalId === seal.globalId;
-                return (
-                  <button
-                    key={seal.globalId}
-                    type="button"
-                    disabled={newSeal || busy}
-                    onClick={() => setSealGlobalId(seal.globalId)}
-                    title={seal.localId}
-                    className="flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all enabled:cursor-pointer enabled:hover:border-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      borderColor: isChosen
-                        ? 'var(--color-primary)'
-                        : 'var(--color-card-border)',
-                      background: isChosen
-                        ? 'rgba(var(--color-primary-rgb), 0.08)'
-                        : 'var(--color-surface)',
-                    }}
-                  >
-                    <SafeImage
-                      src={data?.imageUrl}
-                      alt={data?.name || labels.seals.title}
-                      fallbackName={data?.name || 'Radix Seal'}
-                      className="size-11 shrink-0 rounded-lg object-cover"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className="block truncate text-sm font-bold"
-                        style={{
-                          color: isChosen
-                            ? 'var(--color-primary)'
-                            : 'var(--color-text-main)',
-                        }}
-                      >
-                        {data?.name || labels.seals.title}
-                      </span>
-                      <span
-                        className="block truncate font-mono text-[11px]"
-                        style={{ color: 'var(--color-text-muted)' }}
-                      >
-                        {shortLocalId(seal.localId)}
-                      </span>
-                    </span>
-                    {isChosen && (
-                      <Check
-                        className="size-4 shrink-0"
-                        style={{ color: 'var(--color-primary)' }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {seals.length === 0 && (
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.create.noSealNote}
-          </p>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <TextField
-            label={labels.create.nameLabel}
-            hint={labels.create.nameHint}
-            value={name}
-            onChange={setName}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.create.symbolLabel}
-            hint={labels.create.symbolHint}
-            value={symbol}
-            onChange={(value) => setSymbol(sanitizeSymbol(value))}
-            maxLength={MAX_SYMBOL_LENGTH}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.identity.orgNameLabel}
-            hint={labels.identity.orgNameHint}
-            value={orgName}
-            onChange={setOrgName}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.identity.orgUrlLabel}
-            placeholder="https://…"
-            value={orgUrl}
-            onChange={setOrgUrl}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.identity.logoLabel}
-            hint={labels.create.logoHint}
-            placeholder="https://…"
-            value={logoUrl}
-            onChange={setLogoUrl}
-            disabled={busy}
-          />
-        </div>
-
-        <CustomMetadataFields
-          labels={labels}
-          fields={customMeta}
-          disabled={busy}
-          onAdd={addCustomMeta}
-          onRemove={removeCustomMeta}
-          onChange={setCustomMetaField}
-          onToggleLock={toggleCustomMetaLock}
-        />
-
-        {error && (
-          <p className="text-xs font-medium text-[var(--color-danger)]">{errorText(t, error)}</p>
-        )}
-        {created && (
-          <p
-            className="flex items-center gap-2 text-sm font-semibold"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            <BadgeCheck className="size-4" />
-            {labels.create.done}
-          </p>
-        )}
-      </ToolSection>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
-          type="button"
-          disabled={busy || !account}
-          onClick={() => void onSubmit()}
-          className="flex w-full items-center justify-center gap-2 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-        >
-          {busy ? (
-            <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          ) : (
-            <Plus className="size-4" />
-          )}
-          {busy ? labels.create.working : labels.create.button}
-        </button>
-        <SimulateButton
-          t={consoleT.simulate}
-          onClick={onSimulate}
-          disabled={busy || !account}
-          loading={preview.isSimulating}
-        />
-      </div>
-      <SimulateResultCard
-        t={consoleT.simulate}
-        preview={preview.preview}
-        error={preview.error}
-        onClose={preview.reset}
-      />
-    </div>
-  );
-}
-
-/* ─── Free-form collection metadata ───────────────────────────────────────── */
-
-/** A custom entry while it is still being typed (id keeps React rows stable). */
-interface CustomMetaField extends CollectionMetaField {
-  id: string;
-}
-
-/**
- * Key/value metadata the creator adds to their own collection, the same way the
- * token creator offers it. A signing collection is a resource like any other and
- * its owner has things to say about it — a department, a registry number, an
- * internal reference — that the standard's own keys have no place for.
- *
- * The keys the standard writes are refused inline rather than at send time: a
- * duplicate key makes the whole transaction fail, and the ones that matter for
- * verification must come from the manifest builder, never from a text box.
- */
-function CustomMetadataFields({
-  labels,
-  fields,
-  disabled,
-  onAdd,
-  onRemove,
-  onChange,
-  onToggleLock,
-}: {
-  labels: Labels;
-  fields: CustomMetaField[];
-  disabled: boolean;
-  onAdd: () => void;
-  onRemove: (id: string) => void;
-  onChange: (id: string, part: 'key' | 'value', value: string) => void;
-  onToggleLock: (id: string) => void;
-}) {
-  return (
-    <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
-      <div className="space-y-1">
-        <span
-          className="block text-xs font-bold uppercase tracking-wider"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          {labels.create.customTitle}
-        </span>
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-          {labels.create.customHint}
-        </p>
-      </div>
-
-      {fields.map((field, index) => {
-        const reserved =
-          !!field.key.trim() && isReservedCollectionMetadataKey(field.key);
-        return (
-          <div key={field.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-            <div className="w-full sm:w-1/3">
-              <TextField
-                label={labels.create.customKey.replace('#{index}', String(index + 1))}
-                value={field.key}
-                onChange={(value) => onChange(field.id, 'key', value)}
-                placeholder={labels.create.customKeyPlaceholder}
-                error={reserved ? labels.create.customReserved : undefined}
-                maxLength={64}
-                disabled={disabled}
-              />
-            </div>
-            <div className="w-full sm:flex-1">
-              <TextField
-                label={labels.create.customValue}
-                labelEnd={
-                  <button
-                    type="button"
-                    onClick={() => onToggleLock(field.id)}
-                    disabled={disabled}
-                    title={labels.create.customLockHint}
-                    aria-pressed={field.locked}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border transition-colors cursor-pointer disabled:opacity-50"
-                    style={{
-                      borderColor: field.locked
-                        ? 'var(--color-primary)'
-                        : 'var(--color-card-border)',
-                      color: field.locked
-                        ? 'var(--color-primary)'
-                        : 'var(--color-text-muted)',
-                      background: field.locked
-                        ? 'rgba(var(--color-primary-rgb), 0.08)'
-                        : 'transparent',
-                    }}
-                  >
-                    {field.locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
-                    {labels.create.customLock}
-                  </button>
-                }
-                value={field.value}
-                onChange={(value) => onChange(field.id, 'value', value)}
-                placeholder={labels.create.customValuePlaceholder}
-                maxLength={256}
-                disabled={disabled}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => onRemove(field.id)}
-              disabled={disabled}
-              title={labels.create.customRemove}
-              className="mb-[2px] p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="size-4.5" />
-            </button>
-          </div>
-        );
-      })}
-
-      {fields.length < MAX_COLLECTION_META_FIELDS && (
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={disabled}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
-          style={{ color: 'var(--color-primary)' }}
-        >
-          <Plus className="size-3.5" />
-          {labels.create.customAdd}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* ─── Tab 3: the face buyers of your signatures see ───────────────────────── */
-
-function IdentityTab({
-  labels,
-  t,
-  consoleT,
-  account,
-  setup,
-}: {
-  labels: Labels;
-  t: SignDictionary;
-  consoleT: ConsoleToolProps['t'];
-  account: string | null;
-  setup: Setup;
-}) {
-  const collection = setup.collection;
-  const { profile, refetch } = useCollectionProfile(collection?.resourceAddress ?? null);
-  const { updateCollectionMetadata, phase, error } = useSealRequest();
-  const preview = useTransactionPreview();
-  const [edits, setEdits] = useState<Partial<Record<ProfileKey, string>>>({});
-  const [saved, setSaved] = useState(false);
-
-  const busy = phase === 'creating';
-
-  /** Ledger key behind each form field, so its lock state can be looked up. */
-  const LEDGER_KEY: Record<ProfileKey, string> = {
-    name: 'name',
-    symbol: 'symbol',
-    iconUrl: ICON_URL_KEY,
-    orgName: ORG_NAME_KEY,
-    orgUrl: ORG_URL_KEY,
-  };
-  const entries = profile?.entries ?? [];
-  const lockedKeys = new Set(entries.filter((e) => e.locked).map((e) => e.key));
-  const isLocked = (key: ProfileKey) => lockedKeys.has(LEDGER_KEY[key]);
-
-  /**
-   * Everything the collection carries beyond the five with a form control:
-   * what was sealed at creation, and whatever the creator added themselves
-   * with "add metadata". Read-only here, but shown, because a field the user
-   * typed in should not vanish from the screen that claims to be the issuer
-   * identity.
-   */
-  const otherEntries = entries
-    .filter((entry) => !Object.values(LEDGER_KEY).includes(entry.key))
-    .sort((a, b) => a.key.localeCompare(b.key));
-
-  // Uncommitted edits win; everything else shows what the ledger holds.
-  const value = (key: ProfileKey) => edits[key] ?? profile?.[key] ?? '';
-  const setValue = (key: ProfileKey, next: string) => {
-    setSaved(false);
-    setEdits((prev) => ({ ...prev, [key]: next }));
-  };
-  /** Only send what actually changed; the rest stays untouched on-ledger. */
-  const changed = (key: ProfileKey) =>
-    edits[key] !== undefined && edits[key] !== (profile?.[key] ?? '')
-      ? edits[key]
-      : undefined;
-
-  if (!collection || !setup.seal) {
-    return (
-      <ToolSection title={labels.identity.title}>
-        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          {labels.identity.noCollection}
-        </p>
-      </ToolSection>
-    );
-  }
-
-  /** The fields actually changed, shared by the dry run and the real send. */
-  const pendingEdits = () => ({
-    name: changed('name'),
-    symbol: changed('symbol'),
-    iconUrl: changed('iconUrl'),
-    orgName: changed('orgName'),
-    orgUrl: changed('orgUrl'),
-  });
-
-  const onSimulate = () => {
-    if (!account || !setup.seal) return;
-    const manifest = buildCollectionMetadataManifest({
-      account,
-      sealGlobalId: setup.seal.globalId,
-      collection: collection.resourceAddress,
-      ...pendingEdits(),
-    });
-    if (manifest) preview.simulate(manifest);
-  };
-
-  const onSave = async () => {
-    if (!account || !setup.seal) return;
-    const ok = await updateCollectionMetadata({
-      account,
-      sealGlobalId: setup.seal.globalId,
-      collection: collection.resourceAddress,
-      ...pendingEdits(),
-    });
-    if (ok) {
-      setSaved(true);
-      setEdits({});
-      void refetch();
-      void setup.refetch();
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <ToolSection title={labels.identity.title} hint={labels.identity.hint}>
-        <div className="flex flex-wrap items-center gap-2">
-          <Layers className="size-3.5" style={{ color: 'var(--color-text-muted)' }} />
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.identity.editing}
-          </span>
-          <span
-            className="font-mono text-xs"
-            style={{ color: 'var(--color-text-main)' }}
-            title={collection.resourceAddress}
-          >
-            {truncateAddress(collection.resourceAddress)}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {([
-            ['name', labels.create.nameLabel, undefined, undefined],
-            ['symbol', labels.create.symbolLabel, undefined, undefined],
-            ['orgName', labels.identity.orgNameLabel, labels.identity.orgNameHint, undefined],
-            ['orgUrl', labels.identity.orgUrlLabel, undefined, 'https://…'],
-            ['iconUrl', labels.identity.logoLabel, labels.identity.logoHint, 'https://…'],
-          ] as [ProfileKey, string, string | undefined, string | undefined][]).map(
-            ([key, label, hint, placeholder]) => {
-              const locked = isLocked(key);
-              return (
-                <TextField
-                  key={key}
-                  label={label}
-                  hint={hint}
-                  placeholder={placeholder}
-                  value={value(key)}
-                  onChange={(v) => setValue(key, key === 'symbol' ? sanitizeSymbol(v) : v)}
-                  maxLength={key === 'symbol' ? MAX_SYMBOL_LENGTH : undefined}
-                  // A locked key is refused by the ledger, so the field is not
-                  // offered at all rather than letting the user type into
-                  // something that can only fail.
-                  disabled={busy || locked}
-                  labelEnd={
-                    <LockBadge
-                      locked={locked}
-                      lockedLabel={labels.identity.lockedBadge}
-                      editableLabel={labels.identity.editableBadge}
-                    />
-                  }
-                />
-              );
-            },
-          )}
-        </div>
-
-        {otherEntries.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold" style={{ color: 'var(--color-text-main)' }}>
-              {labels.identity.otherTitle}
-            </p>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-              {labels.identity.otherHint}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {otherEntries.map((entry) => (
-                <div
-                  key={entry.key}
-                  className="rounded-xl border p-3 space-y-1"
-                  style={{ borderColor: 'var(--color-card-border)' }}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className="font-mono text-[11px] truncate"
-                      style={{ color: 'var(--color-text-muted)' }}
-                      title={entry.key}
-                    >
-                      {entry.key}
-                    </span>
-                    <LockBadge
-                      locked={entry.locked}
-                      lockedLabel={labels.identity.lockedBadge}
-                      editableLabel={labels.identity.editableBadge}
-                    />
-                  </div>
-                  <p
-                    className="text-sm break-words"
-                    style={{ color: 'var(--color-text-main)' }}
-                  >
-                    {entry.value || '—'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-          {labels.identity.lockedNote}
-        </p>
-
-        {error && (
-          <p className="text-xs font-medium text-[var(--color-danger)]">{errorText(t, error)}</p>
-        )}
-        {saved && (
-          <p
-            className="flex items-center gap-2 text-sm font-semibold"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            <BadgeCheck className="size-4" />
-            {labels.identity.saved}
-          </p>
-        )}
-      </ToolSection>
-
-      {/* Said before the button, not after: the point is that pressing it
-          reaches for the phone, which "Save changes" gave no hint of. */}
-      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-        {labels.identity.saveHint}
+      <p
+        className="text-xs leading-relaxed"
+        style={{ color: 'var(--color-text-muted)' }}
+      >
+        <strong style={{ color: 'var(--color-text-main)' }}>
+          {labels.intro.title}.
+        </strong>{' '}
+        {labels.intro.body}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
-          type="button"
-          disabled={busy || Object.keys(edits).length === 0}
-          onClick={() => void onSave()}
-          className="flex w-full items-center justify-center gap-2 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-        >
-          {busy ? (
-            <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          ) : (
-            // The Radix mark, not a floppy disk: what this button does is ask
-            // the wallet to sign, and the wallet is the thing being invoked.
-            <RadixIcon className="size-4" strokeColor="currentColor" animate={false} />
+      <WalletConnectGate
+        title={labels.connect.title}
+        subtitle={labels.connect.subtitle}
+        mainnetLabel={t.connect?.mainnet ?? 'Mainnet'}
+        stokenetLabel={t.connect?.stokenet ?? 'Stokenet'}
+      >
+        <div className="space-y-6">
+          <ToolSection title={labels.accountLabel}>
+            <AccountPicker value={account} onChange={setAccount} />
+          </ToolSection>
+
+          {tab === 'collections' && (
+            <CollectionsListTab
+              labels={labels}
+              account={effectiveAccount}
+              setup={setup}
+              seals={seals}
+              collections={collections}
+              loading={collectionsLoading || settling}
+              onCreate={() => setTab('create')}
+            />
           )}
-          {busy ? labels.identity.saving : labels.identity.save}
-        </button>
-        <SimulateButton
-          t={consoleT.simulate}
-          onClick={onSimulate}
-          disabled={busy || Object.keys(edits).length === 0}
-          loading={preview.isSimulating}
-        />
-      </div>
-      <SimulateResultCard
-        t={consoleT.simulate}
-        preview={preview.preview}
-        error={preview.error}
-        onClose={preview.reset}
-      />
+          {tab === 'create' && (
+            <CollectionCreateTab
+              labels={labels}
+              t={t}
+              consoleT={consoleT}
+              account={effectiveAccount}
+              seals={seals}
+              hasCollections={collections.length > 0}
+              onCreated={(resourceAddress) => {
+                if (effectiveAccount) setAccount(effectiveAccount);
+                setTab('collections');
+                void showNewCollection(resourceAddress);
+              }}
+            />
+          )}
+          {tab === 'identity' && (
+            <CollectionIdentityTab
+              labels={labels}
+              t={t}
+              consoleT={consoleT}
+              account={effectiveAccount}
+              setup={setup}
+            />
+          )}
+        </div>
+      </WalletConnectGate>
     </div>
   );
 }

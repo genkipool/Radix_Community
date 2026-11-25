@@ -1,5 +1,6 @@
 import { sha256Hex, timestampImprintInput } from '../lib/timestamp';
 import type { CollectionAuditResponse } from '../lib/collection-audit';
+import type { DomainVerificationResult } from '../lib/domain-verify';
 import type {
   AttestationEnvelope,
   OnChainRequestRef,
@@ -106,6 +107,7 @@ export interface OnChainIssuer {
   orgName?: string;
   orgWebsite?: string;
   orgLogoUrl?: string;
+  domainVerification?: DomainVerificationResult | null;
 }
 
 export interface OnChainStatus {
@@ -171,4 +173,25 @@ export async function fetchCollectionAudit(body: {
     throw new Error(err.error || `audit_failed_${res.status}`);
   }
   return (await res.json()) as CollectionAuditResponse;
+}
+
+/**
+ * Checks live custody-free domain ownership (`/.well-known/radix-seal.json`
+ * or DNS TXT `_radix-seal.<domain>`) for an issuer's `orgUrl`.
+ */
+export async function fetchDomainVerification(body: {
+  orgUrl: string;
+  collection?: string;
+  account?: string;
+}): Promise<DomainVerificationResult> {
+  const res = await fetch('/api/sign/domain-verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error || `domain_verify_failed_${res.status}`);
+  }
+  return (await res.json()) as DomainVerificationResult;
 }

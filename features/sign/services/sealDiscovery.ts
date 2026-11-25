@@ -16,9 +16,15 @@
  * Results are cached in localStorage per (network, account) but always
  * re-verified against the ledger.
  */
-import { gatewayPost } from '@/services/gateway/bases';
-import type { Network } from '@/services/gateway/client';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
+import {
+  allAccountNonFungibleResources,
+  entityDetails,
+  metadataString,
+  metadataText,
+  ownerRuleGlobalId,
+  type EntityDetailsItem,
+} from '../lib/gateway-seal';
+import { networkNameForId } from '../lib/network';
 import {
   radixSealAddress,
   RADIX_SEAL_STANDARD_KEY,
@@ -41,93 +47,14 @@ export interface UserSignCollection {
   /** Display metadata, so a human can tell two collections apart. */
   name?: string;
   iconUrl?: string;
+  /** Optional issuer website (`org_url`) used for live custody-free domain verification. */
+  orgUrl?: string;
   /**
    * Global id of the seal named by the collection's locked owner rule — the
    * ONLY key that can mint into it. Read here so the caller never has to guess
    * which of the account's seals to build the mint proof from.
    */
   ownerSealGlobalId?: string;
-}
-
-interface MetadataItem {
-  key: string;
-  value?: { typed?: { value?: string; type?: string; values?: string[] } };
-  /** Whether the ledger will refuse any further change to this key. */
-  is_locked?: boolean;
-}
-interface NonFungibleResourceItem {
-  resource_address: string;
-  vaults?: { items?: Array<{ items?: string[] }> };
-}
-interface EntityDetailsItem {
-  address: string;
-  metadata?: { items?: MetadataItem[] };
-  details?: { total_supply?: string; role_assignments?: unknown };
-  non_fungible_resources?: {
-    items?: NonFungibleResourceItem[];
-    /** Set when the account holds more NFT resources than one page returns. */
-    next_cursor?: string;
-  };
-}
-interface EntityDetailsResponse {
-  items?: EntityDetailsItem[];
-}
-
-function network(networkId: number): Network {
-  return networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-}
-
-async function entityDetails(
-  net: Network,
-  addresses: string[],
-  optIns?: Record<string, unknown>,
-): Promise<EntityDetailsItem[]> {
-  if (addresses.length === 0) return [];
-  const data = await gatewayPost<EntityDetailsResponse>(
-    net,
-    '/state/entity/details',
-    {
-      addresses,
-      aggregation_level: optIns ? 'Vault' : 'Global',
-      ...(optIns ? { opt_ins: optIns } : {}),
-    },
-  );
-  return data.items ?? [];
-}
-
-/**
- * Every non-fungible resource the account holds, following pagination. The
- * first page rides on the entity-details response; the rest come from the
- * non-fungibles page endpoint. Without this an account holding many NFT
- * resources can push its seal or signing collection past the first page, so
- * discovery misses it and wrongly re-shows the "create collection" onboarding
- * (typically when a shared link switches network and the localStorage cache no
- * longer short-circuits the scan).
- */
-async function allNonFungibleResources(
-  net: Network,
-  account: string,
-  optIns?: Record<string, unknown>,
-): Promise<NonFungibleResourceItem[]> {
-  const [item] = await entityDetails(net, [account], optIns);
-  const first = item?.non_fungible_resources;
-  const items: NonFungibleResourceItem[] = [...(first?.items ?? [])];
-  let cursor = first?.next_cursor;
-  while (cursor) {
-    const page = await gatewayPost<{
-      items?: NonFungibleResourceItem[];
-      next_cursor?: string;
-    }>(net, '/state/entity/page/non-fungibles/', {
-      address: account,
-      aggregation_level: optIns ? 'Vault' : 'Global',
-      cursor,
-      ...(optIns ? { opt_ins: optIns } : {}),
-    }).catch(() => null);
-    if (!page) break;
-    items.push(...(page.items ?? []));
-    cursor = page.next_cursor;
-  }
-  return items;
 }
 
 /* ─── Seal ────────────────────────────────────────────────────────────────── */
@@ -144,9 +71,11 @@ export async function findUserSeals(
 ): Promise<UserSeal[]> {
   const sealResource = radixSealAddress(networkId);
   if (!sealResource) return [];
-  const items = await allNonFungibleResources(network(networkId), account, {
-    non_fungible_include_nfids: true,
-  });
+  const items = await allAccountNonFungibleResources(
+    networkNameForId(networkId),
+    account,
+    { non_fungible_include_nfids: true },
+  );
   const vaults =
     items.find((r) => r.resource_address === sealResource)?.vaults?.items ?? [];
   return vaults
@@ -162,35 +91,10 @@ export async function findUserSeal(
   return (await findUserSeals(networkId, account))[0] ?? null;
 }
 
-/**
- * The `resource:localId` a non-fungible owner rule requires, or null. The
- * Gateway nests it under access_rule → proof_rule → requirement, and reports
- * the id under `simple_rep`.
- */
-function ownerRuleGlobalId(roleAssignments: unknown): string | null {
-  try {
-    const owner = (roleAssignments as { owner?: { rule?: unknown } })?.owner?.rule;
-    const rule = owner as Record<string, unknown>;
-    const accessRule = (rule?.access_rule ?? rule) as Record<string, unknown>;
-    const proofRule = (accessRule?.proof_rule ?? accessRule) as Record<string, unknown>;
-    const requirement = (proofRule?.requirement ?? {}) as Record<string, unknown>;
-    const nonFungible = (requirement?.non_fungible ?? {}) as Record<string, unknown>;
-    const resource = nonFungible?.resource_address as string | undefined;
-    const rawId = nonFungible?.local_id;
-    const localId =
-      typeof rawId === 'string'
-        ? rawId
-        : ((rawId as { simple_rep?: string })?.simple_rep ?? '');
-    return resource && localId ? `${resource}:${localId}` : null;
-  } catch {
-    return null;
-  }
-}
-
 /* ─── Signing collection ──────────────────────────────────────────────────── */
 
 function metadataValue(item: EntityDetailsItem, key: string): string | undefined {
-  return item.metadata?.items?.find((m) => m.key === key)?.value?.typed?.value;
+  return metadataString(item, key) || undefined;
 }
 
 function isSignCollection(item: EntityDetailsItem): boolean {
@@ -219,7 +123,7 @@ export async function findCollectionIssuer(
   networkId: number,
   resourceAddress: string,
 ): Promise<CollectionIssuer | null> {
-  const [item] = await entityDetails(network(networkId), [resourceAddress]).catch(
+  const [item] = await entityDetails(networkNameForId(networkId), [resourceAddress]).catch(
     () => [],
   );
   if (!item) return null;
@@ -258,15 +162,6 @@ export interface CollectionProfile {
   entries: CollectionMetadataEntry[];
 }
 
-/** Reads a metadata value whatever shape the gateway returned it in. */
-function metadataText(item: MetadataItem): string {
-  const typed = item.value?.typed;
-  if (!typed) return '';
-  if (typeof typed.value === 'string') return typed.value;
-  if (Array.isArray(typed.values)) return typed.values.join(', ');
-  return '';
-}
-
 /**
  * Everything a collection carries, for the identity screen.
  *
@@ -279,7 +174,7 @@ export async function findCollectionProfile(
   networkId: number,
   resourceAddress: string,
 ): Promise<CollectionProfile> {
-  const [item] = await entityDetails(network(networkId), [resourceAddress]).catch(
+  const [item] = await entityDetails(networkNameForId(networkId), [resourceAddress]).catch(
     () => [],
   );
   if (!item) return { entries: [] };
@@ -289,11 +184,13 @@ export async function findCollectionProfile(
     iconUrl: metadataValue(item, ICON_URL_KEY),
     orgName: metadataValue(item, ORG_NAME_KEY),
     orgUrl: metadataValue(item, ORG_URL_KEY),
-    entries: (item.metadata?.items ?? []).map((meta) => ({
-      key: meta.key,
-      value: metadataText(meta),
-      locked: meta.is_locked === true,
-    })),
+    entries: (item.metadata?.items ?? [])
+      .filter((meta): meta is typeof meta & { key: string } => typeof meta.key === 'string')
+      .map((meta) => ({
+        key: meta.key,
+        value: metadataText(meta),
+        locked: meta.is_locked === true,
+      })),
   };
 }
 
@@ -326,11 +223,12 @@ function toSupply(item: EntityDetailsItem): number {
 /** Everything the UI needs about a collection, from one details response. */
 function toCollection(item: EntityDetailsItem): UserSignCollection {
   return {
-    resourceAddress: item.address,
+    resourceAddress: item.address ?? '',
     totalSupply: toSupply(item),
     name: metadataValue(item, 'name'),
     iconUrl: metadataValue(item, ICON_URL_KEY),
-    ownerSealGlobalId: ownerRuleGlobalId(item.details?.role_assignments) ?? undefined,
+    orgUrl: metadataValue(item, ORG_URL_KEY),
+    ownerSealGlobalId: ownerRuleGlobalId(item) ?? undefined,
   };
 }
 
@@ -349,7 +247,7 @@ function toCollection(item: EntityDetailsItem): UserSignCollection {
  * nothing on screen to explain why.
  */
 function ownedBySeals(item: EntityDetailsItem, sealIds: Set<string>): boolean {
-  const owner = ownerRuleGlobalId(item.details?.role_assignments);
+  const owner = ownerRuleGlobalId(item);
   return !!owner && sealIds.has(owner);
 }
 
@@ -426,7 +324,7 @@ async function collectionForSeals(
   account: string,
   sealIds: Set<string>,
 ): Promise<UserSignCollection | null> {
-  const net = network(networkId);
+  const net = networkNameForId(networkId);
 
   const cached = readCache(networkId, account);
   if (cached) {
@@ -513,23 +411,23 @@ async function collectionsForSeals(
   // collection of its own to find — and every candidate below would be
   // somebody else's.
   if (sealIds.size === 0) return [];
-  const net = network(networkId);
-  const held = (await allNonFungibleResources(net, account)).map(
-    (r) => r.resource_address,
-  );
+  const net = networkNameForId(networkId);
+  const held = (await allAccountNonFungibleResources(net, account))
+    .map((r) => r.resource_address)
+    .filter((addr): addr is string => typeof addr === 'string' && addr.length > 0);
   // Holdings alone miss an empty collection, so the ones this browser created
   // are added as candidates. Every candidate is still verified below: a stale
   // or foreign address simply fails the marker check and drops out.
   const candidates = [...new Set([...held, ...readKnown(networkId, account)])];
+  const details = await entityDetails(net, candidates);
   const found: UserSignCollection[] = [];
-  for (let i = 0; i < candidates.length; i += 20) {
-    const details = await entityDetails(net, candidates.slice(i, i + 20));
-    for (const item of details) {
-      if (!isSignCollection(item) || !belongsToCurrentSeal(item, networkId)) continue;
-      // Held ≠ owned: an invitation puts the ISSUER's collection among these.
-      if (!ownedBySeals(item, sealIds)) continue;
-      found.push(toCollection(item));
+  for (const item of details) {
+    if (!item.address || !isSignCollection(item) || !belongsToCurrentSeal(item, networkId)) {
+      continue;
     }
+    // Held ≠ owned: an invitation puts the ISSUER's collection among these.
+    if (!ownedBySeals(item, sealIds)) continue;
+    found.push(toCollection(item));
   }
   return found.sort(
     (a, b) =>

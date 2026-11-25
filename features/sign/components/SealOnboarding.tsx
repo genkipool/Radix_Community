@@ -10,9 +10,10 @@ import {
 } from '@/features/console/components/shared/SimulatePanel';
 import { useTransactionPreview } from '@/features/console/hooks/useTransactionPreview';
 import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
-import { buildSignCollectionCreateManifest } from '../lib/sign-request';
-import { buildSealMintManifest } from '../lib/radix-seal-manifest';
+import { sanitizeSymbol } from '../lib/nf-manifest-helpers';
+import { buildProvisionPreviewManifest } from '../lib/sign-request';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
+import { SignErrorText } from './SignErrorText';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { SignDictionary } from '../types/dictionary';
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
@@ -67,10 +68,6 @@ export function SealOnboarding({
         }
       : undefined;
 
-  const errorMsg = error
-    ? ((t.errors as Record<string, string>)[error] ?? t.errors.generic)
-    : '';
-
   // One click: mint the seal (if missing) and then create the collection. When
   // the seal is missing this sends TWO wallet transactions back to back.
   const onProvision = async () => {
@@ -96,25 +93,17 @@ export function SealOnboarding({
   // under the same conditions) and lets the user check either step won't error.
   const onSimulateCollection = () => {
     if (!account || activeNetworkId == null) return;
-    const sealResource = radixSealAddress(activeNetworkId);
-    if (setup.seal) {
-      collectionPreview.simulate(
-        buildSignCollectionCreateManifest({
-          account,
-          sealGlobalId: setup.seal.globalId,
-          sealAddress: sealResource,
-          networkId: activeNetworkId,
-          collectionName: issuer?.orgName ?? '',
-          symbol: symbol.trim() || undefined,
-          imageUrl: issuer?.orgLogoUrl ?? nftImage,
-          issuer,
-        }),
-      );
-    } else if (sealResource) {
-      collectionPreview.simulate(
-        buildSealMintManifest({ account, sealResource, imageUrl: nftImage }),
-      );
-    }
+    const manifest = buildProvisionPreviewManifest({
+      account,
+      networkId: activeNetworkId,
+      sealResource: radixSealAddress(activeNetworkId),
+      sealGlobalId: setup.seal?.globalId ?? null,
+      collectionName: issuer?.orgName ?? '',
+      symbol: symbol.trim() || undefined,
+      imageUrl: issuer?.orgLogoUrl ?? nftImage,
+      issuer,
+    });
+    if (manifest) collectionPreview.simulate(manifest);
   };
 
   return (
@@ -218,7 +207,7 @@ export function SealOnboarding({
         <LabeledInput
           label={t.onchain.collectionSymbol}
           value={symbol}
-          onChange={(v) => setSymbol(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5))}
+          onChange={(v) => setSymbol(sanitizeSymbol(v))}
           placeholder="SEAL"
           disabled={busy}
         />
@@ -275,9 +264,9 @@ export function SealOnboarding({
         )}
       </StepRow>
 
-      {errorMsg && (
+      {error && (
         <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
-          {errorMsg}
+          <SignErrorText t={t} code={error} />
         </p>
       )}
     </div>

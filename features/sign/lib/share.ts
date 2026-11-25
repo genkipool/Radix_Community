@@ -14,6 +14,7 @@
  */
 import type { OutputFormat } from '../types/sign.types';
 import type { WatermarkKind } from './pdf-watermark';
+export { networkIdFromResource } from './network';
 
 const REQUEST_KEY_RE = /^(resource_[a-z0-9_]+):?#?(\d+)#?$/;
 
@@ -28,13 +29,6 @@ export function parseRequestKey(
 /** Reads the `?net=` network id a share link carries, or null. */
 export function parseNetworkParam(value: string | null): number | null {
   return value === '1' ? 1 : value === '2' ? 2 : null;
-}
-
-/** `resource_rdx1…` → 1 (mainnet), `resource_tdx_2_1…` → 2 (stokenet). */
-export function networkIdFromResource(address: string): number | null {
-  if (address.startsWith('resource_rdx1')) return 1;
-  if (address.startsWith('resource_tdx_2_1')) return 2;
-  return null;
 }
 
 /* ── Output/watermark choices carried by the link ────────────────────────── */
@@ -139,4 +133,24 @@ export function buildShareUrl(input: {
 export function parseSendRoom(hash: string): string | null {
   const room = new URLSearchParams(hash.replace(/^#/, '')).get('s');
   return room && /^[0-9a-f]{32}$/.test(room) ? room : null;
+}
+
+/**
+ * Canonical public URL for the dedicated Radix Seal Audit & Registry page
+ * (`/<locale>/console/sign-audit?collection=…`). Single source of truth used
+ * by both the Web UI and MCP `audit_seal_collection`.
+ */
+export function buildAuditUrl(params: {
+  origin: string;
+  locale: string;
+  collection: string;
+  fromDate?: string;
+  toDate?: string;
+}): string {
+  const query = new URLSearchParams();
+  query.set('collection', params.collection);
+  if (params.fromDate) query.set('from', params.fromDate);
+  if (params.toDate) query.set('to', params.toDate);
+  const cleanOrigin = params.origin.replace(/\/+$/, '');
+  return `${cleanOrigin}/${params.locale}/console/sign-audit?${query.toString()}`;
 }

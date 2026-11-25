@@ -307,6 +307,8 @@ describe('collection-audit domain engine', () => {
         {
           hasVerifiedSeal: true,
           hasOwnCollection: true,
+          sealNftGlobalId: `${SEAL_RES}:{aaaa}`,
+          ownCollectionAddresses: ['resource_tdx_2_1nfsiga'],
           signaturesByHash: new Map([
             [
               DOC_HASH_1,
@@ -348,6 +350,21 @@ describe('collection-audit domain engine', () => {
     expect(records[1].status).toBe('partial');
     expect(records[1].signedCount).toBe(1);
     expect(records[1].totalSigners).toBe(2);
+    expect(records[1].signers[0].inviteNftGlobalId).toBe(`${COLLECTION}:#1#`);
+    expect(records[1].signers[0].nftGlobalId).toBe('resource_tdx_2_1nfsiga:#1#');
+    expect(records[1].signers[1].inviteNftGlobalId).toBe(`${COLLECTION}:#2#`);
+    expect(records[1].signers[1].nftGlobalId).toBeNull();
+
+    const dir = buildSignerDirectory(records, signerResults);
+    const signerAEntry = dir.find((s) => s.account === SIGNER_A)!;
+    expect(signerAEntry.sealNftGlobalId).toBe(`${SEAL_RES}:{aaaa}`);
+    expect(signerAEntry.ownCollectionAddresses).toEqual(['resource_tdx_2_1nfsiga']);
+    expect(signerAEntry.nftRefs).toEqual(
+      expect.arrayContaining([
+        { kind: 'invite', nftGlobalId: `${COLLECTION}:#1#`, docHash: DOC_HASH_1 },
+        { kind: 'signature', nftGlobalId: 'resource_tdx_2_1nfsiga:#1#', docHash: DOC_HASH_1 },
+      ]),
+    );
 
     const directory = buildSignerDirectory(records, signerResults);
     const entryA = directory.find((s) => s.account === SIGNER_A)!;

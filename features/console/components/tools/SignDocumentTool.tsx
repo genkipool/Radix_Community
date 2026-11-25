@@ -8,12 +8,14 @@ import {
   type ReactNode,
 } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { FileDown, ShieldCheck, Wallet } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { ProgressRow } from '@/features/p2p/components/ProgressRow';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import { useReceiveFileChannel } from '@/features/sign/hooks/useFileChannel';
+import { fetchOnChainStatus } from '@/features/sign/services/signApi';
 import {
   networkIdFromResource,
   parseNetworkParam,
@@ -21,15 +23,20 @@ import {
   parseSendRoom,
   parseWatermarkParams,
 } from '@/features/sign/lib/share';
+import { networkNameForId } from '@/features/sign/lib/network';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
 import { BasicSignForm } from '@/features/sign/components/BasicSignForm';
 import { EmbeddedPdfDetails } from '@/features/sign/components/EmbeddedPdfDetails';
-import { SignForm, envelopeComplete } from '@/features/sign/components/SignForm';
+import { SignForm } from '@/features/sign/components/SignForm';
 import { extractRadixAttachments, isPdfBytes } from '@/features/sign/lib/pdf-extract';
-import { downloadBytes, downloadCertificate } from '@/features/sign/lib/certificate';
+import {
+  downloadBytes,
+  downloadCertificate,
+  isFullySigned,
+} from '@/features/sign/lib/certificate';
 import type { AttestationEnvelope } from '@/features/sign/types/sign.types';
 import { VerifyForm } from '@/features/sign/components/VerifyForm';
 import { useDocumentFile } from '@/features/sign/hooks/useDocumentFile';
@@ -90,9 +97,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   useEffect(() => {
     if (requestNetworkId == null || networkForced.current) return;
     networkForced.current = true;
-    switchNetwork(
-      requestNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet',
-    );
+    switchNetwork(networkNameForId(requestNetworkId));
   }, [requestNetworkId, switchNetwork]);
 
   // Direct document delivery: the share link may carry a P2P room id in the
@@ -148,7 +153,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
           const bytes = new Uint8Array(await file.arrayBuffer());
           if (!isPdfBytes(bytes)) return;
           const att = await extractRadixAttachments(bytes);
-          if (!att.envelope || !envelopeComplete(att.envelope)) return;
+          if (!att.envelope || !isFullySigned(att.envelope)) return;
           setReceivedSigned({ bytes, name: file.name, envelope: att.envelope });
           // Nothing left to sign, so land on Verify: it shows every signature,
           // the on-ledger state and the hash check without another click.
@@ -171,6 +176,21 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   const effectiveOnchainAccount =
     onchainAccount ?? accounts[0]?.address ?? null;
   const setup = useSealSetup(effectiveOnchainAccount);
+  // Shares the exact react-query cache with OnChainSignPanel (zero extra calls)
+  // so we know whether the currently loaded file already matches the request's
+  // on-ledger hash (whether received via P2P or dropped manually).
+  const sharedStatusQuery = useQuery({
+    queryKey: ['sign-onchain-status', requestNetworkId, sharedRequestKey ?? ''],
+    queryFn: () =>
+      fetchOnChainStatus({
+        networkId: requestNetworkId!,
+        requestId: sharedRequestKey!,
+      }),
+    enabled: hasRequestParam && requestNetworkId != null,
+  });
+  const sharedRequestDocHash = sharedStatusQuery.data?.found
+    ? sharedStatusQuery.data.docHash
+    : null;
   // On-chain ("en cadena") toggle, lifted here so the seal/collection check only
   // runs once on-chain is selected: off-chain signing never needs them.
   const [onchain, setOnchain] = useState(hasRequestParam);
@@ -226,6 +246,16 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
     );
   }
 
+  const hasMatchingFileForRequest =
+    hasRequestParam &&
+    effectiveTab === 'sign' &&
+    !!doc.file &&
+    !!doc.docHash &&
+    !doc.fileError &&
+    (receive.phase === 'done' ||
+      (!!sharedRequestDocHash &&
+        doc.docHash.toLowerCase() === sharedRequestDocHash.toLowerCase()));
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <div
@@ -272,18 +302,26 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
         </ToolSection>
       )}
 
+      {/* On Verify tab, show "Consultar una firma en el ledger" at the very top
+          before the optional document dropzone. */}
+      {effectiveTab === 'verify' && (
+        <VerifyForm t={t} doc={doc} initialRequestKey={sharedRequestKey} />
+      )}
+
       {/* During onboarding the advanced tab shows ONLY what must be done now. */}
       {!cleanOnboarding && (
         <>
-          <p
-            className="text-xs leading-relaxed"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            <strong style={{ color: 'var(--color-text-main)' }}>
-              {effectiveTab === 'verify' ? t.verify.aboutTitle : t.disclaimer.title}.
-            </strong>{' '}
-            {effectiveTab === 'verify' ? t.verify.aboutBody : t.disclaimer.body}
-          </p>
+          {effectiveTab !== 'verify' && (
+            <p
+              className="text-xs leading-relaxed"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              <strong style={{ color: 'var(--color-text-main)' }}>
+                {t.disclaimer.title}.
+              </strong>{' '}
+              {t.disclaimer.body}
+            </p>
+          )}
 
           <ToolSection>
             {/* The request context lives WITH the document box: the co-signer's
@@ -292,21 +330,25 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
               <div
                 className="rounded-xl border px-4 py-3 space-y-1 text-sm"
                 style={{
-                  borderColor: 'var(--color-card-border)',
+                  borderColor: hasMatchingFileForRequest
+                    ? 'var(--color-success)'
+                    : 'var(--color-card-border)',
                   background: 'var(--color-surface)',
                 }}
               >
-                {requestDocName && (
+                {(requestDocName || doc.file?.name) && (
                   <p style={{ color: 'var(--color-text-main)' }}>
                     <span className="font-semibold">
                       {t.onchain.requestDocLabel}:
                     </span>{' '}
-                    {requestDocName}
+                    {doc.file?.name ?? requestDocName}
                   </p>
                 )}
-                <p style={{ color: 'var(--color-text-muted)' }}>
-                  {t.onchain.requestFilePrompt}
-                </p>
+                {!hasMatchingFileForRequest && (
+                  <p style={{ color: 'var(--color-text-muted)' }}>
+                    {t.onchain.requestFilePrompt}
+                  </p>
+                )}
                 {receive.phase !== 'idle' && (
                   <p
                     className="text-xs font-semibold"
@@ -361,15 +403,17 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                       : t.onchain.recvError}
               </p>
             )}
-            <FileDropzone
-              extension=""
-              label={t.file.label}
-              prompt={t.file.prompt}
-              file={doc.file}
-              onFile={doc.onFile}
-              busy={doc.hashing}
-              error={doc.fileError}
-            />
+            {!hasMatchingFileForRequest && (
+              <FileDropzone
+                extension=""
+                label={t.file.label}
+                prompt={t.file.prompt}
+                file={doc.file}
+                onFile={doc.onFile}
+                busy={doc.hashing}
+                error={doc.fileError}
+              />
+            )}
             {doc.docHash && !doc.hashing && (
               <div className="space-y-1">
                 <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
@@ -411,9 +455,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
             needsOnboarding={needsOnboarding}
           />
         </SignGate>
-      ) : (
-        <VerifyForm t={t} doc={doc} initialRequestKey={sharedRequestKey} />
-      )}
+      ) : null}
 
       {receivedSigned && (
         // A document that arrived signed by everyone: the verification above
