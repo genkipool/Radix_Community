@@ -82,7 +82,9 @@ export function AuditOverviewTab({
 
         {audit.issuer.orgUrl && (
           <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-            <dt className="text-[var(--color-text-muted)]">Web</dt>
+            <dt className="text-[var(--color-text-muted)]">
+              {labels.header.websiteLabel}
+            </dt>
             <dd>
               <a
                 href={audit.issuer.orgUrl}

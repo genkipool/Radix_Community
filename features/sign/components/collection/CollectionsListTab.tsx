@@ -88,7 +88,7 @@ export function CollectionsListTab({
                     <SafeImage
                       src={data?.imageUrl}
                       alt={data?.name || labels.seals.title}
-                      fallbackName={data?.name || 'Radix Seal'}
+                      fallbackName={data?.name || labels.seals.title}
                       className="size-11 shrink-0 rounded-lg object-cover"
                     />
                     <span className="min-w-0">

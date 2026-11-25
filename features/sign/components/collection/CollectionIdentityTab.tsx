@@ -219,12 +219,12 @@ export function CollectionIdentityTab({
                 labels.identity.orgNameHint,
                 undefined,
               ],
-              ['orgUrl', labels.identity.orgUrlLabel, undefined, 'https://…'],
+              ['orgUrl', labels.identity.orgUrlLabel, undefined, labels.identity.urlPlaceholder],
               [
                 'iconUrl',
                 labels.identity.logoLabel,
                 labels.identity.logoHint,
-                'https://…',
+                labels.identity.urlPlaceholder,
               ],
             ] as [ProfileKey, string, string | undefined, string | undefined][]
           ).map(([key, label, hint, placeholder]) => {

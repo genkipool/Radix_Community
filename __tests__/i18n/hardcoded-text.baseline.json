@@ -46,7 +46,6 @@
   "features/console/components/tools/McpTool.tsx": 5,
   "features/console/components/tools/MyResourcesTool.tsx": 1,
   "features/console/components/tools/PoolCreateTool.tsx": 1,
-  "features/console/components/tools/SignCollectionTool.tsx": 4,
   "features/console/components/tools/ValidatorInfoTool.tsx": 5,
   "features/dapps/DAppsClient.tsx": 1,
   "features/dashboard/components/DashboardCardGrid.tsx": 6,

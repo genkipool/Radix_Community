@@ -125,17 +125,10 @@ export function DomainVerificationDrawer({
               togglePin={togglePin}
               handlePiP={handlePiP}
               handlePopupWindow={handlePopupWindow}
-              pinText={t.nav?.wallet_pin_sidebar || 'Anclar como barra lateral'}
-              unpinText={
-                t.nav?.wallet_pin_sidebar_remove || 'Desanclar barra lateral'
-              }
-              pipText={
-                t.nav?.wallet_picture_in_picture ||
-                'Convertir a ventana picture in picture'
-              }
-              popupText={
-                t.nav?.wallet_popup_window || 'Convertir en ventana emergente'
-              }
+              pinText={t.nav?.wallet_pin_sidebar ?? ''}
+              unpinText={t.nav?.wallet_pin_sidebar_remove ?? ''}
+              pipText={t.nav?.wallet_picture_in_picture ?? ''}
+              popupText={t.nav?.wallet_popup_window ?? ''}
             />
             <button
               type="button"
