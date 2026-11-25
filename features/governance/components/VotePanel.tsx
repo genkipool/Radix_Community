@@ -7,9 +7,9 @@ import type { GovernanceEntry } from '../types';
 import { itemChoices } from '../lib/governanceVotes';
 import { useCastVote } from '../hooks/useCastVote';
 import { fill } from '../lib/format';
-import { TONE, type Gv } from './VoteParts';
+import { TONE } from './VoteParts';
 import { VoteAccess, VoteSubmit } from './VoteControls';
-import type { G } from './GovernanceBadges';
+import { stanceResolver, type G } from './GovernanceBadges';
 import { CollapsibleCard } from './CollapsibleCard';
 
 /**
@@ -23,9 +23,7 @@ export function VotePanel({ entry, system, g, language, now }: {
     language: string;
     now: number;
 }) {
-    const gv: Gv = g.vote ?? {};
-    const stances = (gv.stances ?? {}) as Record<string, string>;
-    const stanceLabel = (s: string) => stances[s] || s;
+    const stanceLabel = stanceResolver(g);
     const vote = useCastVote(entry, system, now, stanceLabel);
     const choices = itemChoices(entry.kind, entry.item, stanceLabel);
 

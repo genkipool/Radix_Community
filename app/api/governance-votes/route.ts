@@ -35,13 +35,16 @@ export async function GET(request: NextRequest) {
     if (!system) return NextResponse.json(null, { headers: NO_STORE });
 
     try {
-        const [tally, voters] = await Promise.all([
+        const [tally, voterData] = await Promise.all([
             fetchVoteTally(component, type, id, { account, withVoters }).catch(err => {
                 logger.warn({ err }, 'Vote collector unavailable for %s %s #%s', system.key, type, id);
                 return null;
             }),
             withVoters ? loadVoters(system, type, id) : Promise.resolve(null),
         ]);
+
+        const voters = voterData?.rows ?? null;
+        const closed = voterData?.closed ?? false;
 
         let rows: VoterRow[] | null = null;
         if (voters) {
@@ -53,12 +56,17 @@ export async function GET(request: NextRequest) {
         const missingRequestedPower = (Boolean(account) && tally?.accountPower == null)
             || (withVoters && (rows?.some(r => r.votePower === null) ?? true));
 
+        // Closed votes with complete power never change: cache longer at the edge CDN.
+        const cacheControl = closed
+            ? 'public, s-maxage=86400, stale-while-revalidate=604800'
+            : 'public, s-maxage=60, stale-while-revalidate=300';
+
         return NextResponse.json(
             tally || rows ? { results: tally?.results ?? [], accountPower: tally?.accountPower ?? null, voters: rows, source: tally?.source ?? null } : null,
             {
                 headers: missingRequestedPower
                     ? NO_STORE
-                    : { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+                    : { 'Cache-Control': cacheControl },
             },
         );
     } catch (error) {
@@ -73,5 +81,8 @@ async function loadVoters(system: GovernanceSystem, kind: CollectorItemType, id:
     const { start, deadline } = entry.item;
     const closed = votingPhase(entry.item, Date.now() / 1000) === 'closed';
     const records = await fetchVoteRecords(system, kind, id, { start, deadline, closed });
-    return records.map(r => ({ account: r.account, choices: r.choices, txid: r.txid, time: r.time, voteId: r.voteId, changes: r.votes - 1 }));
+    return {
+        closed,
+        rows: records.map(r => ({ account: r.account, choices: r.choices, txid: r.txid, time: r.time, voteId: r.voteId, changes: r.votes - 1 })),
+    };
 }

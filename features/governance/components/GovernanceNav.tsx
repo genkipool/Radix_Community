@@ -2,12 +2,15 @@
 
 import React, { createContext, use, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import type { GovernanceEntry } from '../types';
 
 interface GovernanceNav {
     /** The overview is the current page (otherwise it is folded away). */
     onOverview: boolean;
     /** The overview has been shown in this visit, so it stays mounted to fold and unfold. */
     overviewMounted: boolean;
+    /** All governance proposals and temperature checks loaded by the shell. */
+    entries: GovernanceEntry[];
     /**
      * Opens a vote. From the overview it jumps to the top and navigates without
      * the router's own scrolling, so the overview folds away above the vote
@@ -16,9 +19,9 @@ interface GovernanceNav {
     openVote: (href: string, e?: React.MouseEvent) => boolean;
 }
 
-const Ctx = createContext<GovernanceNav>({ onOverview: false, overviewMounted: false, openVote: () => false });
+const Ctx = createContext<GovernanceNav>({ onOverview: false, overviewMounted: false, entries: [], openVote: () => false });
 
-export function GovernanceNavProvider({ language, children }: { language: string; children: React.ReactNode }) {
+export function GovernanceNavProvider({ language, entries, children }: { language: string; entries: GovernanceEntry[]; children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const onOverview = pathname === `/${language}/governance`;
@@ -36,7 +39,7 @@ export function GovernanceNavProvider({ language, children }: { language: string
         return true;
     };
 
-    return <Ctx value={{ onOverview, overviewMounted, openVote }}>{children}</Ctx>;
+    return <Ctx value={{ onOverview, overviewMounted, entries, openVote }}>{children}</Ctx>;
 }
 
 export const useGovernanceNav = () => use(Ctx);

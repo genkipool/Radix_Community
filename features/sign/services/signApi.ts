@@ -1,4 +1,5 @@
 import { sha256Hex, timestampImprintInput } from '../lib/timestamp';
+import type { CollectionAuditResponse } from '../lib/collection-audit';
 import type {
   AttestationEnvelope,
   OnChainRequestRef,
@@ -147,4 +148,27 @@ export async function fetchOnChainStatus(body: {
     throw new Error(err.error || `status_failed_${res.status}`);
   }
   return (await res.json()) as OnChainStatus;
+}
+
+/**
+ * Fetches the live on-ledger audit snapshot for a Radix Seal signing
+ * collection (metadata, integrity checks, grouped records, and resolved
+ * signer statuses).
+ */
+export async function fetchCollectionAudit(body: {
+  networkId: number;
+  collection: string;
+  toId?: number;
+  limit?: number;
+}): Promise<CollectionAuditResponse> {
+  const res = await fetch('/api/sign/collection-audit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error || `audit_failed_${res.status}`);
+  }
+  return (await res.json()) as CollectionAuditResponse;
 }

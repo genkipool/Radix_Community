@@ -448,7 +448,8 @@
       "tabs": {
         "collections": "Mis colecciones",
         "create": "Crear colección",
-        "identity": "Identidad de emisor"
+        "identity": "Identidad de emisor",
+        "audit": "Auditoría y Registro"
       },
       "connect": {
         "title": "Conecta tu Radix Wallet",
@@ -526,6 +527,226 @@
         "otherTitle": "Resto de metadatos de la colección",
         "otherHint": "Todo lo demás que lleva la colección en la cadena, incluido lo que añadiste tú al crearla. Lo bloqueado no se puede cambiar nunca, ni por ti.",
         "saveHint": "Al pulsar recibirás una petición de firma en la wallet del móvil. Nada cambia en la cadena hasta que la apruebes."
+      },
+      "audit": {
+        "intro": {
+          "title": "Auditoría y registro institucional",
+          "body": "Registro de cumplimiento en solo lectura reconstruido directamente desde el ledger público de Radix. Cada lote de invitaciones se cruza con la colección Seal de cada firmante para verificar firmas reales, marcas de tiempo de consenso e integridad de custodia sin ningún servidor central."
+        },
+        "selector": {
+          "myCollections": "Mis colecciones",
+          "externalMode": "Auditor externo",
+          "externalPlaceholder": "Pega cualquier dirección de colección Radix Seal (resource_rdx1… o resource_tdx_2_1…)",
+          "externalLoad": "Auditar colección",
+          "externalHint": "Sin wallet necesaria: un inspector externo puede auditar cualquier colección pública o abrir un enlace de auditoría.",
+          "invalidAddress": "Introduce una dirección de recurso Radix válida (resource_rdx1… o resource_tdx_2_1…).",
+          "noOwnedCollections": "Esta cuenta aún no tiene una colección de firma. Crea una en la pestaña Crear o cambia a Auditor externo para inspeccionar una colección pública.",
+          "connectTip": "Conecta tu wallet para cargar automáticamente las colecciones de tu entidad, o pega abajo cualquier dirección de colección para auditarla en solo lectura."
+        },
+        "network": {
+          "mainnet": "Mainnet · Producción",
+          "stokenet": "Stokenet · Pruebas",
+          "stokenetNotice": "Entorno de pruebas (Stokenet): los registros mostrados pertenecen a cuentas de test y no constituyen evidencia productiva."
+        },
+        "header": {
+          "collectionLabel": "Colección auditada",
+          "issuerLabel": "Cuenta emisora",
+          "ledgerCutoff": "Corte del ledger",
+          "refresh": "Actualizar",
+          "refreshing": "Actualizando…",
+          "copyLink": "Compartir auditoría",
+          "linkCopied": "Enlace copiado",
+          "explorerLink": "Explorador",
+          "exportButton": "Exportar informe",
+          "exportPdf": "Informe Oficial de Auditoría (PDF)",
+          "exportCsvRecords": "Registro de Expedientes (CSV)",
+          "exportCsvSigners": "Directorio de Firmantes (CSV)",
+          "exportJson": "Paquete Verificable (JSON + SHA-256)",
+          "includeAliasesLabel": "Incluir alias locales de mi Agenda",
+          "includeAliasesHint": "Los nombres locales viven solo en este navegador (RGPD) y nunca se escriben en la cadena.",
+          "customMetaTitle": "Metadatos institucionales en cadena"
+        },
+        "integrity": {
+          "title": "Integridad criptográfica",
+          "standardOk": "Estándar oficial Radix Seal",
+          "standardWarn": "Marca o estándar no verificado",
+          "custodyOk": "Cadena de custodia bloqueada",
+          "custodyWarn": "Cadena de custodia incompleta",
+          "immutableOk": "Evidencia inalterable (sin borrado)",
+          "immutableWarn": "Posible mutabilidad o registros quemados",
+          "burnedNotice": "Se han detectado {count} NFT(s) quemados en el suministro."
+        },
+        "kpis": {
+          "total": "Expedientes",
+          "completed": "Completados",
+          "pending": "Pendientes / parciales",
+          "uniqueSigners": "Cuentas únicas",
+          "anomalies": "Alertas de integridad",
+          "ofRequests": "{rate}% completado"
+        },
+        "filters": {
+          "periodLabel": "Periodo de consenso (UTC)",
+          "presets": {
+            "all": "Todo",
+            "days7": "7d",
+            "month": "Este mes",
+            "quarter": "Trimestre",
+            "year": "Año"
+          },
+          "from": "Desde",
+          "to": "Hasta",
+          "categoryLabel": "Tipo de operación",
+          "categories": {
+            "all": "Todos los tipos",
+            "multi_request": "Solicitud multi-parte",
+            "solo_signature": "Firma directa",
+            "cosign_signature": "Cofirma",
+            "cipher": "Cifrado y custodia"
+          },
+          "statusLabel": "Estado",
+          "statuses": {
+            "all": "Todos los estados",
+            "complete": "Completados",
+            "pending": "Pendientes / parciales",
+            "recorded": "Registrados",
+            "anomaly": "Con alertas"
+          },
+          "searchPlaceholder": "Buscar por hash, txid, clave, dirección o alias local…",
+          "fileLookupButton": "Localizar archivo",
+          "fileLookupHint": "Calcula el hash en tu navegador (nunca se sube) para localizar sus expedientes.",
+          "fileLookupMatched": "Filtrando por hash del archivo ({name})",
+          "fileLookupClear": "Quitar archivo",
+          "clearAll": "Restablecer filtros",
+          "activeSignerChip": "Filtrado por firmante",
+          "clearSigner": "Quitar"
+        },
+        "subtabs": {
+          "records": "Registro de expedientes",
+          "signers": "Directorio de firmantes"
+        },
+        "records": {
+          "empty": "Esta colección todavía no tiene registros en la cadena.",
+          "emptyFiltered": "Ningún expediente coincide con los filtros actuales.",
+          "columns": {
+            "date": "Fecha de consenso",
+            "type": "Operación",
+            "document": "Huella del documento",
+            "compliance": "Estado",
+            "tx": "Transacción",
+            "actions": "Detalle"
+          },
+          "kinds": {
+            "multi_request": "Solicitud multi-parte",
+            "solo_signature": "Firma directa",
+            "cosign_signature": "Cofirma a terceros",
+            "cipher_signature": "Registro de cifrado",
+            "cipher_invite": "Autorización de descifrado",
+            "cipher_receipt": "Acuse de descifrado"
+          },
+          "status": {
+            "complete": "Completo",
+            "partial": "Parcial",
+            "pending": "Pendiente",
+            "recorded": "Registrado",
+            "anomaly": "Alerta"
+          },
+          "progress": "{signed}/{total} firmados",
+          "signedOn": "Firmado",
+          "pendingSigners": "Pendiente de firma",
+          "requestKeyLabel": "Clave de solicitud",
+          "nftIdsLabel": "NFTs en colección",
+          "openVerifier": "Abrir en Verificador",
+          "viewTx": "Ver tx",
+          "viewNft": "Ver NFT",
+          "anomalies": {
+            "incomplete_invite_batch": "Lote de invitaciones incompleto: el número de firmantes esperado no coincide con los NFTs intactos.",
+            "clock_mismatch": "La fecha declarada en el NFT discrepa de la hora de consenso de la red."
+          },
+          "clockOk": "Reloj de consenso corroborado",
+          "clockWarn": "Discrepancia temporal detectada",
+          "loadOlder": "Cargar registros anteriores",
+          "loadingOlder": "Cargando registros anteriores…",
+          "showingRange": "Mostrando registros #{from}–#{to} de {total} en la colección"
+        },
+        "signers": {
+          "intro": "Todas las cuentas Radix invitadas a firmar o con firmas registradas en esta colección.",
+          "gdprNote": "Privacidad (RGPD): los nombres y cargos se guardan únicamente en la Agenda local de este navegador y nunca se escriben en la blockchain.",
+          "empty": "No hay cuentas participantes en el rango actual.",
+          "columns": {
+            "participant": "Participante y dirección",
+            "seal": "Estado Radix Seal",
+            "invited": "Invitado",
+            "signed": "Firmado",
+            "pending": "Pendiente",
+            "lastActivity": "Última actividad",
+            "actions": "Acciones"
+          },
+          "sealVerified": "Seal oficial verificado",
+          "sealCollectionReady": "Colección de firma lista",
+          "sealUnverified": "Sin Seal aún",
+          "noAlias": "Dirección sin etiquetar",
+          "editAlias": "Etiquetar localmente",
+          "saveAlias": "Guardar",
+          "cancelAlias": "Cancelar",
+          "aliasPlaceholder": "p. ej. Ana García — Intervención",
+          "saveToBook": "Guardar en Agenda",
+          "savedInBook": "En tu Agenda",
+          "filterBySigner": "Ver expedientes"
+        },
+        "states": {
+          "loading": "Auditando colección contra el ledger de Radix…",
+          "notFound": "No es una colección de firma Radix Seal",
+          "notFoundHint": "El recurso no existe o no declara el marcador estándar radix_sign_collection = v1.",
+          "error": "No se pudo completar la auditoría: {message}",
+          "emptyCollection": "Sin registros emitidos aún",
+          "emptyCollectionHint": "La colección supera los controles de integridad; los expedientes aparecerán aquí en cuanto se firmen documentos o se envíen solicitudes."
+        },
+        "pdf": {
+          "title": "Radix Seal · Informe Institucional de Auditoría",
+          "tagline": "Registro verificable en ledger — generado localmente sin custodia central",
+          "testnetWarning": "ENTORNO DE PRUEBAS (STOKENET) — SOLO REGISTROS DE TEST, NO EVIDENCIA PRODUCTIVA",
+          "scopeSection": "1. Alcance de auditoría y corte del ledger",
+          "institution": "Institución",
+          "collection": "Colección de firma",
+          "issuerAccount": "Cuenta emisora verificada",
+          "network": "Red",
+          "ledgerCutoff": "Versión de estado de corte",
+          "period": "Periodo auditado",
+          "periodAll": "Todo el histórico escaneado",
+          "generatedAt": "Informe generado",
+          "integritySection": "2. Controles de integridad criptográfica",
+          "integrityStandard": "Estándar oficial Radix Seal (v1)",
+          "integrityCustody": "Cadena de custodia soulbound bloqueada",
+          "integrityImmutable": "Inmutabilidad (quema denegada y cero borrados)",
+          "integrityPass": "VERIFICADO",
+          "integrityWarn": "REVISAR",
+          "summarySection": "3. Resumen ejecutivo",
+          "kpiTotal": "Expedientes",
+          "kpiCompleted": "Completados",
+          "kpiPending": "Pendientes",
+          "kpiSigners": "Cuentas",
+          "kpiAnomalies": "Alertas",
+          "recordsSection": "4. Expedientes auditados",
+          "noRecords": "Ningún expediente coincide con los filtros de auditoría seleccionados.",
+          "signersDirectorySection": "5. Directorio de direcciones Radix participantes",
+          "aliasesNote": "Nota: los nombres mostrados entre paréntesis proceden de la Agenda local de este navegador (fuera de cadena) y no constan en el ledger de Radix.",
+          "statusComplete": "Completo",
+          "statusPartial": "Parcial",
+          "statusPending": "Pendiente",
+          "statusRecorded": "Registrado",
+          "statusAnomaly": "Alerta",
+          "hashLabel": "BLAKE2b-256 del documento",
+          "txLabel": "TxID de anclaje",
+          "signedLabel": "Firmado",
+          "pendingLabel": "Pendiente",
+          "sealVerified": "Seal oficial verificado",
+          "sealMissing": "Sin Seal",
+          "verifySection": "6. Reverificación pública en vivo",
+          "verifyInstruction": "Escanea el código QR o abre el enlace inferior para consultar esta colección en directo contra el ledger público de Radix.",
+          "disclaimerTitle": "Alcance y nota probatoria",
+          "disclaimerBody": "Este informe refleja hechos públicos del ledger en la versión de estado de corte indicada. El contenido de los documentos nunca sale del dispositivo de los firmantes; en cadena solo constan hashes BLAKE2b-256, direcciones de cuenta y marcas de tiempo de consenso. La identidad legal requiere vinculación KYC/X.509 externa.",
+          "pageOf": "Página {page} de {total}"
+        }
       }
     }
   },

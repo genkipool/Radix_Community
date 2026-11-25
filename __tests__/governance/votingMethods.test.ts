@@ -98,6 +98,108 @@ describe('new methods', () => {
         expect(r.rows.find(x => x.key === 'For')!.power).toBe(1);
         expect(r.rows.find(x => x.key === 'Against')!.power).toBe(15);
     });
+
+    it('high-security decentralised veteran methods cap whales while blocking new-account splitting', () => {
+        const bigVoters: MethodVoter[] = [
+            voter('vet_whale', 'For', 5_000_000, 900),
+            voter('fresh_whale', 'For', 5_000_000, 30),
+            voter('vet_mid_1', 'Against', 500_000, 900),
+            voter('vet_mid_2', 'Against', 500_000, 900),
+            voter('vet_mid_3', 'Against', 500_000, 900),
+        ];
+        const results = compareMethods(bigVoters, choices, item);
+        const get = (k: string) => results.find(r => r.key === k)!;
+
+        // capped_veterans: fresh_whale excluded; vet_whale capped at 1M vs 1.5M against -> rejected, high resistance.
+        const cappedVet = get('capped_veterans');
+        expect(cappedVet.resistance).toBe('high');
+        expect(cappedVet.counted).toBe(4);
+        expect(cappedVet.rows.find(x => x.key === 'For')!.power).toBe(1_000_000);
+        expect(cappedVet.outcome).toBe('rejected');
+
+        // capped_veterans_5m / 10m: vet_whale (5M) weighs 5M, fresh_whale excluded; capped_5m caps both at 5M.
+        const cappedVet5m = get('capped_veterans_5m');
+        expect(cappedVet5m.resistance).toBe('high');
+        expect(cappedVet5m.rows.find(x => x.key === 'For')!.power).toBe(5_000_000);
+        const cappedVet10m = get('capped_veterans_10m');
+        expect(cappedVet10m.resistance).toBe('high');
+        expect(cappedVet10m.rows.find(x => x.key === 'For')!.power).toBe(5_000_000);
+        expect(get('capped_5m').rows.find(x => x.key === 'For')!.power).toBe(10_000_000);
+
+        // capped_share_veterans: 5% of 6.5M veteran XRD = 325k cap -> vet_whale and all 3 mids capped at 325k each.
+        const cappedShareVet = get('capped_share_veterans');
+        expect(cappedShareVet.resistance).toBe('high');
+        expect(cappedShareVet.rows.find(x => x.key === 'For')!.power).toBeCloseTo(325_000);
+        expect(cappedShareVet.outcome).toBe('rejected');
+        expect(cappedShareVet.concentration.spread).toBeCloseTo(1);
+
+        // marginal_veterans: vet_whale 5M -> 100k + 450k + 400k = 950k; each 500k mid -> 100k + 200k = 300k (900k total).
+        const marginalVet = get('marginal_veterans');
+        expect(marginalVet.resistance).toBe('high');
+        expect(marginalVet.rows.find(x => x.key === 'For')!.power).toBeCloseTo(950_000);
+        expect(marginalVet.rows.find(x => x.key === 'Against')!.power).toBeCloseTo(900_000);
+        expect(marginalVet.attack).toMatchObject({ years: 2 });
+
+        // double_majority_sybil: capital favours For (10M vs 1.5M), but veteran funded (>=10k, 2y) headcount is 1 vs 3 -> rejected.
+        const dmSybil = get('double_majority_sybil');
+        expect(dmSybil.resistance).toBe('medium');
+        expect(dmSybil.headcountShare).toBeCloseTo(1 / 4);
+        expect(dmSybil.outcome).toBe('rejected');
+        expect(dmSybil.attack).toMatchObject({ addresses: 2, years: 2 });
+
+        // hybrid_half_veterans: excludes fresh_whale, 50% XRD + 50% equal among 4 veteran funded accounts.
+        const hybridVet = get('hybrid_half_veterans');
+        expect(hybridVet.resistance).toBe('medium');
+        expect(hybridVet.counted).toBe(4);
+        expect(hybridVet.attack).toMatchObject({ years: 2 });
+
+        // deductible_linear: superadditive — splitting loses 10k per account.
+        const deductible = get('deductible_linear');
+        expect(deductible.resistance).toBe('high');
+        expect(deductible.rows.find(x => x.key === 'For')!.power).toBe(9_980_000);
+        expect(deductible.rows.find(x => x.key === 'Against')!.power).toBe(1_470_000);
+
+        // capped_share_veterans_1: 1% of 6.5M veteran XRD = 65k cap per veteran address.
+        const cap1Vet = get('capped_share_veterans_1');
+        expect(cap1Vet.resistance).toBe('high');
+        expect(cap1Vet.rows.find(x => x.key === 'For')!.power).toBeCloseTo(65_000);
+        expect(cap1Vet.outcome).toBe('rejected');
+    });
+
+    it('staked-only, staked-capped, TWAB 90d and held 90d neutralise liquid and flash-bought capital', () => {
+        const histVoters: MethodVoter[] = [
+            // Flash-buyer: 10M liquid bought at opening, 0 staked, 0 before opening (TWAB = 2.5M, min = 0)
+            { account: 'flash', choices: ['For'], power: 10_000_000, ageDays: 900, stakedXrd: 0, twab90Xrd: 2_500_000, min90Xrd: 0 },
+            // Long-term stakers: 2M staked continuously for 90+ days
+            { account: 'staker1', choices: ['Against'], power: 2_000_000, ageDays: 900, stakedXrd: 2_000_000, twab90Xrd: 2_000_000, min90Xrd: 2_000_000 },
+            { account: 'staker2', choices: ['Against'], power: 2_000_000, ageDays: 900, stakedXrd: 2_000_000, twab90Xrd: 2_000_000, min90Xrd: 2_000_000 },
+        ];
+        const results = compareMethods(histVoters, choices, item);
+        const get = (k: string) => results.find(r => r.key === k)!;
+
+        // Linear: flash-buyer wins 10M vs 4M
+        expect(get('linear').outcome).toBe('approved');
+
+        // Staked-only: flash-buyer gets 0 -> stakers win 4M vs 0
+        expect(get('staked_only').resistance).toBe('high');
+        expect(get('staked_only').counted).toBe(2);
+        expect(get('staked_only').outcome).toBe('rejected');
+
+        // Staked-capped (5% of 4M = 200k each): stakers win equally
+        expect(get('staked_capped_share').resistance).toBe('high');
+        expect(get('staked_capped_share').outcome).toBe('rejected');
+        expect(get('staked_capped_share').concentration.spread).toBeCloseTo(1);
+
+        // TWAB 90d: flash-buyer only gets 2.5M vs 4M -> rejected
+        expect(get('twab_90d').resistance).toBe('high');
+        expect(get('twab_90d').rows.find(x => x.key === 'For')!.power).toBe(2_500_000);
+        expect(get('twab_90d').outcome).toBe('rejected');
+
+        // Held 90d: flash-buyer gets 0 -> rejected
+        expect(get('held_90d').resistance).toBe('high');
+        expect(get('held_90d').counted).toBe(2);
+        expect(get('held_90d').outcome).toBe('rejected');
+    });
 });
 
 describe('resistance to manipulation', () => {
@@ -111,7 +213,7 @@ describe('resistance to manipulation', () => {
         // 1 in favour, 5 against: 4 empty addresses in favour tie it at 50 % and it passes.
         const r = byKey('one_address');
         expect(r.resistance).toBe('very_low');
-        expect(r.attack).toEqual({ xrd: 4, addresses: 4, years: 0 });
+        expect(r.attack).toEqual({ xrd: 4, addresses: 4, years: 0, perAddress: true });
     });
 
     it('asks for old accounts when the rule leaves new ones out', () => {

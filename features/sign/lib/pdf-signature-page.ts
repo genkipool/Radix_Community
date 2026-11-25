@@ -18,7 +18,7 @@
  * CA-verified legal identity, so the page says exactly that and never imitates
  * a qualified (eIDAS QES) signature appearance.
  */
-import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
+import type { PDFDocument } from 'pdf-lib';
 import type { AttestationEnvelope, SignatureEntry } from '../types/sign.types';
 import type { SignDictionary } from '../types/dictionary';
 import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
@@ -27,24 +27,25 @@ import { SEAL_IMAGE_PATH } from '../constants/seal';
 import { findCollectionIssuer, findCollectionProfile } from '../services/sealDiscovery';
 import { explorerTxUrl } from './explorer';
 import { buildShareUrl, parseRequestKey } from './share';
-import { svgUrlToPngBytes, fetchImageBytes } from './pdf-watermark';
 import { pdfSafeText } from './pdf-text';
+import {
+  ACCENT,
+  INK,
+  MARGIN,
+  MUTED,
+  PAGE_W,
+  PdfCursor,
+  base64PngToBytes,
+  createPdfLinkFn,
+  drawBrandedHeaderBand,
+  embedRemoteImage,
+  parseColor,
+  readBrandAccent,
+  readableOnWhite,
+  type Rgb01,
+} from './pdf-layout';
 
-/** An RGB triple in the 0..1 range that pdf-lib's colours use. */
-type Rgb01 = [number, number, number];
-
-/** pdf-lib's `rgb(r,g,b)` helper, injected so the Cursor stays synchronous. */
-type RgbFn = (r: number, g: number, b: number) => RGB;
-
-/**
- * Registers a clickable URI annotation over a rectangle of a page, injected for
- * the same reason as `RgbFn` (pdf-lib is imported dynamically).
- */
-type LinkFn = (
-  page: PDFPage,
-  rect: [number, number, number, number],
-  url: string,
-) => void;
+export { parseColor, readBrandAccent };
 
 /** Localised strings for the page (supplied by the caller's dictionary). */
 export interface CertificatePageLabels {
@@ -293,106 +294,6 @@ export async function signaturePageOptions(
   };
 }
 
-// ─── Layout constants (A4 portrait, points) ──────────────────────────────────
-
-const PAGE_W = 595.28;
-const PAGE_H = 841.89;
-const MARGIN = 54;
-const CONTENT_W = PAGE_W - MARGIN * 2;
-
-/** Side of the header seal in points, and the PNG it is rasterised from. */
-const SEAL_LOGO_SIZE = 44;
-const SEAL_LOGO_RASTER = 512;
-
-const INK: Rgb01 = [0.11, 0.13, 0.2];
-const MUTED: Rgb01 = [0.42, 0.45, 0.55];
-/** Default accent (indigo) when the theme's brand colour can't be read. */
-const ACCENT: Rgb01 = [0.29, 0.33, 0.92];
-const LINE: Rgb01 = [0.86, 0.88, 0.93];
-const WHITE: Rgb01 = [1, 1, 1];
-
-// ─── Colour helpers ───────────────────────────────────────────────────────────
-
-/** Parses `#rgb`, `#rrggbb` or `rgb(r,g,b)` into a 0..1 triple, or null. */
-export function parseColor(css: string): Rgb01 | null {
-  const s = css.trim();
-  const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (hex) {
-    const h = hex[1];
-    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-    const n = parseInt(full, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255) as Rgb01;
-  }
-  const rgb = s.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
-  if (rgb) {
-    return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])].map((v) =>
-      Math.min(1, v / 255),
-    ) as Rgb01;
-  }
-  return null;
-}
-
-/** Rough relative luminance (0..1), enough to choose readable text colours. */
-function luminance([r, g, b]: Rgb01): number {
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** Darkens a colour just enough to stay readable as text on a white page. */
-function readableOnWhite(c: Rgb01): Rgb01 {
-  const l = luminance(c);
-  if (l <= 0.45) return c;
-  const f = 0.45 / l;
-  return [c[0] * f, c[1] * f, c[2] * f];
-}
-
-// ─── Small helpers ────────────────────────────────────────────────────────────
-
-/** Wraps text to `maxWidth`, breaking over-long tokens (hashes, addresses). */
-function wrapLines(
-  text: string,
-  font: PDFFont,
-  size: number,
-  maxWidth: number,
-): string[] {
-  const out: string[] = [];
-  for (const paragraph of text.split('\n')) {
-    let line = '';
-    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
-        line = candidate;
-        continue;
-      }
-      if (line) out.push(line);
-      // A single token wider than the line (hash/address): hard-break it.
-      if (font.widthOfTextAtSize(word, size) > maxWidth) {
-        let chunk = '';
-        for (const ch of word) {
-          if (font.widthOfTextAtSize(chunk + ch, size) > maxWidth) {
-            out.push(chunk);
-            chunk = ch;
-          } else {
-            chunk += ch;
-          }
-        }
-        line = chunk;
-      } else {
-        line = word;
-      }
-    }
-    out.push(line);
-  }
-  return out;
-}
-
-function base64PngToBytes(dataUrl: string): Uint8Array {
-  const base64 = dataUrl.split(',')[1] ?? '';
-  const bin = atob(base64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
-
 function shortAccount(account: string): string {
   return account.length > 24
     ? `${account.slice(0, 11)}…${account.slice(-6)}`
@@ -415,182 +316,7 @@ function fmtDate(iso: string, locale: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(locale);
 }
 
-/**
- * Loads a (possibly cross-origin) image URL into a pdf-lib image. SVGs are
- * rasterised via canvas; PNG/JPG bytes are fetched directly. Best-effort: any
- * CORS/parse failure returns null so the issuer logo is simply omitted.
- */
-async function embedRemoteImage(
-  pdfDoc: PDFDocument,
-  url: string,
-): Promise<PDFImage | null> {
-  try {
-    const lower = url.toLowerCase();
-    const isSvg = lower.endsWith('.svg') || lower.startsWith('data:image/svg');
-    const bytes = isSvg ? await svgUrlToPngBytes(url, 256) : await fetchImageBytes(url);
-    if (!bytes) return null;
-    const isJpg =
-      /\.jpe?g($|\?)/.test(lower) || lower.startsWith('data:image/jpeg');
-    return isJpg
-      ? await pdfDoc.embedJpg(bytes as Uint8Array<ArrayBuffer>).catch(() => null)
-      : await pdfDoc.embedPng(bytes as Uint8Array<ArrayBuffer>).catch(() => null);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Reads the active theme's brand colour (`--color-primary`) as a 0..1 RGB
- * triple, for tinting the certificate. Undefined outside the browser or when
- * the value can't be parsed, so the renderer falls back to its default accent.
- */
-export function readBrandAccent(): Rgb01 | undefined {
-  if (typeof window === 'undefined' || typeof getComputedStyle !== 'function')
-    return undefined;
-  try {
-    const value = getComputedStyle(document.documentElement)
-      .getPropertyValue('--color-primary')
-      .trim();
-    return parseColor(value) ?? undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 // ─── The renderer ─────────────────────────────────────────────────────────────
-
-/**
- * A tiny top-down cursor over one or more appended pages. Adds a fresh page
- * when the content runs past the bottom margin, so many signers never overflow.
- */
-class Cursor {
-  page: PDFPage;
-  y: number;
-  constructor(
-    private doc: PDFDocument,
-    private fonts: { regular: PDFFont; bold: PDFFont },
-    private rgbFn: RgbFn,
-    /** Accent already darkened to stay readable on the white page. */
-    private accentInk: Rgb01,
-    private linkFn: LinkFn,
-  ) {
-    this.page = doc.addPage([PAGE_W, PAGE_H]);
-    this.y = PAGE_H - MARGIN;
-  }
-
-  private rgb(c: [number, number, number]): RGB {
-    return this.rgbFn(c[0], c[1], c[2]);
-  }
-
-  ensure(space: number) {
-    if (this.y - space < MARGIN) {
-      this.page = this.doc.addPage([PAGE_W, PAGE_H]);
-      this.y = PAGE_H - MARGIN;
-    }
-  }
-
-  gap(h: number) {
-    this.y -= h;
-  }
-
-  /** Draws wrapped text at the cursor and advances past it. */
-  text(
-    value: string,
-    opts: {
-      size?: number;
-      bold?: boolean;
-      color?: [number, number, number];
-      x?: number;
-      maxWidth?: number;
-      lineGap?: number;
-      /** Makes every line of this text a clickable link to `url`. */
-      link?: string;
-    } = {},
-  ) {
-    const size = opts.size ?? 10;
-    const font = opts.bold ? this.fonts.bold : this.fonts.regular;
-    const x = opts.x ?? MARGIN;
-    const maxWidth = opts.maxWidth ?? CONTENT_W - (x - MARGIN);
-    const lineHeight = size * 1.35;
-    // Every string the page draws funnels through here, ours and other
-    // people's alike, so this is the one place the sanitiser has to be for it
-    // not to be forgotten later. Our own labels are plain ASCII and hold no
-    // line breaks, so passing them through costs nothing. See pdf-text.ts.
-    const lines = wrapLines(pdfSafeText(value, 600), font, size, maxWidth);
-    for (const line of lines) {
-      this.ensure(lineHeight);
-      this.page.drawText(line, {
-        x,
-        y: this.y - size,
-        size,
-        font,
-        color: this.rgb(opts.color ?? INK),
-      });
-      // One annotation per LINE: a long hash wraps, and a single rectangle
-      // around the block would swallow the whitespace beside the short line.
-      if (opts.link) {
-        const width = font.widthOfTextAtSize(line, size);
-        this.linkFn(
-          this.page,
-          [x, this.y - size - size * 0.2, x + width, this.y + size * 0.15],
-          opts.link,
-        );
-      }
-      this.y -= lineHeight;
-    }
-    if (opts.lineGap) this.y -= opts.lineGap;
-  }
-
-  /** A "Label: value" field where the label is muted and value wraps below. */
-  field(
-    label: string,
-    value: string,
-    opts: {
-      mono?: boolean;
-      link?: string;
-      color?: Rgb01;
-      /**
-       * A readable line drawn between the label and the value — a resource's
-       * name above its address. Skipped when empty, so the field looks exactly
-       * as it always did whenever there is no name to show.
-       */
-      lead?: string;
-    } = {},
-  ) {
-    this.text(label.toUpperCase(), { size: 7.5, bold: true, color: MUTED });
-    this.gap(1);
-    if (opts.lead) {
-      this.text(opts.lead, { size: 10.5 });
-      this.gap(1);
-    }
-    this.text(value, {
-      size: opts.mono ? 9 : 10.5,
-      link: opts.link,
-      color: opts.color,
-    });
-    this.gap(6);
-  }
-
-  sectionTitle(label: string) {
-    this.ensure(30);
-    this.gap(6);
-    this.text(label, { size: 12, bold: true, color: this.accentInk });
-    this.gap(3);
-    this.rule();
-    this.gap(6);
-  }
-
-  rule() {
-    this.ensure(2);
-    this.page.drawLine({
-      start: { x: MARGIN, y: this.y },
-      end: { x: PAGE_W - MARGIN, y: this.y },
-      thickness: 0.75,
-      color: this.rgb(LINE),
-    });
-    this.y -= 2;
-  }
-}
 
 /**
  * Appends the visible signature-certificate page(s) to `pdfDoc`. Best-effort:
@@ -602,28 +328,13 @@ export async function appendSignaturePage(
   envelope: AttestationEnvelope,
   opts: CertificatePageOptions,
 ): Promise<void> {
-  const { PDFName, PDFString, StandardFonts, rgb } = await import('pdf-lib');
+  const { StandardFonts, rgb } = await import('pdf-lib');
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const { labels: L, locale } = opts;
   const { payload } = envelope;
 
-  /** Adds a bare (border-less) URI link over a rectangle of a page. */
-  const addLink: LinkFn = (page, rect, url) => {
-    const ref = pdfDoc.context.register(
-      pdfDoc.context.obj({
-        Type: 'Annot',
-        Subtype: 'Link',
-        Rect: rect,
-        // No visible frame: the accent-coloured text is the affordance.
-        Border: [0, 0, 0],
-        A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
-      }),
-    );
-    const annots = page.node.Annots();
-    if (annots) annots.push(ref);
-    else page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([ref]));
-  };
+  const addLink = await createPdfLinkFn(pdfDoc);
 
   /**
    * This deployment's explorer page for a transaction, or undefined when the
@@ -635,68 +346,17 @@ export async function appendSignaturePage(
       ? explorerTxUrl(locale, hash, { origin: opts.origin, network: opts.network })
       : undefined;
 
-
-  // Brand accent (from the active theme) tints the band, section titles and
-  // links; the page stays white with dark ink, so it prints cleanly whatever
-  // the signer's theme. `accentInk` is darkened enough to read on white; the
-  // band picks light or dark text from the accent's own luminance.
   const accent: Rgb01 = opts.accent ?? ACCENT;
   const accentInk = readableOnWhite(accent);
-  const lightBand = luminance(accent) > 0.6;
-  const bandText: Rgb01 = lightBand ? INK : WHITE;
-  const bandSubText: Rgb01 = lightBand ? MUTED : [0.9, 0.91, 0.98];
 
-  const cur = new Cursor(pdfDoc, { regular, bold }, rgb, accentInk, addLink);
+  const cur = new PdfCursor(pdfDoc, { regular, bold }, rgb, accentInk, addLink);
 
-  // ── Header band ──
-  const bandH = 74;
-  const bandY = PAGE_H - bandH;
-  cur.page.drawRectangle({
-    x: 0,
-    y: bandY,
-    width: PAGE_W,
-    height: bandH,
-    color: rgb(accent[0], accent[1], accent[2]),
+  await drawBrandedHeaderBand(pdfDoc, cur, {
+    title: L.title,
+    tagline: L.tagline,
+    sealImageUrl: opts.sealImageUrl,
+    accent,
   });
-
-  // Seal logo (optional; skipped silently if it can't be rasterised). Drawn
-  // small but rasterised large: the old 200 px across a 40 pt mark is barely
-  // above screen resolution, and the seal's rings turned to mush in print.
-  let logoRight = MARGIN;
-  if (opts.sealImageUrl) {
-    try {
-      const png = await svgUrlToPngBytes(opts.sealImageUrl, SEAL_LOGO_RASTER);
-      if (png) {
-        const img = await pdfDoc.embedPng(png as Uint8Array<ArrayBuffer>);
-        const dim = SEAL_LOGO_SIZE;
-        cur.page.drawImage(img, {
-          x: MARGIN,
-          y: bandY + (bandH - dim) / 2,
-          width: dim,
-          height: dim,
-        });
-        logoRight = MARGIN + dim + 14;
-      }
-    } catch {
-      // No logo — the title alone is fine.
-    }
-  }
-  cur.page.drawText(L.title, {
-    x: logoRight,
-    y: bandY + bandH - 34,
-    size: 20,
-    font: bold,
-    color: rgb(bandText[0], bandText[1], bandText[2]),
-  });
-  cur.page.drawText(L.tagline, {
-    x: logoRight,
-    y: bandY + bandH - 52,
-    size: 9,
-    font: regular,
-    color: rgb(bandSubText[0], bandSubText[1], bandSubText[2]),
-  });
-
-  cur.y = bandY - 22;
 
   // ── Document section ──
   cur.sectionTitle(L.documentSection);

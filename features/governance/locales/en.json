@@ -201,6 +201,51 @@
     "tab_temperature_check": "Temperature check",
     "tab_results": "Result",
     "tab_compare": "Comparison",
+    "tab_historical": "Historical comparison",
+    "historical": {
+      "heading": "Historical voting methods comparison",
+      "intro": "Sums every ballot, address, and millions of XRD across all governance proposals and temperature checks, comparing how each voting method would have performed overall: how many outcomes would have changed, cumulative ballots and eligible XRD, and average decentralisation.",
+      "tallies_loading": "Reading votes: {n} of {total}",
+      "tallies_done": "{total} votes read from history",
+      "kpi_votes": "Votes analysed",
+      "kpi_ballots": "Cumulative ballots",
+      "kpi_xrd": "Cumulative XRD",
+      "kpi_effective": "Most effective",
+      "kpi_ineffective": "Least effective",
+      "kpi_effective_hint": "{resistance} resistance · {pct} decentralisation · quorum in {valid} of {total} votes",
+      "tip_kpi_effective": "Method with the best combination of all three factors: manipulation resistance, average decentralisation, and share of votes reaching quorum (geometric mean of the three).",
+      "tip_kpi_ineffective": "Method with the worst combination of manipulation resistance, average decentralisation, and share of votes reaching quorum.",
+      "kpi_most_changes": "Most outcome flips",
+      "kpi_most_changes_hint": "would have produced a different outcome (another winner, rejection, or no quorum) in {n} of {total} votes vs 1 XRD = 1 vote",
+      "tip_kpi_most_changes": "Method whose verdict (approved, rejected, no quorum, different winning option, or no qualifying voters) differs in the most votes compared with the current method (1 XRD = 1 vote).",
+      "kpi_current_hint": "control >50 % on average (out of {voters} voters · {pct} decentralisation · {avg} XRD/vote)",
+      "fact_unique": "Unique addresses",
+      "fact_avg_xrd": "Average per vote",
+      "col_changes": "Outcome flips",
+      "tip_col_changes": "How many historical votes would have produced a different outcome from 1 XRD = 1 vote under this method.",
+      "tip_col_ballots": "Total individual ballots cast across all votes that count under this method.",
+      "tip_col_xrd": "Sum of the XRD held by qualifying addresses across all analysed votes.",
+      "tip_changes": "This method would have changed the outcome in {n} of {total} votes ({pct}) compared with the current method (1 XRD = 1 vote).",
+      "tip_changes_zero": "This method would have given the same outcome as 1 XRD = 1 vote in all {total} votes.",
+      "tip_ballots": "Out of {total} cumulative ballots in history, {n} count under this method ({out} are excluded for not meeting its requirements).",
+      "tip_ballots_share": "{pct} of the {total} cumulative ballots ({n} of {total}) count under this method.",
+      "tip_xrd": "{total} cumulative XRD across {votes} evaluated votes (average of {avg} XRD per vote).",
+      "tip_spread": "Average of {n} addresses to control 50 % of the weight across {votes} votes · {eff} effective voters on average · {spread} decentralisation ({level}).",
+      "detail_decisive": "Across the {votes} votes that reached quorum and had a valid result under this method, on average just {count} addresses ({pct} of the {of} voting per vote, holding {xrd} XRD per vote and {totalXrd} XRD cumulative) were enough to decide the outcome, even if everyone else had voted the other way.",
+      "col_ballots": "Cumulative ballots",
+      "col_xrd": "Cumulative XRD",
+      "col_spread": "Avg. decentralisation",
+      "detail_votes": "Votes evaluated",
+      "detail_effective": "Avg. effective voters",
+      "tip_detail_votes": "Number of historical votes where at least one address met this method's requirements ({votes} of {total}).",
+      "tip_detail_effective": "Arithmetic mean of effective voters across the {votes} evaluated votes. In each vote it is computed as 1 / Σ(weightᵢ / total weight)²: the number of equal-weight voters that would produce the same concentration.",
+      "tip_detail_xrd": "Sum of the XRD held by qualifying addresses in each of the {votes} evaluated votes ({total} XRD total; average of {avg} XRD per vote). If an address voted in multiple proposals, its XRD is summed in each vote it joined.",
+      "tip_detail_spread": "Arithmetic mean of the decentralisation score across the {votes} evaluated votes ({pct}). In each vote it is computed as effective voters / voting addresses (Simpson evenness, from 0 % to 100 %; 100 % when every address weighs the same).",
+      "changed_list_title": "Votes whose outcome would have changed ({n})",
+      "changed_col_vote": "Vote",
+      "changed_col_current": "With 1 XRD = 1 vote",
+      "changed_col_method": "With this method"
+    },
     "kpi_turnout": "Turnout",
     "kpi_quorum": "Quorum reached",
     "kpi_support": "In favour",
@@ -277,6 +322,9 @@
       "list_title": "{n} ways to count the same votes",
       "filter_label": "Method family",
       "filter_all": "All",
+      "search_placeholder": "Search by method, resistance, decentralisation, or result...",
+      "search_clear": "Clear search",
+      "search_empty": "No voting methods match that search.",
       "families": {
         "wealth": "By XRD",
         "address": "Per address",
@@ -337,12 +385,12 @@
       "detail_spread": "Decentralisation",
       "detail_spread_value": "{pct} ({eff} of {of})",
       "detail_concentration": "Who holds the weight of the vote",
-      "detail_decisive": "The {count} largest of the {of} addresses {side} (holding {xrd} XRD) were enough to decide it, even if everyone else had voted the other way.",
+      "detail_decisive": "Just {count} addresses {side} ({pct} of the {of} that voted, holding {xrd} XRD) were enough to decide the outcome, even if everyone else had voted the other way.",
       "detail_nobody": "No address meets this method's requirements, so there is no result.",
       "detail_no_quorum": "The addresses that count under this method do not hold the XRD the quorum needs, so the result would not be valid and nobody got to decide it.",
-      "side_for": "in favour",
-      "side_against": "against",
-      "side_winner": "behind the winning option",
+      "side_for": "that voted in favour of this vote",
+      "side_against": "that voted against this vote",
+      "side_winner": "that backed the winning option of this vote",
       "conc_top1": "Largest",
       "conc_top10": "Next 9",
       "conc_rest": "Everyone else",
@@ -365,6 +413,16 @@
           "rule": "Every XRD is a vote: 1,000 XRD weigh 1,000 votes. This is the method votes use today.",
           "attack": "Splitting into addresses adds no votes. The only way to weigh more is to get more XRD, buying or borrowing it before the vote opens."
         },
+        "deductible_linear": {
+          "name": "1 XRD = 1 vote with {min} XRD deductible",
+          "rule": "Only the balance above {min} XRD counts (the first {min} XRD of each account are deducted). Strictly superadditive: splitting capital across accounts loses votes instead of gaining them.",
+          "attack": "Splitting across accounts actively penalises the attacker ({min} XRD lost per extra address). The only way to weigh more is to concentrate more real capital."
+        },
+        "staked_only": {
+          "name": "Staked XRD only",
+          "rule": "1 XRD = 1 vote, but only XRD delegated to validators when the vote opened counts. Excludes liquid balances held in wallets or exchanges.",
+          "attack": "Splitting adds no extra votes, and last-minute bought or borrowed liquid XRD does not count unless staked in validators."
+        },
         "capped_10k": {
           "name": "Capped at 10,000 XRD per address",
           "rule": "Like today, but no address can weigh more than 10,000 XRD: a very low cap that evens wallets out a lot.",
@@ -379,6 +437,11 @@
           "name": "Capped at 1,000,000 XRD per address",
           "rule": "Like today, but no address can weigh more than {cap} XRD. It limits the largest wallets without taking their vote away.",
           "attack": "The cap is dodged by splitting the XRD into addresses under {cap} XRD, so in practice it is back to 1 XRD = 1 vote: it takes capital."
+        },
+        "capped_5m": {
+          "name": "Capped at 5,000,000 XRD per address",
+          "rule": "Like today, but no address can weigh more than 5 million XRD: it limits large whales without affecting mid-sized wallets.",
+          "attack": "The cap is dodged by splitting the XRD into addresses of 5 million or less; in practice it is back to 1 XRD = 1 vote and it takes capital."
         },
         "capped_10m": {
           "name": "Capped at 10,000,000 XRD per address",
@@ -431,14 +494,44 @@
           "attack": "Each extra vote costs {min} XRD in a new address. Whoever has a lot of capital splits it across many addresses and gains a huge number of votes."
         },
         "one_address_sybil": {
-          "name": "1 address = 1 vote, sybil-resistant",
+          "name": "1 address = 1 vote, sybil-resistant (≥ {balance} XRD)",
           "rule": "All weigh the same, but only addresses with at least {balance} XRD and {years_sybil} year of age count. Creating many new accounts does not help.",
           "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD each. Possible, but it has to be planned well ahead."
         },
+        "one_address_sybil_10k": {
+          "name": "1 address = 1 vote, sybil-resistant (≥ 10,000 XRD)",
+          "rule": "All weigh the same, but only addresses with at least 10,000 XRD and {years_sybil} year of age count.",
+          "attack": "Requires addresses over {years_sybil} year old holding 10,000 XRD each. Multiplying votes requires meaningful capital prepared ahead of time."
+        },
+        "one_address_sybil_100k": {
+          "name": "1 address = 1 vote, sybil-resistant (≥ 100,000 XRD)",
+          "rule": "All weigh the same, but only addresses with at least 100,000 XRD and {years_sybil} year of age count.",
+          "attack": "Requires addresses over {years_sybil} year old holding 100,000 XRD each. Stops cheap mass attacks, though a whale could still split across old accounts."
+        },
+        "one_address_sybil_1m": {
+          "name": "1 address = 1 vote, sybil-resistant (≥ 1,000,000 XRD)",
+          "rule": "All weigh the same, but only addresses with at least 1,000,000 XRD and {years_sybil} year of age count.",
+          "attack": "Each vote requires an account over {years_sybil} year old holding 1,000,000 XRD. Very expensive to game, though it excludes almost all smaller holders."
+        },
         "one_address_sybil_age": {
-          "name": "1 address = 1 vote, sybil-resistant, +1 vote per year",
+          "name": "1 address = 1 vote, sybil-resistant (≥ {balance} XRD), +1 vote/yr",
           "rule": "Only addresses with at least {balance} XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 vote for each full year of age.",
           "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD, and the older they are, the more votes each one gives. Possible, but it has to be planned years ahead."
+        },
+        "one_address_sybil_age_10k": {
+          "name": "1 address = 1 vote, sybil-resistant (≥ 10,000 XRD), +1 vote/yr",
+          "rule": "Only addresses with at least 10,000 XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 vote for each full year of age.",
+          "attack": "Requires accounts over {years_sybil} year old holding 10,000 XRD each; older accounts carry more votes."
+        },
+        "one_address_sybil_age_100k": {
+          "name": "1 address = 1 vote, sybil-resistant (≥ 100,000 XRD), +1 vote/yr",
+          "rule": "Only addresses with at least 100,000 XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 vote for each full year of age.",
+          "attack": "Requires accounts over {years_sybil} year old holding 100,000 XRD each, combining a higher capital barrier with account age."
+        },
+        "one_address_sybil_age_1m": {
+          "name": "1 address = 1 vote, sybil-resistant (≥ 1,000,000 XRD), +1 vote/yr",
+          "rule": "Only addresses with at least 1,000,000 XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 vote for each full year of age.",
+          "attack": "Requires accounts over {years_sybil} year old holding 1,000,000 XRD each; very costly to attack but highly restrictive for smaller voters."
         },
         "address_age": {
           "name": "1 address = 1 vote, plus 1 per year",
@@ -470,15 +563,75 @@
           "rule": "Every account counts: 1 XRD = 1 vote, plus {bonus} for each full year of age.",
           "attack": "Splitting gains nothing; new accounts just get no bonus. It takes capital."
         },
+        "twab_90d": {
+          "name": "90-day time-weighted average (TWAB)",
+          "rule": "Weighs the average XRD (liquid and staked) held across the 90 days before the vote opened (sampled every 30 days). Neutralises last-minute buying or borrowing.",
+          "attack": "Splitting adds no extra votes and buying XRD right before opening only gives a quarter of the weight: it takes real capital held for months."
+        },
+        "held_90d": {
+          "name": "90-day continuous minimum balance",
+          "rule": "Only the minimum XRD balance (liquid and staked) continuously held across all 90-day checkpoints before opening counts.",
+          "attack": "Splitting gains nothing and any XRD bought or borrowed in the last 90 days weighs zero: capital must be committed 3 months ahead."
+        },
         "hybrid_half": {
           "name": "Mixed 50 / 50",
           "rule": "Half of the weight is shared by XRD and the other half equally between addresses.",
           "attack": "Half of the weight is shared per address: with thousands of empty addresses, one person takes almost all of that half."
         },
+        "hybrid_half_veterans": {
+          "name": "Hardened 50 / 50 (veterans from {min} XRD)",
+          "rule": "Only accounts at least {years} years old holding {min} XRD or more count. Half of the weight is proportional to their XRD and the other half is shared equally between those accounts.",
+          "attack": "New or lightly funded accounts do not count. Gaming the equal half requires preparing many accounts {years} or more years ahead with {min} XRD each."
+        },
         "double_majority": {
           "name": "Double majority",
           "rule": "To pass it must clear the threshold twice: counting 1 XRD = 1 vote and counting 1 address = 1 vote. Like the European Union's qualified majority.",
           "attack": "Passing takes capital and winning by addresses too, but blocking only takes empty addresses voting against."
+        },
+        "double_majority_sybil": {
+          "name": "Hardened double majority (capital + veteran community)",
+          "rule": "To pass it must clear the threshold in two chambers: by capital (1 XRD = 1 vote) and by community (1 address = 1 vote, only accounts at least {years} years old holding {min} XRD or more).",
+          "attack": "A whale cannot pass a vote alone without veteran community support, and blocking is no longer free: it requires controlling many accounts {years} or more years old with {min} XRD each."
+        },
+        "capped_veterans": {
+          "name": "Capped at {cap} XRD, veterans only ({years}+ years)",
+          "rule": "1 XRD = 1 vote capped at {cap} XRD per address, and only accounts {years} or more years old count. Limits whales while blocking last-minute splitting into new accounts.",
+          "attack": "Splitting never multiplies votes beyond 1 XRD = 1 vote, and dodging the cap requires both real capital and multiple separate accounts prepared {years} or more years ahead."
+        },
+        "capped_veterans_5m": {
+          "name": "Capped at 5,000,000 XRD, veterans only ({years}+ years)",
+          "rule": "1 XRD = 1 vote capped at 5 million XRD per address, and only accounts {years} or more years old count. Limits large whales while blocking last-minute splitting into new accounts.",
+          "attack": "Splitting never multiplies votes beyond 1 XRD = 1 vote, and dodging the 5 million cap requires real capital and multiple accounts prepared {years} or more years ahead."
+        },
+        "capped_veterans_10m": {
+          "name": "Capped at 10,000,000 XRD, veterans only ({years}+ years)",
+          "rule": "1 XRD = 1 vote capped at 10 million XRD per address, and only accounts {years} or more years old count. Only reins in the largest whales while blocking splitting into new accounts.",
+          "attack": "Splitting never multiplies votes beyond 1 XRD = 1 vote, and dodging the 10 million cap requires real capital and multiple accounts prepared {years} or more years ahead."
+        },
+        "capped_share_veterans_1": {
+          "name": "Capped at {share} of total, veterans only ({years}+ years)",
+          "rule": "1 XRD = 1 vote, but no address can weigh more than {share} of participating veteran XRD, and only accounts {years} or more years old count. Maximum decentralisation within high security.",
+          "attack": "Splitting never yields more than 1 vote per XRD, and dodging the {share} cap requires real capital spread across dozens of accounts prepared {years} or more years ahead."
+        },
+        "capped_share_veterans": {
+          "name": "Capped at {share_veterans} of total, veterans only ({years}+ years)",
+          "rule": "1 XRD = 1 vote, but no address can weigh more than {share_veterans} of participating veteran XRD, and only accounts {years} or more years old count. Scales with turnout and guarantees decentralisation.",
+          "attack": "Splitting never yields more than 1 vote per XRD, and dodging the {share_veterans} cap requires real capital spread across accounts prepared {years} or more years ahead."
+        },
+        "staked_capped_share": {
+          "name": "Staked XRD only, {share_veterans} cap",
+          "rule": "Only XRD delegated to validators when the vote opened counts, and no address can weigh more than {share_veterans} of participating staked XRD.",
+          "attack": "Splitting never exceeds 1 vote per XRD and requires keeping capital genuinely staked in validators, spread across accounts to dodge the {share_veterans} cap."
+        },
+        "twab_90d_capped_share": {
+          "name": "90-day average (TWAB), {share_veterans} cap",
+          "rule": "Weighs the 90-day time-weighted average balance (liquid + staked) held before the vote opened, capped at {share_veterans} of total participating TWAB per address.",
+          "attack": "Blocks last-minute buys or loans (requires holding XRD for months), limits top whales via the {share_veterans} cap, and splitting never exceeds 1 XRD = 1 vote."
+        },
+        "marginal_veterans": {
+          "name": "Diminishing marginal brackets, veterans only ({years}+ years)",
+          "rule": "Only accounts {years} or more years old count. The first {bracket_first} XRD weigh 100 %, {bracket_first} to {bracket_second} XRD weigh 50 %, and anything above {bracket_second} XRD weighs 10 %. Reduces concentration without silencing large long-term holders.",
+          "attack": "Splitting never exceeds 1 XRD = 1 vote; avoiding the marginal reduction requires real capital split across {bracket_first} XRD accounts prepared {years} or more years ahead."
         },
         "quadratic_seniority": {
           "name": "Quadratic with an age bonus",
@@ -559,7 +712,9 @@
         "counted_share": "{pct} of the addresses that voted count under this method ({n} of {of}); the rest do not meet its requirements",
         "decisive_share": "{pct} of the addresses on the winning side ({n} of {of}), heaviest first, were enough to decide the result even if everyone else voted the other way",
         "fact_option": "{n} addresses voted \"{label}\" ({pct} of those who voted)",
-        "threshold_mark": "Approval threshold: at least {pct} in favour is needed to pass. It is the vertical line on the bar"
+        "threshold_mark": "Approval threshold: at least {pct} in favour is needed to pass. It is the vertical line on the bar",
+        "kpi_effective": "Method with the best combination of manipulation resistance, decentralisation, and quorum reached in this vote",
+        "kpi_ineffective": "Method with the worst combination of manipulation resistance, decentralisation, and quorum reached in this vote"
       },
       "col_resistance": "Resistance",
       "resistance": {
@@ -583,6 +738,7 @@
       "cost_capital": "To turn it around it would take {xrd} more XRD ({pct} of what already voted).",
       "cost_capital_split": "To turn it around it would take {xrd} more XRD ({pct} of what already voted), split across {addresses} addresses to dodge the cap.",
       "cost_capital_aged": "To turn it around it would take {xrd} more XRD ({pct} of what already voted) held in an account at least {years} old; an old account with freshly bought XRD will do.",
+      "cost_capital_split_aged": "To turn it around it would take {xrd} more XRD ({pct} of what already voted), split across {addresses} accounts at least {years} old to dodge the cap.",
       "cost_impossible": "Adding votes cannot turn this result around.",
       "cost_none": "There is no clear result to turn around (no quorum or no valid votes).",
       "g_resistance_t": "Resistance to manipulation",
@@ -590,6 +746,12 @@
       "kpi_balanced": "Most balanced",
       "kpi_unbalanced": "Least balanced",
       "kpi_balance_hint": "{resistance} resistance · {n} of {of} addresses needed for half of the vote ({pct} decentralisation)",
+      "kpi_effective": "Most effective",
+      "kpi_ineffective": "Least effective",
+      "kpi_effective_hint": "{resistance} resistance · {pct} decentralisation · {quorum}",
+      "kpi_quorum_ok": "reaches quorum",
+      "kpi_quorum_ko": "misses quorum",
+      "kpi_quorum_none": "no quorum required",
       "resistance_title": "Resistance to manipulation: {level}",
       "resistance_how": "How it is gamed",
       "resistance_here": "In this vote",

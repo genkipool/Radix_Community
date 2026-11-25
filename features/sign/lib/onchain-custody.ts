@@ -15,10 +15,16 @@
  */
 import { gatewayPost } from '@/services/gateway/bases';
 import type { Network } from '@/services/gateway/client';
+import { entityRoles } from '@/features/console/lib/role-lookup';
 import {
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
+  RADIX_SEAL_STANDARD_KEY,
 } from '../constants/seal';
+import {
+  RESERVED_COLLECTION_METADATA_KEYS,
+  SIGN_NFT_FIELDS,
+} from './sign-request';
 
 const MAX_CANDIDATE_RESOURCES = 30;
 /** How many of an account's signatures for one document we carry back. */
@@ -96,21 +102,39 @@ export interface EntityDetailsItem {
   metadata?: {
     items?: Array<{
       key?: string;
-      value?: { typed?: { type?: string; value?: unknown } };
+      value?: { typed?: { type?: string; value?: unknown; values?: string[] } };
+      is_locked?: boolean;
     }>;
   };
   details?: {
-    role_assignments?: { owner?: unknown };
+    type?: string;
+    total_supply?: string;
+    total_minted?: string;
+    total_burned?: string;
+    non_fungible_data_mutable_fields?: string[];
+    role_assignments?: {
+      owner?: { rule?: unknown; updater?: string };
+      entries?: Array<{
+        role_key?: { module?: string; name?: string };
+        assignment?: { resolution?: string; explicit_rule?: unknown };
+        updater_roles?: unknown[];
+      }>;
+    };
   };
   non_fungible_resources?: {
     items?: Array<{
       resource_address?: string;
       vaults?: { items?: Array<{ items?: string[] }> };
     }>;
+    next_cursor?: string;
   };
 }
 
 interface EntityDetailsResponse {
+  ledger_state?: {
+    state_version?: number;
+    proposer_round_timestamp?: string;
+  };
   items?: EntityDetailsItem[];
 }
 
@@ -129,13 +153,21 @@ export function metadataString(item: EntityDetailsItem | undefined, key: string)
   return typeof typed?.value === 'string' ? typed.value : '';
 }
 
-export async function entityDetails(
+export async function entityDetailsWithLedger(
   network: Network,
   addresses: string[],
   optIns?: Record<string, unknown>,
-): Promise<EntityDetailsItem[]> {
-  if (addresses.length === 0) return [];
-  const out: EntityDetailsItem[] = [];
+): Promise<{
+  items: EntityDetailsItem[];
+  ledgerStateVersion: number | null;
+  ledgerTimestamp: string | null;
+}> {
+  if (addresses.length === 0) {
+    return { items: [], ledgerStateVersion: null, ledgerTimestamp: null };
+  }
+  const items: EntityDetailsItem[] = [];
+  let ledgerStateVersion: number | null = null;
+  let ledgerTimestamp: string | null = null;
   for (let i = 0; i < addresses.length; i += 20) {
     const data = await gatewayPost<EntityDetailsResponse>(
       network,
@@ -146,9 +178,23 @@ export async function entityDetails(
         ...(optIns ? { opt_ins: optIns } : {}),
       },
     );
-    out.push(...(data.items ?? []));
+    items.push(...(data.items ?? []));
+    if (ledgerStateVersion == null && typeof data.ledger_state?.state_version === 'number') {
+      ledgerStateVersion = data.ledger_state.state_version;
+    }
+    if (ledgerTimestamp == null && typeof data.ledger_state?.proposer_round_timestamp === 'string') {
+      ledgerTimestamp = data.ledger_state.proposer_round_timestamp;
+    }
   }
-  return out;
+  return { items, ledgerStateVersion, ledgerTimestamp };
+}
+
+export async function entityDetails(
+  network: Network,
+  addresses: string[],
+  optIns?: Record<string, unknown>,
+): Promise<EntityDetailsItem[]> {
+  return (await entityDetailsWithLedger(network, addresses, optIns)).items;
 }
 
 /** One NFT's locked fields together with the ledger point it was minted at. */
@@ -500,4 +546,291 @@ export async function findSignerSignature(
   return (
     (await findSignerSignatures(network, signer, docHash, officialSeal))[0] ?? null
   );
+}
+
+/* ─── Collection-level audit helpers (O(unique signers)) ──────────────────── */
+
+const MAX_AUDIT_IDS_PER_SIGNER_COLLECTION = 200;
+const COMMIT_BATCH_CONCURRENCY = 8;
+
+/**
+ * Resolves unique positive integer state versions to their ledger commits with
+ * bounded concurrency so audit endpoints never flood the Gateway.
+ */
+export async function ledgerCommitsBatch(
+  network: Network,
+  stateVersions: number[],
+): Promise<Map<number, LedgerCommit>> {
+  const unique = [
+    ...new Set(stateVersions.filter((v) => Number.isInteger(v) && v > 0)),
+  ];
+  const out = new Map<number, LedgerCommit>();
+  for (let i = 0; i < unique.length; i += COMMIT_BATCH_CONCURRENCY) {
+    const chunk = unique.slice(i, i + COMMIT_BATCH_CONCURRENCY);
+    const resolved = await Promise.all(
+      chunk.map(async (v) => [v, await ledgerCommit(network, v)] as const),
+    );
+    for (const [v, commit] of resolved) out.set(v, commit);
+  }
+  return out;
+}
+
+/**
+ * Current consensus time as ISO-8601 from `/status/gateway-status`, falling back
+ * to the local clock only if the Gateway is temporarily unreachable.
+ */
+export async function fetchLedgerTimestampNow(network: Network): Promise<string> {
+  try {
+    const status = await gatewayPost<{
+      ledger_state?: { proposer_round_timestamp?: string };
+    }>(network, '/status/gateway-status', {});
+    const stamp = status.ledger_state?.proposer_round_timestamp;
+    if (stamp && !Number.isNaN(Date.parse(stamp))) return stamp;
+  } catch {
+    /* fallback below */
+  }
+  return new Date().toISOString();
+}
+
+/**
+ * Fetches every non-fungible resource held by `account`, following pagination
+ * so signers with many NFT resources do not push their signing collection off
+ * the first page.
+ */
+export async function allAccountNonFungibleResources(
+  network: Network,
+  account: string,
+  optIns?: Record<string, unknown>,
+): Promise<Array<{ resource_address?: string; vaults?: { items?: Array<{ items?: string[] }> } }>> {
+  const [accountItem] = await entityDetails(network, [account], optIns);
+  const first = accountItem?.non_fungible_resources;
+  const items = [...(first?.items ?? [])];
+  let cursor = first?.next_cursor;
+  let pages = 0;
+  while (cursor && pages < 10) {
+    pages += 1;
+    const page = await gatewayPost<{
+      items?: Array<{ resource_address?: string; vaults?: { items?: Array<{ items?: string[] }> } }>;
+      next_cursor?: string;
+    }>(network, '/state/entity/page/non-fungibles/', {
+      address: account,
+      aggregation_level: 'Vault',
+      cursor,
+      ...(optIns ? { opt_ins: optIns } : {}),
+    }).catch(() => null);
+    if (!page) break;
+    items.push(...(page.items ?? []));
+    cursor = page.next_cursor;
+  }
+  return items;
+}
+
+function numericNftId(localId: string): number {
+  const m = localId.match(/^#(\d+)#$/);
+  return m ? Number.parseInt(m[1], 10) : -1;
+}
+
+export interface SignerBatchResult {
+  hasVerifiedSeal: boolean;
+  hasOwnCollection: boolean;
+  /** The account's Radix Seal insignia NFT (`resource:{ruid}`), if found. */
+  sealNftGlobalId?: string | null;
+  /** Signing collections this account provably owns (via its Seal). */
+  ownCollectionAddresses?: string[];
+  signaturesByHash: Map<string, SignerSignature[]>;
+}
+
+/**
+ * Resolves ALL valid signatures `signer` holds for any hash in `docHashes`
+ * in a single scan of their account and verified collections (`O(1)` per
+ * signer regardless of how many documents are being audited).
+ */
+export async function findAllSignerSignatures(
+  network: Network,
+  signer: string,
+  docHashes: Set<string>,
+  officialSeal = '',
+): Promise<SignerBatchResult> {
+  const empty: SignerBatchResult = {
+    hasVerifiedSeal: false,
+    hasOwnCollection: false,
+    signaturesByHash: new Map(),
+  };
+  if (!signer.startsWith('account_')) return empty;
+
+  const rawHeld = await allAccountNonFungibleResources(network, signer, {
+    non_fungible_include_nfids: true,
+  });
+  const held = rawHeld
+    .map((r) => ({
+      resource: r.resource_address ?? '',
+      ids: (r.vaults?.items ?? []).flatMap((v) => v.items ?? []),
+    }))
+    .filter((r) => r.resource && r.ids.length > 0);
+
+  const officialSealIds = officialSeal
+    ? (held.find((r) => r.resource === officialSeal)?.ids ?? [])
+    : [];
+  const hasOfficialSealNft = officialSealIds.length > 0;
+  let sealNftGlobalId: string | null = hasOfficialSealNft
+    ? `${officialSeal}:${officialSealIds[0]}`
+    : null;
+
+  const candidateResources = held.slice(0, MAX_CANDIDATE_RESOURCES);
+  const candidates = await entityDetails(
+    network,
+    candidateResources.map((r) => r.resource),
+  );
+  const marked = candidates.filter(
+    (c) =>
+      metadataString(c, SIGN_COLLECTION_MARKER_KEY) ===
+      SIGN_COLLECTION_MARKER_VALUE,
+  );
+
+  let hasOwnCollection = false;
+  const ownCollectionAddresses: string[] = [];
+  const signaturesByHash = new Map<string, SignerSignature[]>();
+
+  for (const collection of marked) {
+    const address = collection.address ?? '';
+    if (!(await collectionSealBelongsTo(network, collection, signer, officialSeal))) {
+      continue;
+    }
+    hasOwnCollection = true;
+    if (address) ownCollectionAddresses.push(address);
+    if (!sealNftGlobalId) {
+      const owner = sealFromOwnerRule(collection);
+      if (owner) sealNftGlobalId = `${owner.resource}:${owner.localId}`;
+    }
+    if (docHashes.size === 0) continue;
+
+    const rawIds = held.find((r) => r.resource === address)?.ids ?? [];
+    // Prefer newest integer NFIDs first when a signer holds more than the cap.
+    const sortedIds = [...rawIds].sort((a, b) => numericNftId(b) - numericNftId(a));
+    const ids = sortedIds.slice(0, MAX_AUDIT_IDS_PER_SIGNER_COLLECTION);
+    if (ids.length === 0) continue;
+
+    const data = await nfRecords(network, address, ids);
+    for (const [localId, match] of data.entries()) {
+      const hash = match.fields.document_hash;
+      if (
+        match.fields.kind !== 'signature' ||
+        match.fields.signer !== signer ||
+        !hash ||
+        !docHashes.has(hash)
+      ) {
+        continue;
+      }
+      const list = signaturesByHash.get(hash) ?? [];
+      list.push({
+        stateVersion: match.stateVersion,
+        issuedAt: match.fields.issued_at ?? '',
+        resourceAddress: address,
+        localId,
+        nftGlobalId: `${address}:${localId}`,
+      });
+      signaturesByHash.set(hash, list);
+    }
+  }
+
+  for (const [hash, list] of signaturesByHash.entries()) {
+    list.sort((a, b) => a.stateVersion - b.stateVersion);
+    signaturesByHash.set(hash, list);
+  }
+
+  return {
+    hasVerifiedSeal: officialSeal ? hasOfficialSealNft : hasOwnCollection,
+    hasOwnCollection,
+    sealNftGlobalId,
+    ownCollectionAddresses,
+    signaturesByHash,
+  };
+}
+
+export interface CollectionCustomMeta {
+  key: string;
+  value: string;
+  locked: boolean;
+}
+
+export interface CollectionIntegrity {
+  hasMarker: boolean;
+  officialBrand: boolean;
+  ownerLocked: boolean;
+  burnDenied: boolean;
+  dataImmutable: boolean;
+  issuerVerified: boolean;
+  totalBurned: number;
+  customMetadata: CollectionCustomMeta[];
+}
+
+/**
+ * Inspects a signing collection's locked roles and metadata against the Radix
+ * Seal standard (`radix_sign_collection = v1`, official brand, fixed non-fungible
+ * owner rule, burn denied, immutable NFT data).
+ */
+export function inspectCollectionIntegrity(
+  item: EntityDetailsItem | undefined,
+  officialSeal: string,
+  issuerAccount: string | null,
+): CollectionIntegrity {
+  const hasMarker =
+    metadataString(item, SIGN_COLLECTION_MARKER_KEY) ===
+    SIGN_COLLECTION_MARKER_VALUE;
+  const officialBrand =
+    !officialSeal || metadataString(item, RADIX_SEAL_STANDARD_KEY) === officialSeal;
+
+  const roles = entityRoles(item);
+  const ownerRole = roles.find((r) => r.module === 'Owner' && r.name === 'owner');
+  const burnerRole = roles.find((r) => r.name === 'burner');
+  const dataUpdaterRole = roles.find(
+    (r) => r.name === 'non_fungible_data_updater',
+  );
+
+  const ownerLocked =
+    !!ownerRole && ownerRole.rule.type === 'nonFungible' && ownerRole.fixed;
+  const burnDenied =
+    !!burnerRole && burnerRole.rule.type === 'denyAll' && burnerRole.fixed;
+  const mutableFields = item?.details?.non_fungible_data_mutable_fields;
+  const evidentiaryKeys = new Set<string>(SIGN_NFT_FIELDS.map((f) => f.key));
+  const evidentiaryFieldsLocked =
+    Array.isArray(mutableFields) &&
+    !mutableFields.some((f) => evidentiaryKeys.has(f));
+  const dataImmutable =
+    (!!dataUpdaterRole &&
+      dataUpdaterRole.rule.type === 'denyAll' &&
+      dataUpdaterRole.fixed) ||
+    evidentiaryFieldsLocked;
+
+  const totalBurned =
+    Number.parseInt(item?.details?.total_burned ?? '0', 10) || 0;
+
+  const customMetadata: CollectionCustomMeta[] = [];
+  for (const meta of item?.metadata?.items ?? []) {
+    const key = meta.key ?? '';
+    if (!key || RESERVED_COLLECTION_METADATA_KEYS.has(key.toLowerCase())) continue;
+    const typed = meta.value?.typed;
+    const value =
+      typeof typed?.value === 'string'
+        ? typed.value
+        : Array.isArray(typed?.values)
+          ? typed.values.join(', ')
+          : '';
+    customMetadata.push({
+      key,
+      value,
+      locked: meta.is_locked === true,
+    });
+  }
+
+  return {
+    hasMarker,
+    officialBrand,
+    ownerLocked,
+    burnDenied,
+    dataImmutable,
+    issuerVerified: !!issuerAccount,
+    totalBurned,
+    customMetadata,
+  };
 }

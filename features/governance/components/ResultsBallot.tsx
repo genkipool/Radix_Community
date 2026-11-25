@@ -9,7 +9,7 @@ import { useCastVote } from '../hooks/useCastVote';
 import { fill, formatPct, formatXrd } from '../lib/format';
 import { TONE, type Gv } from './VoteParts';
 import { VoteAccess, VoteSubmit } from './VoteControls';
-import type { G } from './GovernanceBadges';
+import { stanceResolver, type G } from './GovernanceBadges';
 
 /**
  * The results box of the Result tab, which is also the ballot: every option
@@ -26,8 +26,7 @@ export function ResultsBallot({ entry, system, choices, tally, g, language, now 
     now: number;
 }) {
     const gv: Gv = g.vote ?? {};
-    const stances = (gv.stances ?? {}) as Record<string, string>;
-    const vote = useCastVote(entry, system, now, s => stances[s] || s);
+    const vote = useCastVote(entry, system, now, stanceResolver(g));
     const currentKeys = new Set(vote.current.flatMap(c => (c.selection ? selectionKeys(c.selection) : [])));
     const rows = tally?.rows ?? choices.map(c => ({ ...c, power: 0, share: 0 }));
 
