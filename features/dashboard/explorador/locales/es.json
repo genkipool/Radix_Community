@@ -895,7 +895,7 @@
         "tokens_tab": "Tokens",
         "token_price": "1 {symbol} = {price}, precio de {source}",
         "tokens_value": "Valor",
-        "token_prices_note": "Precio actual de los tokens según Astrolescent (y Ociswap para los que no lista); XRD según CoinGecko. Se actualiza cada minuto.",
+        "token_prices_note": "Precio actual de los tokens según Astrolescent (y Ociswap para los que no lista); LSU según su valor on-chain en XRD y XRD según CoinGecko. Se actualiza cada minuto.",
         "nfts_tab": "NFTs",
         "summary_tab": "Resumen",
         "pool_tab": "Pool",

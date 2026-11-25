@@ -140,7 +140,7 @@ function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = fa
     title: string;
     pastState?: boolean;
     /** Each token's fiat price, when its value is shown. */
-    priceOf?: (resource: string) => TokenFiatPrice | null;
+    priceOf?: (item: ParsedResource) => TokenFiatPrice | null;
     aside?: React.ReactNode;
     footer?: React.ReactNode;
     items: ParsedResource[];
@@ -157,7 +157,7 @@ function AssetSection({ title, items, holder, onCopy, copiedAddress, burned = fa
     return (
         <AssetListSection title={title} burned={burned} aside={aside} footer={footer}>
             {items.map((item) => (
-                <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} price={priceOf?.(item.address) ?? null} pastState={pastState} />
+                <ExpandableResourceCard key={item.address} item={item} holder={holder} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} tt={tt} network={network} locale={locale} price={priceOf?.(item) ?? null} pastState={pastState} />
             ))}
         </AssetListSection>
     );

@@ -18,14 +18,48 @@ async function fetchTokenPrices(): Promise<TokenPrices | null> {
   return res.json() as Promise<TokenPrices>;
 }
 
+export type TokenPriceSource = PriceSource | 'onchain';
+
 export interface TokenFiatPrice {
   /** One token in the visitor's currency. */
   unit: number;
   currency: 'EUR' | 'USD';
-  source: PriceSource;
+  source: TokenPriceSource;
 }
 
-/** `priceOf(resource)`: its fiat price, or null when unknown (no source lists it, Stokenet, or not loaded yet). */
+export interface PricedTokenInput {
+  address: string;
+  isLsu?: boolean;
+  /** On-chain XRD per 1 LSU from the validator's stake vault / LSU supply. */
+  lsu2xrdFactor?: number;
+}
+
+/**
+ * Resolves the unit fiat price for a resource or parsed token.
+ * Validator LSUs are always priced from their live on-chain `lsu2xrdFactor`
+ * (never from DEX feeds, which omit many LSUs and can serve stale quotes).
+ */
+export function resolveTokenFiatPrice(
+  token: string | PricedTokenInput,
+  data: TokenPrices | null | undefined,
+  currency: 'EUR' | 'USD',
+): TokenFiatPrice | null {
+  const xrdFiat = data?.xrd ? (currency === 'EUR' ? data.xrd.eur : data.xrd.usd) : 0;
+  if (!xrdFiat) return null;
+  if (typeof token !== 'string' && token.isLsu) {
+    const factor = token.lsu2xrdFactor;
+    if (typeof factor === 'number' && Number.isFinite(factor) && factor > 0) {
+      return { unit: factor * xrdFiat, currency, source: 'onchain' };
+    }
+    return null;
+  }
+  const resource = typeof token === 'string' ? token : token.address;
+  const p = data?.tokens[resource];
+  if (!p) return null;
+  return { unit: p.xrd * xrdFiat, currency, source: p.src };
+}
+
+/** `priceOf(token)`: its fiat price, or null when unknown (no source lists it, Stokenet, or not loaded yet). */
 export function useTokenPrices(network: string, locale: string, enabled = true) {
   const currency = getCurrencyForLocale(locale);
   const { data } = useQuery({
@@ -38,10 +72,7 @@ export function useTokenPrices(network: string, locale: string, enabled = true) 
     retry: 1,
   });
   const xrdFiat = data?.xrd ? (currency === 'EUR' ? data.xrd.eur : data.xrd.usd) : 0;
-  const priceOf = (resource: string): TokenFiatPrice | null => {
-    const p = data?.tokens[resource];
-    if (!p || !xrdFiat) return null;
-    return { unit: p.xrd * xrdFiat, currency, source: p.src };
-  };
+  const priceOf = (token: string | PricedTokenInput): TokenFiatPrice | null =>
+    resolveTokenFiatPrice(token, data, currency);
   return { priceOf, currency, ready: !!data && xrdFiat > 0 };
 }
