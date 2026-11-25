@@ -266,7 +266,7 @@ export function CollectionCreateTab({
           />
           <TextField
             label={labels.identity.orgUrlLabel}
-            placeholder="https://…"
+            placeholder={labels.identity.urlPlaceholder}
             value={orgUrl}
             onChange={setOrgUrl}
             disabled={busy}
@@ -274,7 +274,7 @@ export function CollectionCreateTab({
           <TextField
             label={labels.identity.logoLabel}
             hint={labels.create.logoHint}
-            placeholder="https://…"
+            placeholder={labels.identity.urlPlaceholder}
             value={logoUrl}
             onChange={setLogoUrl}
             disabled={busy}

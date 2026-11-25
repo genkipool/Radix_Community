@@ -526,6 +526,7 @@
         "orgNameLabel": "Nombre de la organización",
         "orgNameHint": "Opcional; aparece en el certificado",
         "orgUrlLabel": "Web de la organización",
+        "urlPlaceholder": "https://…",
         "logoLabel": "Logo de la colección (URL)",
         "logoHint": "Icono de la colección; también se usa como logo del emisor",
         "lockedNote": "Solo estos campos son editables. La descripción, la referencia al seal, la cuenta emisora y los datos de cada firma se sellaron al crear la colección y no se pueden tocar nunca, ni por ti.",
@@ -585,6 +586,7 @@
         "header": {
           "collectionLabel": "Colección auditada",
           "issuerLabel": "Cuenta emisora",
+          "websiteLabel": "Web",
           "ledgerCutoff": "Corte del ledger",
           "refresh": "Actualizar",
           "refreshing": "Actualizando…",

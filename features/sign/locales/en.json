@@ -526,6 +526,7 @@
         "orgNameLabel": "Organisation name",
         "orgNameHint": "Optional; shown on the certificate",
         "orgUrlLabel": "Organisation website",
+        "urlPlaceholder": "https://…",
         "logoLabel": "Collection logo (URL)",
         "logoHint": "The collection icon; also used as the issuer logo",
         "lockedNote": "Only these fields are editable. The description, the seal reference, the issuing account and every signature's own data were sealed when the collection was created and can never be touched, not even by you.",
@@ -585,6 +586,7 @@
         "header": {
           "collectionLabel": "Audited collection",
           "issuerLabel": "Issuing account",
+          "websiteLabel": "Website",
           "ledgerCutoff": "Ledger cutoff",
           "refresh": "Refresh",
           "refreshing": "Refreshing…",
