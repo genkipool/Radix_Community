@@ -263,6 +263,7 @@
     "copy_json": "Copy JSON",
     "json_copied": "JSON copied",
     "download_json": "Download JSON",
+    "json_label": "JSON",
     "wallet_accounts_empty": "Your wallet has not shared any account. Reconnect and share at least one.",
     "switch_network": "Switch to Mainnet",
     "collapse_all": "Collapse all",
