@@ -263,6 +263,7 @@
     "copy_json": "Copiar JSON",
     "json_copied": "JSON copiado",
     "download_json": "Descargar JSON",
+    "json_label": "JSON",
     "wallet_accounts_empty": "Tu billetera no ha compartido ninguna cuenta. Vuelve a conectar y comparte al menos una.",
     "switch_network": "Cambiar a Mainnet",
     "collapse_all": "Contraer todo",

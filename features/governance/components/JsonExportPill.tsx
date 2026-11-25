@@ -59,12 +59,12 @@ export function JsonExportPill({ getData, filename, g }: {
         downloadJson(filename, json);
     };
 
-    const copyLabel = copied ? (g.json_copied || 'JSON copied') : (g.copy_json || 'Copy JSON');
-    const downloadLabel = g.download_json || 'Download JSON';
+    const copyLabel = copied ? (g.json_copied ?? '') : (g.copy_json ?? '');
+    const downloadLabel = g.download_json ?? '';
 
     return (
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]">
-            <span>JSON</span>
+            <span>{g.json_label ?? ''}</span>
             <button
                 type="button"
                 onClick={handleCopy}
