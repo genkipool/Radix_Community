@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mergePrices, parseAstrolescent, parseOciswap, XRD_RESOURCE } from '@/services/tokenPrices';
+import { mergePrices, parseAstrolescent, parseOciswap, XRD_RESOURCE, type TokenPrices } from '@/services/tokenPrices';
+import { resolveTokenFiatPrice } from '@/features/dashboard/hooks/useTokenPrices';
+import { totalFiatValue } from '@/features/dashboard/explorador/components/TokenFiatValue';
 import { formatFiatPrecise } from '@/utils/currencyUtils';
 
 vi.mock('@/services/marketData', () => ({
@@ -88,5 +90,52 @@ describe('formatFiatPrecise', () => {
   it('keeps four significant digits below one and two decimals above', () => {
     expect(formatFiatPrecise(0.000251234, 'EUR', 'es')).toBe('0,0002512 €');
     expect(formatFiatPrecise(1234.5, 'USD', 'en')).toBe('1,234.50 $');
+  });
+});
+
+describe('resolveTokenFiatPrice (on-chain LSU pricing)', () => {
+  const LSU_LISTED = `resource_rdx1${'a'.repeat(54)}`;
+  const LSU_UNLISTED = `resource_rdx1${'c'.repeat(54)}`;
+  const prices: TokenPrices = {
+    updatedAt: Date.now(),
+    stale: false,
+    xrd: { usd: 0.05, eur: 0.04 },
+    tokens: {
+      [XRD_RESOURCE]: { xrd: 1, src: 'astrolescent' },
+      [A]: { xrd: 2, src: 'astrolescent' },
+      // Stale DEX quote for an LSU that must be ignored in favor of on-chain lsu2xrdFactor
+      [LSU_LISTED]: { xrd: 1.209, src: 'astrolescent' },
+    },
+  };
+
+  it('prices unlisted LSUs from their on-chain lsu2xrdFactor and XRD fiat price', () => {
+    expect(resolveTokenFiatPrice({ address: LSU_UNLISTED, isLsu: true, lsu2xrdFactor: 1.05 }, prices, 'EUR')).toEqual({
+      unit: 1.05 * 0.04,
+      currency: 'EUR',
+      source: 'onchain',
+    });
+  });
+
+  it('ignores stale DEX prices for LSUs and always uses on-chain lsu2xrdFactor', () => {
+    expect(resolveTokenFiatPrice({ address: LSU_LISTED, isLsu: true, lsu2xrdFactor: 1.229 }, prices, 'USD')).toEqual({
+      unit: 1.229 * 0.05,
+      currency: 'USD',
+      source: 'onchain',
+    });
+  });
+
+  it('returns null for LSUs when lsu2xrdFactor is missing instead of falling back to DEX feeds', () => {
+    expect(resolveTokenFiatPrice({ address: LSU_LISTED, isLsu: true }, prices, 'USD')).toBeNull();
+    expect(resolveTokenFiatPrice({ address: LSU_LISTED, isLsu: true, lsu2xrdFactor: 0 }, prices, 'USD')).toBeNull();
+  });
+
+  it('still prices regular tokens from Astrolescent/Ociswap and sums them with LSUs in totalFiatValue', () => {
+    const items = [
+      { address: A, amount: '10', isLsu: false },
+      { address: LSU_LISTED, amount: '100', isLsu: true, lsu2xrdFactor: 1.229 },
+      { address: LSU_UNLISTED, amount: '200', isLsu: true, lsu2xrdFactor: 1.0 },
+    ];
+    const total = totalFiatValue(items, (it) => resolveTokenFiatPrice(it, prices, 'EUR'));
+    expect(total).toBeCloseTo(10 * 2 * 0.04 + 100 * 1.229 * 0.04 + 200 * 1.0 * 0.04, 10);
   });
 });

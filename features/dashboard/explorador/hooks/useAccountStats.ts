@@ -82,7 +82,10 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
 
         const meta = ft.explicit_metadata?.items || [];
         const poolAddress = extractMetadata(meta, 'pool') || extractMetadata(meta, 'pool_address');
-        const valByLsu = validatorsData?.validators.find((v: Validator) => v.lsuResource === ft.resource_address);
+        const metaValidatorAddr = extractMetadata(meta, 'validator');
+        const valByLsu = validatorsData?.validators.find((v: Validator) =>
+            v.lsuResource === ft.resource_address || (!!metaValidatorAddr && v.address === metaValidatorAddr)
+        );
 
         const r: ParsedResource = {
             address: ft.resource_address,
@@ -96,7 +99,8 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             isPoolUnit: !!poolAddress || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
             poolAddress: poolAddress || undefined,
             isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu || extractTags(meta).some((tag: string) => tag.toLowerCase() === 'lsu'),
-            validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
+            lsu2xrdFactor: valByLsu && valByLsu.lsu2xrdFactor > 0 ? valByLsu.lsu2xrdFactor : undefined,
+            validatorAddress: metaValidatorAddr || valByLsu?.address,
             validatorName: valByLsu?.name,
             isClaim: false,
             isNft: false

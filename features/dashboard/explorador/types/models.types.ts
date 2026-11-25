@@ -17,6 +17,8 @@ export interface ParsedResource {
     amount: string;
     isPoolUnit: boolean;
     isLsu: boolean;
+    /** On-chain XRD redeemable per 1 LSU from the validator's stake vault / LSU total supply. */
+    lsu2xrdFactor?: number;
     validatorAddress?: string;
     validatorName?: string;
     /** The pool a pool unit redeems from. */

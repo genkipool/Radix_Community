@@ -7,7 +7,11 @@ import React from 'react';
 import { formatFiatPrecise } from '@/utils/currencyUtils';
 import type { TokenFiatPrice } from '@/features/dashboard/hooks/useTokenPrices';
 
-const SOURCE_NAMES: Record<TokenFiatPrice['source'], string> = { astrolescent: 'Astrolescent', ociswap: 'Ociswap' };
+const SOURCE_NAMES: Record<TokenFiatPrice['source'], string> = {
+    astrolescent: 'Astrolescent',
+    ociswap: 'Ociswap',
+    onchain: 'Radix (on-chain)',
+};
 
 /** What a balance is worth, or null when its price is unknown. */
 export function fiatValueOf(price: TokenFiatPrice | null, amount: string | number): number | null {
@@ -39,6 +43,9 @@ export function TokenFiatValue({ price, amount, symbol, locale, priceLabel, clas
 }
 
 /** The sum of what the balances with a known price are worth. */
-export function totalFiatValue(items: { address: string; amount: string }[], priceOf: (a: string) => TokenFiatPrice | null): number {
-    return items.reduce((sum, it) => sum + (fiatValueOf(priceOf(it.address), it.amount) ?? 0), 0);
+export function totalFiatValue<T extends { address: string; amount: string; isLsu?: boolean; lsu2xrdFactor?: number }>(
+    items: T[],
+    priceOf: (item: T) => TokenFiatPrice | null,
+): number {
+    return items.reduce((sum, it) => sum + (fiatValueOf(priceOf(it), it.amount) ?? 0), 0);
 }

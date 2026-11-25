@@ -16,6 +16,7 @@ import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
 import { type AccountRewardsCsvModalDict } from '../types/components.types';
+import type { ParsedResource } from '../types/models.types';
 import { useAccountStats } from '../hooks/useAccountStats';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTokenPrices, type TokenFiatPrice } from '@/features/dashboard/hooks/useTokenPrices';
@@ -49,23 +50,6 @@ interface AccountSummaryTabProps {
     summaryPortalTarget?: HTMLElement | null;
     /** Notifies WalletProfileModal when this account's floating summary opens or closes. */
     onFloatingSummaryChange?: (address: string, active: boolean) => void;
-}
-
-interface ParsedResource {
-    address: string;
-    name: string;
-    symbol: string;
-    iconUrl: string;
-    amount: string;
-    isPoolUnit: boolean;
-    isLsu: boolean;
-    validatorAddress?: string;
-    validatorName?: string;
-    isClaim: boolean;
-    ids?: string[];
-    isNft: boolean;
-    claimXrdTotal?: number;
-    isOwnerBadge?: boolean;
 }
 
 
@@ -569,7 +553,7 @@ export function BalanceCard({ title, amount, symbol, valueColor, marketData, loc
 function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale, isModal = false, priceOf, priceLabel, aside }: {
     title: string;
     /** Each token's fiat price, when its value is shown. */
-    priceOf?: (resource: string) => TokenFiatPrice | null;
+    priceOf?: (item: ParsedResource) => TokenFiatPrice | null;
     priceLabel?: string;
     /** On the right of the title (the total value). */
     aside?: React.ReactNode;
@@ -620,7 +604,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
                         >
                             <div className="grid grid-cols-2 gap-3 items-stretch">
                                 {items.map((item) => (
-                                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item.address) ?? null} priceLabel={priceLabel} />
+                                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item) ?? null} priceLabel={priceLabel} />
                                 ))}
                             </div>
                         </m.div>
@@ -629,7 +613,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch">
                     {items.map((item) => (
-                        <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item.address) ?? null} priceLabel={priceLabel} />
+                        <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} price={priceOf?.(item) ?? null} priceLabel={priceLabel} />
                     ))}
                 </div>
             )}
