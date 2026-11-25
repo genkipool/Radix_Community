@@ -88,11 +88,226 @@
     "tools": {
       "sign-collection": {
         "title": "Colección de Firma",
-        "description": "Crea y gestiona la colección de Radix Seal donde viven tus firmas e invitaciones, y la identidad de emisor que ve quien las recibe."
+        "description": "Crea y gestiona la colección de Radix Seal donde viven tus firmas e invitaciones, y la identidad de emisor que ve quien las recibe.",
+        "guide": {
+          "guideTitle": "Guía: Colección de Firma",
+          "guideDescription": "Tu colección de firma es tu archivo personal o corporativo en el ledger de Radix: un recurso NFT cuya regla de propietario queda bloqueada para siempre exigiendo tu insignia soulbound Radix Seal. Solo tu wallet puede acuñar firmas o invitaciones en ella, nadie puede borrar registros y cualquiera puede comprobar su identidad de emisor y su dominio web sin intermediarios. Funciona de forma idéntica en Mainnet y Stokenet.",
+          "guideTabs": [
+            {
+              "label": "Colecciones",
+              "steps": [
+                "1. Conecta tu Radix Wallet y selecciona la cuenta en el selector superior. Verás tu insignia Seal (soulbound) y todas las colecciones de firma que esa cuenta posee en la red activa.",
+                "2. Si tienes varias colecciones (por ejemplo, una personal y otra de empresa), pulsa sobre cualquiera para marcarla como «Activa». Firmar documento y Cifrar usarán la colección activa para los próximos registros.",
+                "3. Cambiar de colección activa nunca mueve ni altera las firmas o invitaciones ya emitidas: cada registro permanece para siempre en la colección donde se acuñó.",
+                "4. Pulsa sobre la etiqueta «Verificado / No verificado» de cualquier tarjeta para abrir el panel lateral de verificación de dominio sin custodia y comprobar su estado en vivo."
+              ]
+            },
+            {
+              "label": "Crear",
+              "steps": [
+                "1. En «Crear colección», define el nombre, símbolo, logo opcional e identidad de emisor (nombre de la organización y web HTTPS). Todos estos campos de presentación se pueden editar más adelante.",
+                "2. Si la cuenta aún no tiene insignia Seal, la herramienta acuña primero tu Seal oficial y a continuación crea la colección en dos confirmaciones seguidas en la wallet.",
+                "3. Si ya tienes un Seal, elige entre «Reutilizar mi insignia» (una sola confirmación; un mismo Seal puede ser propietario de varias colecciones) o «Acuñar una nueva» si deseas una insignia independiente con su propia imagen.",
+                "4. Opcionalmente añade hasta 10 metadatos personalizados clave/valor (p. ej. departamento o referencia interna) y decide cuáles quedan bloqueados para siempre.",
+                "5. Usa «Simular» antes de aprobar en tu wallet para previsualizar el manifiesto y la comisión estimada. En Stokenet dispones además del botón «Rellenar prueba» para pruebas rápidas."
+              ]
+            },
+            {
+              "label": "Identidad",
+              "steps": [
+                "1. En «Identidad de emisor» edita el nombre, símbolo, logo, nombre de organización y web HTTPS (org_url) de la colección activa. Los campos sellados al crearla aparecen marcados como «Bloqueado» y nunca se pueden modificar.",
+                "2. Pulsa «Firmar cambios con la wallet» (o «Simular» primero): la transacción presenta una prueba de tu insignia Seal para actualizar los metadatos editables en la cadena.",
+                "3. Junto a «Editando: resource_…», pulsa la etiqueta «Verificado / No verificado» para abrir el panel lateral de verificación de dominio sin custodia.",
+                "4. Copia y publica UNA de las dos opciones en tu dominio — Opción A: archivo https://<tu-dominio>/.well-known/radix-seal.json o Opción B: registro DNS TXT _radix-seal.<tu-dominio> — y pulsa «Comprobar ahora» para confirmar en vivo."
+              ]
+            }
+          ],
+          "guideSteps": [
+            "1. Conecta tu Radix Wallet y revisa tu insignia Seal y colecciones en «Mis colecciones».",
+            "2. Si aún no tienes colección (o quieres separar identidades), crea una en «Crear colección».",
+            "3. Actualiza nombre, logo y web de la organización en «Identidad de emisor» cuando lo necesites.",
+            "4. Pulsa la etiqueta «Verificado / No verificado» para vincular tu dominio web sin custodia mediante .well-known o DNS TXT."
+          ],
+          "fields": [
+            {
+              "label": "Nombre y símbolo de la colección",
+              "description": "Identificador visible en wallets, exploradores y certificados. Permanecen editables tras la creación.",
+              "example": "Acme Legal · ACME"
+            },
+            {
+              "label": "Web de la organización (org_url)",
+              "description": "URL HTTPS pública de tu web oficial. Sirve de base para la verificación de dominio sin custodia (.well-known o DNS TXT).",
+              "example": "https://tuempresa.com"
+            },
+            {
+              "label": "Logo de la colección (icon_url)",
+              "description": "URL de la imagen que aparece como icono de la colección en la wallet y como logo del emisor en certificados y auditorías.",
+              "example": "https://tuempresa.com/logo.svg"
+            },
+            {
+              "label": "Metadatos propios (opcional)",
+              "description": "Hasta 10 pares clave/valor adicionales grabados en cadena (p. ej. departamento o jurisdicción), con opción de bloqueo permanente individual.",
+              "example": "department = Cumplimiento"
+            }
+          ],
+          "glossary": [
+            {
+              "group": "Insignia y custodia",
+              "term": "Insignia Seal (soulbound)",
+              "definition": "NFT oficial intransferible y no quemable que acredita tu identidad de firmante y actúa como única llave capaz de acuñar y editar metadatos en tus colecciones."
+            },
+            {
+              "group": "Insignia y custodia",
+              "term": "Colección activa",
+              "definition": "La colección seleccionada en este navegador para las próximas operaciones de Firmar documento y Cifrar. Puedes tener varias colecciones (p. ej. particular y empresa) sin mezclar historiales."
+            },
+            {
+              "group": "Identidad y dominio",
+              "term": "Metadatos bloqueados frente a editables",
+              "definition": "Las claves de protocolo (radix_seal, radix_sign_collection, issuer y descripción) se sellan al crear la colección. El nombre, símbolo, logo, org_name y org_url pueden actualizarse con prueba de tu Seal."
+            },
+            {
+              "group": "Identidad y dominio",
+              "term": "Verificación de dominio sin custodia",
+              "definition": "Demuestra en vivo que tu dominio web autoriza esta colección concreta (collection=resource_…) mediante /.well-known/radix-seal.json o DNS TXT, sin NFTs extra ni intermediarios."
+            }
+          ]
+        }
       },
       "sign-audit": {
         "title": "Auditoría y Registro",
-        "description": "Inspecciona expedientes, firmantes, NFTs e integridad criptográfica de todas tus colecciones Radix Seal o audita cualquier colección pública en solo lectura."
+        "description": "Inspecciona expedientes, firmantes, NFTs e integridad criptográfica de todas tus colecciones Radix Seal o audita cualquier colección pública en solo lectura.",
+        "guide": {
+          "guideTitle": "Guía: Auditoría y Registro",
+          "guideDescription": "Registro de cumplimiento en solo lectura reconstruido en tiempo real desde el ledger público de Radix. No existe ninguna base de datos central ni servidor intermedio: cada solicitud de firma, invitación, firma completada, operación de cifrado, marca de tiempo de consenso y control de integridad se verifica directamente contra la cadena. Funciona de forma idéntica en Mainnet y Stokenet, tanto con tu wallet conectada (para gestionar todas tus colecciones) como en modo Auditor externo sin wallet.",
+          "guideTabs": [
+            {
+              "label": "Colecciones",
+              "steps": [
+                "1. Conecta tu Radix Wallet: la herramienta descubre automáticamente todas las colecciones Radix Seal que poseen las cuentas compartidas por tu wallet en la red activa (Mainnet o Stokenet), sin tener que elegir cuenta a mano.",
+                "2. Usa el desplegable del nombre de la colección en la cabecera para cambiar entre tus colecciones: al cambiar, permanecerás en la misma pestaña en la que estabas (Expedientes, Firmantes y NFTs, Resumen o Integridad y privacidad).",
+                "3. En la pestaña «Expedientes» despliega cualquier fila para ver el desglose completo: firmantes completados y pendientes, sus NFTs exactos de invitación y firma, la clave de solicitud y el enlace directo al explorador o al Verificador.",
+                "4. Si un expediente tiene firmas pendientes, desde el propio panel desplegable puedes copiar el enlace o código QR de firma y, opcionalmente, adjuntar el archivo original para abrir un canal cifrado P2P navegador-a-navegador y entregárselo a los firmantes pendientes.",
+                "5. En «Firmantes y NFTs» revisa todas las cuentas participantes, comprueba si ya tienen Seal oficial y colección propia, etiqueta cuentas localmente con tu Agenda (solo en tu navegador) o pulsa «Ver expedientes» para filtrar los documentos de una cuenta concreta.",
+                "6. En «Resumen» consulta los KPIs del periodo filtrado, la cuenta emisora verificada, la web declarada y la versión exacta de corte del ledger (state version y fecha UTC)."
+              ]
+            },
+            {
+              "label": "Externo",
+              "steps": [
+                "1. No hace falta conectar ninguna wallet: abre Auditoría y Registro directamente o entra mediante un enlace compartido por el emisor.",
+                "2. Pega cualquier dirección pública de colección Radix Seal (resource_rdx1… en Mainnet o resource_tdx_2_1… en Stokenet) en la pestaña «Auditor externo» y pulsa «Auditar colección».",
+                "3. La red (Mainnet o Stokenet) se detecta automáticamente por el prefijo de la dirección del recurso, evitando mezclar evidencias de pruebas con producción.",
+                "4. Si abres un enlace compartido con parámetros de colección y fechas, la auditoría se carga directamente con ese rango de consenso aplicado en solo lectura.",
+                "5. Pulsa sobre la etiqueta «Verificado / No verificado» junto a la dirección de la colección para abrir el panel lateral y comprobar en vivo si el dominio web del emisor autoriza oficialmente esa colección."
+              ]
+            },
+            {
+              "label": "Filtros",
+              "steps": [
+                "1. Localizar archivo: pulsa «Localizar archivo» y elige un documento de tu equipo. El navegador calcula su huella criptográfica BLAKE2b-256 localmente (el archivo nunca se sube) y filtra al instante únicamente los expedientes asociados a ese documento exacto.",
+                "2. Periodo de consenso (UTC): utiliza los atajos rápidos (Todo, 7d, Este mes, Trimestre, Año) o abre el calendario para acotar un rango exacto de fechas de confirmación en el ledger. Los días resaltados indican actividad registrada.",
+                "3. Tipo y estado: combina filtros por tipo de operación (Solicitud multi-parte, Firma directa, Cofirma o Cifrado y custodia) y por estado (Completados, Pendientes/parciales, Registrados o Con alertas).",
+                "4. Búsqueda libre y carga histórica: escribe un fragmento de hash, TxID, clave de solicitud, dirección Radix o alias de tu Agenda. Si la colección tiene muchos registros, pulsa «Cargar registros anteriores» al final de la tabla para ampliar la ventana escaneada hacia atrás."
+              ]
+            },
+            {
+              "label": "Exportar",
+              "steps": [
+                "1. Compartir auditoría: pulsa «Compartir auditoría» para copiar un enlace directo de solo lectura (con el rango de fechas activo) que cualquier cliente, socio o inspector puede abrir sin wallet.",
+                "2. Exportar informe: desde el menú «Exportar informe» descarga cualquiera de los cuatro formatos respetando los filtros activos — Informe Oficial de Auditoría (PDF con código QR de reverificación en vivo), Registro de Expedientes (CSV), Directorio de Firmantes (CSV) o Paquete Verificable (JSON con hash SHA-256 de integridad).",
+                "3. Alias locales (RGPD): antes de exportar puedes marcar o desmarcar «Incluir alias locales de mi Agenda». Los nombres humanos viven únicamente en tu navegador y nunca se graban en la blockchain.",
+                "4. Integridad y dominio: entra en «Integridad y privacidad» para desplegar cada comprobación criptográfica (estándar v1, marca oficial, regla de propietario bloqueada, quema denegada, inmutabilidad y verificación de dominio) y abrir el panel lateral de verificación sin custodia."
+              ]
+            }
+          ],
+          "guideSteps": [
+            "1. Conecta tu wallet para cargar tus colecciones automáticamente, o pega cualquier dirección de colección (resource_rdx1… / resource_tdx_2_1…) en Auditor externo sin wallet.",
+            "2. Revisa la cabecera: nombre del emisor, red (Mainnet/Stokenet), dirección del recurso y etiqueta clickable de verificación de dominio.",
+            "3. Filtra expedientes por archivo local (BLAKE2b-256), fechas de consenso UTC, tipo de operación, estado o búsqueda libre.",
+            "4. Inspecciona firmantes, NFTs y controles de integridad criptográfica en sus pestañas dedicadas.",
+            "5. Comparte un enlace de solo lectura o exporta el informe en PDF, CSV o JSON verificable con SHA-256."
+          ],
+          "fields": [
+            {
+              "label": "Selector de colección / Dirección externa",
+              "description": "En la cabecera (con wallet) cambia entre todas tus colecciones en la red activa manteniendo la pestaña abierta. En «Auditor externo» acepta cualquier recurso Radix Seal público sin wallet.",
+              "example": "resource_rdx1n2ekdd2m0jsxjt9wasmu3p49twy2yfalpaa6wf08md46sk8dfmldnd"
+            },
+            {
+              "label": "Localizar archivo (BLAKE2b-256 local)",
+              "description": "Calcula la huella del archivo en tu propio navegador sin enviarlo a ningún servidor y filtra automáticamente todos los expedientes que coincidan con ese documento.",
+              "example": "contrato-servicio-2026.pdf"
+            },
+            {
+              "label": "Periodo de consenso (UTC) y filtros",
+              "description": "Acota los expedientes por fecha exacta de confirmación del ledger, tipo de operación, estado de cumplimiento o texto (hash, TxID, clave de solicitud, dirección o alias local).",
+              "example": "2026-01-01 → 2026-03-31 · Completados"
+            },
+            {
+              "label": "Etiqueta Verificado / No verificado (Dominio)",
+              "description": "Muestra en cabecera e Integridad si el dominio web del emisor (org_url) confirma en vivo esta colección vía /.well-known/radix-seal.json o DNS TXT. Al pulsarla se abre el panel lateral con las instrucciones y comprobación en directo.",
+              "example": "https://tuempresa.com/.well-known/radix-seal.json"
+            },
+            {
+              "label": "Exportar informe e incluir alias locales",
+              "description": "Genera PDF de auditoría con QR, CSV de expedientes, CSV de firmantes o JSON con huella SHA-256. La casilla opcional decide si se incluyen los nombres guardados en tu Agenda local.",
+              "example": "radix-seal-audit-mainnet-8dfmldnd.pdf"
+            }
+          ],
+          "glossary": [
+            {
+              "group": "Integridad y ledger",
+              "term": "Corte del ledger (State Version)",
+              "definition": "Número de versión exacto del estado de la red Radix y marca temporal UTC en que se tomó la fotografía de auditoría. Permite reproducir y contrastar el estado exacto del registro en ese instante."
+            },
+            {
+              "group": "Integridad y ledger",
+              "term": "Cadena de custodia bloqueada",
+              "definition": "Comprueba que la regla de propietario de la colección está bloqueada para siempre exigiendo un NFT Seal oficial concreto, y que ese Seal intransferible pertenece actualmente a la cuenta emisora verificada."
+            },
+            {
+              "group": "Integridad y ledger",
+              "term": "Inmutabilidad y quema denegada",
+              "definition": "Verifica en las reglas de roles del recurso que nadie (ni siquiera el propietario) puede quemar NFTs ni modificar sus campos tras acuñarlos, y que el contador histórico de NFTs quemados es exactamente cero."
+            },
+            {
+              "group": "Integridad y ledger",
+              "term": "Alertas de integridad",
+              "definition": "Avisos automáticos cuando un lote de invitaciones aparece incompleto (por ejemplo tras un recall parcial) o cuando la fecha declarada en un NFT discrepa significativamente del reloj de consenso de la red."
+            },
+            {
+              "group": "Expedientes y operaciones",
+              "term": "Solicitud multi-parte, Firma directa y Cofirma",
+              "definition": "Una solicitud multi-parte agrupa todas las invitaciones de un lote y cruza cada firmante contra su propia colección Seal para determinar quién firmó y quién falta. Una firma directa es una firma individual sin invitación previa; una cofirma responde a una solicitud emitida desde otra colección."
+            },
+            {
+              "group": "Expedientes y operaciones",
+              "term": "Registros de cifrado y custodia",
+              "definition": "En el modo ROLA + Ledger de Cifrar documento, quedan auditables la firma de cifrado (quién cifró el archivo), las invitaciones de cifrado (qué cuentas fueron autorizadas) y los acuses opcionales de descifrado."
+            },
+            {
+              "group": "Expedientes y operaciones",
+              "term": "Canal P2P para firmas pendientes",
+              "definition": "Cuando un expediente tiene firmas pendientes, el emisor puede adjuntar el archivo original en la fila desplegada para abrir un canal cifrado WebRTC navegador-a-navegador y entregarlo al firmante al abrir el enlace, sin pasar por servidores de almacenamiento."
+            },
+            {
+              "group": "Identidad, dominio y privacidad",
+              "term": "Verificación de dominio sin custodia",
+              "definition": "Prueba abierta y descentralizada de que el titular de un dominio web reconoce una colección Radix Seal publicando /.well-known/radix-seal.json o un registro DNS TXT (_radix-seal.<dominio>). Funciona igual en Mainnet y Stokenet, sin NFTs extra ni intermediarios."
+            },
+            {
+              "group": "Identidad, dominio y privacidad",
+              "term": "Privacidad y RGPD (en cadena vs. local)",
+              "definition": "En la blockchain solo se guardan hashes irreversibles BLAKE2b-256, direcciones públicas y marcas de tiempo de consenso; nunca el contenido del archivo ni nombres personales. Los alias de tu Agenda viven solo en localStorage de tu navegador."
+            },
+            {
+              "group": "Identidad, dominio y privacidad",
+              "term": "Mainnet frente a Stokenet",
+              "definition": "Mainnet (resource_rdx1…) es la red productiva. Stokenet (resource_tdx_2_1…) es la red de pruebas: los informes PDF y la interfaz lo señalizan explícitamente para que nunca se confundan registros de test con evidencia productiva."
+            }
+          ]
+        }
       },
       "sign-document": {
         "title": "Firmar Documento",

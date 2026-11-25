@@ -103,13 +103,13 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
 
             {guideTabs.length > 0 && (
               <div className="space-y-5">
-                <div className="flex flex-nowrap items-center gap-5 border-b border-[var(--color-card-border)]">
+                <div className="flex flex-nowrap items-center gap-2 border-b border-[var(--color-card-border)]">
                   {guideTabs.map((tabItem, idx) => (
                     <button
                       key={tabItem.label}
                       type="button"
                       onClick={() => setActiveTab(idx)}
-                      className="relative pb-2.5 text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                      className="relative flex-1 pb-2.5 text-center text-xs font-bold whitespace-nowrap transition-colors cursor-pointer"
                       style={{ color: activeTab === idx ? 'var(--color-text-main)' : 'var(--color-text-muted)' }}
                     >
                       {tabItem.label}

@@ -24,74 +24,7 @@ import {
 import { networkIdFromResource } from '../../lib/network';
 import type { CollectionLabels } from './CollectionPrimitives';
 
-/**
- * Shared clickable status pill showing whether a collection's domain is
- * verified or unverified, opening {@link DomainVerificationDrawer} on click.
- */
-export function DomainStatusButton({
-  verified,
-  checking = false,
-  verifiedLabel,
-  unverifiedLabel,
-  checkingLabel,
-  title,
-  size = 'sm',
-  onClick,
-}: {
-  verified: boolean;
-  checking?: boolean;
-  verifiedLabel: string;
-  unverifiedLabel: string;
-  checkingLabel: string;
-  title?: string;
-  size?: 'xs' | 'sm';
-  onClick: () => void;
-}) {
-  const isXs = size === 'xs';
-  const iconCls = isXs ? 'size-3' : 'size-3.5';
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border font-semibold transition-colors hover:border-[var(--color-primary)] cursor-pointer ${
-        isXs ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
-      }`}
-      style={
-        verified
-          ? {
-              borderColor:
-                'color-mix(in srgb, var(--color-success) 45%, transparent)',
-              background:
-                'color-mix(in srgb, var(--color-success) 12%, transparent)',
-              color: 'var(--color-success)',
-            }
-          : {
-              borderColor: 'var(--color-card-border)',
-              background: 'var(--color-surface)',
-              color: 'var(--color-text-muted)',
-            }
-      }
-    >
-      {checking ? (
-        <>
-          <RefreshCw className={`${isXs ? 'size-2.5' : 'size-3'} animate-spin`} />
-          {checkingLabel}
-        </>
-      ) : verified ? (
-        <>
-          <BadgeCheck className={iconCls} />
-          {verifiedLabel}
-        </>
-      ) : (
-        <>
-          <ShieldAlert className={iconCls} />
-          {unverifiedLabel}
-        </>
-      )}
-    </button>
-  );
-}
+export { DomainStatusButton } from '../DomainVerifiedBadge';
 
 /**
  * Console-style slide-over side drawer explaining and testing custody-free

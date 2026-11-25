@@ -1,202 +1,67 @@
 'use client';
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { FileDown, ShieldCheck, Wallet } from 'lucide-react';
+import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { ProgressRow } from '@/features/p2p/components/ProgressRow';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useDocumentFile } from '@/features/sign/hooks/useDocumentFile';
 import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
-import { useReceiveFileChannel } from '@/features/sign/hooks/useFileChannel';
-import { fetchOnChainStatus } from '@/features/sign/services/signApi';
-import {
-  networkIdFromResource,
-  parseNetworkParam,
-  parseOutputsParam,
-  parseSendRoom,
-  parseWatermarkParams,
-} from '@/features/sign/lib/share';
-import { networkNameForId } from '@/features/sign/lib/network';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
-import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
-import { ToolSection } from '@/features/console/components/shared/ToolSection';
-import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
+import { useSharedSignLink } from '@/features/sign/hooks/useSharedSignLink';
 import { BasicSignForm } from '@/features/sign/components/BasicSignForm';
 import { EmbeddedPdfDetails } from '@/features/sign/components/EmbeddedPdfDetails';
-import { SignForm } from '@/features/sign/components/SignForm';
-import { extractRadixAttachments, isPdfBytes } from '@/features/sign/lib/pdf-extract';
 import {
-  downloadBytes,
-  downloadCertificate,
-  isFullySigned,
-} from '@/features/sign/lib/certificate';
-import type { AttestationEnvelope } from '@/features/sign/types/sign.types';
+  ReceiveStatusLine,
+  ReceivedSignedActions,
+  ReceivingChannelCard,
+  SignGate,
+} from '@/features/sign/components/SignDocumentChrome';
+import { SignForm } from '@/features/sign/components/SignForm';
 import { VerifyForm } from '@/features/sign/components/VerifyForm';
-import { useDocumentFile } from '@/features/sign/hooks/useDocumentFile';
 import type { SignDictionary } from '@/features/sign/types/dictionary';
+import { AccountPicker } from '../shared/AccountPicker';
+import { FileDropzone } from '../shared/FileDropzone';
+import { ToolSection } from '../shared/ToolSection';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 
 type Tab = 'basic' | 'sign' | 'verify';
 
 /**
- * Layout effects run before the browser paints, so reading the share link's
- * room id here means the signing UI is never painted for a split second before
- * the receive box replaces it. Falls back to useEffect during SSR, where layout
- * effects do not run (and React would warn).
- */
-const useBeforePaint =
-  typeof window === 'undefined' ? useEffect : useLayoutEffect;
-
-/**
- * Console tool: document signing & verification. The page header (title +
- * description) is supplied by ConsoleToolView. Strings come from the `sign`
- * namespace, enriched into the language context by the console layout.
+ * Console tool: document signing & verification.
+ * Coordinates tabs (Basic / Advanced / Verify), shared request links, P2P file
+ * receipt, and acting on-chain account selection.
  */
 export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   const { t: full } = useLanguage();
   const t = full.sign as SignDictionary;
-  const { isConnected, accounts, switchNetwork } = useRadixWallet();
-  // A shared on-chain request link belongs to the advanced tab. Two formats:
-  // directory (`…/sign-document/r/<collection>/<id>`) and legacy `?req=`.
-  const routeParams = useParams<{ collection?: string; id?: string }>();
-  const searchParams = useSearchParams();
-  const sharedRequestKey =
-    searchParams.get('req') ??
-    (routeParams.collection && routeParams.id
-      ? `${routeParams.collection}:#${routeParams.id}#`
-      : undefined);
-  const requestDocName = searchParams.get('doc') ?? undefined;
-  // Delivery choices the initiator baked into the link, so the co-signer gets
-  // the exact same output without re-picking anything.
-  const sharedOutputs = parseOutputsParam(searchParams.get('out'));
-  const sharedWatermark = parseWatermarkParams(
-    searchParams.get('wm'),
-    searchParams.get('wmt'),
-  );
-  const hasRequestParam = !!sharedRequestKey;
-  // Network the link belongs to, so the page opens on the right ledger. An
-  // on-ledger request names it in its resource prefix; every other share link
-  // (plain document delivery) carries it as `?net=` — without that, a Stokenet
-  // signature opened on Mainnet.
-  const requestNetworkId = (sharedRequestKey
-    ? networkIdFromResource(sharedRequestKey)
-    : parseNetworkParam(searchParams.get('net'))) as RadixNetworkId | null;
+  const { isConnected, accounts } = useRadixWallet();
+  const doc = useDocumentFile(t);
 
-  // Opening a shared link switches the app to the request's network once, so
-  // the page loads pointed at the right ledger (the user can still switch).
-  // No delay is needed to outrun the wallet provider's cookie restore: a
-  // deliberate `switchNetwork` now outranks it whenever it lands.
-  const networkForced = useRef(false);
-  useEffect(() => {
-    if (requestNetworkId == null || networkForced.current) return;
-    networkForced.current = true;
-    switchNetwork(networkNameForId(requestNetworkId));
-  }, [requestNetworkId, switchNetwork]);
+  const [tabOverride, setTabOverride] = useState<Tab | null>(null);
+  const shared = useSharedSignLink({
+    doc,
+    onAutoSwitchVerify: () => setTabOverride('verify'),
+  });
 
-  // Direct document delivery: the share link may carry a P2P room id in the
-  // URL fragment. Read it once, strip it from the address bar (it is a
-  // capability), and receive the document straight into the dropzone.
-  const [sendRoom, setSendRoom] = useState<string | null>(null);
-  // A fully-signed document received over the link, kept for the explicit
-  // download button (the automatic save may be blocked by the browser).
-  const [receivedSigned, setReceivedSigned] = useState<{
-    bytes: Uint8Array;
-    name: string;
-    envelope: AttestationEnvelope;
-  } | null>(null);
-  useBeforePaint(() => {
-    const room = parseSendRoom(window.location.hash);
-    if (room) {
-      history.replaceState(
-        null,
-        '',
-        window.location.pathname + window.location.search,
-      );
-    }
-    // Runs before paint, so the signing UI is never flashed on a share link.
-    setSendRoom(room);
-  }, []);
-  // A shared request forces the advanced tab; otherwise an optional `?tab=`
-  // param can deep-link into a specific tab (e.g. verify from the seal page).
-  // An explicit `?tab=` wins over the request's own pull towards the advanced
-  // tab: the link printed on a signed PDF carries the request AND asks for the
-  // verify tab, precisely so it lands on the check instead of on the signing UI.
-  const tabParam = searchParams.get('tab');
   const initialTab: Tab =
-    tabParam === 'verify' || tabParam === 'sign' || tabParam === 'basic'
-      ? tabParam
-      : hasRequestParam
+    shared.tabParam === 'verify' ||
+    shared.tabParam === 'sign' ||
+    shared.tabParam === 'basic'
+      ? shared.tabParam
+      : shared.hasRequestParam
         ? 'sign'
         : 'basic';
-  const [tab, setTab] = useState<Tab>(initialTab);
-  const doc = useDocumentFile(t);
-  // The room fragment alone is enough: document-delivery links (no on-ledger
-  // request) also feed the received file into the dropzone.
-  const receive = useReceiveFileChannel({
-    roomId: sendRoom,
-    onFile: (file) => {
-      void doc.onFile(file);
-      // A document arriving already FULLY signed leaves the receiver nothing to
-      // do, so hand them the file straight away. We also keep it around for an
-      // explicit download button: browsers can block a programmatic download
-      // that no click asked for, and that must not leave the user stranded.
-      // Still-pending documents are only loaded — those need the signing flow.
-      void (async () => {
-        try {
-          const bytes = new Uint8Array(await file.arrayBuffer());
-          if (!isPdfBytes(bytes)) return;
-          const att = await extractRadixAttachments(bytes);
-          if (!att.envelope || !isFullySigned(att.envelope)) return;
-          setReceivedSigned({ bytes, name: file.name, envelope: att.envelope });
-          // Nothing left to sign, so land on Verify: it shows every signature,
-          // the on-ledger state and the hash check without another click.
-          setTab('verify');
-          downloadBytes(bytes, file.name, 'application/pdf');
-        } catch {
-          /* the file is loaded either way */
-        }
-      })();
-    },
-  });
-  // A dropped PDF carrying an embedded request also needs the advanced flow.
+  const tab = tabOverride ?? initialTab;
   const effectiveTab: Tab =
     tab === 'basic' && doc.embeddedRequest ? 'sign' : tab;
 
-  // One-time on-ledger setup (seal + collection) for the acting account.
-  // While it is missing, the advanced tab shows ONLY the onboarding — no
-  // file upload, no other boxes (co-signers via shared request are exempt).
   const [onchainAccount, setOnchainAccount] = useState<string | null>(null);
   const effectiveOnchainAccount =
     onchainAccount ?? accounts[0]?.address ?? null;
   const setup = useSealSetup(effectiveOnchainAccount);
-  // Shares the exact react-query cache with OnChainSignPanel (zero extra calls)
-  // so we know whether the currently loaded file already matches the request's
-  // on-ledger hash (whether received via P2P or dropped manually).
-  const sharedStatusQuery = useQuery({
-    queryKey: ['sign-onchain-status', requestNetworkId, sharedRequestKey ?? ''],
-    queryFn: () =>
-      fetchOnChainStatus({
-        networkId: requestNetworkId!,
-        requestId: sharedRequestKey!,
-      }),
-    enabled: hasRequestParam && requestNetworkId != null,
-  });
-  const sharedRequestDocHash = sharedStatusQuery.data?.found
-    ? sharedStatusQuery.data.docHash
-    : null;
-  // On-chain ("en cadena") toggle, lifted here so the seal/collection check only
-  // runs once on-chain is selected: off-chain signing never needs them.
-  const [onchain, setOnchain] = useState(hasRequestParam);
+
+  const [onchain, setOnchain] = useState(shared.hasRequestParam);
   const needsOnboarding =
     isConnected &&
-    !hasRequestParam &&
+    !shared.hasRequestParam &&
     !doc.embeddedRequest &&
     onchain &&
     setup.ready &&
@@ -204,57 +69,20 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   const cleanOnboarding = effectiveTab === 'sign' && needsOnboarding;
 
   if (!t) return null;
-
-  // While a document is arriving over the direct channel, the ONLY thing on
-  // screen is the receive box (like the cipher tool): no tabs, no dropzone, no
-  // signing options competing for attention. Once it finishes the file is
-  // loaded and the full flow appears so the signature can be added.
-  // Hidden for as long as a document is on its way. Keyed off `sendRoom` (known
-  // before paint) rather than only the channel phase, so the signing UI is not
-  // shown for a moment while the channel is still starting up.
-  const receiving =
-    (!!sendRoom && receive.phase !== 'done' && receive.phase !== 'error') ||
-    receive.phase === 'connecting' ||
-    receive.phase === 'receiving';
-  if (receiving) {
-    return (
-      <div className="mx-auto w-full max-w-4xl">
-        <ToolSection title={t.onchain.recvTitle} hint={t.onchain.recvHint}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-primary)]">
-              <FileDown className="size-5 text-white" />
-            </div>
-            <div className="min-w-0">
-              <p
-                className="truncate text-sm font-bold"
-                style={{ color: 'var(--color-text-main)' }}
-              >
-                {t.onchain.recvTitle}
-              </p>
-            </div>
-          </div>
-          <ProgressRow
-            label={
-              receive.phase === 'connecting'
-                ? t.onchain.recvConnecting
-                : t.onchain.recvReceiving
-            }
-            fraction={receive.phase === 'receiving' ? receive.progress : undefined}
-          />
-        </ToolSection>
-      </div>
-    );
+  if (shared.receiving) {
+    return <ReceivingChannelCard t={t} receive={shared.receive} />;
   }
 
   const hasMatchingFileForRequest =
-    hasRequestParam &&
+    shared.hasRequestParam &&
     effectiveTab === 'sign' &&
     !!doc.file &&
     !!doc.docHash &&
     !doc.fileError &&
-    (receive.phase === 'done' ||
-      (!!sharedRequestDocHash &&
-        doc.docHash.toLowerCase() === sharedRequestDocHash.toLowerCase()));
+    (shared.receive.phase === 'done' ||
+      (!!shared.sharedRequestDocHash &&
+        doc.docHash.toLowerCase() ===
+          shared.sharedRequestDocHash.toLowerCase()));
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -266,7 +94,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
           <button
             key={key}
             type="button"
-            onClick={() => setTab(key)}
+            onClick={() => setTabOverride(key)}
             className="relative pb-2.5 text-sm font-bold transition-colors"
             style={{
               color:
@@ -293,22 +121,20 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
         ))}
       </div>
 
-      {/* On-chain acting account at the very top (advanced tab): the selectable
-          address buttons live here, not inside the Seal onboarding box, so you
-          can pick/check the address whether or not it already has its seal. */}
       {effectiveTab === 'sign' && isConnected && (
         <ToolSection title={t.onchain.account}>
           <AccountPicker value={onchainAccount} onChange={setOnchainAccount} />
         </ToolSection>
       )}
 
-      {/* On Verify tab, show "Consultar una firma en el ledger" at the very top
-          before the optional document dropzone. */}
       {effectiveTab === 'verify' && (
-        <VerifyForm t={t} doc={doc} initialRequestKey={sharedRequestKey} />
+        <VerifyForm
+          t={t}
+          doc={doc}
+          initialRequestKey={shared.sharedRequestKey}
+        />
       )}
 
-      {/* During onboarding the advanced tab shows ONLY what must be done now. */}
       {!cleanOnboarding && (
         <>
           {effectiveTab !== 'verify' && (
@@ -324,9 +150,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
           )}
 
           <ToolSection>
-            {/* The request context lives WITH the document box: the co-signer's
-                one job here is uploading the file the request refers to. */}
-            {hasRequestParam && effectiveTab === 'sign' && (
+            {shared.hasRequestParam && effectiveTab === 'sign' && (
               <div
                 className="rounded-xl border px-4 py-3 space-y-1 text-sm"
                 style={{
@@ -336,12 +160,12 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                   background: 'var(--color-surface)',
                 }}
               >
-                {(requestDocName || doc.file?.name) && (
+                {(shared.requestDocName || doc.file?.name) && (
                   <p style={{ color: 'var(--color-text-main)' }}>
                     <span className="font-semibold">
                       {t.onchain.requestDocLabel}:
                     </span>{' '}
-                    {doc.file?.name ?? requestDocName}
+                    {doc.file?.name ?? shared.requestDocName}
                   </p>
                 )}
                 {!hasMatchingFileForRequest && (
@@ -349,27 +173,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                     {t.onchain.requestFilePrompt}
                   </p>
                 )}
-                {receive.phase !== 'idle' && (
-                  <p
-                    className="text-xs font-semibold"
-                    style={{
-                      color:
-                        receive.phase === 'error'
-                          ? 'var(--color-danger, #dc2626)'
-                          : receive.phase === 'done'
-                            ? 'var(--color-success)'
-                            : 'var(--color-text-muted)',
-                    }}
-                  >
-                    {receive.phase === 'connecting'
-                      ? t.onchain.recvConnecting
-                      : receive.phase === 'receiving'
-                        ? `${t.onchain.recvReceiving} ${Math.round(receive.progress * 100)}%`
-                        : receive.phase === 'done'
-                          ? t.onchain.recvDone
-                          : t.onchain.recvError}
-                  </p>
-                )}
+                <ReceiveStatusLine t={t} receive={shared.receive} />
               </div>
             )}
             {effectiveTab === 'basic' && (
@@ -380,28 +184,8 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                 {t.basic.hint}
               </p>
             )}
-            {/* Document-delivery links have no request box, so the live
-                receive status shows here, next to the dropzone it fills. */}
-            {!hasRequestParam && receive.phase !== 'idle' && (
-              <p
-                className="text-xs font-semibold"
-                style={{
-                  color:
-                    receive.phase === 'error'
-                      ? 'var(--color-danger, #dc2626)'
-                      : receive.phase === 'done'
-                        ? 'var(--color-success)'
-                        : 'var(--color-text-muted)',
-                }}
-              >
-                {receive.phase === 'connecting'
-                  ? t.onchain.recvConnecting
-                  : receive.phase === 'receiving'
-                    ? `${t.onchain.recvReceiving} ${Math.round(receive.progress * 100)}%`
-                    : receive.phase === 'done'
-                      ? t.onchain.recvDone
-                      : t.onchain.recvError}
-              </p>
+            {!shared.hasRequestParam && (
+              <ReceiveStatusLine t={t} receive={shared.receive} />
             )}
             {!hasMatchingFileForRequest && (
               <FileDropzone
@@ -416,7 +200,10 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
             )}
             {doc.docHash && !doc.hashing && (
               <div className="space-y-1">
-                <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                <p
+                  className="text-[11px]"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
                   {t.file.ready}
                 </p>
                 <p
@@ -427,8 +214,6 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                 </p>
               </div>
             )}
-            {/* What the dropped PDF carries inside (certificate, original,
-                request pointer), broken down where the file lives. */}
             <EmbeddedPdfDetails t={t} doc={doc} />
           </ToolSection>
         </>
@@ -439,14 +224,14 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
           <BasicSignForm t={t} consoleT={consoleT} doc={doc} />
         </SignGate>
       ) : effectiveTab === 'sign' ? (
-        <SignGate t={t} preferredNetwork={requestNetworkId}>
+        <SignGate t={t} preferredNetwork={shared.requestNetworkId}>
           <SignForm
             t={t}
             consoleT={consoleT}
             doc={doc}
-            sharedRequestKey={sharedRequestKey}
-            sharedOutputs={sharedOutputs ?? undefined}
-            sharedWatermark={sharedWatermark ?? undefined}
+            sharedRequestKey={shared.sharedRequestKey}
+            sharedOutputs={shared.sharedOutputs ?? undefined}
+            sharedWatermark={shared.sharedWatermark ?? undefined}
             onchainAccount={effectiveOnchainAccount}
             onOnchainAccountChange={setOnchainAccount}
             onchain={onchain}
@@ -457,119 +242,12 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
         </SignGate>
       ) : null}
 
-      {receivedSigned && (
-        // A document that arrived signed by everyone: the verification above
-        // already shows all of it, so the only thing left is keeping the files.
-        // Last thing on the page and deliberately NOT boxed — these are the
-        // page's final actions, not another panel of information.
-        <div className="space-y-3">
-          <p
-            className="text-xs leading-relaxed"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            <strong style={{ color: 'var(--color-text-main)' }}>
-              {t.onchain.recvSignedTitle}.
-            </strong>{' '}
-            {t.onchain.recvSignedHint}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                downloadBytes(
-                  receivedSigned.bytes,
-                  receivedSigned.name,
-                  'application/pdf',
-                )
-              }
-              className="flex flex-1 items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow-md transition-all hover:opacity-90 active:scale-95"
-            >
-              <FileDown className="size-4" />
-              {t.actions.downloadPdf}
-            </button>
-            <button
-              type="button"
-              onClick={() => downloadCertificate(receivedSigned.envelope)}
-              className="flex flex-1 items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
-              style={{
-                borderColor: 'var(--color-card-border)',
-                color: 'var(--color-text-main)',
-              }}
-            >
-              <FileDown className="size-4" />
-              {t.actions.downloadCert}
-            </button>
-          </div>
-        </div>
+      {shared.receivedSigned && (
+        <ReceivedSignedActions
+          t={t}
+          receivedSigned={shared.receivedSigned}
+        />
       )}
-    </div>
-  );
-}
-
-/** Renders children only when a wallet session is active; else a connect prompt. */
-function SignGate({
-  t,
-  preferredNetwork,
-  children,
-}: {
-  t: SignDictionary;
-  /** Network named by a shared request key: its connect button goes primary. */
-  preferredNetwork?: RadixNetworkId | null;
-  children: ReactNode;
-}) {
-  const { isConnected, isLoading, connect } = useRadixWallet();
-  if (isConnected) return <>{children}</>;
-
-  const primary = preferredNetwork ?? RadixNetworkId.Mainnet;
-  const secondary =
-    primary === RadixNetworkId.Mainnet
-      ? RadixNetworkId.Stokenet
-      : RadixNetworkId.Mainnet;
-  const label = (id: RadixNetworkId) =>
-    id === RadixNetworkId.Mainnet ? t.connect.mainnet : t.connect.stokenet;
-
-  return (
-    <div
-      className="rounded-3xl border p-10 flex flex-col items-center text-center gap-5"
-      style={{
-        background: 'var(--color-card-bg)',
-        borderColor: 'var(--color-card-border)',
-      }}
-    >
-      <div className="size-14 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-primary)] shadow-lg">
-        <Wallet className="size-7 text-white" />
-      </div>
-      <div className="space-y-1.5 max-w-sm">
-        <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-main)' }}>
-          {t.connect.title}
-        </h3>
-        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          {t.connect.subtitle}
-        </p>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          type="button"
-          disabled={isLoading}
-          onClick={() => connect(primary)}
-          className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-        >
-          <ShieldCheck className="size-4" />
-          {label(primary)}
-        </button>
-        <button
-          type="button"
-          disabled={isLoading}
-          onClick={() => connect(secondary)}
-          className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95 disabled:opacity-40"
-          style={{
-            borderColor: 'var(--color-card-border)',
-            color: 'var(--color-text-main)',
-          }}
-        >
-          {label(secondary)}
-        </button>
-      </div>
     </div>
   );
 }

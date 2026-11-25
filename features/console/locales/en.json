@@ -88,11 +88,226 @@
     "tools": {
       "sign-collection": {
         "title": "Signing Collection",
-        "description": "Create and manage the Radix Seal collection where your signatures and invitations live, plus the issuer identity everyone receiving them sees."
+        "description": "Create and manage the Radix Seal collection where your signatures and invitations live, plus the issuer identity everyone receiving them sees.",
+        "guide": {
+          "guideTitle": "Guide: Signing Collection",
+          "guideDescription": "Your signing collection is your personal or corporate archive on the Radix ledger: an NFT resource whose owner rule is permanently locked to require your soulbound Radix Seal insignia. Only your wallet can mint signatures or invitations into it, nobody can burn records, and anyone can verify its issuer identity and web domain with zero intermediaries. Works identically on Mainnet and Stokenet.",
+          "guideTabs": [
+            {
+              "label": "Collections",
+              "steps": [
+                "1. Connect your Radix Wallet and pick the account in the top selector. You will see your soulbound Seal insignia and every signing collection that account owns on the active network.",
+                "2. If you own multiple collections (for example personal and company), click any card to mark it «Active». Sign Document and Encrypt will mint upcoming records into the active collection.",
+                "3. Switching the active collection never moves or alters previously issued signatures or invitations: every record stays permanently in the collection where it was minted.",
+                "4. Click the «Verified / Not verified» pill on any collection card to open the custody-free domain verification drawer and check its live status."
+              ]
+            },
+            {
+              "label": "Create",
+              "steps": [
+                "1. Under «Create collection», set the name, symbol, optional logo, and issuer identity (organisation name and HTTPS website). All of these display fields remain editable later.",
+                "2. If the account does not hold a Seal insignia yet, the tool mints your official Seal first and creates the collection next in two back-to-back wallet confirmations.",
+                "3. If you already hold a Seal, choose «Reuse my insignia» (single confirmation; one Seal can own multiple collections) or «Mint a new one» if you want a separate insignia with its own image.",
+                "4. Optionally add up to 10 custom key/value metadata fields (e.g. department or internal reference) and choose which ones to lock permanently.",
+                "5. Use «Simulate» before approving in your wallet to preview the manifest and estimated fee. On Stokenet, a «Fill test data» shortcut is available for quick testing."
+              ]
+            },
+            {
+              "label": "Identity",
+              "steps": [
+                "1. Under «Issuer identity», update the active collection's name, symbol, logo, organisation name, and HTTPS website (org_url). Protocol keys sealed at creation appear as «Locked» and can never be modified.",
+                "2. Click «Sign changes with your wallet» (or «Simulate» first): the transaction presents a proof of your Seal insignia to update editable metadata on-ledger.",
+                "3. Next to «Editing: resource_…», click the «Verified / Not verified» pill to open the custody-free domain verification side drawer.",
+                "4. Publish EITHER option on your domain — Option A: https://<your-domain>/.well-known/radix-seal.json or Option B: DNS TXT record _radix-seal.<your-domain> — and click «Check now» to verify live."
+              ]
+            }
+          ],
+          "guideSteps": [
+            "1. Connect your Radix Wallet and inspect your Seal insignia and collections under «My collections».",
+            "2. If you do not have a collection yet (or want separate identities), create one under «Create collection».",
+            "3. Update name, logo, and organisation website under «Issuer identity» whenever needed.",
+            "4. Click the «Verified / Not verified» pill to bind your web domain custody-free via .well-known or DNS TXT."
+          ],
+          "fields": [
+            {
+              "label": "Collection name & symbol",
+              "description": "Human-readable identifier shown in wallets, explorers, and certificates. Both stay editable after creation.",
+              "example": "Acme Legal · ACME"
+            },
+            {
+              "label": "Organisation website (org_url)",
+              "description": "Public HTTPS URL of your official website. Used as the basis for custody-free domain verification (.well-known or DNS TXT).",
+              "example": "https://yourcompany.com"
+            },
+            {
+              "label": "Collection logo (icon_url)",
+              "description": "Image URL used as the collection icon in wallets and as the issuer logo on certificates and audits.",
+              "example": "https://yourcompany.com/logo.svg"
+            },
+            {
+              "label": "Custom metadata (optional)",
+              "description": "Up to 10 additional key/value pairs recorded on-ledger (e.g. department or jurisdiction), each optionally locked forever.",
+              "example": "department = Compliance"
+            }
+          ],
+          "glossary": [
+            {
+              "group": "Insignia & custody",
+              "term": "Seal insignia (soulbound)",
+              "definition": "Official non-transferable, non-burnable NFT that attests your signer identity and acts as the sole key able to mint and edit metadata in your collections."
+            },
+            {
+              "group": "Insignia & custody",
+              "term": "Active collection",
+              "definition": "The collection selected in this browser for upcoming Sign Document and Encrypt actions. You can hold multiple collections (e.g. personal and corporate) without mixing histories."
+            },
+            {
+              "group": "Identity & domain",
+              "term": "Locked vs. editable metadata",
+              "definition": "Protocol keys (radix_seal, radix_sign_collection, issuer, and description) are sealed at creation. Name, symbol, logo, org_name, and org_url can be updated with a proof of your Seal."
+            },
+            {
+              "group": "Identity & domain",
+              "term": "Custody-free domain verification",
+              "definition": "Proves live that your web domain authorizes this exact collection (collection=resource_…) via /.well-known/radix-seal.json or DNS TXT, with no extra NFTs or intermediaries."
+            }
+          ]
+        }
       },
       "sign-audit": {
         "title": "Audit & Registry",
-        "description": "Inspect records, signers, NFTs, and cryptographic integrity across all your Radix Seal collections, or audit any public collection in read-only mode."
+        "description": "Inspect records, signers, NFTs, and cryptographic integrity across all your Radix Seal collections, or audit any public collection in read-only mode.",
+        "guide": {
+          "guideTitle": "Guide: Audit & Registry",
+          "guideDescription": "A read-only compliance registry reconstructed live from the public Radix ledger. There is no central database or intermediary server: every signing request, invitation, completed signature, encryption record, consensus timestamp, and integrity check is verified directly against the chain. Works identically on Mainnet and Stokenet, both with your connected wallet (across all your collections) and in wallet-free External Auditor mode.",
+          "guideTabs": [
+            {
+              "label": "Collections",
+              "steps": [
+                "1. Connect your Radix Wallet: the tool automatically discovers every Radix Seal collection owned by the accounts shared with your wallet on the active network (Mainnet or Stokenet), with no manual account picking required.",
+                "2. Use the collection switcher in the header to jump between your collections: switching keeps you on the exact same sub-tab you were viewing (Records, Signers & NFTs, Overview, or Integrity & Privacy).",
+                "3. In «Records», expand any row to inspect the full breakdown: completed and pending signers, exact invitation and signature NFTs, the public request key, and direct links to the Explorer or Verifier.",
+                "4. When a record still has pending signatures, the expanded panel lets you copy the signing link or QR code and optionally attach the original file to open an encrypted browser-to-browser P2P channel for pending signers.",
+                "5. In «Signers & NFTs», inspect every participating account, check whether they hold an official Seal and their own signing collection, add local Address Book labels (browser-only), or click «View records» to filter by a single account.",
+                "6. In «Overview», review KPIs for the active filter scope, the verified issuing account, the declared website, and the exact ledger cutoff (state version and UTC timestamp)."
+              ]
+            },
+            {
+              "label": "External",
+              "steps": [
+                "1. No wallet required: open Audit & Registry directly or follow a shared audit link sent by the issuer.",
+                "2. Paste any public Radix Seal collection address (resource_rdx1… on Mainnet or resource_tdx_2_1… on Stokenet) in the «External auditor» tab and press «Audit collection».",
+                "3. The target network (Mainnet or Stokenet) is inferred automatically from the resource Bech32 prefix, so testnet and production records can never mix.",
+                "4. Opening a shared audit URL with collection and date parameters loads the read-only audit straight into that consensus date range.",
+                "5. Click the «Verified / Not verified» domain pill next to the collection address to open the side panel and check live whether the issuer's web domain officially authorizes this collection."
+              ]
+            },
+            {
+              "label": "Filters",
+              "steps": [
+                "1. Locate file locally: click «Locate file locally» and pick any file from your device. Your browser computes its BLAKE2b-256 fingerprint locally (the file is never uploaded) and immediately filters to records matching that exact document.",
+                "2. Consensus period (UTC): use quick presets (All, 7d, This month, Quarter, Year) or open the date picker to set an exact ledger confirmation range. Highlighted calendar days indicate recorded on-ledger activity.",
+                "3. Operation type & status: combine filters by operation kind (Multi-party request, Direct signature, Co-signature, or Encryption & custody) and compliance status (Complete, Pending/partial, Recorded, or With alerts).",
+                "4. Search & history pagination: search by hash fragment, TxID, request key, Radix address, or local Address Book alias. For large collections, click «Load older records» at the bottom of the table to scan further back in history."
+              ]
+            },
+            {
+              "label": "Export",
+              "steps": [
+                "1. Share audit link: press «Share audit link» to copy a direct read-only URL (preserving your active date filters) that any client, partner, or inspector can open without a wallet.",
+                "2. Export report: from the «Export report» menu, download any of four formats scoped to your active filters — Official Audit Report (PDF with a live re-verification QR code), Records Registry (CSV), Signers Directory (CSV), or Verifiable Package (JSON with a SHA-256 integrity digest).",
+                "3. Local aliases (GDPR): toggle «Include local Address Book aliases» before exporting. Human names live strictly in your browser and are never written to the blockchain.",
+                "4. Integrity & domain: open «Integrity & privacy» to expand every cryptographic check (v1 standard, official brand, locked owner rule, burn denied, immutability, and domain verification) and launch the custody-free domain verification drawer."
+              ]
+            }
+          ],
+          "guideSteps": [
+            "1. Connect your wallet to load your collections automatically, or paste any collection address (resource_rdx1… / resource_tdx_2_1…) under External auditor without a wallet.",
+            "2. Check the header: issuer name, network (Mainnet/Stokenet), resource address, and clickable domain verification pill.",
+            "3. Filter records by local file hash (BLAKE2b-256), UTC consensus dates, operation type, status, or free-text search.",
+            "4. Inspect signers, NFTs, and cryptographic integrity checks across their dedicated tabs.",
+            "5. Share a read-only link or export the audit as PDF, CSV, or SHA-256 verifiable JSON."
+          ],
+          "fields": [
+            {
+              "label": "Collection switcher / External address",
+              "description": "In the header (with a wallet), switch across all your collections on the active network while staying on your current tab. Under «External auditor», paste any public Radix Seal resource with no wallet.",
+              "example": "resource_rdx1n2ekdd2m0jsxjt9wasmu3p49twy2yfalpaa6wf08md46sk8dfmldnd"
+            },
+            {
+              "label": "Locate file locally (BLAKE2b-256)",
+              "description": "Computes the document fingerprint locally in your browser without uploading a single byte and filters instantly to matching on-ledger records.",
+              "example": "service-agreement-2026.pdf"
+            },
+            {
+              "label": "Consensus period (UTC) & filters",
+              "description": "Narrows records by exact ledger confirmation date, operation type, compliance status, or search text (hash, TxID, request key, address, or local alias).",
+              "example": "2026-01-01 → 2026-03-31 · Complete"
+            },
+            {
+              "label": "Verified / Not verified pill (Domain)",
+              "description": "Shown in the header and Integrity tab to indicate whether the issuer's website (org_url) confirms this collection live via /.well-known/radix-seal.json or DNS TXT. Clicking opens the side drawer with setup instructions and a live check.",
+              "example": "https://yourcompany.com/.well-known/radix-seal.json"
+            },
+            {
+              "label": "Export report & local aliases toggle",
+              "description": "Generates a QR-enabled audit PDF, records CSV, signers CSV, or SHA-256 JSON package. The optional checkbox controls whether your browser's local Address Book names are included.",
+              "example": "radix-seal-audit-mainnet-8dfmldnd.pdf"
+            }
+          ],
+          "glossary": [
+            {
+              "group": "Integrity & ledger",
+              "term": "Ledger cutoff (State Version)",
+              "definition": "The exact Radix ledger state version and UTC timestamp at which the audit snapshot was captured, allowing anyone to reproduce and corroborate the registry at that exact point."
+            },
+            {
+              "group": "Integrity & ledger",
+              "term": "Locked chain of custody",
+              "definition": "Verifies that the collection's owner rule is permanently locked to require one specific official Seal NFT, and that this non-transferable Seal is currently held by the verified issuing account."
+            },
+            {
+              "group": "Integrity & ledger",
+              "term": "Immutability & burn denied",
+              "definition": "Checks the resource's on-ledger role rules to confirm nobody (not even the owner) can burn NFTs or mutate their fields after minting, and that the historical burned NFT count is strictly zero."
+            },
+            {
+              "group": "Integrity & ledger",
+              "term": "Integrity alerts",
+              "definition": "Automatic warnings raised when an invitation batch is incomplete (for example after a partial recall) or when an NFT's declared timestamp diverges materially from network consensus time."
+            },
+            {
+              "group": "Records & operations",
+              "term": "Multi-party request, Direct signature & Co-signature",
+              "definition": "A multi-party request groups all invitations in a batch and cross-checks each signer's own Seal collection to prove who signed and who is pending. A direct signature is a single-party signature with no prior invitation; a co-signature answers a request issued from another collection."
+            },
+            {
+              "group": "Records & operations",
+              "term": "Encryption & custody records",
+              "definition": "Under Encrypt Document's ROLA + Ledger mode, the audit surfaces the encryption signature (who encrypted the file), encryption invitations (which accounts were authorized), and optional decryption receipts."
+            },
+            {
+              "group": "Records & operations",
+              "term": "P2P channel for pending signatures",
+              "definition": "When a record has pending signatures, the issuer can attach the original file inside the expanded row to open an end-to-end encrypted browser-to-browser WebRTC channel so signers receive the file upon opening the link, with no cloud storage."
+            },
+            {
+              "group": "Identity, domain & privacy",
+              "term": "Custody-free domain verification",
+              "definition": "Open, decentralized proof that a web domain's owner recognizes a Radix Seal collection by publishing /.well-known/radix-seal.json or a DNS TXT record (_radix-seal.<domain>). Works identically on Mainnet and Stokenet with no extra NFTs or gatekeepers."
+            },
+            {
+              "group": "Identity, domain & privacy",
+              "term": "Privacy & GDPR (on-chain vs. local)",
+              "definition": "Only irreversible BLAKE2b-256 hashes, public Radix addresses, and consensus timestamps are ever written on-chain — never file contents or personal names. Address Book aliases stay strictly in your browser's localStorage."
+            },
+            {
+              "group": "Identity, domain & privacy",
+              "term": "Mainnet vs. Stokenet",
+              "definition": "Mainnet (resource_rdx1…) is the production network. Stokenet (resource_tdx_2_1…) is the testnet: both the UI and exported PDF reports flag Stokenet explicitly so test records are never mistaken for production evidence."
+            }
+          ]
+        }
       },
       "sign-document": {
         "title": "Sign Document",

@@ -579,7 +579,7 @@
         },
         "network": {
           "mainnet": "Mainnet · Production",
-          "stokenet": "Stokenet · Testnet",
+          "stokenet": "Stokenet",
           "stokenetNotice": "Testnet environment (Stokenet): records shown here belong to test accounts and must not be treated as production legal evidence."
         },
         "header": {
