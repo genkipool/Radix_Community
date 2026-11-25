@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { m, AnimatePresence } from "motion/react";
 import { X, User, LogOut, RefreshCcw, Wallet, ChevronDown } from 'lucide-react';
 import { SidePanelModal } from '@/components/shared/SidePanelModal';
@@ -114,6 +114,18 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
     const [isFilterOpen, setIsFilterOpen] = useState(true);
     const [summaryPortalEl, setSummaryPortalEl] = useState<HTMLDivElement | null>(null);
     const [activeSummaryAccounts, setActiveSummaryAccounts] = useState<Set<string>>(() => new Set());
+    const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+            ? window.matchMedia('(min-width: 640px)').matches
+            : true
+    );
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+        const mq = window.matchMedia('(min-width: 640px)');
+        const handleChange = (e: MediaQueryListEvent) => setIsDesktopViewport(e.matches);
+        mq.addEventListener('change', handleChange);
+        return () => mq.removeEventListener('change', handleChange);
+    }, []);
     const handleFloatingSummaryChange = (addr: string, active: boolean) => {
         setActiveSummaryAccounts((prev) => {
             const has = prev.has(addr);
@@ -418,8 +430,8 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                                         filterSection={inlineFilterInAccount ? filterSectionNode : undefined}
                                                                         visibleSections={visibleSections}
                                                                         sectionOrder={sectionOrder}
-                                                                        summaryPortalTarget={isStandaloneMode ? null : summaryPortalEl}
-                                                                        onFloatingSummaryChange={isStandaloneMode ? undefined : handleFloatingSummaryChange}
+                                                                        summaryPortalTarget={!isStandaloneMode && isDesktopViewport ? summaryPortalEl : null}
+                                                                        onFloatingSummaryChange={!isStandaloneMode && isDesktopViewport ? handleFloatingSummaryChange : undefined}
                                                                     />
                                                                 </div>
                                                             ))}
@@ -436,7 +448,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
             </div>
         </SidePanelModal>
 
-            {isOpen && !isStandaloneMode && (
+            {isOpen && !isStandaloneMode && isDesktopViewport && (
                 <Portal>
                     <AnimatePresence>
                         {activeSummaryAccounts.size > 0 && (

@@ -68,6 +68,8 @@ interface NavPopupProps {
    * theme buttons switch on a tap and open their sheet on a long press).
    */
   toggleOnClick?: boolean;
+  /** Extra classes for the outer trigger wrapper (e.g. `w-full` in mobile menu). */
+  wrapperClassName?: string;
 }
 
 /**
@@ -115,6 +117,7 @@ export default function NavPopup({
   offsetClass = 'absolute top-[calc(100%-12px)]',
   anchored = false,
   toggleOnClick = true,
+  wrapperClassName = '',
 }: NavPopupProps) {
   const router = useRouter();
   const prefetchedRef = useRef(false);
@@ -226,7 +229,7 @@ export default function NavPopup({
     // self-stretch + flex items-center: fills full navbar height, centers trigger vertically
     <div
       ref={wrapperRef}
-      className="relative group/navpopup self-stretch flex items-center"
+      className={`relative group/navpopup self-stretch flex items-center ${wrapperClassName}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClickCapture={(e) => {
