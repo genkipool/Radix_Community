@@ -18,6 +18,7 @@ import {
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE } from './VoteParts';
 import { stanceResolver, type G } from './GovernanceBadges';
+import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import {
     RESISTANCE_STYLE,
     ruleParams, tip, methodText, matchesMethodQuery, resistanceTooltip, formatBalanceHint, nextSort, sortComparisonRows,
@@ -338,12 +339,13 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
  * Comparison tab: the same ballots counted with other voting rules, what each
  * would have decided and how concentrated power is under each one.
  */
-export function MethodsComparison({ entry, system, g, language, now }: {
+export function MethodsComparison({ entry, system, g, language, now, onRegisterExport }: {
     entry: GovernanceEntry;
     system: GovernanceSystem;
     g: G;
     language: string;
     now: number;
+    onRegisterExport?: RegisterTabExport;
 }) {
     const { item, kind, id } = entry;
     const c: C = g.compare ?? {};
@@ -363,6 +365,45 @@ export function MethodsComparison({ entry, system, g, language, now }: {
     const results = voters.length ? compareMethods(voters, choices, item) : [];
     const params = ruleParams(language);
     const pending = rows.length - counted.length;
+
+    useRegisterTabExport(onRegisterExport, () => {
+        const currentResult = results.find(r => r.current);
+        const readyResults = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
+        const otherResults = readyResults.filter(r => !r.current);
+        return {
+            tab: 'compare',
+            exportedAt: new Date().toISOString(),
+            system: {
+                key: system.key,
+                name: system.name,
+                network: system.network,
+                component: system.component,
+            },
+            vote: {
+                kind,
+                id,
+                title: item.title,
+                start: item.start,
+                deadline: item.deadline,
+                quorum: item.quorum,
+                approvalThreshold: item.approvalThreshold,
+            },
+            filters: { family, query, sort },
+            summary: {
+                totalVoters: rows.length,
+                countedVoters: currentResult?.counted ?? 0,
+                pendingVoters: pending,
+                eligibleXrd: currentResult?.eligibleXrd ?? 0,
+                agesLoaded: ages.loaded,
+                agesTotal: ages.total,
+                agesDone: ages.done,
+                unknownAges: ages.done ? voters.filter(v => v.ageDays === null).length : 0,
+                sameOutcomeCount: otherResults.filter(r => r.sameAsCurrent).length,
+                comparedMethodsCount: otherResults.length,
+            },
+            methods: results,
+        };
+    });
 
     if (tallyQuery.isLoading) return <div className="h-64 rounded-2xl bg-[var(--color-surface)] animate-pulse" aria-hidden />;
     if (!results.length) {
