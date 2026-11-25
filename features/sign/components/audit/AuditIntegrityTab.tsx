@@ -289,7 +289,19 @@ export function AuditIntegrityTab({
             </div>
             <div className="flex items-center justify-between gap-3 py-2.5">
               <dt className="text-[var(--color-text-muted)]">{t.domainSummaryLabel}</dt>
-              <dd className="inline-flex items-center gap-1.5">
+              <dd className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                {audit.issuer.orgUrl && (
+                  <a
+                    href={audit.issuer.orgUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={audit.issuer.orgUrl}
+                    className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline truncate max-w-[220px]"
+                  >
+                    <span className="truncate">{audit.issuer.orgUrl}</span>
+                    <ExternalLink className="size-3 shrink-0" />
+                  </a>
+                )}
                 <DomainStatusButton
                   size="xs"
                   verified={domainVerified}

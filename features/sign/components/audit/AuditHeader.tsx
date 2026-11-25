@@ -193,6 +193,19 @@ export function AuditHeader({
               <CopyButton value={audit.collection} variant="minimal" size="xs" />
             </span>
 
+            {audit.issuer.orgUrl && (
+              <a
+                href={audit.issuer.orgUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={audit.issuer.orgUrl}
+                className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline truncate max-w-[240px]"
+              >
+                <span className="truncate">{audit.issuer.orgUrl}</span>
+                <ExternalLink className="size-3 shrink-0" />
+              </a>
+            )}
+
             <DomainStatusButton
               size="xs"
               verified={!!domainVerification?.verified}

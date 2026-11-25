@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { BadgeCheck, Check, Plus } from 'lucide-react';
+import { BadgeCheck, Check, ExternalLink, Plus } from 'lucide-react';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { useNftData } from '@/features/console/hooks/useNftData';
@@ -98,12 +99,15 @@ export function CollectionsListTab({
                       >
                         {data?.name || labels.seals.title}
                       </span>
-                      <span
-                        className="block truncate font-mono text-[11px]"
-                        style={{ color: 'var(--color-text-muted)' }}
-                        title={seal.localId}
-                      >
-                        {shortLocalId(seal.localId)}
+                      <span className="flex min-w-0 items-center gap-1">
+                        <span
+                          className="truncate font-mono text-[11px]"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          title={seal.localId}
+                        >
+                          {shortLocalId(seal.localId)}
+                        </span>
+                        <CopyButton value={seal.localId} variant="minimal" size="xs" />
                       </span>
                     </span>
                   </span>
@@ -196,40 +200,77 @@ export function CollectionsListTab({
                     background: 'var(--color-surface)',
                   }}
                 >
-                  <button
-                    type="button"
-                    aria-pressed={isActive}
-                    onClick={() =>
-                      !isActive && setup.selectCollection(collection.resourceAddress)
-                    }
-                    title={collection.resourceAddress}
-                    className={`flex min-w-0 flex-1 items-center gap-3 text-left ${
-                      isActive ? 'cursor-default' : 'cursor-pointer'
-                    }`}
-                  >
-                    <SafeImage
-                      src={collection.iconUrl}
-                      alt={collection.name || labels.list.untitled}
-                      fallbackName={collection.name || collection.resourceAddress}
-                      className="size-11 shrink-0 rounded-lg object-cover"
-                    />
-                    <span className="min-w-0">
-                      <span
-                        className="block truncate text-sm font-bold"
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <button
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() =>
+                        !isActive && setup.selectCollection(collection.resourceAddress)
+                      }
+                      title={collection.resourceAddress}
+                      className={`shrink-0 ${
+                        isActive ? 'cursor-default' : 'cursor-pointer'
+                      }`}
+                    >
+                      <SafeImage
+                        src={collection.iconUrl}
+                        alt={collection.name || labels.list.untitled}
+                        fallbackName={collection.name || collection.resourceAddress}
+                        className="size-11 shrink-0 rounded-lg object-cover"
+                      />
+                    </button>
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() =>
+                          !isActive && setup.selectCollection(collection.resourceAddress)
+                        }
+                        title={collection.resourceAddress}
+                        className={`block max-w-full truncate text-left text-sm font-bold ${
+                          isActive ? 'cursor-default' : 'cursor-pointer'
+                        }`}
                         style={{ color: 'var(--color-text-main)' }}
                       >
                         {collection.name || labels.list.untitled}
+                      </button>
+                      <span className="flex min-w-0 items-center gap-1">
+                        <button
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() =>
+                            !isActive && setup.selectCollection(collection.resourceAddress)
+                          }
+                          title={collection.resourceAddress}
+                          className={`truncate font-mono text-[11px] ${
+                            isActive ? 'cursor-default' : 'cursor-pointer'
+                          }`}
+                          style={{ color: 'var(--color-text-muted)' }}
+                        >
+                          {truncateAddress(collection.resourceAddress)}
+                        </button>
+                        <CopyButton
+                          value={collection.resourceAddress}
+                          variant="minimal"
+                          size="xs"
+                        />
                       </span>
-                      <span
-                        className="block truncate font-mono text-[11px]"
-                        style={{ color: 'var(--color-text-muted)' }}
-                      >
-                        {truncateAddress(collection.resourceAddress)}
-                      </span>
-                    </span>
-                  </button>
+                    </div>
+                  </div>
 
                   <div className="flex shrink-0 flex-wrap items-center gap-3">
+                    {collection.orgUrl && (
+                      <a
+                        href={collection.orgUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={collection.orgUrl}
+                        className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline truncate max-w-[220px]"
+                      >
+                        <span className="truncate">{collection.orgUrl}</span>
+                        <ExternalLink className="size-3 shrink-0" />
+                      </a>
+                    )}
                     <DomainStatusButton
                       size="xs"
                       verified={isVerified}

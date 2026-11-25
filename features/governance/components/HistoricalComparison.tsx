@@ -19,6 +19,7 @@ import { governanceItemPath } from '../lib/paths';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { ExplorerTable } from '@/features/dashboard/explorador/components/ExplorerTable';
 import { Segmented, stanceResolver, type G } from './GovernanceBadges';
+import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import {
     RESISTANCE_STYLE,
     ruleParams, tip, methodText, matchesMethodQuery, resistanceTooltip, formatBalanceHint, nextSort, sortComparisonRows,
@@ -312,11 +313,12 @@ function HistoricalMethodItem({ row, c, h, params, pending, language }: {
  * Historical comparison across all governance proposals and temperature checks,
  * sharing its visual primitives with `MethodsComparison`.
  */
-export function HistoricalComparison({ entries, g, language, now }: {
+export function HistoricalComparison({ entries, g, language, now, onRegisterExport }: {
     entries: GovernanceEntry[];
     g: G;
     language: string;
     now: number;
+    onRegisterExport?: RegisterTabExport;
 }) {
     const c: CompareDict = g.compare ?? {};
     const h: HistoricalDict = g.historical ?? {};
@@ -399,6 +401,30 @@ export function HistoricalComparison({ entries, g, language, now }: {
             ],
         }, params, query));
     const sortedShown = sortComparisonRows(shown, sort, r => r.avgSpread, r => r.resistance);
+
+    useRegisterTabExport(onRegisterExport, () => ({
+        tab: 'historical',
+        exportedAt: new Date().toISOString(),
+        filters: { kind, systemFilter, family, query, sort },
+        progress: {
+            loadedTallies,
+            totalVotes: scopedEntries.length,
+            talliesDone,
+            agesLoaded: ages.loaded,
+            agesTotal: ages.total,
+            agesDone: ages.done,
+        },
+        summary,
+        entries: scopedEntries.map(e => ({
+            systemKey: e.systemKey,
+            kind: e.kind,
+            id: e.id,
+            title: e.item.title,
+            start: e.item.start,
+            deadline: e.item.deadline,
+        })),
+        shownMethodKeys: sortedShown.map(m => m.key),
+    }));
     const name = (m: HistoricalMethodRow) => methodText(c, m.key, params).name;
     const balanceHint = (m: HistoricalMethodRow) => formatBalanceHint(
         c,

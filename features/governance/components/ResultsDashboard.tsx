@@ -14,6 +14,7 @@ import { useCopy } from '../hooks/useCopy';
 import { ResultsBallot } from './ResultsBallot';
 import type { VoterRow } from '../types';
 import { stanceResolver, type G } from './GovernanceBadges';
+import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 
 function Kpi({ icon: Icon, label, value, hint, accent, meter, title }: {
     icon: typeof Activity;
@@ -188,12 +189,13 @@ function VotersTable({ tally, voters, choices, g, language }: {
  * Result tab: headline figures, verdict, how the vote splits, turnout against
  * the quorum, the voting window and the largest voters.
  */
-export function ResultsDashboard({ entry, system, g, language, now }: {
+export function ResultsDashboard({ entry, system, g, language, now, onRegisterExport }: {
     entry: GovernanceEntry;
     system: GovernanceSystem;
     g: G;
     language: string;
     now: number;
+    onRegisterExport?: RegisterTabExport;
 }) {
     const { item, kind, id } = entry;
     const gv: Gv = g.vote ?? {};
@@ -202,6 +204,32 @@ export function ResultsDashboard({ entry, system, g, language, now }: {
     const tally = tallyQuery.data ? summarizeTally(choices, tallyQuery.data, item) : null;
     const phase = votingPhase(item, now);
     const voters = uniqueVoters(item);
+
+    useRegisterTabExport(onRegisterExport, () => ({
+        tab: 'results',
+        exportedAt: new Date().toISOString(),
+        system: {
+            key: system.key,
+            name: system.name,
+            network: system.network,
+            component: system.component,
+        },
+        vote: {
+            kind,
+            id,
+            title: item.title,
+            phase,
+            start: item.start,
+            deadline: item.deadline,
+            quorum: item.quorum,
+            approvalThreshold: item.approvalThreshold,
+            uniqueVoters: voters,
+            revoteCount: item.revoteCount,
+        },
+        choices,
+        tally,
+        rawTally: tallyQuery.data ?? null,
+    }));
 
     const time = phase === 'open' && item.deadline
         ? { value: formatDuration(item.deadline - now, language), hint: g.kpi_until_close || 'until it closes' }

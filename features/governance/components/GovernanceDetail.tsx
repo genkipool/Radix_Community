@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale, History } from 'lucide-react';
@@ -21,6 +21,7 @@ import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
 import { TranslationBar, useTranslatedHtml, useTranslatedList, useTranslatedText } from './BrowserTranslation';
+import { JsonExportPill, useRegisterTabExport, type TabExportGetter } from './JsonExportPill';
 
 type Tab = 'proposal' | 'results' | 'compare' | 'historical';
 
@@ -208,10 +209,33 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     const searchParams = useSearchParams();
     const { entries: allEntries } = useGovernanceNav();
     const [tab, setTabState] = useState<Tab>(tabFromParam(searchParams.get('tab')));
+    const exportGetterRef = useRef<TabExportGetter | null>(null);
+    const registerExport = (getter: TabExportGetter | null) => {
+        exportGetterRef.current = getter;
+    };
     const now = useNow(serverNow);
     const { item, kind, id } = entry;
     const phase = votingPhase(item, now);
     const gv: Gv = g.vote ?? {};
+
+    useRegisterTabExport(tab === 'proposal' ? registerExport : undefined, () => ({
+        tab: 'proposal',
+        exportedAt: new Date().toISOString(),
+        system: {
+            key: system.key,
+            name: system.name,
+            network: system.network,
+            component: system.component,
+            website: system.website,
+        },
+        entry: {
+            kind,
+            id,
+            phase,
+            item,
+            descriptionHtml,
+        },
+    }));
 
     // Switching tabs is purely client-side: the URL is updated for sharing
     // without a round trip to the server (Next keeps useSearchParams in sync).
@@ -242,6 +266,11 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                     {item.parameterLabel && (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]">{item.parameterLabel}</span>
                     )}
+                    <JsonExportPill
+                        getData={() => exportGetterRef.current?.() ?? null}
+                        filename={`${system.key}-${kind}-${id}-${tab}.json`}
+                        g={g}
+                    />
                     <TranslationBar g={g} />
                 </div>
                 <h1 className="mt-3 text-2xl md:text-4xl font-bold leading-tight text-[var(--color-text-main)] break-words">
@@ -297,11 +326,11 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                     </div>
                 ) : tab === 'results' ? (
                     // Full width: the results box itself is the ballot.
-                    <ResultsDashboard entry={entry} system={system} g={g} language={language} now={now} />
+                    <ResultsDashboard entry={entry} system={system} g={g} language={language} now={now} onRegisterExport={registerExport} />
                 ) : tab === 'compare' ? (
-                    <MethodsComparison entry={entry} system={system} g={g} language={language} now={now} />
+                    <MethodsComparison entry={entry} system={system} g={g} language={language} now={now} onRegisterExport={registerExport} />
                 ) : (
-                    <HistoricalComparison entries={allEntries.length ? allEntries : [entry]} g={g} language={language} now={now} />
+                    <HistoricalComparison entries={allEntries.length ? allEntries : [entry]} g={g} language={language} now={now} onRegisterExport={registerExport} />
                 )}
             </div>
         </div>
