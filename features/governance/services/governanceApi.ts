@@ -29,11 +29,29 @@ export async function apiFetchGovernanceTally(params: {
 /** Accounts per account-ages request: keeps each call short; the client asks in batches. */
 export const AGE_BATCH = 40;
 
-/** Full years on the ledger of each account when a vote opened (see /api/governance-votes/account-ages). */
-export async function apiFetchAgeYears(network: string, atSec: number, accounts: string[]): Promise<Record<string, number>> {
+export interface AccountHistoryResponse {
+    years: Record<string, number>;
+    stakedXrd: Record<string, number>;
+    twab90Xrd: Record<string, number>;
+    min90Xrd: Record<string, number>;
+}
+
+/** Historical account metrics when a vote opened (see /api/governance-votes/account-ages). */
+export async function apiFetchAccountHistory(network: string, atSec: number, accounts: string[]): Promise<AccountHistoryResponse> {
     const query = new URLSearchParams({ network, at: String(atSec), accounts: accounts.join(',') });
     const res = await fetch(`/api/governance-votes/account-ages?${query.toString()}`);
     if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const data = await res.json() as { years?: Record<string, number> } | null;
-    return data?.years ?? {};
+    const data = await res.json() as Partial<AccountHistoryResponse> | null;
+    return {
+        years: data?.years ?? {},
+        stakedXrd: data?.stakedXrd ?? {},
+        twab90Xrd: data?.twab90Xrd ?? {},
+        min90Xrd: data?.min90Xrd ?? {},
+    };
+}
+
+/** Full years on the ledger of each account when a vote opened (see /api/governance-votes/account-ages). */
+export async function apiFetchAgeYears(network: string, atSec: number, accounts: string[]): Promise<Record<string, number>> {
+    const data = await apiFetchAccountHistory(network, atSec, accounts);
+    return data.years;
 }

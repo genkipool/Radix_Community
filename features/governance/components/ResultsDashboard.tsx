@@ -13,7 +13,7 @@ import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/comp
 import { useCopy } from '../hooks/useCopy';
 import { ResultsBallot } from './ResultsBallot';
 import type { VoterRow } from '../types';
-import type { G } from './GovernanceBadges';
+import { stanceResolver, type G } from './GovernanceBadges';
 
 function Kpi({ icon: Icon, label, value, hint, accent, meter, title }: {
     icon: typeof Activity;
@@ -197,8 +197,7 @@ export function ResultsDashboard({ entry, system, g, language, now }: {
 }) {
     const { item, kind, id } = entry;
     const gv: Gv = g.vote ?? {};
-    const stances = (gv.stances ?? {}) as Record<string, string>;
-    const choices = itemChoices(kind, item, s => stances[s] || s);
+    const choices = itemChoices(kind, item, stanceResolver(g));
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);
     const tally = tallyQuery.data ? summarizeTally(choices, tallyQuery.data, item) : null;
     const phase = votingPhase(item, now);

@@ -9,7 +9,7 @@ import { itemChoices, summarizeTally, uniqueVoters, votingPhase, type VotingPhas
 import { governanceItemPath } from '../lib/paths';
 import type { GovernanceEntry } from '../types';
 import { fill, formatDate, formatPct, formatRelative, TONE } from './VoteParts';
-import { KindPill, PhasePill, type G } from './GovernanceBadges';
+import { KindPill, PhasePill, stanceResolver, type G } from './GovernanceBadges';
 import { useTranslatedText } from './BrowserTranslation';
 import { useGovernanceNav } from './GovernanceNav';
 
@@ -22,9 +22,8 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
     const { item, kind, id, systemKey, systemName } = entry;
     const system = systemByKey(systemKey);
     const phase: VotingPhase = votingPhase(item, now);
-    const stances = (g.vote?.stances ?? {}) as Record<string, string>;
     const tallyQuery = useGovernanceTally({ component: system?.component ?? '', kind, itemId: id }, system?.network ?? 'mainnet', !!system);
-    const tally = tallyQuery.data ? summarizeTally(itemChoices(kind, item, s => stances[s] || s), tallyQuery.data, item) : null;
+    const tally = tallyQuery.data ? summarizeTally(itemChoices(kind, item, stanceResolver(g)), tallyQuery.data, item) : null;
     const leader = tally && tally.turnout > 0 ? [...tally.rows].sort((a, b) => b.power - a.power)[0] : null;
     const voters = uniqueVoters(item);
     const title = useTranslatedText(item.title);

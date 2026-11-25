@@ -201,6 +201,51 @@
     "tab_temperature_check": "Sondeo",
     "tab_results": "Resultado",
     "tab_compare": "Comparativa",
+    "tab_historical": "Comparativa histórica",
+    "historical": {
+      "heading": "Comparativa histórica de métodos de voto",
+      "intro": "Suma todos los votos, direcciones y millones de XRD que han participado en todas las propuestas y sondeos del historial, y compara cómo habría respondido cada método de voto en conjunto: en cuántas votaciones cambiaría el resultado, cuántas papeletas y XRD acumulados contarían y cuál es el grado medio de descentralización.",
+      "tallies_loading": "Leyendo votaciones: {n} de {total}",
+      "tallies_done": "{total} votaciones leídas del historial",
+      "kpi_votes": "Votaciones analizadas",
+      "kpi_ballots": "Votos acumulados",
+      "kpi_xrd": "XRD acumulados",
+      "kpi_effective": "Más efectivo",
+      "kpi_ineffective": "Menos efectivo",
+      "kpi_effective_hint": "resistencia {resistance} · {pct} descentralización · quórum en {valid} de {total} votaciones",
+      "tip_kpi_effective": "Método con mejor combinación de los tres factores: resistencia a la manipulación, descentralización media y porcentaje de votaciones en las que alcanza quórum (media geométrica de los tres).",
+      "tip_kpi_ineffective": "Método con peor combinación de resistencia a la manipulación, descentralización media y porcentaje de votaciones en las que alcanza quórum.",
+      "kpi_most_changes": "Más cambios de resultado",
+      "kpi_most_changes_hint": "habría dado un resultado distinto (otra opción, rechazo o sin quórum) en {n} de {total} votaciones frente a 1 XRD = 1 voto",
+      "tip_kpi_most_changes": "Método cuyo veredicto (aprobada, rechazada, sin quórum, otra opción ganadora o sin votantes válidos) difiere en más votaciones respecto al método actual (1 XRD = 1 voto).",
+      "kpi_current_hint": "controlan >50 % de media (de {voters} votantes · {pct} descentralización · {avg} XRD/votación)",
+      "fact_unique": "Direcciones únicas",
+      "fact_avg_xrd": "Media por votación",
+      "col_changes": "Cambios de resultado",
+      "tip_col_changes": "En cuántas votaciones del historial este método habría dado un resultado distinto al de 1 XRD = 1 voto.",
+      "tip_col_ballots": "Total de votos individuales emitidos en todas las votaciones que cuentan bajo este método.",
+      "tip_col_xrd": "Suma de los XRD de las direcciones que cuentan en todas las votaciones analizadas.",
+      "tip_changes": "Este método habría cambiado el resultado en {n} de {total} votaciones ({pct}) respecto al método actual (1 XRD = 1 voto).",
+      "tip_changes_zero": "Este método habría dado el mismo resultado que 1 XRD = 1 voto en las {total} votaciones.",
+      "tip_ballots": "De {total} votos acumulados en el historial, {n} cuentan bajo este método ({out} quedan fuera por no cumplir sus requisitos).",
+      "tip_ballots_share": "El {pct} de los {total} votos acumulados ({n} de {total}) cuenta bajo este método.",
+      "tip_xrd": "{total} XRD acumulados en {votes} votaciones evaluadas (media de {avg} XRD por votación).",
+      "tip_spread": "Media de {n} direcciones para controlar el 50 % del peso en {votes} votaciones · {eff} votantes efectivos de media · {spread} de descentralización ({level}).",
+      "detail_decisive": "En las {votes} votaciones que alcanzaron quórum y tuvieron resultado válido con este método, de media solo {count} direcciones ({pct} de las {of} que votaron por votación, con {xrd} XRD por votación y {totalXrd} XRD acumulados) bastaban para decidir el resultado, aunque todas las demás hubieran votado lo contrario.",
+      "col_ballots": "Votos acumulados",
+      "col_xrd": "XRD acumulados",
+      "col_spread": "Descentralización media",
+      "detail_votes": "Votaciones evaluadas",
+      "detail_effective": "Votantes efectivos (media)",
+      "tip_detail_votes": "Número de votaciones del historial en las que al menos una dirección cumplió los requisitos de este método ({votes} de {total}).",
+      "tip_detail_effective": "Media aritmética de los votantes efectivos en las {votes} votaciones evaluadas. En cada votación se calcula como 1 / Σ(pesoᵢ / peso total)²: equivale al número de votantes de igual peso que darían la misma concentración.",
+      "tip_detail_xrd": "Suma de los XRD de las direcciones que cumplieron este método en cada una de las {votes} votaciones evaluadas ({total} XRD en total; media de {avg} XRD por votación). Si una misma dirección votó en varias propuestas, sus XRD se suman en cada votación en la que participó.",
+      "tip_detail_spread": "Media aritmética del grado de descentralización en las {votes} votaciones evaluadas ({pct}). En cada votación se calcula como votantes efectivos / direcciones que votaron (uniformidad de Simpson, de 0 % a 100 %; 100 % si todas pesan igual).",
+      "changed_list_title": "Votaciones cuyo resultado habría cambiado ({n})",
+      "changed_col_vote": "Votación",
+      "changed_col_current": "Con 1 XRD = 1 voto",
+      "changed_col_method": "Con este método"
+    },
     "kpi_turnout": "Participación",
     "kpi_quorum": "Quórum alcanzado",
     "kpi_support": "A favor",
@@ -277,6 +322,9 @@
       "list_title": "{n} formas de contar los mismos votos",
       "filter_label": "Familia de métodos",
       "filter_all": "Todos",
+      "search_placeholder": "Buscar por método, resistencia, descentralización o resultado...",
+      "search_clear": "Limpiar búsqueda",
+      "search_empty": "Ningún método coincide con esa búsqueda.",
       "families": {
         "wealth": "Según los XRD",
         "address": "Por dirección",
@@ -337,12 +385,12 @@
       "detail_spread": "Grado de descentralización",
       "detail_spread_value": "{pct} ({eff} de {of})",
       "detail_concentration": "Quién tiene el peso del voto",
-      "detail_decisive": "Las {count} mayores de las {of} direcciones {side} (con {xrd} XRD) bastaban para decidirlo, aunque todas las demás hubieran votado lo contrario.",
+      "detail_decisive": "Solo {count} direcciones {side} ({pct} de las {of} que votaron, con {xrd} XRD) bastaban para decidir el resultado, aunque todas las demás hubieran votado lo contrario.",
       "detail_nobody": "Ninguna dirección cumple los requisitos de este método, así que no hay resultado.",
       "detail_no_quorum": "Las direcciones que cuentan con este método no reúnen los XRD del quórum, así que el resultado no sería válido y nadie llegó a decidirlo.",
-      "side_for": "a favor",
-      "side_against": "en contra",
-      "side_winner": "que apoyaron la opción ganadora",
+      "side_for": "que votaron a favor de esta votación",
+      "side_against": "que votaron en contra de esta votación",
+      "side_winner": "que apoyaron la opción ganadora de esta votación",
       "conc_top1": "La mayor",
       "conc_top10": "Las 9 siguientes",
       "conc_rest": "El resto",
@@ -365,6 +413,16 @@
           "rule": "Cada XRD es un voto: 1.000 XRD pesan 1.000 votos. Es el método que usan hoy las votaciones.",
           "attack": "Repartir en varias direcciones no da ningún voto extra. La única forma de pesar más es conseguir más XRD, comprándolos o pidiéndolos prestados antes de que abra la votación."
         },
+        "deductible_linear": {
+          "name": "1 XRD = 1 voto con franquicia de {min} XRD",
+          "rule": "Solo pesa el saldo por encima de {min} XRD (los primeros {min} XRD de cada cuenta se descuentan). Es superaditivo: dividir capital en varias direcciones resta votos en lugar de sumarlos.",
+          "attack": "Repartir en varias cuentas penaliza al atacante ({min} XRD perdidos por cada dirección extra). La única forma de pesar más es concentrar más capital real."
+        },
+        "staked_only": {
+          "name": "Solo XRD en staking",
+          "rule": "1 XRD = 1 voto, pero solo cuenta el XRD delegado en validadores al abrirse la votación. Deja fuera el saldo líquido en carteras o exchanges.",
+          "attack": "Repartir no da votos extra y el capital líquido comprado o prestado a última hora no cuenta si no está delegado en validadores."
+        },
         "capped_10k": {
           "name": "Con tope de 10.000 XRD por dirección",
           "rule": "Como el actual, pero ninguna dirección puede pesar más de 10.000 XRD: un tope muy bajo que iguala mucho a las carteras.",
@@ -379,6 +437,11 @@
           "name": "Con tope de 1.000.000 XRD por dirección",
           "rule": "Como el actual, pero ninguna dirección puede pesar más de {cap} XRD. Limita a las carteras más grandes sin quitarles el voto.",
           "attack": "El tope se esquiva repartiendo los XRD en direcciones de menos de {cap} XRD, así que en la práctica vuelve a ser 1 XRD = 1 voto: hace falta capital."
+        },
+        "capped_5m": {
+          "name": "Con tope de 5.000.000 XRD por dirección",
+          "rule": "Como el actual, pero ninguna dirección puede pesar más de 5 millones de XRD: limita a las grandes ballenas sin afectar a carteras medianas.",
+          "attack": "El tope se esquiva repartiendo los XRD en direcciones de 5 millones o menos; en la práctica vuelve a ser 1 XRD = 1 voto y hace falta capital."
         },
         "capped_10m": {
           "name": "Con tope de 10.000.000 XRD por dirección",
@@ -431,14 +494,44 @@
           "attack": "Cada voto extra cuesta {min} XRD en una dirección nueva. Quien tenga mucho capital lo reparte en muchas direcciones y consigue muchísimos votos."
         },
         "one_address_sybil": {
-          "name": "1 dirección = 1 voto, con filtro anti-sybil",
+          "name": "1 dirección = 1 voto, anti-sybil (≥ {balance} XRD)",
           "rule": "Todas pesan igual, pero solo cuentan las direcciones con al menos {balance} XRD y {years_sybil} año de antigüedad. Crear muchas cuentas nuevas no sirve de nada.",
           "attack": "Las cuentas nuevas no cuentan: hay que haber preparado direcciones hace más de {years_sybil} año y tener {balance} XRD en cada una. Es posible, pero exige planificarlo con tiempo."
         },
+        "one_address_sybil_10k": {
+          "name": "1 dirección = 1 voto, anti-sybil (≥ 10.000 XRD)",
+          "rule": "Todas pesan igual, pero solo cuentan las direcciones con al menos 10.000 XRD y {years_sybil} año de antigüedad.",
+          "attack": "Exige direcciones con más de {years_sybil} año de antigüedad y 10.000 XRD en cada una. Multiplicar votos requiere capital relevante preparado con antelación."
+        },
+        "one_address_sybil_100k": {
+          "name": "1 dirección = 1 voto, anti-sybil (≥ 100.000 XRD)",
+          "rule": "Todas pesan igual, pero solo cuentan las direcciones con al menos 100.000 XRD y {years_sybil} año de antigüedad.",
+          "attack": "Exige direcciones con más de {years_sybil} año de antigüedad y 100.000 XRD en cada una. Frena ataques masivos baratos, aunque una gran cartera podría repartir capital entre cuentas antiguas."
+        },
+        "one_address_sybil_1m": {
+          "name": "1 dirección = 1 voto, anti-sybil (≥ 1.000.000 XRD)",
+          "rule": "Todas pesan igual, pero solo cuentan las direcciones con al menos 1.000.000 XRD y {years_sybil} año de antigüedad.",
+          "attack": "Cada voto exige una cuenta de más de {years_sybil} año con 1.000.000 XRD. Muy caro de manipular, aunque deja fuera a casi todas las carteras pequeñas."
+        },
         "one_address_sybil_age": {
-          "name": "1 dirección = 1 voto, con filtro anti-sybil y +1 voto por año",
+          "name": "1 dirección = 1 voto, anti-sybil (≥ {balance} XRD) y +1 voto/año",
           "rule": "Solo cuentan las direcciones con al menos {balance} XRD y {years_sybil} año de antigüedad. Cada una tiene 1 voto, más 1 voto por cada año completo de antigüedad.",
           "attack": "Las cuentas nuevas no cuentan: hay que haber preparado direcciones con {balance} XRD hace más de {years_sybil} año, y cuanto más antiguas, más votos da cada una. Es posible, pero exige planificarlo con años de antelación."
+        },
+        "one_address_sybil_age_10k": {
+          "name": "1 dirección = 1 voto, anti-sybil (≥ 10.000 XRD) y +1 voto/año",
+          "rule": "Solo cuentan las direcciones con al menos 10.000 XRD y {years_sybil} año de antigüedad. Cada una tiene 1 voto, más 1 voto por cada año completo de antigüedad.",
+          "attack": "Exige haber preparado cuentas de más de {years_sybil} año con 10.000 XRD cada una; cuanto más antiguas, más votos suman."
+        },
+        "one_address_sybil_age_100k": {
+          "name": "1 dirección = 1 voto, anti-sybil (≥ 100.000 XRD) y +1 voto/año",
+          "rule": "Solo cuentan las direcciones con al menos 100.000 XRD y {years_sybil} año de antigüedad. Cada una tiene 1 voto, más 1 voto por cada año completo de antigüedad.",
+          "attack": "Exige haber preparado cuentas de más de {years_sybil} año con 100.000 XRD cada una; combina barrera de capital y antigüedad."
+        },
+        "one_address_sybil_age_1m": {
+          "name": "1 dirección = 1 voto, anti-sybil (≥ 1.000.000 XRD) y +1 voto/año",
+          "rule": "Solo cuentan las direcciones con al menos 1.000.000 XRD y {years_sybil} año de antigüedad. Cada una tiene 1 voto, más 1 voto por cada año completo de antigüedad.",
+          "attack": "Exige cuentas de más de {years_sybil} año con 1.000.000 XRD cada una; muy caro de atacar pero muy restrictivo para votantes pequeños."
         },
         "address_age": {
           "name": "1 dirección = 1 voto, más 1 voto por año",
@@ -470,15 +563,75 @@
           "rule": "Cuentan todas las cuentas: 1 XRD = 1 voto, más un {bonus} por cada año completo de antigüedad.",
           "attack": "Repartir no da nada; las cuentas nuevas simplemente no reciben el plus. Hace falta capital."
         },
+        "twab_90d": {
+          "name": "Saldo medio sostenido (TWAB 90 días)",
+          "rule": "Pesa la media de XRD (líquido y en staking) que la cuenta ha mantenido en los 90 días previos a la apertura (muestreado cada 30 días). Neutraliza compras o préstamos de última hora.",
+          "attack": "Repartir no da votos extra y comprar XRD justo antes de votar apenas aporta un cuarto del peso: hace falta mantener capital real durante meses."
+        },
+        "held_90d": {
+          "name": "Saldo mínimo mantenido 90 días",
+          "rule": "Solo cuenta el saldo mínimo de XRD (líquido y en staking) que la cuenta mantuvo de forma continua durante los 90 días previos a la apertura.",
+          "attack": "Repartir no da nada y cualquier compra o préstamo hecho en los últimos 90 días pesa cero: obliga a mantener capital comprometido con 3 meses de antelación."
+        },
         "hybrid_half": {
           "name": "Mixto 50 / 50",
           "rule": "La mitad del peso se reparte según los XRD y la otra mitad a partes iguales entre las direcciones.",
           "attack": "La mitad del peso se reparte por direcciones: creando miles de direcciones vacías, una persona se queda con casi toda esa mitad."
         },
+        "hybrid_half_veterans": {
+          "name": "Mixto 50 / 50 endurecido (veteranas desde {min} XRD)",
+          "rule": "Solo cuentan las cuentas con al menos {years} años y {min} XRD. La mitad del peso se reparte según sus XRD y la otra mitad a partes iguales entre esas cuentas.",
+          "attack": "Las cuentas nuevas o con poco saldo no cuentan. Para ganar peso en la mitad igualitaria hace falta haber preparado muchas cuentas hace {years} años o más con {min} XRD cada una."
+        },
         "double_majority": {
           "name": "Doble mayoría",
           "rule": "Para aprobarse tiene que superar el umbral dos veces: contando 1 XRD = 1 voto y contando 1 dirección = 1 voto. Como la mayoría cualificada de la Unión Europea.",
           "attack": "Para aprobar hace falta capital y además ganar en direcciones, pero para bloquear basta con crear direcciones vacías que voten en contra."
+        },
+        "double_majority_sybil": {
+          "name": "Doble mayoría endurecida (capital + comunidad veterana)",
+          "rule": "Para aprobarse tiene que superar el umbral en dos cámaras: por capital (1 XRD = 1 voto) y por comunidad (1 dirección = 1 voto, solo cuentas con al menos {years} años y {min} XRD).",
+          "attack": "Una ballena no puede aprobar sola sin apoyo de la comunidad veterana, y bloquear ya no es gratis: hace falta controlar muchas cuentas de {years} años o más con {min} XRD cada una."
+        },
+        "capped_veterans": {
+          "name": "Tope de {cap} XRD, solo veteranas ({years}+ años)",
+          "rule": "1 XRD = 1 voto con un tope de {cap} XRD por dirección, y solo cuentan cuentas de {years} años o más. Limita a las ballenas sin permitir repartir a última hora en cuentas nuevas.",
+          "attack": "Repartir nunca multiplica el voto más allá de 1 XRD = 1 voto, y esquivar el tope exige tanto capital real como haber preparado varias cuentas separadas hace {years} años o más."
+        },
+        "capped_veterans_5m": {
+          "name": "Tope de 5.000.000 XRD, solo veteranas ({years}+ años)",
+          "rule": "1 XRD = 1 voto con un tope de 5 millones de XRD por dirección, y solo cuentan cuentas de {years} años o más. Limita a las grandes ballenas sin permitir repartir a última hora en cuentas nuevas.",
+          "attack": "Repartir nunca multiplica el voto más allá de 1 XRD = 1 voto, y esquivar el tope de 5 millones exige capital real y varias cuentas preparadas hace {years} años o más."
+        },
+        "capped_veterans_10m": {
+          "name": "Tope de 10.000.000 XRD, solo veteranas ({years}+ años)",
+          "rule": "1 XRD = 1 voto con un tope de 10 millones de XRD por dirección, y solo cuentan cuentas de {years} años o más. Solo frena a las mayores ballenas e impide repartir en cuentas nuevas.",
+          "attack": "Repartir nunca multiplica el voto más allá de 1 XRD = 1 voto, y esquivar el tope de 10 millones exige capital real y varias cuentas preparadas hace {years} años o más."
+        },
+        "capped_share_veterans_1": {
+          "name": "Tope del {share} del total, solo veteranas ({years}+ años)",
+          "rule": "1 XRD = 1 voto, pero ninguna dirección puede pesar más del {share} del XRD veterano que votó, y solo cuentan cuentas de {years} años o más. Máxima descentralización dentro de la seguridad alta.",
+          "attack": "Repartir nunca da más de 1 voto por XRD, y esquivar el tope del {share} exige capital real repartido en decenas de cuentas preparadas hace {years} años o más."
+        },
+        "capped_share_veterans": {
+          "name": "Tope del {share_veterans} del total, solo veteranas ({years}+ años)",
+          "rule": "1 XRD = 1 voto, pero ninguna dirección puede pesar más del {share_veterans} del XRD veterano que votó, y solo cuentan cuentas de {years} años o más. Se adapta al tamaño de la votación y garantiza descentralización.",
+          "attack": "Repartir nunca da más de 1 voto por XRD, y esquivar el tope del {share_veterans} exige capital real repartido en cuentas preparadas hace {years} años o más."
+        },
+        "staked_capped_share": {
+          "name": "Solo XRD en staking, tope del {share_veterans}",
+          "rule": "Solo cuenta el XRD delegado en validadores al abrirse la votación, y ninguna dirección puede pesar más del {share_veterans} del XRD en staking participante.",
+          "attack": "Repartir nunca supera 1 voto por XRD y exige mantener el capital realmente delegado en validadores, repartido en varias cuentas para esquivar el tope del {share_veterans}."
+        },
+        "twab_90d_capped_share": {
+          "name": "Media 90 días (TWAB), tope del {share_veterans}",
+          "rule": "Pesa la media del saldo (líquido + staking) mantenido durante los 90 días previos a la votación, con un tope máximo del {share_veterans} del total por dirección.",
+          "attack": "Bloquea compras o préstamos de última hora (exige mantener los XRD durante meses), frena a las mayores carteras con el tope del {share_veterans} y repartir nunca supera 1 XRD = 1 voto."
+        },
+        "marginal_veterans": {
+          "name": "Tramos marginales decrecientes, solo veteranas ({years}+ años)",
+          "rule": "Solo cuentan cuentas de {years} años o más. Los primeros {bracket_first} XRD pesan al 100 %, de {bracket_first} a {bracket_second} XRD al 50 % y lo que pase de {bracket_second} XRD al 10 %. Reduce la concentración sin anular el voto de los grandes tenedores.",
+          "attack": "Repartir nunca supera 1 XRD = 1 voto; para evitar la reducción marginal hace falta capital real repartido en cuentas de {bracket_first} XRD preparadas hace {years} años o más."
         },
         "quadratic_seniority": {
           "name": "Cuadrático con plus por antigüedad",
@@ -559,7 +712,9 @@
         "counted_share": "El {pct} de las direcciones que votaron cuenta con este método ({n} de {of}); el resto no cumple sus requisitos",
         "decisive_share": "Bastaba el {pct} de las direcciones del lado ganador ({n} de {of}), empezando por las que más pesan, para decidir el resultado aunque todas las demás votaran lo contrario",
         "fact_option": "{n} direcciones votaron «{label}» ({pct} de las que votaron)",
-        "threshold_mark": "Umbral de aprobación: hace falta al menos el {pct} a favor para aprobar. Es la raya vertical de la barra"
+        "threshold_mark": "Umbral de aprobación: hace falta al menos el {pct} a favor para aprobar. Es la raya vertical de la barra",
+        "kpi_effective": "Método con mejor combinación de resistencia a la manipulación, descentralización y cumplimiento del quórum en esta votación",
+        "kpi_ineffective": "Método con peor combinación de resistencia a la manipulación, descentralización y cumplimiento del quórum en esta votación"
       },
       "col_resistance": "Resistencia",
       "resistance": {
@@ -583,6 +738,7 @@
       "cost_capital": "Para darle la vuelta haría falta conseguir {xrd} XRD más ({pct} de lo que ya votó).",
       "cost_capital_split": "Para darle la vuelta haría falta conseguir {xrd} XRD más ({pct} de lo que ya votó), repartidos en {addresses} direcciones para esquivar el tope.",
       "cost_capital_aged": "Para darle la vuelta haría falta conseguir {xrd} XRD más ({pct} de lo que ya votó) y guardarlos en una cuenta con al menos {years} de antigüedad; vale una cuenta antigua con XRD recién comprados.",
+      "cost_capital_split_aged": "Para darle la vuelta haría falta conseguir {xrd} XRD más ({pct} de lo que ya votó), repartidos en {addresses} cuentas con al menos {years} de antigüedad para esquivar el tope.",
       "cost_impossible": "Añadiendo votos no se le puede dar la vuelta a este resultado.",
       "cost_none": "No hay un resultado claro al que darle la vuelta (sin quórum o sin votos válidos).",
       "g_resistance_t": "Resistencia a la manipulación",
@@ -590,6 +746,12 @@
       "kpi_balanced": "Más equilibrado",
       "kpi_unbalanced": "Menos equilibrado",
       "kpi_balance_hint": "resistencia {resistance} · hacen falta {n} de {of} direcciones para la mitad del voto ({pct} de descentralización)",
+      "kpi_effective": "Más efectivo",
+      "kpi_ineffective": "Menos efectivo",
+      "kpi_effective_hint": "resistencia {resistance} · {pct} descentralización · {quorum}",
+      "kpi_quorum_ok": "alcanza quórum",
+      "kpi_quorum_ko": "no alcanza quórum",
+      "kpi_quorum_none": "sin quórum exigido",
       "resistance_title": "Resistencia a la manipulación: {level}",
       "resistance_how": "Cómo se engaña",
       "resistance_here": "En esta votación",

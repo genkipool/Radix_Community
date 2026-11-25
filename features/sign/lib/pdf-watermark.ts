@@ -103,8 +103,18 @@ export async function svgUrlToPngBytes(
     const img = new Image();
     img.decoding = 'async';
     await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('svg_load_failed'));
+      const timer = setTimeout(
+        () => reject(new Error('svg_load_timeout')),
+        IMAGE_FETCH_TIMEOUT_MS,
+      );
+      img.onload = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error('svg_load_failed'));
+      };
       img.src = url;
     });
     // An SVG sized in percentages has no intrinsic size, and browsers then

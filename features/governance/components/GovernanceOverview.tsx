@@ -11,35 +11,10 @@ import { uniqueVoters, votingPhase, type GovernanceItemKind, type VotingPhase } 
 import { useNow } from '../hooks/useNow';
 import { fill } from './VoteParts';
 import { GovernanceCard } from './GovernanceCard';
-import type { G } from './GovernanceBadges';
+import { Segmented, type G } from './GovernanceBadges';
 
 type StatusFilter = 'all' | VotingPhase;
 type KindFilter = 'all' | GovernanceItemKind;
-
-function Segmented<T extends string>({ label, value, options, onChange }: {
-    label: string;
-    value: T;
-    options: Array<{ value: T; label: string }>;
-    onChange: (v: T) => void;
-}) {
-    return (
-        <div role="group" aria-label={label} className="inline-flex flex-wrap gap-1 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-1">
-            {options.map(o => (
-                <button
-                    key={o.value}
-                    type="button"
-                    aria-pressed={value === o.value}
-                    onClick={() => onChange(o.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${value === o.value
-                        ? 'bg-[var(--color-card-bg)] text-[var(--color-primary)] shadow-sm'
-                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                >
-                    {o.label}
-                </button>
-            ))}
-        </div>
-    );
-}
 
 function Stat({ icon: Icon, value, label }: { icon: typeof Vote; value: string; label: string }) {
     return (

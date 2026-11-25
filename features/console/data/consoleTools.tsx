@@ -401,7 +401,9 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     icon: <Layers className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '168,85,247',
-    requiresWallet: true,
+    // Audit tab works read-only without a wallet; management tabs self-gate.
+    requiresWallet: false,
+    wide: true,
   },
   'sign-document': {
     slug: 'sign-document',

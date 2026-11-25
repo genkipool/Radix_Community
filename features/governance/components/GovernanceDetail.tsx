@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale } from 'lucide-react';
+import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale, History } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { uniqueVoters, votingPhase, type GovernanceElectionSpec } from '../lib/governanceVotes';
@@ -15,14 +15,17 @@ import { CollapsibleCard } from './CollapsibleCard';
 import { VotePanel } from './VotePanel';
 import { ResultsDashboard } from './ResultsDashboard';
 import { MethodsComparison } from './MethodsComparison';
+import { HistoricalComparison } from './HistoricalComparison';
+import { useGovernanceNav } from './GovernanceNav';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
 import { TranslationBar, useTranslatedHtml, useTranslatedList, useTranslatedText } from './BrowserTranslation';
 
-type Tab = 'proposal' | 'results' | 'compare';
+type Tab = 'proposal' | 'results' | 'compare' | 'historical';
 
-const tabFromParam = (value: string | null): Tab => (value === 'results' || value === 'compare' ? value : 'proposal');
+const tabFromParam = (value: string | null): Tab =>
+    value === 'results' || value === 'compare' || value === 'historical' ? value : 'proposal';
 
 function Row({ icon: Icon, label, hint, children }: { icon: typeof Hash; label: string; hint?: string; children: React.ReactNode }) {
     return (
@@ -104,9 +107,9 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
 function CandidatesSection({ election, g }: { election: GovernanceElectionSpec; g: G }) {
     const descriptions = useTranslatedList(election.candidates.map(c => c.description ?? ''));
     const metaText = election.roleId && election.seatCount !== null
-        ? fill((g.candidates_meta as string | undefined) ?? '', { role: election.roleId, seats: String(election.seatCount) })
+        ? fill(g.candidates_meta ?? '', { role: election.roleId, seats: String(election.seatCount) })
         : election.seatCount !== null
-            ? fill((g.candidates_meta_no_role as string | undefined) ?? '', { seats: String(election.seatCount) })
+            ? fill(g.candidates_meta_no_role ?? '', { seats: String(election.seatCount) })
             : null;
 
     return (
@@ -114,7 +117,7 @@ function CandidatesSection({ election, g }: { election: GovernanceElectionSpec; 
             <div className="space-y-1">
                 <h2 className="flex items-center gap-2 text-base font-bold text-[var(--color-text-main)]">
                     <Users className="size-4 text-[var(--color-primary)]" aria-hidden="true" />
-                    <span>{(g.candidates_title as string | undefined) ?? ''} ({election.candidates.length})</span>
+                    <span>{g.candidates_title ?? ''} ({election.candidates.length})</span>
                 </h2>
                 {metaText && (
                     <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
@@ -160,7 +163,7 @@ function CandidatesSection({ election, g }: { election: GovernanceElectionSpec; 
                                             className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
                                         >
                                             <span>
-                                                {(g.candidate_profile as string | undefined) ?? ''}
+                                                {g.candidate_profile ?? ''}
                                                 {candidate.links.length > 1 ? ` #${linkIdx + 1}` : ''}
                                             </span>
                                             <ExternalLink className="size-3 shrink-0" aria-hidden="true" />
@@ -203,6 +206,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
         item: { ...original, title, shortDescription, options: original.options.map((o, i) => ({ ...o, label: optionLabels[i] ?? o.label, sourceLabel: o.label })) },
     };
     const searchParams = useSearchParams();
+    const { entries: allEntries } = useGovernanceNav();
     const [tab, setTabState] = useState<Tab>(tabFromParam(searchParams.get('tab')));
     const now = useNow(serverNow);
     const { item, kind, id } = entry;
@@ -221,6 +225,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
         { key: 'proposal', label: kind === 'proposal' ? (g.tab_proposal || 'Proposal') : (g.tab_temperature_check || 'Temperature check'), icon: FileText },
         { key: 'results', label: g.tab_results || 'Result', icon: BarChart3 },
         { key: 'compare', label: g.tab_compare || 'Other methods', icon: Scale },
+        { key: 'historical', label: g.tab_historical || g.tab_compare || 'Historical', icon: History },
     ];
 
     return (
@@ -247,7 +252,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                 )}
             </header>
 
-            <div role="tablist" aria-label={item.title ?? undefined} className="mt-6 flex gap-4 sm:gap-6 border-b border-[var(--color-card-border)]">
+            <div role="tablist" aria-label={item.title ?? undefined} className="mt-6 flex gap-4 sm:gap-6 border-b border-[var(--color-card-border)] overflow-x-auto no-scrollbar">
                 {tabs.map(t => {
                     const active = tab === t.key;
                     const Icon = t.icon;
@@ -293,8 +298,10 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                 ) : tab === 'results' ? (
                     // Full width: the results box itself is the ballot.
                     <ResultsDashboard entry={entry} system={system} g={g} language={language} now={now} />
-                ) : (
+                ) : tab === 'compare' ? (
                     <MethodsComparison entry={entry} system={system} g={g} language={language} now={now} />
+                ) : (
+                    <HistoricalComparison entries={allEntries.length ? allEntries : [entry]} g={g} language={language} now={now} />
                 )}
             </div>
         </div>

@@ -448,7 +448,8 @@
       "tabs": {
         "collections": "My collections",
         "create": "Create collection",
-        "identity": "Issuer identity"
+        "identity": "Issuer identity",
+        "audit": "Audit & Registry"
       },
       "connect": {
         "title": "Connect your Radix Wallet",
@@ -526,6 +527,226 @@
         "otherTitle": "The collection’s other metadata",
         "otherHint": "Everything else the collection carries on-ledger, including whatever you added yourself when you created it. Locked keys can never change, not even by you.",
         "saveHint": "Pressing this sends a signature request to the wallet on your phone. Nothing changes on-ledger until you approve it."
+      },
+      "audit": {
+        "intro": {
+          "title": "Institutional audit & registry",
+          "body": "Read-only compliance registry reconstructed directly from the public Radix ledger. Every batch of invitations is cross-checked against each signer's own Seal collection to verify real signatures, consensus timestamps, and custody integrity without any central server."
+        },
+        "selector": {
+          "myCollections": "My collections",
+          "externalMode": "External auditor",
+          "externalPlaceholder": "Paste any Radix Seal collection address (resource_rdx1… or resource_tdx_2_1…)",
+          "externalLoad": "Audit collection",
+          "externalHint": "No wallet required: external inspectors can audit any public collection address or shared audit link.",
+          "invalidAddress": "Enter a valid Radix resource address (resource_rdx1… or resource_tdx_2_1…).",
+          "noOwnedCollections": "This account has no signing collection yet. Create one in the Create tab or switch to External auditor to inspect any public collection.",
+          "connectTip": "Connect your wallet to auto-load your company collections, or paste any collection address below to audit in read-only mode."
+        },
+        "network": {
+          "mainnet": "Mainnet · Production",
+          "stokenet": "Stokenet · Testnet",
+          "stokenetNotice": "Testnet environment (Stokenet): records shown here belong to test accounts and must not be treated as production legal evidence."
+        },
+        "header": {
+          "collectionLabel": "Audited collection",
+          "issuerLabel": "Issuing account",
+          "ledgerCutoff": "Ledger cutoff",
+          "refresh": "Refresh",
+          "refreshing": "Refreshing…",
+          "copyLink": "Share audit link",
+          "linkCopied": "Audit link copied",
+          "explorerLink": "Explorer",
+          "exportButton": "Export report",
+          "exportPdf": "Official Audit Report (PDF)",
+          "exportCsvRecords": "Records Registry (CSV)",
+          "exportCsvSigners": "Signers Directory (CSV)",
+          "exportJson": "Verifiable Package (JSON + SHA-256)",
+          "includeAliasesLabel": "Include local Address Book aliases",
+          "includeAliasesHint": "Local labels live only in this browser (GDPR) and are never recorded on-ledger.",
+          "customMetaTitle": "On-ledger institutional metadata"
+        },
+        "integrity": {
+          "title": "Cryptographic integrity",
+          "standardOk": "Official Radix Seal standard",
+          "standardWarn": "Unverified brand or marker",
+          "custodyOk": "Locked custody chain",
+          "custodyWarn": "Custody chain incomplete",
+          "immutableOk": "Immutable evidence (no burn)",
+          "immutableWarn": "Mutable or burned items detected",
+          "burnedNotice": "{count} burned NFT(s) recorded on resource supply."
+        },
+        "kpis": {
+          "total": "Records in scope",
+          "completed": "Completed",
+          "pending": "Pending / partial",
+          "uniqueSigners": "Unique accounts",
+          "anomalies": "Integrity alerts",
+          "ofRequests": "{rate}% completion"
+        },
+        "filters": {
+          "periodLabel": "Consensus period (UTC)",
+          "presets": {
+            "all": "All",
+            "days7": "7d",
+            "month": "This month",
+            "quarter": "Quarter",
+            "year": "Year"
+          },
+          "from": "From",
+          "to": "To",
+          "categoryLabel": "Operation type",
+          "categories": {
+            "all": "All types",
+            "multi_request": "Multi-party request",
+            "solo_signature": "Direct signature",
+            "cosign_signature": "Co-signature",
+            "cipher": "Encryption & custody"
+          },
+          "statusLabel": "Status",
+          "statuses": {
+            "all": "All statuses",
+            "complete": "Complete",
+            "pending": "Pending / partial",
+            "recorded": "Recorded",
+            "anomaly": "With alerts"
+          },
+          "searchPlaceholder": "Search by hash, txid, request key, address or local alias…",
+          "fileLookupButton": "Locate file locally",
+          "fileLookupHint": "Hashes the file in your browser (never uploaded) to find its records.",
+          "fileLookupMatched": "Filtering by file hash ({name})",
+          "fileLookupClear": "Clear file",
+          "clearAll": "Reset filters",
+          "activeSignerChip": "Filtered by signer",
+          "clearSigner": "Clear"
+        },
+        "subtabs": {
+          "records": "Records registry",
+          "signers": "Signers directory"
+        },
+        "records": {
+          "empty": "This collection has no on-ledger records yet.",
+          "emptyFiltered": "No records match the current filters.",
+          "columns": {
+            "date": "Consensus date",
+            "type": "Operation",
+            "document": "Document hash",
+            "compliance": "Status",
+            "tx": "Transaction",
+            "actions": "Details"
+          },
+          "kinds": {
+            "multi_request": "Multi-party request",
+            "solo_signature": "Direct signature",
+            "cosign_signature": "Third-party co-sign",
+            "cipher_signature": "Encrypted file record",
+            "cipher_invite": "Decryption authorization",
+            "cipher_receipt": "Decryption receipt"
+          },
+          "status": {
+            "complete": "Complete",
+            "partial": "Partial",
+            "pending": "Pending",
+            "recorded": "Recorded",
+            "anomaly": "Alert"
+          },
+          "progress": "{signed}/{total} signed",
+          "signedOn": "Signed",
+          "pendingSigners": "Awaiting signature",
+          "requestKeyLabel": "Request key",
+          "nftIdsLabel": "Collection NFTs",
+          "openVerifier": "Open in Verifier",
+          "viewTx": "View tx",
+          "viewNft": "View NFT",
+          "anomalies": {
+            "incomplete_invite_batch": "Incomplete invitation batch: expected signer count does not match intact NFTs.",
+            "clock_mismatch": "Declared NFT timestamp differs from the network consensus time."
+          },
+          "clockOk": "Consensus clock corroborated",
+          "clockWarn": "Clock discrepancy detected",
+          "loadOlder": "Load older records",
+          "loadingOlder": "Loading older records…",
+          "showingRange": "Showing collection items #{from}–#{to} of {total}"
+        },
+        "signers": {
+          "intro": "Every Radix account invited to sign or holding a recorded signature in this collection.",
+          "gdprNote": "Privacy (GDPR): human names and roles are stored strictly in this browser's local Address Book and are never written to the blockchain.",
+          "empty": "No participating accounts found in the current window.",
+          "columns": {
+            "participant": "Participant & address",
+            "seal": "Radix Seal status",
+            "invited": "Invited",
+            "signed": "Signed",
+            "pending": "Pending",
+            "lastActivity": "Last activity",
+            "actions": "Actions"
+          },
+          "sealVerified": "Official Seal verified",
+          "sealCollectionReady": "Signing collection ready",
+          "sealUnverified": "No Seal yet",
+          "noAlias": "Unlabeled address",
+          "editAlias": "Label locally",
+          "saveAlias": "Save",
+          "cancelAlias": "Cancel",
+          "aliasPlaceholder": "e.g. Jane Doe — Comptroller",
+          "saveToBook": "Save to Address Book",
+          "savedInBook": "In Address Book",
+          "filterBySigner": "View records"
+        },
+        "states": {
+          "loading": "Auditing collection against the Radix ledger…",
+          "notFound": "Not a Radix Seal signing collection",
+          "notFoundHint": "The resource exists or could not be found without the radix_sign_collection = v1 standard marker.",
+          "error": "Could not complete ledger audit: {message}",
+          "emptyCollection": "No records issued yet",
+          "emptyCollectionHint": "The collection passes integrity checks, and records will appear here as soon as documents are signed or invitations sent."
+        },
+        "pdf": {
+          "title": "Radix Seal · Institutional Audit Report",
+          "tagline": "On-ledger verifiable registry — generated locally with zero central custody",
+          "testnetWarning": "TESTNET ENVIRONMENT (STOKENET) — TEST RECORDS ONLY, NOT PRODUCTION EVIDENCE",
+          "scopeSection": "1. Audit scope & ledger cutoff",
+          "institution": "Institution",
+          "collection": "Signing collection",
+          "issuerAccount": "Verified issuing account",
+          "network": "Network",
+          "ledgerCutoff": "Ledger cutoff state version",
+          "period": "Audited period",
+          "periodAll": "Full scanned history",
+          "generatedAt": "Report generated",
+          "integritySection": "2. Cryptographic integrity checks",
+          "integrityStandard": "Official Radix Seal standard (v1)",
+          "integrityCustody": "Locked soulbound owner chain of custody",
+          "integrityImmutable": "Immutability (burn denied & zero burned NFTs)",
+          "integrityPass": "VERIFIED",
+          "integrityWarn": "WARNING",
+          "summarySection": "3. Executive summary",
+          "kpiTotal": "Records",
+          "kpiCompleted": "Completed",
+          "kpiPending": "Pending",
+          "kpiSigners": "Accounts",
+          "kpiAnomalies": "Alerts",
+          "recordsSection": "4. Audited records",
+          "noRecords": "No records match the selected audit filters.",
+          "signersDirectorySection": "5. Participating Radix addresses",
+          "aliasesNote": "Note: Human labels shown in parentheses come from this browser's local Address Book (off-chain) and are not stored on the Radix ledger.",
+          "statusComplete": "Complete",
+          "statusPartial": "Partial",
+          "statusPending": "Pending",
+          "statusRecorded": "Recorded",
+          "statusAnomaly": "Alert",
+          "hashLabel": "Document BLAKE2b-256",
+          "txLabel": "Anchor TxID",
+          "signedLabel": "Signed",
+          "pendingLabel": "Pending",
+          "sealVerified": "Official Seal verified",
+          "sealMissing": "No Seal",
+          "verifySection": "6. Independent live re-verification",
+          "verifyInstruction": "Scan the QR code or open the link below to inspect this collection live against the public Radix ledger.",
+          "disclaimerTitle": "Scope & evidentiary note",
+          "disclaimerBody": "This report reflects public on-ledger facts at the cutoff state version above. Document contents never leave the signers' devices; only BLAKE2b-256 hashes, account addresses, and consensus timestamps exist on-chain. Legal identity requires external KYC/X.509 binding.",
+          "pageOf": "Page {page} of {total}"
+        }
       }
     }
   },

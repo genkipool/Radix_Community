@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   BadgeCheck,
   Check,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { CollectionAuditTab } from '@/features/sign/components/audit/CollectionAuditTab';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import {
   SimulateButton,
@@ -56,7 +58,7 @@ import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
 import { TextField } from '../shared/fields';
 
-type Tab = 'collections' | 'create' | 'identity';
+type Tab = 'collections' | 'create' | 'identity' | 'audit';
 
 /**
  * Radix Seal · Collection.
@@ -76,15 +78,30 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
   const { t: full } = useLanguage();
   const t = full.sign as SignDictionary;
   const labels = t?.collection;
-  const { accounts } = useRadixWallet();
+  const { isConnected, accounts } = useRadixWallet();
+  const searchParams = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>('collections');
+  const tabParam = searchParams.get('tab');
+  const collectionParam = searchParams.get('collection') ?? undefined;
+  const fromParam = searchParams.get('from') ?? undefined;
+  const toParam = searchParams.get('to') ?? undefined;
+  const initialTab: Tab =
+    tabParam === 'collections' ||
+    tabParam === 'create' ||
+    tabParam === 'identity' ||
+    tabParam === 'audit'
+      ? tabParam
+      : collectionParam
+        ? 'audit'
+        : 'collections';
+
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [account, setAccount] = useState<string | null>(null);
   const effectiveAccount = account ?? accounts[0]?.address ?? null;
 
   const setup = useSealSetup(effectiveAccount);
   const { collections, loading: collectionsLoading, refetch: refetchCollections } =
-    useSignCollections(effectiveAccount, true);
+    useSignCollections(effectiveAccount, isConnected && !!effectiveAccount);
   const { seals, refetch: refetchSeals } = useUserSeals(effectiveAccount);
   const [settling, setSettling] = useState(false);
 
@@ -111,9 +128,9 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
   if (!labels) return null;
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <div
-        className="flex gap-6 border-b"
+        className="flex flex-wrap gap-x-6 gap-y-2 border-b"
         style={{ borderColor: 'var(--color-card-border)' }}
       >
         {(
@@ -121,6 +138,7 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
             ['collections', labels.tabs.collections],
             ['create', labels.tabs.create],
             ['identity', labels.tabs.identity],
+            ['audit', labels.tabs.audit],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -147,62 +165,76 @@ export default function SignCollectionTool({ t: consoleT }: ConsoleToolProps) {
         ))}
       </div>
 
-      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-        <strong style={{ color: 'var(--color-text-main)' }}>{labels.intro.title}.</strong>{' '}
-        {labels.intro.body}
-      </p>
+      {tab === 'audit' ? (
+        <CollectionAuditTab
+          labels={labels.audit}
+          isConnected={isConnected}
+          ownedCollections={collections}
+          activeCollection={setup.activeAddress}
+          initialCollection={collectionParam}
+          initialFromDate={fromParam}
+          initialToDate={toParam}
+        />
+      ) : (
+        <>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            <strong style={{ color: 'var(--color-text-main)' }}>{labels.intro.title}.</strong>{' '}
+            {labels.intro.body}
+          </p>
 
-      <WalletConnectGate
-        title={labels.connect.title}
-        subtitle={labels.connect.subtitle}
-        mainnetLabel={t.connect?.mainnet ?? 'Mainnet'}
-        stokenetLabel={t.connect?.stokenet ?? 'Stokenet'}
-      >
-        <div className="space-y-6">
-          <ToolSection title={labels.accountLabel}>
-            <AccountPicker value={account} onChange={setAccount} />
-          </ToolSection>
+          <WalletConnectGate
+            title={labels.connect.title}
+            subtitle={labels.connect.subtitle}
+            mainnetLabel={t.connect?.mainnet ?? 'Mainnet'}
+            stokenetLabel={t.connect?.stokenet ?? 'Stokenet'}
+          >
+            <div className="space-y-6">
+              <ToolSection title={labels.accountLabel}>
+                <AccountPicker value={account} onChange={setAccount} />
+              </ToolSection>
 
-          {tab === 'collections' && (
-            <CollectionsTab
-              labels={labels}
-              setup={setup}
-              seals={seals}
-              collections={collections}
-              loading={collectionsLoading || settling}
-              onCreate={() => setTab('create')}
-            />
-          )}
-          {tab === 'create' && (
-            <CreateTab
-              labels={labels}
-              t={t}
-              consoleT={consoleT}
-              account={effectiveAccount}
-              seals={seals}
-              hasCollections={collections.length > 0}
-              onCreated={(resourceAddress) => {
-                // Pin the account that just created it: `account` may still be
-                // null (nothing picked), in which case the shown one follows
-                // accounts[0] and would drift if the wallet re-emits its list
-                // in another order.
-                if (effectiveAccount) setAccount(effectiveAccount);
-                setTab('collections');
-                void showNewCollection(resourceAddress);
-              }}
-            />
-          )}
-          {tab === 'identity' && (
-            <IdentityTab
-              labels={labels}
-              t={t}
-              consoleT={consoleT}
-              account={effectiveAccount}
-              setup={setup}
-            />
-          )}
-        </div>
-      </WalletConnectGate>
+              {tab === 'collections' && (
+                <CollectionsTab
+                  labels={labels}
+                  setup={setup}
+                  seals={seals}
+                  collections={collections}
+                  loading={collectionsLoading || settling}
+                  onCreate={() => setTab('create')}
+                />
+              )}
+              {tab === 'create' && (
+                <CreateTab
+                  labels={labels}
+                  t={t}
+                  consoleT={consoleT}
+                  account={effectiveAccount}
+                  seals={seals}
+                  hasCollections={collections.length > 0}
+                  onCreated={(resourceAddress) => {
+                    // Pin the account that just created it: `account` may still be
+                    // null (nothing picked), in which case the shown one follows
+                    // accounts[0] and would drift if the wallet re-emits its list
+                    // in another order.
+                    if (effectiveAccount) setAccount(effectiveAccount);
+                    setTab('collections');
+                    void showNewCollection(resourceAddress);
+                  }}
+                />
+              )}
+              {tab === 'identity' && (
+                <IdentityTab
+                  labels={labels}
+                  t={t}
+                  consoleT={consoleT}
+                  account={effectiveAccount}
+                  setup={setup}
+                />
+              )}
+            </div>
+          </WalletConnectGate>
+        </>
+      )}
     </div>
   );
 }
