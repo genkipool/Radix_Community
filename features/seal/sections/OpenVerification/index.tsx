@@ -6,7 +6,16 @@
  * request key, on-ledger chain of custody), with a CTA into the verify flow.
  */
 import Link from 'next/link';
-import { ArrowUpRight, FileCheck2, KeySquare, Link2, ShieldCheck, Terminal } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  FileCheck2,
+  Globe,
+  KeySquare,
+  Link2,
+  ShieldCheck,
+  Terminal,
+} from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
@@ -23,6 +32,13 @@ const SEAL_DOCS_URL =
 const VERIFY_CURL = `jq '{envelope: .}' document.radixsig.json \\
   | curl -X POST https://radix-community.genkipool.com/api/sign/verify \\
       -H 'Content-Type: application/json' --data-binary @-`;
+
+const WELL_KNOWN_EXAMPLE = `{
+  "v": 1,
+  "collections": ["resource_rdx1..."]
+}`;
+
+const DNS_TXT_EXAMPLE = `_radix-seal.example.org  TXT  "v=radix-seal1 collection=resource_rdx1..."`;
 
 const CARD_ICONS = [
   <FileCheck2 key="pdf" className="size-10 text-[var(--color-primary)]" />,
@@ -153,6 +169,128 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
             />
           </FadeIn>
         </div>
+
+        {/* Custody-free domain verification panel (.well-known & DNS TXT) */}
+        <FadeIn delay={0.45} className="mt-8">
+          <div
+            className="flex flex-col gap-6 rounded-3xl border p-6 sm:p-8"
+            style={{
+              background: 'var(--color-card-bg)',
+              borderColor: 'var(--color-card-border)',
+            }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: 'var(--color-surface)' }}
+                >
+                  <Globe className="size-5 text-[var(--color-primary)]" />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
+                      className="text-base font-bold sm:text-lg"
+                      style={{ color: 'var(--color-text-main)' }}
+                    >
+                      {verify.domainTitle}
+                    </h3>
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                      style={{
+                        background:
+                          'color-mix(in srgb, var(--color-success) 14%, transparent)',
+                        color: 'var(--color-success)',
+                      }}
+                    >
+                      <BadgeCheck className="size-3.5" />
+                      {verify.domainBadge}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href={`/${locale}${SEAL_LINKS.collection}?tab=identity`}
+                className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-primary)] transition-opacity hover:opacity-80"
+              >
+                {verify.domainCta}
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </div>
+
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              {verify.domainHint}
+            </p>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="min-w-0 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className="text-[11px] font-black uppercase tracking-wider"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    {verify.domainWellKnownLabel}
+                  </span>
+                  <CopyButton
+                    value={WELL_KNOWN_EXAMPLE}
+                    variant="minimal"
+                    size="sm"
+                  />
+                </div>
+                <pre
+                  className="overflow-x-auto rounded-2xl border p-4 text-[11px] leading-relaxed"
+                  style={{
+                    background: 'var(--color-surface)',
+                    borderColor: 'var(--color-card-border)',
+                    color: 'var(--color-text-main)',
+                  }}
+                >
+                  <code className="font-mono whitespace-pre">
+                    {WELL_KNOWN_EXAMPLE}
+                  </code>
+                </pre>
+              </div>
+
+              <div className="min-w-0 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className="text-[11px] font-black uppercase tracking-wider"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    {verify.domainDnsLabel}
+                  </span>
+                  <CopyButton
+                    value={DNS_TXT_EXAMPLE}
+                    variant="minimal"
+                    size="sm"
+                  />
+                </div>
+                <pre
+                  className="overflow-x-auto rounded-2xl border p-4 text-[11px] leading-relaxed"
+                  style={{
+                    background: 'var(--color-surface)',
+                    borderColor: 'var(--color-card-border)',
+                    color: 'var(--color-text-main)',
+                  }}
+                >
+                  <code className="font-mono whitespace-pre">
+                    {DNS_TXT_EXAMPLE}
+                  </code>
+                </pre>
+                <p
+                  className="pt-1 text-xs leading-relaxed"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  {verify.domainNote}
+                </p>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
 
       </div>
     </section>

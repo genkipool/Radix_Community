@@ -358,7 +358,7 @@
               "saas": "Email, SMS or KYC verification depending on plan",
               "pki": "Identity validated by an authority (QES)",
               "pgp": "No verification; peer-to-peer trust",
-              "seal": "Self-declared by the wallet; no legal binding",
+              "seal": "Domain verifiable via .well-known / DNS TXT; no QES legal binding",
               "winner": "pki",
               "expKey": "identity"
             },
@@ -393,7 +393,7 @@
         "timestamp": "When anchored, the timestamp is fixed by network consensus and no company controls it. A signature made off the ledger carries an RFC 3161 token from a timestamping authority, at no cost and with no subscription. Either way verification holds the declared date against that independent clock and says so when they disagree.",
         "longevity": "The proof lives on a public ledger replicated by hundreds of nodes: it does not expire with a certificate or vanish if a vendor shuts down.",
         "cost": "No subscriptions or per-document pricing: just the network fee, a fraction of a cent. PGP is also free, but its operational cost in key management and training is high.",
-        "identity": "Qualified PKI covers something Radix Seal does not yet: an authority validates the signer's legal identity and regulation (eIDAS QES) grants it the highest evidentiary status. Radix Seal proves control of the account, not who you legally are (once idOS lands on Radix, this gap narrows).",
+        "identity": "Qualified PKI covers legal personal identity (eIDAS QES). In Radix Seal any organization can already prove custody-free that its signing collection belongs to its official domain by publishing /.well-known/radix-seal.json or a DNS TXT record with zero third-party gatekeepers (and once idOS lands on Radix, verified personal identity can bind on top).",
         "ease": "Cloud suites have less friction for the occasional signer: a link in the email and done. Radix Seal asks for a wallet install and a one-time setup before the first signature.",
         "workflow": "Years of product give SaaS suites templates, automatic reminders and dozens of integrations. Radix Seal covers the essential invite, sign and verify flow today."
       }
@@ -458,7 +458,14 @@
       "officialTitle": "Official Radix Seal resource",
       "officialHint": "The genuine brand resource per network. A signing collection is only authentic if its metadata references one of these addresses. Confirm the address before trusting a collection.",
       "officialExplorer": "View the resource in the explorer",
-      "officialCopy": "Copy"
+      "officialCopy": "Copy",
+      "domainTitle": "Custody-free domain verification",
+      "domainBadge": "No extra NFT · Zero intermediaries",
+      "domainHint": "Any company, individual, or public body can bind its signing collection to its official web domain without asking permission or relying on this site. Whenever anyone verifies a document or opens an audit (Web or MCP), the domain is checked live and displays a verified-domain badge.",
+      "domainWellKnownLabel": "Option A · https://<your-domain>/.well-known/radix-seal.json",
+      "domainDnsLabel": "Option B · DNS TXT record",
+      "domainNote": "Publishing either option is enough. Because it is 100% decentralized, rotating collections only takes updating your file or DNS record — revocation is instant.",
+      "domainCta": "Configure on your collection"
     },
     "anatomy": {
       "label": "Anatomy of the seal",

@@ -1,4 +1,3 @@
-import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { dashboardRoutes, networkOfAddress } from '@/features/dashboard/lib/routes';
 import type { Network } from '@/features/dashboard/types';
 import type { SignDictionary } from '../../types/dictionary';
@@ -7,28 +6,37 @@ import type {
   AuditRecordStatus,
   CollectionAuditResponse,
 } from '../../lib/collection-audit';
+import type { DomainVerificationResult } from '../../lib/domain-verify';
 import { explorerTxUrl } from '../../lib/explorer';
+import { optionalNetworkNameForId } from '../../lib/network';
+import { buildAuditUrl, parseRequestKey } from '../../lib/share';
+import type { UserSignCollection } from '../../services/sealDiscovery';
 
 export type AuditLabels = NonNullable<SignDictionary['collection']>['audit'];
+export type DomainVerifyLabels = NonNullable<
+  SignDictionary['collection']
+>['identity']['domainVerify'];
 export type AuditExportFormat = 'pdf' | 'csv-records' | 'csv-signers' | 'json';
 
 export interface AuditHeaderProps {
   audit: CollectionAuditResponse;
   labels: AuditLabels;
+  domainVerifyLabels: DomainVerifyLabels;
+  domainVerification: DomainVerificationResult | null;
+  domainChecking: boolean;
+  onOpenDomainDrawer: () => void;
   locale: string;
-  fetching: boolean;
   exporting: AuditExportFormat | null;
   includeAliases: boolean;
+  ownedCollections?: UserSignCollection[];
+  onSelectCollection?: (resourceAddress: string) => void;
   onToggleIncludeAliases: (next: boolean) => void;
-  onRefresh: () => void;
   onCopyShareLink: () => Promise<void>;
   onExport: (format: AuditExportFormat) => Promise<void>;
 }
 
 export function explorerNetworkForId(networkId: number): Network | undefined {
-  if (networkId === RadixNetworkId.Mainnet) return 'mainnet';
-  if (networkId === RadixNetworkId.Stokenet) return 'stokenet';
-  return undefined;
+  return optionalNetworkNameForId(networkId);
 }
 
 export function formatUtcTimestamp(
@@ -99,9 +107,9 @@ export function verifierHref(
   locale: string,
   requestKey: string,
 ): string {
-  const match = requestKey.match(/^(resource_[a-z0-9_]+):?#?(\d+)#?$/);
-  if (!match) return `/${locale}/console/sign-document?tab=verify`;
-  return `/${locale}/console/sign-document/r/${match[1]}/${match[2]}?tab=verify`;
+  const parsed = parseRequestKey(requestKey);
+  if (!parsed) return `/${locale}/console/sign-document?tab=verify`;
+  return `/${locale}/console/sign-document/r/${parsed.collection}/${parsed.id}?tab=verify`;
 }
 
 export function buildAuditShareUrl(params: {
@@ -111,10 +119,13 @@ export function buildAuditShareUrl(params: {
   fromDate?: string;
   toDate?: string;
 }): string {
-  const query = new URLSearchParams();
-  query.set('tab', 'audit');
-  query.set('collection', params.collection);
-  if (params.fromDate) query.set('from', params.fromDate);
-  if (params.toDate) query.set('to', params.toDate);
-  return `${params.origin}${params.pathname}?${query.toString()}`;
+  const localeMatch = params.pathname.match(/^\/([a-z]{2})\//);
+  const locale = localeMatch ? localeMatch[1] : 'en';
+  return buildAuditUrl({
+    origin: params.origin,
+    locale,
+    collection: params.collection,
+    fromDate: params.fromDate,
+    toDate: params.toDate,
+  });
 }

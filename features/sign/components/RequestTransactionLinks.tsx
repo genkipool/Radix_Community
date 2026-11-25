@@ -8,8 +8,8 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { ManifestCode } from '@/features/console/components/shared/ManifestCode';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import { useLanguage } from '@/context/LanguageContext';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { explorerTxUrl } from '../lib/explorer';
+import { networkNameForId } from '../lib/network';
 import type { SignDictionary } from '../types/dictionary';
 
 /**
@@ -36,8 +36,7 @@ export function RequestTransactionLinks({
 }) {
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
-  const network =
-    networkId === RadixNetworkId.Mainnet ? ('mainnet' as const) : ('stokenet' as const);
+  const network = networkNameForId(networkId ?? 2);
 
   const details = useQuery({
     queryKey: ['sign-request-manifest', network, txId],

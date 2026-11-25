@@ -1,23 +1,23 @@
 /**
  * services/mcp/tools/sign.ts
  *
- * Radix Seal signing tools for the MCP. Both are thin clients of the existing
- * verification endpoints (`/api/sign/verify`, `/api/sign/onchain-status`), so
- * the security-sensitive verification logic stays in ONE place and the MCP
- * never duplicates it. They are read-only from the caller's point of view (no
- * wallet, no transaction): one verifies a certificate, the other reads the
- * on-ledger state of a request.
+ * Radix Seal signing, verification, audit, and manifest tools for the MCP.
+ * Every tool calls the exact same server-side Single Source of Truth modules
+ * used by the Web UI and `/api/sign/*` routes (`verify.server.ts`,
+ * `onchain-status.server.ts`, `collection-audit.server.ts`, `sign-request.ts`,
+ * `radix-seal-manifest.ts`) — zero internal HTTP self-calls and zero duplicated
+ * security logic.
  */
 
 import { z } from 'zod';
 import { defineMcpTool } from '../registry';
 import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection, cliTable } from '../cli';
-import type { McpToolContext } from '../types';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { SEAL_IMAGE_URL, radixSealAddress } from '@/features/sign/constants/seal';
 import {
   DEFAULT_AUDIT_FILTERS,
   computeAuditKpis,
+  evaluateIntegritySummary,
   filterAuditRecords,
   filterAuditSigners,
 } from '@/features/sign/lib/collection-audit';
@@ -25,9 +25,19 @@ import {
   MAX_AUDIT_PAGE_LIMIT,
   auditSignCollection,
   getSealAccountState,
+} from '@/features/sign/lib/collection-audit.server';
+import {
+  DOC_HASH_HEX_RE,
+  RADIX_ACCOUNT_RE,
+  RADIX_RESOURCE_RE,
+  networkIdFromAccount,
+  networkIdFromName,
+  networkIdFromResource,
   networkMatchesAccount,
   networkMatchesCollection,
-} from '@/features/sign/lib/collection-audit.server';
+  networkNameForId,
+  splitNftGlobalId,
+} from '@/features/sign/lib/network';
 import {
   buildAuditJsonPackage,
   recordsToAuditCsv,
@@ -47,56 +57,64 @@ import {
   buildCollectionMetadataManifest,
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
-  buildSignatureMintManifest,
+  buildSignatureOrFirstCollectionManifest,
+  requestKey as formatRequestKey,
+  resolveRequestSigners,
 } from '@/features/sign/lib/sign-request';
-import { networkIdFromResource, parseRequestKey } from '@/features/sign/lib/share';
+import { getOnChainRequestStatus } from '@/features/sign/lib/onchain-status.server';
+import {
+  verifyBodySchema,
+  verifyCertificateEnvelope,
+} from '@/features/sign/lib/verify.server';
+import {
+  buildAuditUrl,
+  parseRequestKey,
+} from '@/features/sign/lib/share';
 import { staticallyValidateManifest } from '@/services/ret';
 import { RADIX_COMMUNITY_ORIGIN, dappDefinitionFor, signingSteps } from '../dapp';
 import { localeSchema, networkSchema } from './schemas';
 
-function toNetworkId(network: 'mainnet' | 'stokenet'): number {
-  return network === 'mainnet' ? RadixNetworkId.Mainnet : RadixNetworkId.Stokenet;
-}
+/**
+ * Resolves the target Radix network from an explicit parameter or Bech32
+ * prefixes (`account`, `collection`, `sealResource`) and enforces strict
+ * Mainnet / Stokenet isolation across every supplied address.
+ */
+function resolveSealNetwork(input: {
+  network?: 'mainnet' | 'stokenet';
+  account?: string;
+  collection?: string;
+  sealResource?: string;
+  collections?: string[];
+  fallback?: RadixNetworkId;
+}): { networkId: RadixNetworkId; network: 'mainnet' | 'stokenet' } {
+  const inferred =
+    (input.account ? networkIdFromAccount(input.account) : null) ??
+    (input.collection ? networkIdFromResource(input.collection) : null) ??
+    (input.sealResource ? networkIdFromResource(input.sealResource) : null);
 
-/** Origin used for the internal self-call. The verify route requires
- *  NEXT_PUBLIC_APP_URL, so it is set on every deployment; ctx.origin is the
- *  fallback for local/dev where it may differ. */
-function apiBase(ctx: McpToolContext): string {
-  return process.env.NEXT_PUBLIC_APP_URL || ctx.origin;
-}
-
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!res.ok) {
-    throw new Error(json?.error || `request_failed_${res.status}`);
+  const networkId = input.network
+    ? networkIdFromName(input.network)
+    : (inferred ?? input.fallback);
+  if (networkId == null) {
+    throw new Error('Could not determine Radix network from address.');
   }
-  if (!json) throw new Error('empty_response');
-  return json;
-}
+  const network = networkNameForId(networkId);
 
-interface VerifyResponse {
-  signatures: Array<{
-    signerAccount: string;
-    disclosedName: string | null;
-    disclosedEmail: string | null;
-    signedAt: string;
-    valid: boolean;
-    required: boolean;
-  }>;
-  requiredSigners: string[];
-  allValid: boolean;
-  complete: boolean;
-  message: string;
-  timestamp: string;
-  networkId: number;
-  docHash: string;
-  onChainValid: boolean | null;
-  sealValid: boolean | null;
+  if (input.account && !networkMatchesAccount(networkId, input.account)) {
+    throw new Error(`Network mismatch: account "${input.account}" is not on ${network}.`);
+  }
+  if (input.collection && !networkMatchesCollection(networkId, input.collection)) {
+    throw new Error(`Network mismatch: collection "${input.collection}" is not on ${network}.`);
+  }
+  if (input.sealResource && !networkMatchesCollection(networkId, input.sealResource)) {
+    throw new Error(`Network mismatch: sealResource "${input.sealResource}" is not on ${network}.`);
+  }
+  for (const addr of input.collections ?? []) {
+    if (!networkMatchesCollection(networkId, addr)) {
+      throw new Error(`Network mismatch: collection "${addr}" is not on ${network}.`);
+    }
+  }
+  return { networkId, network };
 }
 
 export const verifyDocumentSignatureTool = defineMcpTool({
@@ -105,6 +123,7 @@ export const verifyDocumentSignatureTool = defineMcpTool({
   description:
     'Verifies a Radix Seal document-attestation certificate (the contents of a .radixsig.json file). Checks every signature against the shared payload — ROLA proofs and/or the on-ledger chain of custody — and reports whether the certificate is complete. It receives ONLY the certificate, never the document itself.',
   category: 'console',
+  readOnly: true,
   inputSchema: z.object({
     certificate: z
       .string()
@@ -125,11 +144,16 @@ export const verifyDocumentSignatureTool = defineMcpTool({
         ? (parsed as { envelope: unknown }).envelope
         : parsed;
 
-    const data = await postJson<VerifyResponse>(`${apiBase(ctx)}/api/sign/verify`, {
-      envelope,
+    const validated = verifyBodySchema.safeParse({ envelope });
+    if (!validated.success) {
+      throw new Error('invalid_certificate');
+    }
+
+    const data = await verifyCertificateEnvelope(validated.data, {
+      expectedOrigin: ctx.origin,
     });
 
-    const net = data.networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+    const net = networkNameForId(data.networkId);
     const status = data.complete
       ? 'COMPLETE: all required signers valid'
       : data.allValid
@@ -174,31 +198,13 @@ export const verifyDocumentSignatureTool = defineMcpTool({
   },
 });
 
-interface StatusResponse {
-  found: boolean;
-  requestId?: string;
-  collection?: string;
-  docHash?: string;
-  hashMismatch?: boolean;
-  networkId?: number;
-  requiredSigners?: string[];
-  signatures?: Array<{ account: string; signed: boolean }>;
-  complete?: boolean;
-  issuer?: {
-    account?: string;
-    collectionName?: string;
-    orgName?: string;
-    orgWebsite?: string;
-    orgLogoUrl?: string;
-  };
-}
-
 export const checkSigningRequestTool = defineMcpTool({
   name: 'check_signing_request',
   title: 'Check a Radix Seal signing request',
   description:
     'Reads the on-ledger status of a Radix Seal signing request by its id (the first invitation NFT global id, e.g. "resource_tdx_2_1...:#25#"). Returns the required signers, who has signed, and whether the request is complete. Read-only Gateway query.',
   category: 'console',
+  readOnly: true,
   inputSchema: z.object({
     requestId: z
       .string()
@@ -208,13 +214,13 @@ export const checkSigningRequestTool = defineMcpTool({
     network: networkSchema,
     docHash: z
       .string()
-      .regex(/^[0-9a-f]{64}$/)
+      .regex(DOC_HASH_HEX_RE)
       .optional()
       .describe('Optional document hash (blake2b-256, 64 hex chars) to confirm the request anchors the expected file.'),
   }),
-  handler: async ({ requestId, network, docHash }, ctx) => {
-    const data = await postJson<StatusResponse>(`${apiBase(ctx)}/api/sign/onchain-status`, {
-      networkId: toNetworkId(network),
+  handler: async ({ requestId, network, docHash }) => {
+    const data = await getOnChainRequestStatus({
+      networkId: networkIdFromName(network),
       requestId,
       docHash,
     });
@@ -230,7 +236,7 @@ export const checkSigningRequestTool = defineMcpTool({
       );
     }
 
-    const sigs = data.signatures ?? [];
+    const sigs = data.signatures;
     const signed = sigs.filter((s) => s.signed).length;
     return cliRender(
       cliBanner('Radix Seal · signing request'),
@@ -249,6 +255,14 @@ export const checkSigningRequestTool = defineMcpTool({
         ['Network', network],
         ['Issuer account', data.issuer?.account],
         ['Issuer org', data.issuer?.orgName],
+        [
+          'Domain proof',
+          data.issuer?.domainVerification?.domain
+            ? data.issuer.domainVerification.verified
+              ? `VERIFIED (${data.issuer.domainVerification.domain} via ${data.issuer.domainVerification.method})`
+              : `unverified (${data.issuer.domainVerification.domain})`
+            : undefined,
+        ],
       ]),
       cliSection('Signers'),
       cliTable(
@@ -265,13 +279,13 @@ export const auditSealCollectionTool = defineMcpTool({
   name: 'audit_seal_collection',
   title: 'Audit a Radix Seal signing collection',
   description:
-    'Read-only institutional audit for any Radix Seal signing collection on Mainnet or Stokenet. Verifies collection integrity (standard marker, official brand, locked soulbound owner rule, burn denied, immutable evidentiary fields), reconstructs multi-party signature batches, cross-checks each required signer on-ledger, filters by date/type/status/hash/signer, and exports summary, CSV, or SHA-256 verifiable JSON.',
+    'Read-only audit for any Radix Seal signing collection on Mainnet or Stokenet. Verifies collection integrity (standard marker, official brand, locked soulbound owner rule, burn denied, immutable evidentiary fields), reconstructs multi-party signature batches, cross-checks each required signer on-ledger, filters by date/type/status/hash/signer, and exports summary, CSV, or SHA-256 verifiable JSON.',
   category: 'console',
   readOnly: true,
   inputSchema: z.object({
     collection: z
       .string()
-      .regex(/^resource_(rdx|tdx_2_)1[a-z0-9]+$/)
+      .regex(RADIX_RESOURCE_RE)
       .describe('Signing collection resource address (resource_rdx1… for mainnet or resource_tdx_2_1… for stokenet).'),
     network: z
       .enum(['mainnet', 'stokenet'])
@@ -325,16 +339,10 @@ export const auditSealCollectionTool = defineMcpTool({
     locale: localeSchema,
   }),
   handler: async (args, ctx) => {
-    const inferredId = networkIdFromResource(args.collection);
-    if (inferredId == null) {
-      throw new Error('Could not determine Radix network from collection address.');
-    }
-    const networkId = args.network ? toNetworkId(args.network) : inferredId;
-    if (!networkMatchesCollection(networkId, args.collection)) {
-      throw new Error(
-        `Network mismatch: collection "${args.collection}" belongs to ${inferredId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}, not "${args.network}".`,
-      );
-    }
+    const { networkId } = resolveSealNetwork({
+      network: args.network,
+      collection: args.collection,
+    });
 
     const result = await auditSignCollection({
       networkId,
@@ -348,7 +356,7 @@ export const auditSealCollectionTool = defineMcpTool({
 
     if (!result.found) {
       return cliRender(
-        cliBanner('Radix Seal · institutional audit'),
+        cliBanner('Radix Seal · audit registry'),
         cliKeyValues([
           ['Collection', args.collection],
           ['Network', netLabel],
@@ -396,8 +404,15 @@ export const auditSealCollectionTool = defineMcpTool({
     }
 
     const kpis = computeAuditKpis(filteredRecords);
-    const auditUrl = `${ctx.origin}/${args.locale}/console/sign-collection?tab=audit&collection=${result.collection}`;
+    const auditUrl = buildAuditUrl({
+      origin: ctx.origin,
+      locale: args.locale,
+      collection: result.collection,
+      fromDate: args.fromDate,
+      toDate: args.toDate,
+    });
     const integrity = result.integrity;
+    const integritySummary = evaluateIntegritySummary(integrity);
 
     return cliRender(
       cliBanner(
@@ -406,7 +421,15 @@ export const auditSealCollectionTool = defineMcpTool({
           : 'Radix Seal · audit registry (Mainnet)',
       ),
       cliKeyValues([
-        ['Institution', result.issuer.orgName || result.issuer.name || '(unnamed)'],
+        ['Holder / Issuer', result.issuer.orgName || result.issuer.name || '(unnamed)'],
+        [
+          'Domain proof',
+          result.issuer.domainVerification?.domain
+            ? result.issuer.domainVerification.verified
+              ? `VERIFIED (${result.issuer.domainVerification.domain} via ${result.issuer.domainVerification.method})`
+              : `unverified (${result.issuer.domainVerification.domain})`
+            : undefined,
+        ],
         ['Collection', result.collection],
         ['Issuing account', result.issuer.account ?? '(unresolved)'],
         ['Network', netLabel],
@@ -426,11 +449,11 @@ export const auditSealCollectionTool = defineMcpTool({
       ]),
       cliSection('Cryptographic integrity'),
       cliKeyValues([
-        ['Standard v1 & brand', integrity.hasMarker && integrity.officialBrand ? 'VERIFIED' : 'WARNING'],
-        ['Locked custody chain', integrity.ownerLocked && integrity.issuerVerified ? 'VERIFIED' : 'WARNING'],
+        ['Standard v1 & brand', integritySummary.standardOk ? 'VERIFIED' : 'WARNING'],
+        ['Locked custody chain', integritySummary.custodyOk ? 'VERIFIED' : 'WARNING'],
         [
           'Immutable (no burn)',
-          integrity.burnDenied && integrity.dataImmutable && integrity.totalBurned === 0
+          integritySummary.immutableOk
             ? 'VERIFIED'
             : `WARNING (${integrity.totalBurned} burned)`,
         ],
@@ -478,16 +501,6 @@ export const auditSealCollectionTool = defineMcpTool({
   },
 });
 
-function accountNetworkId(account: string): number | null {
-  if (account.startsWith('account_rdx1')) return RadixNetworkId.Mainnet;
-  if (account.startsWith('account_tdx_2_1')) return RadixNetworkId.Stokenet;
-  return null;
-}
-
-function networkNameOf(networkId: number): 'mainnet' | 'stokenet' {
-  return networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-}
-
 export const getSealAccountStateTool = defineMcpTool({
   name: 'get_seal_account_state',
   title: 'Inspect an account Radix Seal & signing collections',
@@ -498,7 +511,7 @@ export const getSealAccountStateTool = defineMcpTool({
   inputSchema: z.object({
     account: z
       .string()
-      .regex(/^account_(rdx|tdx_2_)1[a-z0-9]+$/)
+      .regex(RADIX_ACCOUNT_RE)
       .describe('Radix account address (account_rdx1… or account_tdx_2_1…).'),
     network: z
       .enum(['mainnet', 'stokenet'])
@@ -506,38 +519,22 @@ export const getSealAccountStateTool = defineMcpTool({
       .describe('Optional Radix network; auto-detected from account prefix when omitted, or verified to match.'),
     sealResource: z
       .string()
-      .regex(/^resource_(rdx|tdx_2_)1[a-z0-9]+$/)
+      .regex(RADIX_RESOURCE_RE)
       .optional()
       .describe('Optional Radix Seal brand resource override (useful when testing a freshly deployed Mainnet or Stokenet Seal before env redeploy).'),
     collections: z
-      .array(z.string().regex(/^resource_(rdx|tdx_2_)1[a-z0-9]+$/))
+      .array(z.string().regex(RADIX_RESOURCE_RE))
       .max(20)
       .optional()
       .describe('Optional known signing collection addresses to inspect alongside vault holdings (needed for brand-new collections with 0 minted NFTs).'),
   }),
   handler: async ({ account, network, sealResource, collections }) => {
-    const inferredId = accountNetworkId(account);
-    if (inferredId == null) {
-      throw new Error('Could not determine Radix network from account address.');
-    }
-    const networkId = network ? toNetworkId(network) : inferredId;
-    if (!networkMatchesAccount(networkId, account)) {
-      throw new Error(
-        `Network mismatch: account "${account}" belongs to ${networkNameOf(inferredId)}, not "${network}".`,
-      );
-    }
-    if (sealResource && !networkMatchesCollection(networkId, sealResource)) {
-      throw new Error(
-        `Network mismatch: sealResource "${sealResource}" does not belong to ${networkNameOf(networkId)}.`,
-      );
-    }
-    for (const addr of collections ?? []) {
-      if (!networkMatchesCollection(networkId, addr)) {
-        throw new Error(
-          `Network mismatch: collection "${addr}" does not belong to ${networkNameOf(networkId)}.`,
-        );
-      }
-    }
+    const { networkId, network: netLabel } = resolveSealNetwork({
+      network,
+      account,
+      sealResource,
+      collections,
+    });
 
     const state = await getSealAccountState(
       networkId,
@@ -545,7 +542,6 @@ export const getSealAccountStateTool = defineMcpTool({
       sealResource,
       collections,
     );
-    const netLabel = networkNameOf(networkId);
 
     return cliRender(
       cliBanner(`Radix Seal · account state (${netLabel})`),
@@ -591,7 +587,7 @@ export const buildSealManifestTool = defineMcpTool({
   name: 'build_seal_manifest',
   title: 'Build a Radix Seal registry or signing manifest',
   description:
-    'Builds and statically validates a ready-to-sign Radix transaction manifest for Radix Seal registry and signing operations: "deploy_brand" (one-time global Seal resource), "mint_seal" (self-mint soulbound Seal), "create_collection" (company/personal signing collection), "update_identity" (edit orgName/orgUrl/name/symbol/logo), "create_request" (multi-party document invitation batch), or "sign_document" (solo or co-signer signature NFT). Enforces strict Mainnet/Stokenet address isolation and never adds lock_fee.',
+    'Builds and statically validates a ready-to-sign Radix transaction manifest for Radix Seal registry and signing operations: "deploy_brand" (one-time global Seal resource), "mint_seal" (self-mint soulbound Seal), "create_collection" (company/personal signing collection), "update_identity" (edit orgName/orgUrl/name/symbol/logo), "create_request" (multi-party document invitation batch), or "sign_document" (solo or co-signer signature NFT — automatically creates the signing collection inline with first signature #1# when the account holds a Seal but no collection yet, matching the Web UI). Enforces strict Mainnet/Stokenet address isolation and never adds lock_fee.',
   category: 'console',
   readOnly: false,
   inputSchema: z.object({
@@ -607,7 +603,7 @@ export const buildSealManifestTool = defineMcpTool({
       .describe('Which Radix Seal registry or signing operation to build.'),
     account: z
       .string()
-      .regex(/^account_(rdx|tdx_2_)1[a-z0-9]+$/)
+      .regex(RADIX_ACCOUNT_RE)
       .optional()
       .describe('Acting Radix account address (required for all operations except deploy_brand).'),
     network: z
@@ -616,7 +612,7 @@ export const buildSealManifestTool = defineMcpTool({
       .describe('Target network ("mainnet" or "stokenet"); auto-detected from account/collection when omitted, or verified to match.'),
     sealResource: z
       .string()
-      .regex(/^resource_(rdx|tdx_2_)1[a-z0-9]+$/)
+      .regex(RADIX_RESOURCE_RE)
       .optional()
       .describe('Radix Seal brand resource address (defaults to NEXT_PUBLIC_RADIX_SEAL_MAINNET / _STOKENET).'),
     sealGlobalId: z
@@ -626,7 +622,7 @@ export const buildSealManifestTool = defineMcpTool({
       .describe('Owner Seal NFT global id ("resource_…:{ruid}"). Auto-resolved from the account/collection when omitted.'),
     collection: z
       .string()
-      .regex(/^resource_(rdx|tdx_2_)1[a-z0-9]+$/)
+      .regex(RADIX_RESOURCE_RE)
       .optional()
       .describe('Signing collection address. Auto-resolved to the account active collection when omitted for create_request / sign_document.'),
     name: z.string().max(120).optional().describe('Collection display name (create_collection / update_identity).'),
@@ -646,11 +642,11 @@ export const buildSealManifestTool = defineMcpTool({
       .describe('Optional custom metadata entries written at collection creation (e.g. department, tax_id).'),
     docHash: z
       .string()
-      .regex(/^[0-9a-f]{64}$/)
+      .regex(DOC_HASH_HEX_RE)
       .optional()
       .describe('BLAKE2b-256 document hash (64 lowercase hex chars) for create_request / sign_document.'),
     requiredSigners: z
-      .array(z.string().regex(/^account_(rdx|tdx_2_)1[a-z0-9]+$/))
+      .array(z.string().regex(RADIX_ACCOUNT_RE))
       .min(1)
       .max(25)
       .optional()
@@ -667,32 +663,14 @@ export const buildSealManifestTool = defineMcpTool({
     locale: localeSchema,
   }),
   handler: async (args, ctx) => {
-    const inferredFromAccount = args.account ? accountNetworkId(args.account) : null;
-    const inferredFromCollection = args.collection
-      ? networkIdFromResource(args.collection)
-      : null;
-    const inferredFromSeal = args.sealResource
-      ? networkIdFromResource(args.sealResource)
-      : null;
-
-    const networkId = args.network
-      ? toNetworkId(args.network)
-      : (inferredFromAccount ??
-        inferredFromCollection ??
-        inferredFromSeal ??
-        RadixNetworkId.Mainnet);
-    const network = networkNameOf(networkId);
-    const netEnum = networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-
-    if (args.account && !networkMatchesAccount(networkId, args.account)) {
-      throw new Error(`Network mismatch: account "${args.account}" is not on ${network}.`);
-    }
-    if (args.collection && !networkMatchesCollection(networkId, args.collection)) {
-      throw new Error(`Network mismatch: collection "${args.collection}" is not on ${network}.`);
-    }
-    if (args.sealResource && !networkMatchesCollection(networkId, args.sealResource)) {
-      throw new Error(`Network mismatch: sealResource "${args.sealResource}" is not on ${network}.`);
-    }
+    const { networkId, network } = resolveSealNetwork({
+      network: args.network,
+      account: args.account,
+      collection: args.collection,
+      sealResource: args.sealResource,
+      fallback: RadixNetworkId.Mainnet,
+    });
+    const netEnum = network;
 
     const effectiveSealResource = (
       args.sealResource?.trim() || radixSealAddress(networkId)
@@ -703,7 +681,7 @@ export const buildSealManifestTool = defineMcpTool({
 
     if (args.operation === 'deploy_brand') {
       if (args.adminBadge) {
-        const badgeRes = args.adminBadge.split(':')[0];
+        const badgeRes = splitNftGlobalId(args.adminBadge).resource;
         if (!networkMatchesCollection(networkId, badgeRes)) {
           throw new Error(`Network mismatch: adminBadge "${args.adminBadge}" is not on ${network}.`);
         }
@@ -749,7 +727,7 @@ export const buildSealManifestTool = defineMcpTool({
             `Account "${account}" holds no Radix Seal NFT yet. Run operation "mint_seal" first (or pass "sealGlobalId").`,
           );
         }
-        const sealAddr = effectiveSealResource || sealGlobalId.split(':')[0];
+        const sealAddr = effectiveSealResource || splitNftGlobalId(sealGlobalId).resource;
         if (!networkMatchesCollection(networkId, sealAddr)) {
           throw new Error(`Network mismatch: sealGlobalId "${sealGlobalId}" is not on ${network}.`);
         }
@@ -826,7 +804,7 @@ export const buildSealManifestTool = defineMcpTool({
           if (!networkMatchesCollection(networkId, parsedReq.collection)) {
             throw new Error(`Network mismatch: request "${args.request}" is not on ${network}.`);
           }
-          normalizedRequest = `${parsedReq.collection}:#${parsedReq.id}#`;
+          normalizedRequest = formatRequestKey(parsedReq.collection, Number(parsedReq.id));
         }
 
         const state = await getSealAccountState(
@@ -838,54 +816,97 @@ export const buildSealManifestTool = defineMcpTool({
         const colInfo = args.collection
           ? state.collections.find((c) => c.resourceAddress === args.collection)
           : state.collections[0];
-        if (!colInfo) {
+        if (!colInfo && (args.collection || args.operation === 'create_request')) {
           throw new Error(
             args.collection
               ? `Collection "${args.collection}" was not found as a Seal-owned signing collection of "${account}".`
               : `Account "${account}" has no Seal-owned signing collection yet. Run operation "create_collection" first.`,
           );
         }
-        const sealGlobalId = args.sealGlobalId?.trim() || colInfo.ownerSealGlobalId;
+        const sealGlobalId =
+          args.sealGlobalId?.trim() ||
+          colInfo?.ownerSealGlobalId ||
+          state.seals[0]?.globalId ||
+          '';
         if (!sealGlobalId) {
-          throw new Error(`Could not resolve owner Seal NFT for "${colInfo.resourceAddress}".`);
+          throw new Error(
+            colInfo
+              ? `Could not resolve owner Seal NFT for "${colInfo.resourceAddress}".`
+              : `Account "${account}" holds no Radix Seal NFT yet. Run operation "mint_seal" first (or pass "sealGlobalId").`,
+          );
+        }
+        const sealAddr =
+          effectiveSealResource || splitNftGlobalId(sealGlobalId).resource;
+        if (!networkMatchesCollection(networkId, sealAddr)) {
+          throw new Error(
+            `Network mismatch: sealGlobalId "${sealGlobalId}" is not on ${network}.`,
+          );
         }
         const issuedAt = await fetchLedgerTimestampNow(netEnum);
 
         if (args.operation === 'create_request') {
+          const effectiveSigners = resolveRequestSigners(
+            account,
+            args.requiredSigners!,
+            args.alsoSign,
+          );
           manifest = buildSignRequestManifest({
             account,
             sealGlobalId,
-            collection: colInfo.resourceAddress,
-            nextId: colInfo.nextId,
+            collection: colInfo!.resourceAddress,
+            nextId: colInfo!.nextId,
             docHash: args.docHash,
             networkId,
-            requiredSigners: args.requiredSigners!,
+            requiredSigners: effectiveSigners,
             alsoSign: args.alsoSign,
             imageUrl: SEAL_IMAGE_URL,
             issuedAt,
           });
           summaryRows.push(
             ['Account', account],
-            ['Collection', colInfo.resourceAddress],
-            ['Request key', `${colInfo.resourceAddress}:#${colInfo.nextId}#`],
-            ['Required signers', String(args.requiredSigners!.length)],
+            ['Collection', colInfo!.resourceAddress],
+            ['Request key', formatRequestKey(colInfo!.resourceAddress, colInfo!.nextId)],
+            ['Required signers', String(effectiveSigners.length)],
           );
         } else {
-          manifest = buildSignatureMintManifest({
+          const issuer =
+            !colInfo && (args.orgName || args.orgUrl || args.logoUrl)
+              ? {
+                  orgName: args.orgName?.trim() || undefined,
+                  orgWebsite: args.orgUrl?.trim() || undefined,
+                  orgLogoUrl: args.logoUrl?.trim() || undefined,
+                }
+              : undefined;
+          manifest = buildSignatureOrFirstCollectionManifest({
             account,
             sealGlobalId,
-            collection: colInfo.resourceAddress,
-            nextId: colInfo.nextId,
+            sealAddress: sealAddr,
+            collection: colInfo?.resourceAddress ?? null,
+            nextId: colInfo?.nextId,
             docHash: args.docHash,
             networkId,
             request: normalizedRequest,
-            imageUrl: SEAL_IMAGE_URL,
+            imageUrl: args.logoUrl?.trim() || SEAL_IMAGE_URL,
             issuedAt,
+            collectionName: args.name?.trim() || args.orgName?.trim() || '',
+            symbol: args.symbol,
+            issuer,
+            extraMetadata: args.customMetadata,
           });
           summaryRows.push(
             ['Account', account],
-            ['Collection', colInfo.resourceAddress],
-            ['Signature NFT', `${colInfo.resourceAddress}:#${colInfo.nextId}#`],
+            [
+              'Collection',
+              colInfo
+                ? colInfo.resourceAddress
+                : '(created inline with first signature #1#)',
+            ],
+            [
+              'Signature NFT',
+              colInfo
+                ? formatRequestKey(colInfo.resourceAddress, colInfo.nextId)
+                : '#1# (in newly created collection)',
+            ],
             ['Request', normalizedRequest || '(solo signature)'],
           );
         }

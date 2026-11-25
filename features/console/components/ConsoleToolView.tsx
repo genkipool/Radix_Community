@@ -79,6 +79,7 @@ import ClaimPackageRoyaltiesTool from './tools/ClaimPackageRoyaltiesTool';
 import McpTool from './tools/McpTool';
 import SignCollectionTool from './tools/SignCollectionTool';
 import SignDocumentTool from './tools/SignDocumentTool';
+import SignAuditTool from './tools/SignAuditTool';
 import EncryptDocumentTool from './tools/EncryptDocumentTool';
 import ChatTool from './tools/ChatTool';
 import AddressBookTool from './tools/AddressBookTool';
@@ -135,6 +136,7 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   mcp: McpTool,
   'sign-collection': SignCollectionTool,
   'sign-document': SignDocumentTool,
+  'sign-audit': SignAuditTool,
   'encrypt-document': EncryptDocumentTool,
   chat: ChatTool,
 };

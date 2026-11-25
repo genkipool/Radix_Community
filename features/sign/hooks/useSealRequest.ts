@@ -147,6 +147,42 @@ export function useSignCollections(account: string | null, enabled: boolean) {
   };
 }
 
+/**
+ * Discovers signing collections across ALL shared wallet accounts at once,
+ * sharing the exact same react-query cache keys as `useSignCollections` and
+ * deduplicating by `resourceAddress`.
+ */
+export function useAllAccountsSignCollections(
+  accounts: string[],
+  enabled: boolean,
+) {
+  const { activeNetworkId } = useRadixWallet();
+  const results = useQueries({
+    queries: accounts.map((account) => ({
+      queryKey: ['sign-collections', activeNetworkId, account],
+      enabled: enabled && !!account && !!activeNetworkId,
+      queryFn: () => findSignCollections(activeNetworkId!, account),
+      staleTime: 30_000,
+    })),
+  });
+
+  const seen = new Set<string>();
+  const collections: UserSignCollection[] = [];
+  for (const res of results) {
+    for (const col of res.data ?? []) {
+      if (!seen.has(col.resourceAddress)) {
+        seen.add(col.resourceAddress);
+        collections.push(col);
+      }
+    }
+  }
+
+  return {
+    collections,
+    loading: results.some((r) => r.isFetching),
+  };
+}
+
 /** Every seal the account holds, so a second one can be chosen deliberately. */
 export function useUserSeals(account: string | null) {
   const { activeNetworkId } = useRadixWallet();

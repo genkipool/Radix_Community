@@ -358,7 +358,7 @@
               "saas": "Verificación por correo, SMS o KYC según el plan",
               "pki": "Identidad validada por una autoridad (QES)",
               "pgp": "Sin verificación; confianza entre pares",
-              "seal": "Autodeclarada por la wallet; sin vinculación legal",
+              "seal": "Dominio verificable vía .well-known / DNS TXT; sin vinculación legal QES",
               "winner": "pki",
               "expKey": "identity"
             },
@@ -393,7 +393,7 @@
         "timestamp": "Al anclar, la marca de tiempo la fija el consenso de la red y no la controla ninguna empresa. Una firma fuera del ledger lleva un sello RFC 3161 de una autoridad de sellado, sin coste ni suscripción. En ambos casos la verificación contrasta la fecha declarada contra ese reloj independiente y avisa si no cuadran.",
         "longevity": "La prueba vive en un ledger público replicado por cientos de nodos: no caduca con un certificado ni desaparece si un proveedor cierra.",
         "cost": "Sin suscripciones ni pago por documento: solo la comisión de red, una fracción de céntimo. PGP también es gratuito, pero su coste operativo en gestión de claves y formación es alto.",
-        "identity": "La PKI cualificada cubre algo que Radix Seal hoy no: una autoridad valida la identidad legal del firmante y la normativa (eIDAS QES) le otorga el máximo valor probatorio. Radix Seal prueba el control de la cuenta, no quién eres legalmente (cuando llegue idOS a Radix, esta diferencia se estrecha).",
+        "identity": "La PKI cualificada cubre la identidad legal (eIDAS QES). En Radix Seal cualquier organización puede ya demostrar de forma abierta y sin custodia que su colección pertenece a su dominio oficial publicando /.well-known/radix-seal.json o un registro DNS TXT, sin depender de terceros (y cuando llegue idOS a Radix, también podrá vincularse identidad personal verificada).",
         "ease": "Las suites en la nube tienen menos fricción para el firmante ocasional: un enlace en el correo y listo. Radix Seal pide instalar una wallet y una preparación única antes de la primera firma.",
         "workflow": "Años de producto dan a las suites SaaS plantillas, recordatorios automáticos y decenas de integraciones. Radix Seal cubre hoy el flujo esencial de invitar, firmar y verificar."
       }
@@ -458,7 +458,14 @@
       "officialTitle": "Recurso oficial de Radix Seal",
       "officialHint": "El recurso de marca auténtico en cada red. Una colección de firma solo es auténtica si sus metadatos referencian una de estas direcciones. Confirma la dirección antes de confiar en una colección.",
       "officialExplorer": "Ver el recurso en el explorador",
-      "officialCopy": "Copiar"
+      "officialCopy": "Copiar",
+      "domainTitle": "Verificación de dominio sin custodia",
+      "domainBadge": "Sin NFT extra · Sin intermediarios",
+      "domainHint": "Cualquier empresa, particular o administración puede vincular su colección de firma a su dominio web oficial sin pedir permiso ni depender de esta web. Al verificar un documento o abrir la auditoría (en web o MCP), se comprueba automáticamente el dominio en vivo y se muestra el sello de dominio verificado.",
+      "domainWellKnownLabel": "Opción A · https://<tu-dominio>/.well-known/radix-seal.json",
+      "domainDnsLabel": "Opción B · Registro DNS TXT",
+      "domainNote": "Basta con publicar una de las dos opciones. Al ser 100% descentralizado, si rotas de colección solo actualizas tu archivo o registro DNS y la revocación es inmediata.",
+      "domainCta": "Configurar en tu colección"
     },
     "anatomy": {
       "label": "Anatomía del sello",

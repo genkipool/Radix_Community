@@ -456,6 +456,10 @@
         "subtitle": "The collection belongs to your seal, so the wallet holding it is needed to view and manage it."
       },
       "accountLabel": "Account",
+      "stokenetFill": {
+        "label": "Fill test data",
+        "title": "Stokenet only: fills editable fields with coherent random data for quick testing"
+      },
       "seals": {
         "title": "Your seal",
         "hint": "The soulbound insignia that commands your collections. It can never be transferred or burned.",
@@ -473,7 +477,13 @@
         "active": "Active",
         "use": "Use this one",
         "severalNote": "You hold more than one collection. Invitations and signatures already issued stay in theirs: switching the active one does not move them, it only decides where the next ones are minted.",
-        "untitled": "Untitled collection"
+        "untitled": "Untitled collection",
+        "domainVerified": "Verified",
+        "domainUnverified": "Not verified",
+        "domainChecking": "Checking…",
+        "domainVerifiedTooltip": "Verified domain: {domain} (confirmed via {method})",
+        "domainUnverifiedTooltip": "Domain {domain} does not publish a declaration for this collection yet. Configure it under Issuer identity.",
+        "domainNoUrlTooltip": "No organisation website set. Add an HTTPS URL under Issuer identity to verify your domain."
       },
       "create": {
         "title": "New signing collection",
@@ -526,11 +536,35 @@
         "editableBadge": "Editable",
         "otherTitle": "The collection’s other metadata",
         "otherHint": "Everything else the collection carries on-ledger, including whatever you added yourself when you created it. Locked keys can never change, not even by you.",
-        "saveHint": "Pressing this sends a signature request to the wallet on your phone. Nothing changes on-ledger until you approve it."
+        "saveHint": "Pressing this sends a signature request to the wallet on your phone. Nothing changes on-ledger until you approve it.",
+        "domainVerify": {
+          "title": "Domain verification",
+          "hint": "Prove that this signing collection officially belongs to your web domain with zero intermediaries and no extra NFTs. Works identically on Mainnet and Stokenet and every verifier (Web or MCP) checks it live automatically.",
+          "verifiedBadge": "Verified",
+          "unverifiedBadge": "Not verified",
+          "checkingBadge": "Checking…",
+          "badgeTooltip": "Click to view domain verification status and setup instructions",
+          "closeLabel": "Close panel",
+          "collectionLabel": "Collection",
+          "needUrl": "Save an HTTPS URL under «Organisation website» (e.g. https://yourcompany.com) to generate your domain verification instructions.",
+          "checkNow": "Check now",
+          "checking": "Checking…",
+          "verifiedStatus": "Verified domain: {domain} (confirmed via {method})",
+          "unverifiedStatus": "No matching declaration found on {domain} yet. Publish either option below and check again.",
+          "checkError": "Could not check the domain right now. Please try again in a few seconds.",
+          "wellKnownTitle": "Option A · JSON file on your website (.well-known)",
+          "dnsTitle": "Option B · DNS TXT record",
+          "note": "Publishing either option is enough. Because it is 100% decentralized, switching collections only takes updating your file or DNS record — effective immediately.",
+          "accountOptionalNote": "No need to include your account: binding just the collection is recommended when one account manages several identities (\"accounts\" in JSON or account=account_… in DNS TXT is also optionally supported)."
+        }
       },
       "audit": {
+        "domainVerified": {
+          "badge": "Verified domain",
+          "tooltip": "Domain ownership of {domain} confirmed live via {method}"
+        },
         "intro": {
-          "title": "Institutional audit & registry",
+          "title": "Signature audit & registry",
           "body": "Read-only compliance registry reconstructed directly from the public Radix ledger. Every batch of invitations is cross-checked against each signer's own Seal collection to verify real signatures, consensus timestamps, and custody integrity without any central server."
         },
         "selector": {
@@ -555,16 +589,18 @@
           "refresh": "Refresh",
           "refreshing": "Refreshing…",
           "copyLink": "Share audit link",
+          "copyLinkTooltip": "Copy a direct read-only link to this audit (including active dates) so any auditor or client can inspect it without a wallet.",
           "linkCopied": "Audit link copied",
           "explorerLink": "Explorer",
           "exportButton": "Export report",
+          "exportTooltip": "Download this audit as an official PDF report, CSV tables (records or signers), or a SHA-256 verifiable JSON package.",
           "exportPdf": "Official Audit Report (PDF)",
           "exportCsvRecords": "Records Registry (CSV)",
           "exportCsvSigners": "Signers Directory (CSV)",
           "exportJson": "Verifiable Package (JSON + SHA-256)",
           "includeAliasesLabel": "Include local Address Book aliases",
           "includeAliasesHint": "Local labels live only in this browser (GDPR) and are never recorded on-ledger.",
-          "customMetaTitle": "On-ledger institutional metadata"
+          "customMetaTitle": "Custom on-ledger metadata"
         },
         "integrity": {
           "title": "Cryptographic integrity",
@@ -595,6 +631,18 @@
           },
           "from": "From",
           "to": "To",
+          "dateRangePlaceholder": "Select dates",
+          "calendar": {
+            "month": "Month",
+            "year": "Year",
+            "weekdays": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+            "reset_button": "Clear dates",
+            "apply_button": "Apply",
+            "start_date": "Start date",
+            "end_date": "End date",
+            "range_placeholder": "Select dates"
+          },
+          "closePopup": "Close",
           "categoryLabel": "Operation type",
           "categories": {
             "all": "All types",
@@ -613,7 +661,11 @@
           },
           "searchPlaceholder": "Search by hash, txid, request key, address or local alias…",
           "fileLookupButton": "Locate file locally",
-          "fileLookupHint": "Hashes the file in your browser (never uploaded) to find its records.",
+          "fileLookupHint": "Select a file from your device to compute its BLAKE2b-256 hash locally in your browser (never uploaded) and immediately filter matching records.",
+          "categoryTooltip": "Filter records by on-ledger operation type (multi-party request, direct signature, co-signature, or encryption).",
+          "statusTooltip": "Filter records by compliance status (complete, pending/partial, recorded, or with alerts).",
+          "periodTooltip": "Filter records by ledger consensus date range (UTC). Highlighted days have on-ledger activity.",
+          "clearAllTooltip": "Clear search text, date range, matched file, and all active filters.",
           "fileLookupMatched": "Filtering by file hash ({name})",
           "fileLookupClear": "Clear file",
           "clearAll": "Reset filters",
@@ -621,8 +673,28 @@
           "clearSigner": "Clear"
         },
         "subtabs": {
-          "records": "Records registry",
-          "signers": "Signers directory"
+          "overview": "Overview",
+          "records": "Records",
+          "signers": "Signers & NFTs",
+          "integrity": "Integrity & privacy"
+        },
+        "tooltips": {
+          "collectionAddress": "Public Radix address of this signing collection (NFT resource).",
+          "issuerAccount": "Verified Radix account holding the Seal badge that owns this collection.",
+          "ledgerCutoff": "Exact Radix ledger state version at which this audit snapshot was taken.",
+          "colDate": "Exact date and time when the Radix network confirmed this operation by consensus (UTC).",
+          "colType": "On-ledger record type: multi-party request, direct signature, co-signature, or encrypted custody.",
+          "colDocument": "BLAKE2b-256 cryptographic fingerprint of the document. The original file is never uploaded to the blockchain.",
+          "colStatus": "Overall on-ledger record status (complete, partial, pending, recorded, or alert).",
+          "colSignatures": "Signature or authorization breakdown: how many are signed and how many are still pending.",
+          "colTx": "Radix ledger transaction identifier (click to inspect it in the explorer).",
+          "colDetails": "Expand to inspect signers, linked NFTs, and — if signatures are pending — the signing link & P2P channel.",
+          "colParticipant": "Participating Radix account and optional local label (stored only in your browser).",
+          "colSeal": "Shows whether this account holds a verified official Radix Seal badge and its own signing collection.",
+          "colNfts": "Seal badge, owned collections, and invitation or signature NFTs tied to this account.",
+          "colActivity": "Summary of completed signatures versus pending invitations in this collection.",
+          "colLastActivity": "UTC date of the latest invitation or signature recorded for this account.",
+          "colSignerActions": "Filter the Records tab to show only documents involving this account."
         },
         "records": {
           "empty": "This collection has no on-ledger records yet.",
@@ -632,6 +704,7 @@
             "type": "Operation",
             "document": "Document hash",
             "compliance": "Status",
+            "signatures": "Signatures",
             "tx": "Transaction",
             "actions": "Details"
           },
@@ -643,6 +716,14 @@
             "cipher_invite": "Decryption authorization",
             "cipher_receipt": "Decryption receipt"
           },
+          "kindDescriptions": {
+            "multi_request": "On-ledger invitation batch requesting one or more accounts to sign the same document.",
+            "solo_signature": "Single-party signature recorded directly by the holder without a prior invitation.",
+            "cosign_signature": "Signature issued in response to a signing request created by another collection.",
+            "cipher_signature": "On-ledger record of an encrypted file attesting its integrity.",
+            "cipher_invite": "On-ledger permission authorizing specific accounts to decrypt and open this protected file with their wallet.",
+            "cipher_receipt": "On-ledger receipt certifying file reception or decryption."
+          },
           "status": {
             "complete": "Complete",
             "partial": "Partial",
@@ -650,14 +731,56 @@
             "recorded": "Recorded",
             "anomaly": "Alert"
           },
+          "statusDescriptions": {
+            "complete": "All invited signers have completed their signatures on the blockchain.",
+            "partial": "Some signers have already signed, while others are still pending to complete this record.",
+            "pending": "Invitations are recorded on-chain, but no signer has submitted a signature yet.",
+            "recorded": "Single on-ledger record confirmed on the blockchain (direct signature or encryption record; no extra signatures required).",
+            "anomaly": "An integrity alert was detected on this record. Expand the row to inspect details."
+          },
           "progress": "{signed}/{total} signed",
+          "pendingProgress": "Pending {signed}/{total}",
+          "signedProgress": "Signed {signed}/{total}",
+          "pendingShort": "{count} pending",
+          "authorized": "Authorized",
+          "signatureDescriptions": {
+            "multiComplete": "All required signers ({signed} of {total}) have recorded their signatures on the blockchain.",
+            "multiPending": "{signed} of {total} signers have signed so far. {pending} signature(s) still pending.",
+            "solo": "Direct single-party signature recorded and verified on-ledger by its holder (no multi-party invitation).",
+            "authorized": "On-ledger permission allowing the recipient account to unlock and open this encrypted file with their Radix wallet. No signature is required.",
+            "cipherRecorded": "Cryptographic fingerprint of an encrypted file anchored on-ledger to attest its integrity (no signatures required)."
+          },
           "signedOn": "Signed",
           "pendingSigners": "Awaiting signature",
           "requestKeyLabel": "Request key",
+          "requestKeyTooltip": "Copy this request key to send it to another user; they can paste it into the Verify tab (under «Check a signature on the ledger») to check who has signed the file and confirm it is recorded on-chain.",
           "nftIdsLabel": "Collection NFTs",
+          "inviteNftLabel": "Invite NFT",
+          "signatureNftLabel": "Signature NFT",
           "openVerifier": "Open in Verifier",
           "viewTx": "View tx",
           "viewNft": "View NFT",
+          "pendingPanel": {
+            "title": "{count} signature(s) still pending",
+            "hint": "Share this link or QR code with pending signers. If they already have the file on their device they can sign directly; if you attached it on the left, they will receive it automatically upon opening the link.",
+            "openToSign": "Open to sign",
+            "copyLink": "Copy signing link",
+            "copied": "Copied",
+            "shareNative": "Share",
+            "qrLabel": "Show signing QR code",
+            "qrHint": "Scan with your phone to open this signing request.",
+            "p2pTitle": "1. Send file via direct P2P channel (optional)",
+            "p2pHint": "To sign using the shared link, the recipient needs the document on their device. If you haven't sent it by email or another channel yet, attach the original file here to open an encrypted browser-to-browser channel, then share the link on the right.",
+            "p2pSelectFile": "Attach file & open P2P channel",
+            "p2pReadyBanner": "File verified & P2P channel ready! You can now share the link or QR code on the right (keep this tab open while they download and sign the file).",
+            "p2pHashMismatch": "The selected file does not match this record's BLAKE2b-256 hash.",
+            "p2pWaiting": "Waiting for a signer to open the link…",
+            "p2pSending": "Streaming encrypted document over WebRTC…",
+            "p2pDelivered": "Delivered directly to {count} signer(s) · channel stays open",
+            "p2pError": "Reconnecting P2P channel…",
+            "p2pStop": "Close channel",
+            "p2pResume": "Resume channel"
+          },
           "anomalies": {
             "incomplete_invite_batch": "Incomplete invitation batch: expected signer count does not match intact NFTs.",
             "clock_mismatch": "Declared NFT timestamp differs from the network consensus time."
@@ -675,6 +798,7 @@
           "columns": {
             "participant": "Participant & address",
             "seal": "Radix Seal status",
+            "activity": "Activity",
             "invited": "Invited",
             "signed": "Signed",
             "pending": "Pending",
@@ -691,7 +815,51 @@
           "aliasPlaceholder": "e.g. Jane Doe — Comptroller",
           "saveToBook": "Save to Address Book",
           "savedInBook": "In Address Book",
-          "filterBySigner": "View records"
+          "filterBySigner": "View records",
+          "columns_nfts": "NFTs & collections",
+          "sealNftLabel": "Seal Badge",
+          "ownCollectionLabel": "Own collection",
+          "inviteNftBadge": "Invite",
+          "signatureNftBadge": "Signature",
+          "noNftsYet": "No NFTs recorded yet",
+          "nftsToggle": "{count} NFT(s)"
+        },
+        "integrityTab": {
+          "checksTitle": "Cryptographic integrity checks",
+          "checksSubtitle": "Verified live against the resource's on-ledger role rules and metadata on the Radix network.",
+          "checkDetails": {
+            "standardMarker": "Protocol marker declared (radix_sign_collection = v1)",
+            "officialBrand": "Bound to the official Radix Seal brand resource on this network",
+            "ownerLocked": "Owner role permanently locked (only the Seal badge can mint)",
+            "issuerVerified": "Issuing account verified as current holder of the owning Seal badge",
+            "burnDenied": "NFT burn permanently denied on the resource (records cannot be deleted)",
+            "dataImmutable": "Non-fungible item fields immutable after minting",
+            "zeroBurned": "Zero burned NFTs across the collection's full supply history",
+            "domainTitleOk": "Custody-free web domain verified",
+            "domainTitleUnverified": "Domain verification (optional)",
+            "domainStatusVerified": "VERIFIED",
+            "domainStatusUnverified": "NOT VERIFIED",
+            "domainUrlConfigured": "Organisation website configured (org_url)",
+            "domainProofLive": "Live public declaration confirmed (.well-known or DNS TXT)",
+            "domainOpenGuide": "View instructions & check domain",
+            "yes": "Pass",
+            "no": "Check"
+          },
+          "domainSummaryLabel": "Domain verification",
+          "metadataTitle": "Custom on-ledger metadata",
+          "metadataTooltip": "Optional key-value fields (such as department, project, or internal reference) defined when creating the collection and stored directly in the resource's on-ledger metadata.",
+          "noMetadata": "This collection does not declare additional custom metadata fields.",
+          "collectionSummaryTitle": "Technical collection summary",
+          "totalSupplyLabel": "Total NFTs minted (supply)",
+          "burnedLabel": "Burned NFTs",
+          "networkLabel": "Ledger network",
+          "privacyTitle": "Data provenance & privacy (GDPR)",
+          "onchainTitle": "100% verified on-chain",
+          "onchainBody": "Every record, BLAKE2b-256 hash, invitation, signature, NFT, Radix account, and consensus timestamp is read live from the public Radix ledger. There is no central database.",
+          "browserTitle": "Browser-only (local)",
+          "browserBody": "Only the human labels you assign in your local Address Book (localStorage) and optional WebRTC P2P file transfers (in RAM while this tab is open) stay on your device.",
+          "sensitiveTitle": "Is any sensitive information stored on the blockchain?",
+          "sensitiveBody": "No. Neither the original document nor personal data (names, IDs, emails) is ever written on-chain. Only irreversible BLAKE2b-256 hashes and public Radix addresses live on the ledger."
         },
         "states": {
           "loading": "Auditing collection against the Radix ledger…",
@@ -702,11 +870,12 @@
           "emptyCollectionHint": "The collection passes integrity checks, and records will appear here as soon as documents are signed or invitations sent."
         },
         "pdf": {
-          "title": "Radix Seal · Institutional Audit Report",
+          "title": "Radix Seal · Audit Report",
           "tagline": "On-ledger verifiable registry — generated locally with zero central custody",
           "testnetWarning": "TESTNET ENVIRONMENT (STOKENET) — TEST RECORDS ONLY, NOT PRODUCTION EVIDENCE",
           "scopeSection": "1. Audit scope & ledger cutoff",
-          "institution": "Institution",
+          "institution": "Holder / Issuer",
+          "verifiedDomain": "Verified domain",
           "collection": "Signing collection",
           "issuerAccount": "Verified issuing account",
           "network": "Network",

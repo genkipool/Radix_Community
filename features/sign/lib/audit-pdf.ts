@@ -7,15 +7,17 @@
  * security guarantees with individual Radix Seal signature certificates.
  */
 import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
-import type { Network } from '@/features/dashboard/types';
-import type {
-  AuditFilterState,
-  AuditKpis,
-  AuditRecord,
-  AuditSignerSummary,
-  CollectionAuditResponse,
+import { truncateAddress } from '@/utils/formatters';
+import {
+  evaluateIntegritySummary,
+  type AuditFilterState,
+  type AuditKpis,
+  type AuditRecord,
+  type AuditSignerSummary,
+  type CollectionAuditResponse,
 } from './collection-audit';
 import { explorerTxUrl } from './explorer';
+import { optionalNetworkNameForId } from './network';
 import {
   ACCENT,
   CONTENT_W,
@@ -45,6 +47,7 @@ export interface AuditPdfLabels {
   testnetWarning: string;
   scopeSection: string;
   institution: string;
+  verifiedDomain?: string;
   collection: string;
   issuerAccount: string;
   network: string;
@@ -103,21 +106,11 @@ export interface AuditPdfInput {
   accent?: Rgb01;
 }
 
-function explorerNet(networkId: number): Network | undefined {
-  if (networkId === RadixNetworkId.Mainnet) return 'mainnet';
-  if (networkId === RadixNetworkId.Stokenet) return 'stokenet';
-  return undefined;
-}
-
 function fmtUtc(iso: string | null | undefined, locale: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return `${d.toLocaleString(locale, { timeZone: 'UTC' })} UTC`;
-}
-
-function shortAddr(addr: string): string {
-  return addr.length > 26 ? `${addr.slice(0, 12)}…${addr.slice(-8)}` : addr;
 }
 
 /**
@@ -136,7 +129,7 @@ export async function buildAuditReportPdf(
   const { audit, records, signers, kpis, filters, labels: L, locale } = input;
   const accent: Rgb01 = input.accent ?? readBrandAccent() ?? ACCENT;
   const accentInk = readableOnWhite(accent);
-  const net = explorerNet(audit.networkId);
+  const net = optionalNetworkNameForId(audit.networkId);
   const networkName =
     NETWORKS[audit.networkId]?.networkName ?? `#${audit.networkId}`;
 
@@ -221,6 +214,19 @@ export async function buildAuditReportPdf(
     }
   }
 
+  if (
+    audit.issuer.domainVerification?.verified &&
+    audit.issuer.domainVerification.domain
+  ) {
+    const methodText =
+      audit.issuer.domainVerification.method === 'dns-txt'
+        ? 'DNS TXT'
+        : '.well-known/radix-seal.json';
+    cur.field(
+      L.verifiedDomain ?? 'Verified domain',
+      `${audit.issuer.domainVerification.domain} (${methodText})`,
+    );
+  }
   cur.field(L.collection, audit.collection, { mono: true });
   cur.field(L.issuerAccount, audit.issuer.account ?? '—', { mono: true });
   cur.field(
@@ -244,22 +250,11 @@ export async function buildAuditReportPdf(
 
   // ── 2. Cryptographic Integrity ──
   cur.sectionTitle(L.integritySection);
+  const integritySummary = evaluateIntegritySummary(audit.integrity);
   const checks: Array<{ label: string; ok: boolean }> = [
-    {
-      label: L.integrityStandard,
-      ok: audit.integrity.hasMarker && audit.integrity.officialBrand,
-    },
-    {
-      label: L.integrityCustody,
-      ok: audit.integrity.ownerLocked && audit.integrity.issuerVerified,
-    },
-    {
-      label: L.integrityImmutable,
-      ok:
-        audit.integrity.burnDenied &&
-        audit.integrity.dataImmutable &&
-        audit.integrity.totalBurned === 0,
-    },
+    { label: L.integrityStandard, ok: integritySummary.standardOk },
+    { label: L.integrityCustody, ok: integritySummary.custodyOk },
+    { label: L.integrityImmutable, ok: integritySummary.immutableOk },
   ];
   for (const chk of checks) {
     const badge = chk.ok ? L.integrityPass : L.integrityWarn;
@@ -368,7 +363,7 @@ export async function buildAuditReportPdf(
           const alias = input.includeAliases
             ? input.aliasOf?.(s.account)
             : undefined;
-          const who = alias ? `${alias} (${shortAddr(s.account)})` : s.account;
+          const who = alias ? `${alias} (${truncateAddress(s.account, 12, 8)})` : s.account;
           const state = s.signed
             ? `${L.signedLabel} · ${fmtUtc(s.signedAt, locale)}`
             : L.pendingLabel;

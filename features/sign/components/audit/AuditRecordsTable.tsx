@@ -6,17 +6,15 @@ import {
   BadgeCheck,
   CheckCircle2,
   ChevronDown,
-  Circle,
   Clock,
   ExternalLink,
   FileSignature,
   Lock,
-  ShieldCheck,
 } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { truncateAddress } from '@/utils/formatters';
 import type { AuditRecord } from '../../lib/collection-audit';
+import { splitNftGlobalId } from '../../lib/network';
 import {
   auditKindLabel,
   auditStatusLabel,
@@ -26,19 +24,16 @@ import {
   verifierHref,
   type AuditLabels,
 } from './AuditFormatters';
+import { PendingSignerSharePanel } from './PendingSignerSharePanel';
 
-function StatusBadge({
+function StatusCell({
   status,
   labels,
-  progress,
 }: {
   status: AuditRecord['status'];
   labels: AuditLabels;
-  progress?: string;
 }) {
-  const text = progress
-    ? `${auditStatusLabel(labels, status)} · ${progress}`
-    : auditStatusLabel(labels, status);
+  const text = auditStatusLabel(labels, status);
 
   const color =
     status === 'complete' || status === 'recorded'
@@ -56,28 +51,99 @@ function StatusBadge({
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap"
-      style={{
-        background: `color-mix(in srgb, ${color} 12%, transparent)`,
-        color,
-      }}
+      className="inline-flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap cursor-help"
+      style={{ color }}
+      title={labels.records.statusDescriptions[status]}
     >
-      <Icon className="size-3 shrink-0" />
+      <Icon className="size-3.5 shrink-0" />
       <span>{text}</span>
+    </span>
+  );
+}
+
+function SignaturesCell({
+  rec,
+  labels,
+}: {
+  rec: AuditRecord;
+  labels: AuditLabels;
+}) {
+  const desc = labels.records.signatureDescriptions;
+
+  if (rec.kind === 'multi_request') {
+    const pending = Math.max(0, rec.totalSigners - rec.signedCount);
+    const isComplete = pending === 0;
+    const text = isComplete
+      ? labels.records.signedProgress
+          .replace('{signed}', String(rec.signedCount))
+          .replace('{total}', String(rec.totalSigners))
+      : labels.records.pendingProgress
+          .replace('{signed}', String(rec.signedCount))
+          .replace('{total}', String(rec.totalSigners));
+
+    const tooltip = isComplete
+      ? desc.multiComplete
+          .replace('{signed}', String(rec.signedCount))
+          .replace('{total}', String(rec.totalSigners))
+      : desc.multiPending
+          .replace('{signed}', String(rec.signedCount))
+          .replace('{total}', String(rec.totalSigners))
+          .replace('{pending}', String(pending));
+
+    return (
+      <span
+        className="text-xs font-semibold whitespace-nowrap tabular-nums cursor-help"
+        style={{
+          color: isComplete ? 'var(--color-success)' : 'var(--color-warning)',
+        }}
+        title={tooltip}
+      >
+        {text}
+      </span>
+    );
+  }
+  if (rec.kind === 'solo_signature' || rec.kind === 'cosign_signature') {
+    return (
+      <span
+        className="text-xs font-semibold text-[var(--color-success)] whitespace-nowrap cursor-help"
+        title={desc.solo}
+      >
+        {labels.records.signedOn}
+      </span>
+    );
+  }
+  if (rec.kind === 'cipher_invite') {
+    return (
+      <span
+        className="text-xs font-medium text-[var(--color-primary)] whitespace-nowrap cursor-help"
+        title={desc.authorized}
+      >
+        {labels.records.authorized}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="text-xs text-[var(--color-text-muted)] whitespace-nowrap cursor-help"
+      title={desc.cipherRecorded}
+    >
+      {labels.records.status.recorded}
     </span>
   );
 }
 
 function KindIcon({ kind }: { kind: AuditRecord['kind'] }) {
   if (kind.startsWith('cipher')) {
-    return <Lock className="size-3.5 shrink-0" style={{ color: 'var(--color-text-muted)' }} />;
+    return <Lock className="size-3.5 shrink-0 text-[var(--color-text-muted)]" />;
   }
-  return <FileSignature className="size-3.5 shrink-0" style={{ color: 'var(--color-primary)' }} />;
+  return <FileSignature className="size-3.5 shrink-0 text-[var(--color-primary)]" />;
 }
 
 /**
- * Clean hairline audit registry table (desktop) with responsive stacked rows
- * (mobile) and inline expandable per-signer verification details.
+ * Audit records table styled identically to the dashboard's transactions table:
+ * flat surface header, theme hairlines, subtle hover accent, truncated hashes
+ * with full `title` tooltips, and a structured sub-table drawer (zero left
+ * borders, zero ambiguous checkmarks next to addresses).
  */
 export function AuditRecordsTable({
   records,
@@ -119,13 +185,7 @@ export function AuditRecordsTable({
 
   if (records.length === 0) {
     return (
-      <div
-        className="border-t py-10 text-center text-sm"
-        style={{
-          borderColor: 'var(--color-card-border)',
-          color: 'var(--color-text-muted)',
-        }}
-      >
+      <div className="border-t border-[var(--color-card-border)] py-10 text-center text-sm text-[var(--color-text-muted)]">
         {hasFilters ? labels.records.emptyFiltered : labels.records.empty}
       </div>
     );
@@ -133,94 +193,164 @@ export function AuditRecordsTable({
 
   return (
     <div className="space-y-4">
-      {/* Desktop hairline table */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-collapse">
+      {/* Desktop dashboard-style table (table-fixed locks column widths so expanding never shifts rows) */}
+      <div className="hidden md:block w-full">
+        <table className="w-full table-fixed text-left border-collapse">
+          <colgroup>
+            <col className="w-[17%]" />
+            <col className="w-[22%]" />
+            <col className="w-[16%]" />
+            <col className="w-[13%]" />
+            <col className="w-[15%]" />
+            <col className="w-[17%]" />
+          </colgroup>
           <thead>
-            <tr
-              className="border-y text-left text-[10px] font-bold uppercase tracking-wider"
-              style={{
-                borderColor: 'var(--color-card-border)',
-                color: 'var(--color-text-muted)',
-              }}
-            >
-              <th className="py-2.5 pr-3">{labels.records.columns.date}</th>
-              <th className="py-2.5 px-3">{labels.records.columns.type}</th>
-              <th className="py-2.5 px-3">{labels.records.columns.document}</th>
-              <th className="py-2.5 px-3">{labels.records.columns.compliance}</th>
-              <th className="py-2.5 px-3">{labels.records.columns.tx}</th>
-              <th className="py-2.5 pl-3 text-right">{labels.records.columns.actions}</th>
+            <tr className="border-b border-[var(--color-card-border)] text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] bg-[var(--color-surface)]/40">
+              <th className="py-3 px-2.5 lg:px-3 font-semibold" title={labels.tooltips.colDate}>
+                {labels.records.columns.date}
+              </th>
+              <th className="py-3 px-2.5 lg:px-3 font-semibold" title={labels.tooltips.colType}>
+                {labels.records.columns.type}
+              </th>
+              <th className="py-3 px-2.5 lg:px-3 font-semibold" title={labels.tooltips.colDocument}>
+                {labels.records.columns.document}
+              </th>
+              <th className="py-3 px-2.5 lg:px-3 font-semibold" title={labels.tooltips.colStatus}>
+                {labels.records.columns.compliance}
+              </th>
+              <th className="py-3 px-2.5 lg:px-3 font-semibold" title={labels.tooltips.colSignatures}>
+                {labels.records.columns.signatures}
+              </th>
+              <th className="py-3 px-2.5 lg:px-3 font-semibold text-right" title={labels.tooltips.colTx}>
+                {labels.records.columns.tx}
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y" style={{ borderColor: 'var(--color-card-border)' }}>
-            {records.map((rec) => {
-              const isOpen = expanded.has(rec.id);
-              const ts = formatUtcTimestamp(rec.committedAt, locale);
-              const progress =
-                rec.kind === 'multi_request'
-                  ? labels.records.progress
-                      .replace('{signed}', String(rec.signedCount))
-                      .replace('{total}', String(rec.totalSigners))
-                  : undefined;
+          {records.map((rec) => {
+            const isOpen = expanded.has(rec.id);
+            const ts = formatUtcTimestamp(rec.committedAt, locale);
 
-              return (
-                <RecordRowGroup
-                  key={rec.id}
-                  rec={rec}
-                  isOpen={isOpen}
-                  ts={ts}
-                  progress={progress}
-                  networkId={networkId}
-                  locale={locale}
-                  labels={labels}
-                  aliasOf={aliasOf}
-                  onToggle={() => toggle(rec.id)}
-                />
-              );
-            })}
-          </tbody>
+            return (
+              <tbody
+                key={rec.id}
+                className="border-b border-[var(--color-card-border)] transition-colors text-xs last:border-b-0"
+              >
+                <tr
+                  className="cursor-pointer group transition-colors hover:bg-[var(--color-surface)]"
+                  style={{
+                    background:
+                      'color-mix(in srgb, var(--color-surface) 75%, transparent)',
+                  }}
+                  onClick={() => toggle(rec.id)}
+                >
+                  <td
+                    className="py-3 px-2.5 lg:px-3 text-[11px] text-[var(--color-text-main)] tabular-nums whitespace-nowrap"
+                    title={`${ts.utc} (${ts.local})`}
+                  >
+                    {ts.utc}
+                  </td>
+                  <td
+                    className="py-3 px-2.5 lg:px-3"
+                    title={labels.records.kindDescriptions[rec.kind]}
+                  >
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-text-main)]">
+                      <KindIcon kind={rec.kind} />
+                      <span>{auditKindLabel(labels, rec.kind)}</span>
+                    </span>
+                  </td>
+                  <td className="py-3 px-2.5 lg:px-3 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--color-text-main)]">
+                      <span title={rec.docHash}>{truncateAddress(rec.docHash, 6, 4)}</span>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <CopyButton value={rec.docHash} variant="minimal" size="xs" />
+                      </span>
+                    </span>
+                  </td>
+                  <td className="py-3 px-2.5 lg:px-3 whitespace-nowrap">
+                    <StatusCell status={rec.status} labels={labels} />
+                  </td>
+                  <td className="py-3 px-2.5 lg:px-3">
+                    <SignaturesCell rec={rec} labels={labels} />
+                  </td>
+                  <td className="py-3 px-2.5 lg:px-3 whitespace-nowrap text-right">
+                    <div className="inline-flex items-center justify-end gap-1.5">
+                      {rec.txId ? (
+                        <div className="inline-flex items-center gap-1">
+                          <a
+                            href={txExplorerHref(locale, rec.txId, networkId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={rec.txId}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-mono text-[11px] text-[var(--color-primary)] hover:underline"
+                          >
+                            {truncateAddress(rec.txId, 6, 4)}
+                          </a>
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <CopyButton value={rec.txId} variant="minimal" size="xs" />
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[var(--color-text-muted)]">-</span>
+                      )}
+                      <ChevronDown
+                        className={`size-4 shrink-0 text-[var(--color-text-muted)] transition-transform ${
+                          isOpen ? 'rotate-180 text-[var(--color-primary)]' : ''
+                        }`}
+                      />
+                    </div>
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr>
+                    <td colSpan={6} className="p-0">
+                      <RecordExpandedDetails
+                        rec={rec}
+                        networkId={networkId}
+                        locale={locale}
+                        labels={labels}
+                        aliasOf={aliasOf}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            );
+          })}
         </table>
       </div>
 
-      {/* Mobile stacked hairline list (360px–767px, zero horizontal scroll) */}
-      <div className="divide-y border-y md:hidden" style={{ borderColor: 'var(--color-card-border)' }}>
+      {/* Mobile stacked list */}
+      <div className="border-y border-[var(--color-card-border)] divide-y divide-[var(--color-card-border)] md:hidden">
         {records.map((rec) => {
           const isOpen = expanded.has(rec.id);
           const ts = formatUtcTimestamp(rec.committedAt, locale);
-          const progress =
-            rec.kind === 'multi_request'
-              ? labels.records.progress
-                  .replace('{signed}', String(rec.signedCount))
-                  .replace('{total}', String(rec.totalSigners))
-              : undefined;
 
           return (
             <div key={rec.id} className="py-3.5 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: 'var(--color-text-main)' }}>
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-main)]">
                     <KindIcon kind={rec.kind} />
                     <span>{auditKindLabel(labels, rec.kind)}</span>
                   </div>
-                  <p className="text-[11px] tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
+                  <p className="text-[11px] tabular-nums text-[var(--color-text-muted)]">
                     {ts.utc}
                   </p>
                 </div>
-                <StatusBadge status={rec.status} labels={labels} progress={progress} />
+                <StatusCell status={rec.status} labels={labels} />
               </div>
 
               <div className="flex items-center justify-between gap-2 text-xs">
-                <span className="inline-flex items-center gap-1 font-mono" style={{ color: 'var(--color-text-main)' }}>
-                  {truncateAddress(rec.docHash, 10, 8)}
-                  <CopyButton value={rec.docHash} variant="card-inline" size="xs" />
-                </span>
+                <SignaturesCell rec={rec} labels={labels} />
                 <button
                   type="button"
                   onClick={() => toggle(rec.id)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold"
-                  style={{ color: 'var(--color-primary)' }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)]"
                 >
-                  <span>{labels.records.columns.actions}</span>
+                  <span title={rec.docHash} className="font-mono text-[var(--color-text-muted)]">
+                    {truncateAddress(rec.docHash, 6, 4)}
+                  </span>
                   <ChevronDown className={`size-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
               </div>
@@ -241,7 +371,7 @@ export function AuditRecordsTable({
 
       {/* Pagination & range footer */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
-        <span className="tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
+        <span className="tabular-nums text-[var(--color-text-muted)]">
           {totalInCollection > 0
             ? labels.records.showingRange
                 .replace('{from}', String(scannedFromId))
@@ -255,118 +385,13 @@ export function AuditRecordsTable({
             type="button"
             disabled={loadingOlder}
             onClick={onLoadOlder}
-            className="inline-flex h-8 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors hover:border-[var(--color-primary)] disabled:opacity-50"
-            style={{
-              background: 'var(--color-surface)',
-              borderColor: 'var(--color-card-border)',
-              color: 'var(--color-text-main)',
-            }}
+            className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50"
           >
             {loadingOlder ? labels.records.loadingOlder : labels.records.loadOlder}
           </button>
         )}
       </div>
     </div>
-  );
-}
-
-function RecordRowGroup({
-  rec,
-  isOpen,
-  ts,
-  progress,
-  networkId,
-  locale,
-  labels,
-  aliasOf,
-  onToggle,
-}: {
-  rec: AuditRecord;
-  isOpen: boolean;
-  ts: { utc: string; local: string };
-  progress?: string;
-  networkId: number;
-  locale: string;
-  labels: AuditLabels;
-  aliasOf: (account: string) => string | undefined;
-  onToggle: () => void;
-}) {
-  return (
-    <>
-      <tr
-        className="transition-colors hover:bg-[var(--color-surface)]/70 cursor-pointer"
-        onClick={onToggle}
-      >
-        <td className="py-3 pr-3 align-top">
-          <div className="text-xs font-semibold tabular-nums" style={{ color: 'var(--color-text-main)' }}>
-            {ts.utc}
-          </div>
-          <div className="text-[11px] tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
-            {ts.local}
-          </div>
-        </td>
-        <td className="py-3 px-3 align-top">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--color-text-main)' }}>
-            <KindIcon kind={rec.kind} />
-            {auditKindLabel(labels, rec.kind)}
-          </span>
-        </td>
-        <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
-          <span className="inline-flex items-center gap-1 font-mono text-xs" style={{ color: 'var(--color-text-main)' }}>
-            {truncateAddress(rec.docHash, 10, 8)}
-            <CopyButton value={rec.docHash} variant="card-inline" size="xs" />
-          </span>
-        </td>
-        <td className="py-3 px-3 align-top">
-          <StatusBadge status={rec.status} labels={labels} progress={progress} />
-        </td>
-        <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
-          {rec.txId ? (
-            <a
-              href={txExplorerHref(locale, rec.txId, networkId)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-mono text-xs hover:underline"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              {truncateAddress(rec.txId, 8, 6)}
-              <ExternalLink className="size-3" />
-            </a>
-          ) : (
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              —
-            </span>
-          )}
-        </td>
-        <td className="py-3 pl-3 align-top text-right">
-          <button
-            type="button"
-            aria-expanded={isOpen}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-            }}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-[var(--color-surface)]"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            <ChevronDown className={`size-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-          </button>
-        </td>
-      </tr>
-      {isOpen && (
-        <tr>
-          <td colSpan={6} className="pb-4 pt-1">
-            <RecordExpandedDetails
-              rec={rec}
-              networkId={networkId}
-              locale={locale}
-              labels={labels}
-              aliasOf={aliasOf}
-            />
-          </td>
-        </tr>
-      )}
-    </>
   );
 }
 
@@ -383,24 +408,23 @@ function RecordExpandedDetails({
   labels: AuditLabels;
   aliasOf: (account: string) => string | undefined;
 }) {
+  const pendingCount = rec.signers.filter((s) => !s.signed).length;
+  const showPendingPanel =
+    rec.kind === 'multi_request' &&
+    !!rec.requestKey &&
+    (rec.status === 'pending' || rec.status === 'partial') &&
+    pendingCount > 0;
+
   return (
     <div
-      className="rounded-xl border p-4 space-y-3.5 text-xs"
+      className="border-t border-[var(--color-card-border)] px-4 py-4 md:px-6 space-y-4 text-xs"
       style={{
-        background: 'var(--color-surface)',
-        borderColor: 'var(--color-card-border)',
+        background: 'color-mix(in srgb, var(--color-bg) 60%, var(--color-card-bg))',
       }}
     >
       {/* Anomaly notices */}
       {rec.anomalies.length > 0 && (
-        <div
-          className="rounded-lg border px-3 py-2 space-y-1"
-          style={{
-            borderColor: 'var(--color-danger)',
-            background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
-            color: 'var(--color-danger)',
-          }}
-        >
+        <div className="space-y-1 text-[var(--color-danger)]">
           {rec.anomalies.map((code) => (
             <p key={code} className="flex items-start gap-1.5 font-semibold">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
@@ -410,46 +434,52 @@ function RecordExpandedDetails({
         </div>
       )}
 
-      {/* Technical metadata row */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5" style={{ color: 'var(--color-text-muted)' }}>
-          {rec.requestKey && (
-            <span className="inline-flex items-center gap-1.5">
-              <span>{labels.records.requestKeyLabel}:</span>
-              <code className="font-mono" style={{ color: 'var(--color-text-main)' }}>
-                {truncateAddress(rec.requestKey, 12, 8)}
-              </code>
-              <CopyButton value={rec.requestKey} variant="card-inline" size="xs" />
-            </span>
-          )}
-          <span>
-            {labels.records.nftIdsLabel}:{' '}
-            <code className="font-mono" style={{ color: 'var(--color-text-main)' }}>
-              {rec.nftIds.join(', ')}
-            </code>
-          </span>
-          {rec.clockAgrees !== null && (
+      {/* Structured technical metadata row: full width & vertically centered */}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        {rec.requestKey && (
+          <div className="space-y-0.5">
             <span
-              className="inline-flex items-center gap-1 font-medium"
+              className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] cursor-help"
+              title={labels.records.requestKeyTooltip}
+            >
+              {labels.records.requestKeyLabel}
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-mono text-[var(--color-text-main)]" title={rec.requestKey}>
+              {truncateAddress(rec.requestKey, 10, 6)}
+              <CopyButton value={rec.requestKey} variant="minimal" size="xs" />
+            </span>
+          </div>
+        )}
+
+        <div className="space-y-0.5">
+          <span className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            {labels.records.nftIdsLabel}
+          </span>
+          <code className="font-mono text-[var(--color-text-main)]">
+            {rec.nftIds.join(', ')}
+          </code>
+        </div>
+
+        {rec.clockAgrees !== null && (
+          <div className="space-y-0.5">
+            <span className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+              {labels.records.columns.date}
+            </span>
+            <span
+              className="font-semibold"
               style={{
                 color: rec.clockAgrees ? 'var(--color-success)' : 'var(--color-danger)',
               }}
             >
-              <ShieldCheck className="size-3.5" />
               {rec.clockAgrees ? labels.records.clockOk : labels.records.clockWarn}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {rec.requestKey && rec.kind === 'multi_request' && (
           <a
             href={verifierHref(locale, rec.requestKey)}
-            className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors hover:border-[var(--color-primary)]"
-            style={{
-              background: 'var(--color-card-bg)',
-              borderColor: 'var(--color-card-border)',
-              color: 'var(--color-primary)',
-            }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline shrink-0"
           >
             <BadgeCheck className="size-3.5" />
             {labels.records.openVerifier}
@@ -457,98 +487,148 @@ function RecordExpandedDetails({
         )}
       </div>
 
-      {/* Per-signer breakdown */}
+      {/* Aligned Signers sub-table (zero horizontal scroll) */}
       {rec.signers.length > 0 && (
-        <div className="divide-y border-t" style={{ borderColor: 'var(--color-card-border)' }}>
-          {rec.signers.map((s) => {
-            const alias = aliasOf(s.account);
-            const sigTs = formatUtcTimestamp(s.signedAt, locale);
-            return (
-              <div
-                key={`${rec.id}:${s.account}:${s.index}`}
-                className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-0.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {s.signed ? (
-                      <CheckCircle2
-                        className="size-3.5 shrink-0"
-                        style={{ color: 'var(--color-success)' }}
-                      />
-                    ) : (
-                      <Circle
-                        className="size-3.5 shrink-0"
-                        style={{ color: 'var(--color-text-muted)' }}
-                      />
-                    )}
-                    {alias && (
-                      <span className="font-bold" style={{ color: 'var(--color-text-main)' }}>
-                        {alias}
-                      </span>
-                    )}
-                    <code
-                      className="font-mono text-[11px] break-all"
-                      style={{ color: alias ? 'var(--color-text-muted)' : 'var(--color-text-main)' }}
-                    >
-                      {s.account}
-                    </code>
-                    <CopyButton value={s.account} variant="card-inline" size="xs" />
-                    <SaveToAddressBookButton
-                      address={s.account}
-                      saveLabel={labels.signers.saveToBook}
-                      savedLabel={labels.signers.savedInBook}
-                    />
-                  </div>
-                </div>
+        <div className="border-t border-[var(--color-card-border)]/70 pt-3 w-full">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[var(--color-card-border)]/70 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th className="py-2 pr-3 font-semibold">
+                  {labels.signers.columns.participant}
+                </th>
+                <th className="py-2 px-2.5 font-semibold">
+                  {labels.records.columns.compliance}
+                </th>
+                <th className="py-2 px-2.5 font-semibold">
+                  {labels.signers.columns_nfts}
+                </th>
+                <th className="py-2 pl-2.5 font-semibold text-right">
+                  {labels.records.columns.tx}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-card-border)]/50">
+              {rec.signers.map((s) => {
+                const alias = aliasOf(s.account);
+                const sigTs = formatUtcTimestamp(s.signedAt, locale);
+                return (
+                  <tr key={`${rec.id}:${s.account}:${s.index}`}>
+                    <td className="py-2.5 pr-4 align-middle whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        {alias && (
+                          <span className="font-semibold text-[var(--color-text-main)]">
+                            {alias}
+                          </span>
+                        )}
+                        <a
+                          href={entityExplorerHref(locale, s.account, networkId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={s.account}
+                          className="font-mono text-[11px] text-[var(--color-primary)] hover:underline"
+                        >
+                          {truncateAddress(s.account, 10, 6)}
+                        </a>
+                        <CopyButton value={s.account} variant="minimal" size="xs" />
+                      </div>
+                    </td>
 
-                <div className="flex flex-wrap items-center gap-3 pl-5 sm:pl-0 shrink-0">
-                  {s.signed ? (
-                    <>
-                      <span
-                        className="text-[11px] font-semibold tabular-nums"
-                        style={{ color: 'var(--color-success)' }}
-                      >
-                        {labels.records.signedOn} · {sigTs.utc}
-                      </span>
-                      {s.txId && (
+                    <td className="py-2.5 px-3 align-middle whitespace-nowrap">
+                      {s.signed ? (
+                        <span
+                          className="font-semibold text-[var(--color-success)]"
+                          title={sigTs.local}
+                        >
+                          {labels.records.signedOn} · {sigTs.utc}
+                        </span>
+                      ) : rec.kind.startsWith('cipher') ? (
+                        <span
+                          className="font-semibold text-[var(--color-primary)] cursor-help"
+                          title={labels.records.signatureDescriptions.authorized}
+                        >
+                          {labels.records.authorized}
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-[var(--color-warning)]">
+                          {labels.records.pendingSigners}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-2.5 px-3 align-middle whitespace-nowrap">
+                      <div className="flex items-center gap-3 text-[11px]">
+                        {s.inviteNftGlobalId && (() => {
+                          const inv = splitNftGlobalId(s.inviteNftGlobalId);
+                          return (
+                            <a
+                              href={entityExplorerHref(locale, inv.resource, networkId)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={s.inviteNftGlobalId}
+                              className="inline-flex items-center gap-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:underline"
+                            >
+                              <span>{labels.records.inviteNftLabel}</span>
+                              <code className="font-mono text-[var(--color-text-main)]">
+                                {inv.localId}
+                              </code>
+                            </a>
+                          );
+                        })()}
+                        {s.nftGlobalId && (() => {
+                          const sig = splitNftGlobalId(s.nftGlobalId);
+                          return (
+                            <a
+                              href={entityExplorerHref(locale, sig.resource, networkId)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={s.nftGlobalId}
+                              className="inline-flex items-center gap-1 text-[var(--color-success)] hover:underline"
+                            >
+                              <span>{labels.records.signatureNftLabel}</span>
+                              <code className="font-mono">{sig.localId}</code>
+                            </a>
+                          );
+                        })()}
+                        {!s.inviteNftGlobalId && !s.nftGlobalId && (
+                          <span className="text-[var(--color-text-muted)]">-</span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-2.5 pl-3 align-middle whitespace-nowrap text-right">
+                      {s.signed && s.txId ? (
                         <a
                           href={txExplorerHref(locale, s.txId, networkId)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-semibold hover:underline"
-                          style={{ color: 'var(--color-primary)' }}
+                          title={s.txId}
+                          className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--color-primary)] hover:underline"
                         >
-                          {labels.records.viewTx}
+                          {truncateAddress(s.txId, 6, 4)}
                           <ExternalLink className="size-3" />
                         </a>
+                      ) : (
+                        <span className="text-[var(--color-text-muted)]">-</span>
                       )}
-                      {s.nftGlobalId && (
-                        <a
-                          href={entityExplorerHref(
-                            locale,
-                            s.nftGlobalId.split(':')[0],
-                            networkId,
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-semibold hover:underline"
-                          style={{ color: 'var(--color-text-muted)' }}
-                        >
-                          {labels.records.viewNft}
-                          <ExternalLink className="size-3" />
-                        </a>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-[11px] font-medium" style={{ color: 'var(--color-warning)' }}>
-                      {labels.records.pendingSigners}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+      )}
+
+      {/* Low-friction sharing + WebRTC P2P channel for pending co-signers */}
+      {showPendingPanel && rec.requestKey && (
+        <PendingSignerSharePanel
+          requestKey={rec.requestKey}
+          docHash={rec.docHash}
+          pendingCount={pendingCount}
+          networkId={networkId}
+          locale={locale}
+          labels={labels}
+        />
       )}
     </div>
   );

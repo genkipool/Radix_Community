@@ -49,6 +49,7 @@ export const CONSOLE_TOOL_SLUGS = [
   'claim-package-royalties',
   'sign-collection',
   'sign-document',
+  'sign-audit',
   'encrypt-document',
   'chat',
 ] as const;

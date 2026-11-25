@@ -7,8 +7,12 @@
  * signers) signature resolution never drift or duplicate.
  */
 import { z } from 'zod';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
-import type { Network } from '@/services/gateway/client';
+import {
+  RADIX_RESOURCE_RE,
+  networkMatchesAccount,
+  networkMatchesCollection,
+  networkNameForId,
+} from './network';
 import {
   RADIX_SEAL_STANDARD_KEY,
   radixSealAddress,
@@ -36,6 +40,7 @@ import {
   groupCollectionNfts,
   type CollectionAuditResponse,
 } from './collection-audit';
+import { verifyIssuerDomain } from './domain-verify.server';
 
 export const DEFAULT_AUDIT_PAGE_LIMIT = 150;
 export const MAX_AUDIT_PAGE_LIMIT = 200;
@@ -46,7 +51,7 @@ const SIGNER_CONCURRENCY = 6;
 export const collectionAuditInputSchema = z
   .object({
     networkId: z.number().int(),
-    collection: z.string().regex(/^resource_(rdx|tdx_2_)1[a-z0-9]+$/),
+    collection: z.string().regex(RADIX_RESOURCE_RE),
     toId: z.number().int().positive().optional(),
     limit: z.number().int().min(1).max(MAX_AUDIT_PAGE_LIMIT).optional(),
   })
@@ -64,33 +69,7 @@ export type CollectionAuditResult =
   | CollectionAuditResponse
   | CollectionAuditNotFound;
 
-/** True when `networkId` agrees with the collection's Bech32 prefix. */
-export function networkMatchesCollection(
-  networkId: number,
-  collection: string,
-): boolean {
-  if (networkId === RadixNetworkId.Mainnet) {
-    return collection.startsWith('resource_rdx1');
-  }
-  if (networkId === RadixNetworkId.Stokenet) {
-    return collection.startsWith('resource_tdx_2_1');
-  }
-  return false;
-}
-
-/** True when `networkId` agrees with the account's Bech32 prefix. */
-export function networkMatchesAccount(
-  networkId: number,
-  account: string,
-): boolean {
-  if (networkId === RadixNetworkId.Mainnet) {
-    return account.startsWith('account_rdx1');
-  }
-  if (networkId === RadixNetworkId.Stokenet) {
-    return account.startsWith('account_tdx_2_1');
-  }
-  return false;
-}
+export { networkMatchesAccount, networkMatchesCollection };
 
 export interface SealAccountCollectionInfo {
   resourceAddress: string;
@@ -126,8 +105,7 @@ export async function getSealAccountState(
     throw new Error('network_mismatch');
   }
 
-  const network: Network =
-    networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+  const network = networkNameForId(networkId);
   const sealResource = (
     sealResourceOverride?.trim() || radixSealAddress(networkId)
   ).trim();
@@ -227,8 +205,7 @@ export async function auditSignCollection(
     throw new Error('network_mismatch');
   }
 
-  const network: Network =
-    networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+  const network = networkNameForId(networkId);
   const limit = input.limit ?? DEFAULT_AUDIT_PAGE_LIMIT;
 
   // 1. Read collection metadata, role assignments, total supply & ledger cutoff.
@@ -263,12 +240,17 @@ export async function auditSignCollection(
     Number.parseInt(collectionItem.details?.total_supply ?? '0', 10) || 0,
   );
 
-  const issuer = {
+  const orgUrl = metadataString(collectionItem, 'org_url') || null;
+  const domainVerificationPromise = orgUrl
+    ? verifyIssuerDomain({ orgUrl, collection, account: issuerAccount })
+    : Promise.resolve(null);
+
+  const baseIssuer = {
     account: issuerAccount,
     name: metadataString(collectionItem, 'name') || null,
     symbol: metadataString(collectionItem, 'symbol') || null,
     orgName: metadataString(collectionItem, 'org_name') || null,
-    orgUrl: metadataString(collectionItem, 'org_url') || null,
+    orgUrl,
     iconUrl: metadataString(collectionItem, 'icon_url') || null,
   };
 
@@ -283,7 +265,10 @@ export async function auditSignCollection(
       scannedFromId: 0,
       scannedToId: 0,
       hasMoreOlder: false,
-      issuer,
+      issuer: {
+        ...baseIssuer,
+        domainVerification: await domainVerificationPromise,
+      },
       integrity,
       records: [],
       signers: [],
@@ -388,6 +373,7 @@ export async function auditSignCollection(
   // 7. Finalize records and signer directory.
   const records = finalizeAuditRecords(drafts, commits, signerResults);
   const signers = buildSignerDirectory(records, signerResults);
+  const domainVerification = await domainVerificationPromise;
 
   return {
     found: true,
@@ -399,7 +385,7 @@ export async function auditSignCollection(
     scannedFromId: startId,
     scannedToId: endId,
     hasMoreOlder: startId > 1,
-    issuer,
+    issuer: { ...baseIssuer, domainVerification },
     integrity,
     records,
     signers,

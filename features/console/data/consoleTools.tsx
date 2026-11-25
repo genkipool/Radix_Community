@@ -15,6 +15,7 @@ import {
   HandCoins,
   FileCode2,
   FileLock2,
+  FileSearch,
   FileSignature,
   FlaskConical,
   Gift,
@@ -401,8 +402,7 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     icon: <Layers className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '168,85,247',
-    // Audit tab works read-only without a wallet; management tabs self-gate.
-    requiresWallet: false,
+    requiresWallet: true,
     wide: true,
   },
   'sign-document': {
@@ -411,6 +411,15 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '236,72,153',
     // Verify works without a wallet; the Sign tab self-gates on connection.
+    requiresWallet: false,
+    wide: true,
+  },
+  'sign-audit': {
+    slug: 'sign-audit',
+    icon: <FileSearch className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '56,189,248',
+    // Works both with a connected wallet (all shared accounts) and read-only for external auditors.
     requiresWallet: false,
     wide: true,
   },
@@ -504,7 +513,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'radix-seal',
     icon: <Stamp className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['sign-collection', 'sign-document', 'encrypt-document', 'chat'],
+    tools: ['sign-collection', 'sign-document', 'sign-audit', 'encrypt-document', 'chat'],
   },
   {
     id: 'utilities',
