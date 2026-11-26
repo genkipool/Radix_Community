@@ -21,6 +21,8 @@ import logger from '@/lib/logger';
 import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 import { TX_TAGS, type TxTag } from '@/features/dashboard/lib/routes';
 import { GOVERNANCE_SYSTEMS } from '@/features/governance/config/systems';
+import { extractGovernanceVotes } from '@/features/governance/lib/governanceVotes';
+import type { GatewayEvent as DashboardGatewayEvent } from '@/features/dashboard/types';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
@@ -399,6 +401,16 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
     } else if (hasGovernanceVote && !manifestClasses.includes('GovernanceVote')) {
         manifestClasses = ['GovernanceVote', ...manifestClasses];
     }
+    const govVotes = hasGovernanceVote ? extractGovernanceVotes(events as unknown as DashboardGatewayEvent[]) : [];
+    const primaryGov = govVotes[0];
+    const governanceVote = primaryGov
+        ? {
+            component: primaryGov.component,
+            kind: primaryGov.kind,
+            itemId: primaryGov.itemId,
+            accounts: Array.from(new Set(govVotes.map(v => v.account).filter((a): a is string => Boolean(a)))),
+        }
+        : undefined;
 
     // ── Calculate dominant asset transfer for summary ──
     const fungibleChanges: BalanceChange[] = ((item.balance_changes as Record<string, unknown>)?.fungible_balance_changes as BalanceChange[]) || [];
@@ -499,6 +511,7 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
             (item.balance_changes?.non_fungible_balance_changes?.length ?? 0) > 0 ||
             entities.some((e: string) => e.startsWith('resource_') && e.includes(':')),
         manifestClasses,
+        ...(governanceVote ? { governanceVote } : {}),
         validatorAddress:
             entities.find((e: string) => typeof e === 'string' && e.startsWith('validator_')) ??
             undefined,
