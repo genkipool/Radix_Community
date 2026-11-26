@@ -142,16 +142,26 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
                 </div>
             </div>
 
-            {kind === 'election' && item.election && tallyQuery.data?.electionData && (
-                <ElectionCandidatesKpiGrid
-                    election={item.election}
-                    electionData={tallyQuery.data.electionData}
-                    g={g}
-                    language={language}
-                />
+            {kind === 'election' && item.election && (
+                tallyQuery.data?.electionData ? (
+                    <ElectionCandidatesKpiGrid
+                        election={item.election}
+                        electionData={tallyQuery.data.electionData}
+                        g={g}
+                        language={language}
+                    />
+                ) : tallyQuery.isLoading ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2.5" aria-hidden>
+                        {item.election.candidates.map(c => (
+                            <div key={c.id} className="h-[88px] rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] animate-pulse" />
+                        ))}
+                    </div>
+                ) : null
             )}
 
-            {tallyQuery.isLoading && <div className="h-24 rounded-2xl bg-[var(--color-surface)] animate-pulse" aria-hidden />}
+            {tallyQuery.isLoading && !(kind === 'election' && item.election) && (
+                <div className="h-24 rounded-2xl bg-[var(--color-surface)] animate-pulse" aria-hidden />
+            )}
             {!tallyQuery.isLoading && !tally && (
                 <p className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-card-border)] p-5 text-sm text-[var(--color-text-muted)]">
                     <Info className="size-4 shrink-0" />{g.results_unavailable}
@@ -163,29 +173,35 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
             )}
 
             {/* The results box is also the ballot: vote from here while voting is open. */}
-            {kind === 'election' && item.election && tallyQuery.data?.electionData ? (
+            {kind === 'election' && item.election ? (
                 <div className="space-y-6">
                     <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                        <ElectionResultsSummaryCard
-                            election={item.election}
-                            electionData={tallyQuery.data.electionData}
-                            g={g}
-                            language={language}
-                        />
+                        {tallyQuery.data?.electionData ? (
+                            <ElectionResultsSummaryCard
+                                election={item.election}
+                                electionData={tallyQuery.data.electionData}
+                                g={g}
+                                language={language}
+                            />
+                        ) : (
+                            <div className="h-[420px] rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] animate-pulse" aria-hidden />
+                        )}
                         <div className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-5 xl:sticky xl:top-24">
                             {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={language} />}
                             <VotingWindow item={item} phase={phase} progress={votingProgress(item, now)} gv={gv} locale={language} now={now} />
                         </div>
                     </div>
-                    <ElectionCandidatesBallot
-                        election={item.election}
-                        electionData={tallyQuery.data.electionData}
-                        voters={tallyQuery.data.voters}
-                        canGrade={false}
-                        g={g}
-                        language={language}
-                        sortByRank
-                    />
+                    {tallyQuery.data?.electionData && (
+                        <ElectionCandidatesBallot
+                            election={item.election}
+                            electionData={tallyQuery.data.electionData}
+                            voters={tallyQuery.data.voters}
+                            canGrade={false}
+                            g={g}
+                            language={language}
+                            sortByRank
+                        />
+                    )}
                 </div>
             ) : (
                 <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6">

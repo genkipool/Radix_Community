@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info, ArrowRight, Scale } from 'lucide-react';
+import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info, ArrowRight, Scale, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { systemByComponent } from '@/features/governance/config/systems';
 import { governanceItemPath } from '@/features/governance/lib/paths';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
+import type { VoteHistoryEntry, VoterRow } from '@/features/governance/types';
 import { useGovernanceItem } from '@/features/governance/hooks/useGovernanceItem';
 import { useGovernanceTally } from '@/features/governance/hooks/useGovernanceTally';
 import {
@@ -64,6 +65,7 @@ export function GovernanceVoteCard({ vote, votes, tt, onCopy, copiedAddress, net
     const group = votes && votes.length > 0 ? votes : [vote];
     const isMultiAccount = group.length > 1;
     const isElection = vote.kind === 'election';
+    const anyReplacing = group.some(v => v.replacingVoteId != null);
     const system = systemByComponent(vote.component);
     const itemQuery = useGovernanceItem(vote, network);
     const tallyQuery = useGovernanceTally(
@@ -72,7 +74,7 @@ export function GovernanceVoteCard({ vote, votes, tt, onCopy, copiedAddress, net
             kind: vote.kind,
             itemId: vote.itemId,
             account: isMultiAccount ? undefined : vote.account,
-            voters: isMultiAccount || isElection,
+            voters: isMultiAccount || isElection || anyReplacing,
         },
         network,
     );
@@ -97,13 +99,29 @@ export function GovernanceVoteCard({ vote, votes, tt, onCopy, copiedAddress, net
             ? (gv.short_election ?? '')
             : (gv.short_temperature_check || 'Temperature check');
 
-    // Per-account voting power (supports both single-account tally and multi-account voters list).
+    // Per-account voting power & history (supports both single-account tally and multi-account voters list).
     const powerByAccount = new Map<string, number>();
+    const voterByAccount = new Map<string, VoterRow>();
     for (const row of tallyQuery.data?.voters ?? []) {
+        voterByAccount.set(row.account, row);
         if (row.votePower !== null && Number.isFinite(Number(row.votePower))) {
             powerByAccount.set(row.account, Number(row.votePower));
         }
     }
+    const replacedEntryOf = (v: GovernanceVote): VoteHistoryEntry | null => {
+        if (!v.account || !v.replacingVoteId) return null;
+        const history = voterByAccount.get(v.account)?.history;
+        if (!history || history.length < 2) return null;
+        const targetId = Number(v.replacingVoteId);
+        const exact = history.find(h => h.voteId === targetId);
+        if (exact) return exact;
+        const idx = v.voteId != null ? history.findIndex(h => h.voteId === Number(v.voteId)) : -1;
+        return idx > 0 ? history[idx - 1] : history[0];
+    };
+    const primaryReplaced = replacedEntryOf(vote);
+    const primaryReplacedChoiceText = primaryReplaced && !isElection
+        ? primaryReplaced.choices.map(k => choices.find(c => c.key === k)?.label ?? stanceLabel(k)).join(', ')
+        : null;
     const accountPowerOf = (account: string | null): number | null => {
         if (!account) return null;
         if (powerByAccount.has(account)) return powerByAccount.get(account)!;
@@ -205,12 +223,33 @@ export function GovernanceVoteCard({ vote, votes, tt, onCopy, copiedAddress, net
                                         </span>
                                     )}
                                 </>
+                            ) : primaryReplacedChoiceText ? (
+                                <span className="inline-flex flex-wrap items-center gap-1.5 leading-tight">
+                                    <span className="text-sm font-bold text-[var(--color-text-muted)] break-words">
+                                        {primaryReplacedChoiceText}
+                                    </span>
+                                    <ArrowRight className="size-3.5 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
+                                    <span className={`text-xl font-black break-words ${TONE[tone].text}`}>{choiceText}</span>
+                                </span>
                             ) : (
                                 <span className={`text-xl font-black leading-tight break-words ${TONE[tone].text}`}>{choiceText}</span>
                             )}
                             {vote.replacingVoteId && (
-                                <span className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[var(--color-text-muted)]">
-                                    <RefreshCw className="size-3" />{gv.changed_vote || 'Vote changed'}
+                                <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-[var(--color-text-muted)]">
+                                    <span className="inline-flex items-center gap-1">
+                                        <RefreshCw className="size-3" />{gv.changed_vote || 'Vote changed'}
+                                    </span>
+                                    {primaryReplaced?.txid && (
+                                        <Link
+                                            href={`/${language}/dashboard/tx/${primaryReplaced.txid}`}
+                                            prefetch={false}
+                                            className="inline-flex items-center gap-0.5 font-mono text-[var(--color-primary)] hover:underline"
+                                            title={primaryReplaced.txid}
+                                        >
+                                            <span>{shortenAddress(primaryReplaced.txid)}</span>
+                                            <ExternalLink className="size-2.5 shrink-0" aria-hidden="true" />
+                                        </Link>
+                                    )}
                                 </span>
                             )}
                         </span>
@@ -342,29 +381,61 @@ export function GovernanceVoteCard({ vote, votes, tt, onCopy, copiedAddress, net
                             )}
                         </div>
                         {ballotsToRender.map((b, bIdx) => {
+                            const prevBallot = replacedEntryOf(b);
                             const entries = Object.entries(b.grades ?? {}).sort(([idA, gA], [idB, gB]) => gB - gA || Number(idA) - Number(idB));
                             return (
                                 <div key={`${b.account ?? bIdx}-${b.voteId ?? bIdx}`} className="space-y-2">
                                     {!allSameGrades && b.account && (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
                                             <AddressChip address={b.account} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
+                                            {prevBallot?.txid && (
+                                                <Link
+                                                    href={`/${language}/dashboard/tx/${prevBallot.txid}`}
+                                                    prefetch={false}
+                                                    className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-[var(--color-primary)] hover:underline"
+                                                    title={prevBallot.txid}
+                                                >
+                                                    <RefreshCw className="size-2.5 shrink-0" aria-hidden="true" />
+                                                    <span>{shortenAddress(prevBallot.txid)}</span>
+                                                    <ExternalLink className="size-2.5 shrink-0" aria-hidden="true" />
+                                                </Link>
+                                            )}
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 @sm:grid-cols-2 @xl:grid-cols-3 gap-2">
                                         {entries.map(([candId, gradeIdx]) => {
                                             const candName = candidateNameById.get(candId) ?? `#${candId}`;
                                             const gradeLabel = mj?.grades?.[gradeIdx] ?? String(gradeIdx);
+                                            const prevGradeIdx = prevBallot?.grades?.[candId];
+                                            const prevGradeLabel = prevGradeIdx !== undefined ? (mj?.grades?.[prevGradeIdx] ?? String(prevGradeIdx)) : null;
+                                            const gradeChanged = prevGradeIdx !== undefined && prevGradeIdx !== gradeIdx;
                                             return (
                                                 <div
                                                     key={candId}
-                                                    className="flex items-center justify-between gap-2 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/60 px-3 py-2 text-xs"
+                                                    className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
+                                                        gradeChanged
+                                                            ? 'border-amber-500/40 bg-amber-500/5'
+                                                            : 'border-[var(--color-card-border)] bg-[var(--color-surface)]/60'
+                                                    }`}
                                                 >
                                                     <span className="font-semibold text-[var(--color-text-main)] truncate" title={candName}>
                                                         {candName}
                                                     </span>
-                                                    <span className={`shrink-0 inline-flex items-center justify-center h-5 rounded-full border px-2 text-[10px] font-bold leading-none ${MJ_GRADE_PILL_COLOR[gradeIdx] ?? ''}`}>
-                                                        {gradeLabel}
-                                                    </span>
+                                                    {gradeChanged && prevGradeLabel ? (
+                                                        <span className="shrink-0 inline-flex items-center gap-1">
+                                                            <span className={`inline-flex items-center justify-center h-5 rounded-full border px-2 text-[10px] font-bold leading-none opacity-80 ${MJ_GRADE_PILL_COLOR[prevGradeIdx] ?? ''}`}>
+                                                                <span className="text-box-cap leading-none">{prevGradeLabel}</span>
+                                                            </span>
+                                                            <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
+                                                            <span className={`inline-flex items-center justify-center h-5 rounded-full border px-2 text-[10px] font-bold leading-none ${MJ_GRADE_PILL_COLOR[gradeIdx] ?? ''}`}>
+                                                                <span className="text-box-cap leading-none">{gradeLabel}</span>
+                                                            </span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className={`shrink-0 inline-flex items-center justify-center h-5 rounded-full border px-2 text-[10px] font-bold leading-none ${MJ_GRADE_PILL_COLOR[gradeIdx] ?? ''}`}>
+                                                            <span className="text-box-cap leading-none">{gradeLabel}</span>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             );
                                         })}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Users, ExternalLink, Loader2, ChevronDown, ArrowLeftRight } from 'lucide-react';
+import { Users, ExternalLink, Loader2, ChevronDown, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Portal } from '@/components/ui/Portal';
 import { SelectPopup, SelectPopupRow } from '@/components/ui/SelectPopup';
@@ -106,15 +106,15 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                         type="button"
                         aria-pressed={onlyChanged}
                         onClick={() => setOnlyChanged(prev => !prev)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11px] leading-none font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                             onlyChanged
                                 ? 'border-[var(--color-primary)]/40 bg-[var(--color-primary)]/10 text-[var(--color-primary)] shadow-sm'
                                 : 'border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
                         }`}
                     >
                         <ArrowLeftRight className="size-3 shrink-0" aria-hidden="true" />
-                        <span>{g.voters_changed ?? ''}</span>
-                        <span className={`font-mono text-[10px] tabular-nums ${onlyChanged ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>
+                        <span className="text-box-cap leading-none">{g.voters_changed ?? ''}</span>
+                        <span className={`text-box-cap text-[10px] leading-none tabular-nums ${onlyChanged ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>
                             ({changedCount.toLocaleString(language)})
                         </span>
                     </button>
@@ -259,7 +259,7 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                     })
                                     : v.choices;
                                 return (
-                                    <tr key={v.account} className="border-t border-[var(--color-card-border)] hover:bg-[var(--color-surface)] transition-colors align-top">
+                                    <tr key={v.account} className="border-t border-[var(--color-card-border)] hover:bg-[var(--color-surface)] transition-colors align-middle">
                                         <td className="pl-4 pr-2 py-2.5 font-mono text-xs text-[var(--color-text-muted)] tabular-nums">{i + 1}</td>
                                         <td className="px-3 py-2.5">
                                             <span className="inline-flex items-center gap-1 whitespace-nowrap">
@@ -297,12 +297,12 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                                             >
                                                                 {label}
                                                                 {gradeChanged ? (
-                                                                    <span className="ml-1 font-mono text-[10px]">
-                                                                        <span className="line-through text-[var(--color-text-muted)] opacity-75">
+                                                                    <span className="ml-1 inline-flex items-center gap-0.5 font-mono text-[10px] leading-none font-bold align-baseline">
+                                                                        <span className={`text-box-cap leading-none ${MJ_GRADE_ABBR_COLOR[origGradeIdx] ?? 'text-[var(--color-text-muted)]'}`}>
                                                                             {origGradeAbbr ?? origGradeIdx}
                                                                         </span>
-                                                                        <span className="mx-0.5 text-[var(--color-text-muted)]">→</span>
-                                                                        <span className={`font-bold ${MJ_GRADE_ABBR_COLOR[gradeIdx] ?? ''}`}>
+                                                                        <ArrowRight className="size-2.5 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
+                                                                        <span className={`text-box-cap leading-none ${MJ_GRADE_ABBR_COLOR[gradeIdx] ?? ''}`}>
                                                                             {gradeAbbr ?? gradeIdx}
                                                                         </span>
                                                                     </span>
@@ -317,22 +317,15 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                                     {v.changes > 0 && !history && <span className="text-[10px] font-normal text-[var(--color-text-muted)] self-center" title={g.vote?.changed_vote}>↻</span>}
                                                 </div>
                                             ) : history && original ? (
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
-                                                        <span className="shrink-0 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
-                                                            {g.voters_vote_original ?? ''}
-                                                        </span>
-                                                        <span className="line-through opacity-80">
-                                                            {original.choices.map(choiceLabel).join(', ')}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-main)]">
-                                                        <span className="shrink-0 rounded bg-[var(--color-primary)]/15 border border-[var(--color-primary)]/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                                                            {g.voters_vote_current ?? ''}
-                                                        </span>
-                                                        <span>{visibleChoices.map(choiceLabel).join(', ')}</span>
-                                                    </div>
-                                                </div>
+                                                <span className="inline-flex flex-wrap items-center gap-1.5 text-xs">
+                                                    <span className="font-semibold text-[var(--color-text-muted)]">
+                                                        {original.choices.map(choiceLabel).join(', ')}
+                                                    </span>
+                                                    <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
+                                                    <span className="font-bold text-[var(--color-text-main)]">
+                                                        {visibleChoices.map(choiceLabel).join(', ')}
+                                                    </span>
+                                                </span>
                                             ) : (
                                                 <span className="whitespace-nowrap">
                                                     {visibleChoices.map((c, idx) => {

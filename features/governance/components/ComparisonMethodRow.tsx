@@ -2,7 +2,7 @@
 
 import React, { useId, useState } from 'react';
 import {
-    ChevronDown, Info, Loader2, Equal, ArrowLeftRight, Target, Crown,
+    ChevronDown, Info, Loader2, Equal, ArrowLeftRight, ArrowRight, Target, Crown, Users,
 } from 'lucide-react';
 import { concentrationLevel, type MethodResult } from '../lib/votingMethods';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
@@ -324,6 +324,51 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         })}
                     </DetailStatBox>
                 </div>
+                {r.current && election && (() => {
+                    const electedIds = new Set(election.elected.map(e => e.id));
+                    const rest = election.standings.filter(cand => !electedIds.has(cand.id));
+                    if (rest.length === 0) return null;
+                    return (
+                        <ExplorerTable
+                            compact
+                            title={fill(c.election_rest_table_title ?? '', { n: rest.length.toLocaleString(language) })}
+                            icon={<Users className="size-3 text-[var(--color-primary)]" />}
+                            headers={[
+                                { label: '#', className: 'w-[12%]' },
+                                { label: c.election_col_candidate ?? '', className: 'w-[40%]' },
+                                { label: c.election_col_grade ?? '', className: 'w-[28%]' },
+                                { label: c.election_col_band ?? '', className: 'w-[20%]' },
+                            ]}
+                        >
+                            {rest.map(cand => (
+                                <tr key={`rest-${cand.id}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
+                                    <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-text-muted)] tabular-nums">
+                                        #{cand.rank}
+                                    </td>
+                                    <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate" title={cand.label}>
+                                        {cand.label}
+                                    </td>
+                                    <td className="py-1.5 px-2 whitespace-nowrap">
+                                        <span className={`text-[11px] font-semibold ${cand.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
+                                            {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
+                                        </span>
+                                        <span className="ml-1.5 font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">
+                                            {formatXrd(cand.qualifyingXrd, language)}
+                                        </span>
+                                    </td>
+                                    <td className="py-1.5 px-2 text-right">
+                                        <span
+                                            className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] px-2 font-mono text-[10px] font-bold text-[var(--color-text-secondary)] cursor-help"
+                                            title={`${bandHint(g.mj, cand.band) ?? ''} (${formatPct(cand.p, language)} / ${formatPct(cand.q, language)})`}
+                                        >
+                                            <span className="text-box-cap leading-none">{fill(g.mj?.band_short ?? '', { band: cand.band })}</span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </ExplorerTable>
+                    );
+                })()}
                 {election && (election.left.length > 0 || election.entered.length > 0 || election.tiedAtCutoff.length > 0) && (
                     <ExplorerTable
                         compact
@@ -344,11 +389,15 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                             <tr key={`left-${item.label}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
                                 <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{item.label}</td>
                                 <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-text-secondary)] whitespace-nowrap tabular-nums">
-                                    {item.currentRank > 0 && item.methodRank > 0
-                                        ? `#${item.currentRank} → #${item.methodRank}`
-                                        : item.methodRank > 0
-                                            ? `#${item.methodRank}`
-                                            : '—'}
+                                    {item.currentRank > 0 && item.methodRank > 0 ? (
+                                        <span className="inline-flex items-center gap-1 leading-none">
+                                            <span className="text-box-cap leading-none">#{item.currentRank}</span>
+                                            <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
+                                            <span className="text-box-cap leading-none">#{item.methodRank}</span>
+                                        </span>
+                                    ) : item.methodRank > 0 ? (
+                                        <span className="text-box-cap leading-none">#{item.methodRank}</span>
+                                    ) : '—'}
                                 </td>
                                 <td className="py-1.5 px-2 text-right">
                                     <span className="inline-flex items-center justify-center h-5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
@@ -366,11 +415,15 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                             <tr key={`entered-${item.label}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
                                 <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{item.label}</td>
                                 <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-accent)] whitespace-nowrap tabular-nums">
-                                    {item.currentRank > 0 && item.methodRank > 0
-                                        ? `#${item.currentRank} → #${item.methodRank}`
-                                        : item.methodRank > 0
-                                            ? `#${item.methodRank}`
-                                            : '—'}
+                                    {item.currentRank > 0 && item.methodRank > 0 ? (
+                                        <span className="inline-flex items-center gap-1 leading-none">
+                                            <span className="text-box-cap leading-none text-[var(--color-text-muted)]">#{item.currentRank}</span>
+                                            <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
+                                            <span className="text-box-cap leading-none">#{item.methodRank}</span>
+                                        </span>
+                                    ) : item.methodRank > 0 ? (
+                                        <span className="text-box-cap leading-none">#{item.methodRank}</span>
+                                    ) : '—'}
                                 </td>
                                 <td className="py-1.5 px-2 text-right">
                                     <span className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-2 text-[10px] font-bold text-[var(--color-accent)]">
