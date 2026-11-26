@@ -10,7 +10,6 @@ import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { getMetaValue } from '../utils/metadataUtils';
 import { hasSelectionInside } from '../utils/selectionUtils';
-import { TokenBadge } from '@/components/ui/TokenBadge';
 import { NftCollectionPanel } from './NftCollectionPanel';
 import { IconFlame } from './TransactionIcons';
 
@@ -85,7 +84,6 @@ const NftTransferCard = ({
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0 flex-nowrap">
                             <div className="font-bold text-sm sm:text-base text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors truncate min-w-0" title={name}>{name.length > 40 ? name.slice(0, 37).trim() + '...' : name}</div>
-                            {symbol && <TokenBadge className="shrink-0">{symbol}</TokenBadge>}
                             <ChevronDown className={`size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">

@@ -10,10 +10,10 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { useNftData } from '@/features/console/hooks/useNftData';
 import { NftCollectionPanel } from '@/features/dashboard/explorador/components/NftCollectionPanel';
-import { ResourceInlinePanel } from '@/features/dashboard/explorador/components/ResourceInlinePanel';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { networkOfAddress } from '@/features/dashboard/lib/routes';
 import {
+  apiFetchAllNonFungibleIds,
   apiFetchEntityDetails,
   apiFetchNonFungibleData,
 } from '@/features/dashboard/services/apiClient';
@@ -35,7 +35,11 @@ import {
   DomainVerificationDrawer,
 } from './DomainVerificationDrawer';
 
-function useResourcePanelState(resourceAddress: string, enabled: boolean) {
+function useResourcePanelState(
+  resourceAddress: string,
+  enabled: boolean,
+  options?: { knownIds?: string[]; fetchIds?: boolean },
+) {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const { t, language } = useLanguage();
   const network = networkOfAddress(resourceAddress) ?? 'mainnet';
@@ -50,6 +54,26 @@ function useResourcePanelState(resourceAddress: string, enabled: boolean) {
     enabled,
   });
 
+  const { data: fetchedIds, isLoading: idsLoading } = useQuery({
+    queryKey: ['nft-all-ids', network, resourceAddress],
+    queryFn: () => apiFetchAllNonFungibleIds(resourceAddress, network),
+    staleTime: 60_000,
+    gcTime: 1000 * 60 * 10,
+    retry: 2,
+    enabled: enabled && !!options?.fetchIds,
+  });
+
+  const ids = options?.knownIds ?? fetchedIds ?? [];
+
+  const { data: nftData, isLoading: nftLoading } = useQuery({
+    queryKey: ['nft-raw-data', network, resourceAddress, ids.join(',')],
+    queryFn: () => apiFetchNonFungibleData(resourceAddress, ids, network),
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 10,
+    retry: 2,
+    enabled: enabled && ids.length > 0,
+  });
+
   const handleCopy = (addr: string) => {
     navigator.clipboard?.writeText(addr).catch(() => {});
     setCopiedAddress(addr);
@@ -58,7 +82,9 @@ function useResourcePanelState(resourceAddress: string, enabled: boolean) {
 
   return {
     entityDetails: entityDetails ?? null,
-    detailsLoading,
+    nftData: (nftData ?? []) as unknown as Record<string, unknown>[],
+    nftLoading: detailsLoading || idsLoading || nftLoading,
+    ids,
     copiedAddress,
     handleCopy,
     tt,
@@ -82,15 +108,8 @@ function SealRowCard({
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const sealResource = splitNftGlobalId(seal.globalId).resource;
-  const panel = useResourcePanelState(sealResource, detailsOpen);
-  const { data: nftData, isLoading: nftLoading } = useQuery({
-    queryKey: ['nft-raw-data', panel.network, sealResource, seal.localId],
-    queryFn: () =>
-      apiFetchNonFungibleData(sealResource, [seal.localId], panel.network),
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 10,
-    retry: 2,
-    enabled: detailsOpen,
+  const panel = useResourcePanelState(sealResource, detailsOpen, {
+    knownIds: [seal.localId],
   });
 
   return (
@@ -168,9 +187,9 @@ function SealRowCard({
             <NftCollectionPanel
               resourceAddress={sealResource}
               meta={panel.entityDetails}
-              nftData={(nftData ?? []) as unknown as Record<string, unknown>[]}
-              nftLoading={panel.detailsLoading || nftLoading}
-              ids={[seal.localId]}
+              nftData={panel.nftData}
+              nftLoading={panel.nftLoading}
+              ids={panel.ids}
               type="neutral"
               onCopy={panel.handleCopy}
               copiedAddress={panel.copiedAddress}
@@ -205,7 +224,9 @@ function CollectionRowCard({
   onOpenDomainDrawer: () => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const panel = useResourcePanelState(collection.resourceAddress, detailsOpen);
+  const panel = useResourcePanelState(collection.resourceAddress, detailsOpen, {
+    fetchIds: collection.totalSupply > 0,
+  });
 
   return (
     <div
@@ -337,10 +358,14 @@ function CollectionRowCard({
             onClick={(e) => e.stopPropagation()}
             className="overflow-hidden border-t border-[var(--color-card-border)]"
           >
-            <ResourceInlinePanel
-              address={collection.resourceAddress}
-              details={panel.entityDetails}
-              loading={panel.detailsLoading}
+            <NftCollectionPanel
+              key={panel.ids.length > 0 ? 'items' : 'summary'}
+              resourceAddress={collection.resourceAddress}
+              meta={panel.entityDetails}
+              nftData={panel.nftData}
+              nftLoading={panel.nftLoading}
+              ids={panel.ids}
+              type="neutral"
               onCopy={panel.handleCopy}
               copiedAddress={panel.copiedAddress}
               tt={panel.tt}
