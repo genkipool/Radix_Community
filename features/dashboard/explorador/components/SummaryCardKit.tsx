@@ -3,6 +3,7 @@
 import React from 'react';
 import { Check, Copy, Info } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 
 /*
  * Building blocks shared by the Summary-tab action cards (resource creation,
@@ -94,12 +95,13 @@ export function CopyButton({ value, copiedAddress, onCopy, title }: { value: str
     );
 }
 
-/** Shortened address with a copy button. */
-export function AddressChip({ address, copiedAddress, onCopy, copyTitle }: { address: string; copiedAddress: string | null; onCopy: (v: string) => void; copyTitle: string }) {
+/** Shortened address with a copy button and one-click agenda button (for saveable entity addresses). */
+export function AddressChip({ address, copiedAddress, onCopy, copyTitle, name }: { address: string; copiedAddress: string | null; onCopy: (v: string) => void; copyTitle: string; name?: string | null }) {
     return (
-        <span className="flex items-center gap-1 min-w-0">
-            <span className="font-mono text-xs truncate" title={address}>{shortenAddress(address)}</span>
+        <span className="flex items-center gap-0.5 min-w-0">
+            <span className="font-mono text-xs truncate mr-0.5" title={address}>{shortenAddress(address)}</span>
             <CopyButton value={address} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
+            <SaveToAddressBookButton address={address} name={name} size="sm" />
         </span>
     );
 }

@@ -241,19 +241,29 @@ const TransactionTabs = ({
                             );
                         })()}
 
-                        {/* Governance vote */}
-                        {governanceVotes.map(vote => (
-                            <GovernanceVoteCard
-                                key={`${vote.component}-${vote.kind}-${vote.itemId}-${vote.voteId}`}
-                                vote={vote}
-                                tt={tt}
-                                onCopy={onCopy}
-                                copiedAddress={copiedAddress}
-                                network={network}
-                                locale={locale}
-                                timezone={timezone}
-                            />
-                        ))}
+                        {/* Governance vote (grouped per item so multi-account votes render in a single card) */}
+                        {(() => {
+                            const grouped = new Map<string, typeof governanceVotes>();
+                            for (const v of governanceVotes) {
+                                const k = `${v.component}-${v.kind}-${v.itemId}`;
+                                const list = grouped.get(k);
+                                if (list) list.push(v);
+                                else grouped.set(k, [v]);
+                            }
+                            return [...grouped.entries()].map(([key, group]) => (
+                                <GovernanceVoteCard
+                                    key={key}
+                                    vote={group[0]}
+                                    votes={group}
+                                    tt={tt}
+                                    onCopy={onCopy}
+                                    copiedAddress={copiedAddress}
+                                    network={network}
+                                    locale={locale}
+                                    timezone={timezone}
+                                />
+                            ));
+                        })()}
 
                         {/* What the validator's owner did: unlock or lock their stake, register, key, fee… */}
                         {ownerGroups.map(group => (

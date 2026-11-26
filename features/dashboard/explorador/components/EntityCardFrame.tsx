@@ -5,6 +5,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { Card } from '@/components/ui/Card';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { PanelTabBar } from './EntityPanelShared';
 
 /** The colour a fact's value is drawn in. */
@@ -151,6 +152,7 @@ export function EntityCardFrame({
                                     }}
                                     className="shrink-0"
                                 />
+                                <SaveToAddressBookButton address={address} size="sm" />
                                 {addressActions}
                             </div>
                             <div className="shrink-0 flex items-center gap-3 mt-1 sm:mt-0">

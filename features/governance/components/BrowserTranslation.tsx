@@ -134,10 +134,10 @@ export function TranslationBar({ g }: { g: G }) {
 
     const current = status === 'downloading' ? 'downloading' : showOriginal ? 'original' : translating ? 'translating' : 'translated';
     const variants: Array<{ key: typeof current; lead: React.ReactNode; text: string; action?: string }> = [
-        { key: 'downloading', lead: spinner, text: fill(g.translate_downloading || 'Preparing your browser translator… {pct}', { pct: `${Math.round((current === 'downloading' ? progress : 1) * 100)} %` }) },
-        { key: 'translating', lead: spinner, text: g.translating || 'Translating…', action: g.show_original || 'View original' },
-        { key: 'translated', lead: icon, text: g.translated_by_browser || 'Translated by your browser, on your device', action: g.show_original || 'View original' },
-        { key: 'original', lead: icon, text: g.showing_original || 'You are viewing the original English text', action: g.show_translation || 'View translation' },
+        { key: 'downloading', lead: spinner, text: fill(g.translate_downloading ?? '', { pct: `${Math.round((current === 'downloading' ? progress : 1) * 100)} %` }) },
+        { key: 'translating', lead: spinner, text: g.translating ?? '', action: g.show_original ?? '' },
+        { key: 'translated', lead: icon, text: g.translated_by_browser ?? '', action: g.show_original ?? '' },
+        { key: 'original', lead: icon, text: g.showing_original ?? '', action: g.show_translation ?? '' },
     ];
 
     return (

@@ -9,6 +9,7 @@
 import React from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { Check, ChevronDown, Copy } from 'lucide-react';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { formatNumber } from '@/utils/formatters';
 
@@ -98,6 +99,7 @@ export function ResourceCardHeader({
                         >
                             {copied ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                         </button>
+                        <SaveToAddressBookButton address={address} name={name} size="xs" />
                     </div>
                 </div>
             </div>

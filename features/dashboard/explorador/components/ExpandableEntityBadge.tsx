@@ -11,6 +11,7 @@
 import React, { useState } from 'react';
 import { m, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Copy, Download } from 'lucide-react';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -314,6 +315,7 @@ export function ExpandableEntityBadge({
                                 >
                                     {copiedAddress === clean ? <Check className="size-3" /> : <Copy className="size-3" />}
                                 </span>
+                                <SaveToAddressBookButton address={clean} name={entityName} size="xs" />
                             </div>
                         </div>
                     </div>
@@ -397,19 +399,22 @@ export function ExpandableEntityBadge({
                 <div className="flex items-center gap-1 shrink-0">
                     <StakeColumns columns={stakeColumns} locale={locale} compact />
                     {!isResourceCard && (
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
-                            className={`p-1 rounded transition-colors ${copiedAddress === clean
-                                ? 'text-[var(--color-accent)]'
-                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
-                                }`}
-                            title="Copy address"
-                        >
-                            {copiedAddress === clean
-                                ? <Check className="size-3" />
-                                : <Copy className="size-3" />}
-                        </button>
+                        <>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
+                                className={`p-1 rounded transition-colors ${copiedAddress === clean
+                                    ? 'text-[var(--color-accent)]'
+                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
+                                    }`}
+                                title="Copy address"
+                            >
+                                {copiedAddress === clean
+                                    ? <Check className="size-3" />
+                                    : <Copy className="size-3" />}
+                            </button>
+                            <SaveToAddressBookButton address={clean} name={entityName} size="xs" />
+                        </>
                     )}
                     {csvButton}
                     <ChevronDown

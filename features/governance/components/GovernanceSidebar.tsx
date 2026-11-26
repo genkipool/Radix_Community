@@ -73,8 +73,8 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
 
     const groupTitle = { open: g.status_open, upcoming: g.status_upcoming, closed: g.status_closed, unknown: '' };
     const kindShort = {
-        proposal: g.vote?.short_proposal || 'Proposal',
-        temperature_check: g.vote?.short_temperature_check || 'Temperature check',
+        proposal: g.vote?.short_proposal ?? '',
+        temperature_check: g.vote?.short_temperature_check ?? '',
         election: g.vote?.short_election ?? '',
     };
 
@@ -82,14 +82,14 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
         <SidebarLayout
             header={
                 <SidebarGraphic
-                    appName={g.sidebar_app || 'Radix · Governance'}
-                    title={g.hero_title || 'Radix Governance'}
-                    subtitle={g.hero_badge || 'On-ledger governance'}
+                    appName={g.sidebar_app ?? ''}
+                    title={g.hero_title ?? ''}
+                    subtitle={g.hero_badge ?? ''}
                     idPrefix="governance"
                     variant="docs"
                 />
             }
-            searchBar={<SearchBar variant="sidebar" value={query} onChange={setQuery} placeholder={g.search_placeholder || 'Search by title'} />}
+            searchBar={<SearchBar variant="sidebar" value={query} onChange={setQuery} placeholder={g.search_placeholder ?? ''} />}
             controls={
                 <SidebarControls
                     hasAnyExpanded={expanded.size > 0}
@@ -104,14 +104,14 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                 />
             }
             onHeaderClick={() => router.push(`/${language}/governance`)}
-            headerAriaLabel={g.back || 'All votes'}
+            headerAriaLabel={g.back ?? ''}
         >
             <div className="space-y-3">
                 {PHASE_ORDER.map(phase => {
                     const list = groups[phase];
                     if (list.length === 0) return null;
                     const items: SidebarCardItem[] = list.map(e => {
-                        const label = titleOf.get(entryKey(e)) || g.vote?.untitled || 'untitled';
+                        const label = (titleOf.get(entryKey(e)) || g.vote?.untitled) ?? '';
                         const sublabel = `${kindShort[e.kind]} #${e.id} · ${e.systemName}`;
                         return {
                             id: entryKey(e),
@@ -153,7 +153,7 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                     );
                 })}
                 {PHASE_ORDER.every(p => groups[p].length === 0) && (
-                    <p className="text-xs text-center py-6 text-[var(--color-text-muted)]">{g.empty || 'No votes match these filters.'}</p>
+                    <p className="text-xs text-center py-6 text-[var(--color-text-muted)]">{g.empty ?? ''}</p>
                 )}
             </div>
         </SidebarLayout>

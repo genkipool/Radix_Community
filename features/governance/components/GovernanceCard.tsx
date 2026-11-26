@@ -6,6 +6,7 @@ import { ArrowRight, Users, CalendarClock } from 'lucide-react';
 import { systemByKey } from '../config/systems';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { itemChoices, summarizeTally, uniqueVoters, votingPhase, type VotingPhase } from '../lib/governanceVotes';
+import { gradeLabel } from '../lib/majorityJudgment';
 import { governanceItemPath } from '../lib/paths';
 import type { GovernanceEntry } from '../types';
 import { fill, formatDate, formatPct, formatRelative, TONE } from './VoteParts';
@@ -24,16 +25,25 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
     const phase: VotingPhase = votingPhase(item, now);
     const tallyQuery = useGovernanceTally({ component: system?.component ?? '', kind, itemId: id }, system?.network ?? 'mainnet', !!system);
     const tally = tallyQuery.data ? summarizeTally(itemChoices(kind, item, stanceResolver(g)), tallyQuery.data, item) : null;
-    const leader = tally && tally.turnout > 0 ? [...tally.rows].sort((a, b) => b.power - a.power)[0] : null;
+    const electionData = tallyQuery.data?.electionData ?? null;
+    const electionLeader = kind === 'election' && electionData?.candidateResults?.length
+        ? [...electionData.candidateResults].sort((a, b) => a.rank - b.rank)[0]
+        : null;
+    const electionLeaderName = electionLeader
+        ? (item.options.find(o => o.id === electionLeader.candidateId)?.label ?? `#${electionLeader.candidateId}`)
+        : null;
+    const leader = kind !== 'election' && tally && tally.turnout > 0
+        ? [...tally.rows].filter(r => r.key !== 'turnout').sort((a, b) => b.power - a.power)[0] ?? null
+        : null;
     const voters = uniqueVoters(item);
     const title = useTranslatedText(item.title);
     const shortDescription = useTranslatedText(item.shortDescription);
     const nav = useGovernanceNav();
 
     const when = !item.deadline ? null
-        : phase === 'open' ? fill(g.card_closes || 'Closes {time}', { time: formatRelative(item.deadline, language, now) })
-            : phase === 'upcoming' && item.start ? fill(g.card_starts || 'Opens {time}', { time: formatRelative(item.start, language, now) })
-                : fill(g.card_closed || 'Closed on {date}', { date: formatDate(item.deadline, language, undefined, 'date') });
+        : phase === 'open' ? fill(g.card_closes ?? '', { time: formatRelative(item.deadline, language, now) })
+            : phase === 'upcoming' && item.start ? fill(g.card_starts ?? '', { time: formatRelative(item.start, language, now) })
+                : fill(g.card_closed ?? '', { date: formatDate(item.deadline, language, undefined, 'date') });
 
     const href = `/${language}${governanceItemPath(systemKey, kind, id)}`;
 
@@ -50,7 +60,7 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
             </div>
 
             <h3 className="mt-3 text-base md:text-lg font-bold leading-snug text-[var(--color-text-main)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
-                {title || g.vote?.untitled || 'untitled'}
+                {(title || g.vote?.untitled) ?? ''}
             </h3>
             {shortDescription && (
                 <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)] line-clamp-3">{shortDescription}</p>
@@ -64,11 +74,21 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
                     </div>
                 ) : tally && (
                     <div className="space-y-2.5">
+                        {electionLeader && electionLeaderName && (
+                            <div className="flex items-baseline justify-between gap-2 text-xs">
+                                <span className="text-[var(--color-text-muted)] truncate">
+                                    {g.card_leading ?? ''}: <span className="font-bold text-[var(--color-text-main)]">{electionLeaderName}</span>
+                                </span>
+                                <span className="shrink-0 font-bold text-[var(--color-accent)]">
+                                    {gradeLabel(g.mj, electionLeader.qualifyingGrade)}
+                                </span>
+                            </div>
+                        )}
                         {leader && (
                             <div>
                                 <div className="flex items-baseline justify-between gap-2 text-xs">
                                     <span className="text-[var(--color-text-muted)]">
-                                        {g.card_leading || 'Leading'}: <span className={`font-bold ${TONE[leader.tone].text}`}>{leader.label}</span>
+                                        {g.card_leading ?? ''}: <span className={`font-bold ${TONE[leader.tone].text}`}>{leader.label}</span>
                                     </span>
                                     <span className="font-mono font-bold text-[var(--color-text-main)]">{formatPct(leader.share, language)}</span>
                                 </div>
@@ -80,7 +100,7 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
                         {tally.quorumRatio !== null && (
                             <div>
                                 <div className="flex items-baseline justify-between gap-2 text-xs">
-                                    <span className="text-[var(--color-text-muted)]">{g.card_quorum || 'Quorum'}</span>
+                                    <span className="text-[var(--color-text-muted)]">{g.card_quorum ?? ''}</span>
                                     <span className={`font-mono font-bold ${tally.quorumMet ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-main)]'}`}>
                                         {formatPct(Math.min(tally.quorumRatio, 9.99), language)}
                                     </span>
@@ -97,7 +117,7 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
                     <span className="flex items-center gap-3 min-w-0">
                         {voters !== null && (
                             <span className="flex items-center gap-1 shrink-0">
-                                <Users className="size-3.5" />{fill(g.card_voters || '{n} voters', { n: voters.toLocaleString(language) })}
+                                <Users className="size-3.5" />{fill(g.card_voters ?? '', { n: voters.toLocaleString(language) })}
                             </span>
                         )}
                         {when && (
@@ -107,7 +127,7 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
                         )}
                     </span>
                     <span className="flex items-center gap-1 font-bold text-[var(--color-primary)] shrink-0">
-                        {phase === 'open' ? (g.card_open_cta || 'View and vote') : (g.card_view || 'View vote')}
+                        {phase === 'open' ? (g.card_open_cta ?? '') : (g.card_view ?? '')}
                         <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                     </span>
                 </div>

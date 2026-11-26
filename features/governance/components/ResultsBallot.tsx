@@ -34,11 +34,11 @@ export function ResultsBallot({ entry, system, choices, tally, g, language, now 
         <section aria-labelledby="results-ballot" className="h-full flex flex-col gap-4 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 id="results-ballot" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
-                    <Vote className="size-4 text-[var(--color-primary)]" />{gv.results || 'Results'}
+                    <Vote className="size-4 text-[var(--color-primary)]" />{gv.results ?? ''}
                 </h3>
                 {vote.canVote && (
                     <span className="text-xs font-semibold text-[var(--color-primary)]">
-                        {vote.maxPick === 1 ? (g.choose_one || 'Pick one option') : fill(g.choose_up_to || 'Pick up to {n} options', { n: String(vote.maxPick) })}
+                        {vote.maxPick === 1 ? (g.choose_one ?? '') : fill(g.choose_up_to ?? '', { n: String(vote.maxPick) })}
                     </span>
                 )}
             </div>
@@ -56,7 +56,7 @@ export function ResultsBallot({ entry, system, choices, tally, g, language, now 
                                     <span className="break-words">{r.label}</span>
                                     {mine && (
                                         <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border border-[var(--color-accent)]/40 text-[var(--color-accent)] shrink-0">
-                                            {g.your_current_vote || 'Your vote'}
+                                            {g.your_current_vote ?? ''}
                                         </span>
                                     )}
                                 </span>

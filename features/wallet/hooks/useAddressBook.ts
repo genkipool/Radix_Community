@@ -35,6 +35,18 @@ export function addressCategory(address: string): AddressCategory {
     return 'other';
 }
 
+/**
+ * True when `address` is a global Radix entity that can be saved and classified
+ * in the address book (accounts, validators, pools, lockers, components,
+ * packages, resources). Excludes tx hashes, internal vaults/stores, and system
+ * singletons like consensusmanager or transactiontracker.
+ */
+export function isAddressBookSaveable(address: string): boolean {
+    const clean = address.trim();
+    if (clean.length < 20) return false;
+    return addressCategory(clean) !== 'other';
+}
+
 /** Adds a `category` to any entry missing one (older saves predate categories). */
 function withCategory(entry: AddressBookEntry): AddressBookEntry {
     // 'other' is re-read too: lockers were saved as 'other' before they had a category.

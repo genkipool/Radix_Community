@@ -181,6 +181,8 @@
     "popup_about_radix_dao_desc": "Marshall Islands DAO LLC, signed PDFs, on-chain verification & notices",
     "wallet_save_contact": "Save to the address book",
     "wallet_saved_contact": "Already in your address book",
+    "wallet_remove_contact": "In your address book ({category}) — click to remove",
+    "wallet_remove_contact_named": "In your address book as \"{name}\" ({category}) — click to remove",
     "agenda_tab_recent": "Recent",
     "agenda_recent_hint": "Accounts you have dealt with over the last month, newest first. Read from the ledger: nothing is stored until you press the address book button.",
     "agenda_recent_loading": "Looking through your transactions…",

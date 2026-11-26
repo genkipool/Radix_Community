@@ -3,6 +3,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, Info, Shield, Download, Droplets } from 'lucide-react';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { sanitizeText } from '@/utils/sanitize';
@@ -131,6 +132,7 @@ export function AddressDisplay({
                                 ? <Check className="size-3 text-green-500" />
                                 : <Copy className="size-3" />}
                         </button>
+                        <SaveToAddressBookButton address={copyableAddr} name={entityName} size="xs" />
                         {isAccountAddr && network === 'mainnet' && (
                             <button
                                 type="button"
@@ -245,6 +247,7 @@ export function EntityBadge({
                     ? <Check className="size-3" />
                     : <Copy className="size-3" />}
             </button>
+            <SaveToAddressBookButton address={clean} size="xs" />
         </div>
     );
 }

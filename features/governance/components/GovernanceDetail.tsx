@@ -50,58 +50,58 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
     // What each row means, shown on hover.
     const hints = (g.detail_hints ?? {}) as Record<string, string>;
     const kindHint = kind === 'proposal' ? hints.kind_proposal : kind === 'election' ? hints.kind_election : hints.kind_temperature_check;
-    const kindText = kind === 'proposal' ? (gv.kind_proposal || 'Formal proposal') : kind === 'election' ? (gv.kind_election ?? '') : (gv.kind_temperature_check || 'Temperature check');
+    const kindText = kind === 'proposal' ? (gv.kind_proposal ?? '') : kind === 'election' ? (gv.kind_election ?? '') : (gv.kind_temperature_check ?? '');
     return (
-        <CollapsibleCard id="vote-details" icon={Info} title={g.details || 'Vote details'}>
-            <Row icon={Landmark} label={g.detail_system || 'System'} hint={hints.system}>
+        <CollapsibleCard id="vote-details" icon={Info} title={g.details ?? ''}>
+            <Row icon={Landmark} label={g.detail_system ?? ''} hint={hints.system}>
                 <a href={system.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
                     {system.name}<ExternalLink className="size-3" />
                 </a>
             </Row>
-            <Row icon={FileText} label={g.detail_kind || 'Type'} hint={kindHint}>
+            <Row icon={FileText} label={g.detail_kind ?? ''} hint={kindHint}>
                 {kindText}
             </Row>
-            <Row icon={Hash} label={g.detail_number || 'Number'} hint={hints.number}>#{id}</Row>
-            {item.parameterLabel && <Row icon={Layers} label={g.detail_parameters || 'Category'} hint={hints.parameters}>{item.parameterLabel}</Row>}
-            {item.quorum !== null && <Row icon={Target} label={g.detail_quorum || 'Quorum'} hint={hints.quorum}>{formatXrd(item.quorum, language)} XRD</Row>}
+            <Row icon={Hash} label={g.detail_number ?? ''} hint={hints.number}>#{id}</Row>
+            {item.parameterLabel && <Row icon={Layers} label={g.detail_parameters ?? ''} hint={hints.parameters}>{item.parameterLabel}</Row>}
+            {item.quorum !== null && <Row icon={Target} label={g.detail_quorum ?? ''} hint={hints.quorum}>{formatXrd(item.quorum, language)} XRD</Row>}
             {item.approvalThreshold !== null && (
-                <Row icon={ThumbsUp} label={g.detail_threshold || 'Approval threshold'} hint={hints.threshold}>
-                    {fill(g.detail_threshold_value || '{pct} in favour', { pct: formatPct(item.approvalThreshold, language) })}
+                <Row icon={ThumbsUp} label={g.detail_threshold ?? ''} hint={hints.threshold}>
+                    {fill(g.detail_threshold_value ?? '', { pct: formatPct(item.approvalThreshold, language) })}
                 </Row>
             )}
-            {kind === 'proposal' && item.maxSelections > 1 && <Row icon={ListChecks} label={g.detail_max_options || 'Options per ballot'} hint={hints.max_options}>{item.maxSelections}</Row>}
-            {item.start && item.deadline && <Row icon={Hourglass} label={g.detail_duration || 'Duration'} hint={hints.duration}>{formatDuration(item.deadline - item.start, language)}</Row>}
-            {item.start && <Row icon={CalendarClock} label={gv.starts || 'Opens'} hint={hints.starts}><span suppressHydrationWarning>{formatDate(item.start, language)}</span></Row>}
-            {item.deadline && <Row icon={CalendarClock} label={gv.ends || 'Closes'} hint={hints.ends}><span suppressHydrationWarning>{formatDate(item.deadline, language)}</span></Row>}
+            {kind === 'proposal' && item.maxSelections > 1 && <Row icon={ListChecks} label={g.detail_max_options ?? ''} hint={hints.max_options}>{item.maxSelections}</Row>}
+            {item.start && item.deadline && <Row icon={Hourglass} label={g.detail_duration ?? ''} hint={hints.duration}>{formatDuration(item.deadline - item.start, language)}</Row>}
+            {item.start && <Row icon={CalendarClock} label={gv.starts ?? ''} hint={hints.starts}><span suppressHydrationWarning>{formatDate(item.start, language)}</span></Row>}
+            {item.deadline && <Row icon={CalendarClock} label={gv.ends ?? ''} hint={hints.ends}><span suppressHydrationWarning>{formatDate(item.deadline, language)}</span></Row>}
             {votes !== null && (
-                <Row icon={Users} label={g.detail_voters || 'Voters'} hint={hints.voters}>
+                <Row icon={Users} label={g.detail_voters ?? ''} hint={hints.voters}>
                     {item.revoteCount
-                        ? fill(g.detail_voters_value || '{n} ({changed} changed their vote)', { n: votes.toLocaleString(language), changed: item.revoteCount.toLocaleString(language) })
+                        ? fill(g.detail_voters_value ?? '', { n: votes.toLocaleString(language), changed: item.revoteCount.toLocaleString(language) })
                         : votes.toLocaleString(language)}
                 </Row>
             )}
             {item.author && (
-                <Row icon={PenLine} label={kind === 'proposal' ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')} hint={kind === 'proposal' ? hints.author_proposal : hints.author_temperature_check}>
+                <Row icon={PenLine} label={kind === 'proposal' ? (gv.author_proposal ?? '') : (gv.author_temperature_check ?? '')} hint={kind === 'proposal' ? hints.author_proposal : hints.author_temperature_check}>
                     <span className="inline-flex items-center gap-1 font-mono">
                         <Link href={`/${language}/dashboard/account/${item.author}`} className="hover:text-[var(--color-primary)]" title={item.author}>{shortenAddress(item.author)}</Link>
-                        <CopyButton value={item.author} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
+                        <CopyButton value={item.author} copiedAddress={copied} onCopy={copy} title={g.copy ?? ''} />
                     </span>
                 </Row>
             )}
-            <Row icon={Boxes} label={g.detail_component || 'Component'} hint={hints.component}>
+            <Row icon={Boxes} label={g.detail_component ?? ''} hint={hints.component}>
                 <span className="inline-flex items-center gap-1 font-mono">
                     <span title={system.component}>{shortenAddress(system.component)}</span>
-                    <CopyButton value={system.component} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
+                    <CopyButton value={system.component} copiedAddress={copied} onCopy={copy} title={g.copy ?? ''} />
                 </span>
             </Row>
             {(kind === 'proposal' || kind === 'election') && item.temperatureCheckId && (
                 <Link href={link('temperature_check', item.temperatureCheckId)} title={hints.from_tc} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline">
-                    <ArrowDownLeft className="size-3.5" />{fill(g.from_tc || 'Comes from temperature check #{id}', { id: item.temperatureCheckId })}
+                    <ArrowDownLeft className="size-3.5" />{fill(g.from_tc ?? '', { id: item.temperatureCheckId })}
                 </Link>
             )}
             {kind === 'temperature_check' && item.elevatedProposalId && (
                 <Link href={link('proposal', item.elevatedProposalId)} title={hints.to_proposal} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent)] hover:underline">
-                    <ArrowUpRight className="size-3.5" />{fill(g.to_proposal || 'Moved on to formal proposal #{id}', { id: item.elevatedProposalId })}
+                    <ArrowUpRight className="size-3.5" />{fill(g.to_proposal ?? '', { id: item.elevatedProposalId })}
                 </Link>
             )}
         </CollapsibleCard>
@@ -231,7 +231,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     const phase = votingPhase(item, now);
     const gv: Gv = g.vote ?? {};
     const electionTally = useGovernanceTally(
-        { component: system.component, kind, itemId: id },
+        { component: system.component, kind, itemId: id, voters: true },
         system.network,
         kind === 'election',
     );
@@ -269,21 +269,21 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
         {
             key: 'proposal',
             label: kind === 'proposal'
-                ? (g.tab_proposal || 'Proposal')
+                ? (g.tab_proposal ?? '')
                 : kind === 'election'
                     ? (g.tab_election ?? '')
-                    : (g.tab_temperature_check || 'Temperature check'),
+                    : (g.tab_temperature_check ?? ''),
             icon: FileText,
         },
-        { key: 'results', label: g.tab_results || 'Result', icon: BarChart3 },
-        { key: 'compare', label: g.tab_compare || 'Other methods', icon: Scale },
-        { key: 'historical', label: g.tab_historical || g.tab_compare || 'Historical', icon: History },
+        { key: 'results', label: g.tab_results ?? '', icon: BarChart3 },
+        { key: 'compare', label: g.tab_compare ?? '', icon: Scale },
+        { key: 'historical', label: (g.tab_historical || g.tab_compare) ?? '', icon: History },
     ];
 
     return (
         <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-16">
             <Link href={`/${language}/governance`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-primary)]">
-                <ArrowLeft className="size-3.5" />{g.back || 'All votes'}
+                <ArrowLeft className="size-3.5" />{g.back ?? ''}
             </Link>
 
             <header className="mt-4">
@@ -302,7 +302,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                     <TranslationBar g={g} />
                 </div>
                 <h1 className="mt-3 text-2xl md:text-4xl font-bold leading-tight text-[var(--color-text-main)] break-words">
-                    {item.title || gv.untitled || 'untitled'}
+                    {(item.title || gv.untitled) ?? ''}
                 </h1>
                 {item.shortDescription && (
                     <p className="mt-3 max-w-4xl text-sm md:text-base leading-relaxed text-[var(--color-text-secondary)]">{item.shortDescription}</p>
@@ -347,7 +347,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                             )}
                             {descriptionHtml && (
                                 <article>
-                                    <h2 className="mb-4 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{g.full_text || 'Full text of the proposal'}</h2>
+                                    <h2 className="mb-4 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{g.full_text ?? ''}</h2>
                                     <div className="governance-prose" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
                                 </article>
                             )}
@@ -356,6 +356,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                                     <ElectionCandidatesBallot
                                         election={item.election}
                                         electionData={electionData}
+                                        voters={electionTally.data?.voters}
                                         grades={grades}
                                         onGrade={(cid, grade) => setGrades(prev => ({ ...prev, [cid]: grade }))}
                                         canGrade={phase === 'open'}
@@ -366,7 +367,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                                     <CandidatesSection election={item.election} g={g} />
                                 )
                             )}
-                            <LinkList links={item.links} title={gv.links || 'Learn more'} />
+                            <LinkList links={item.links} title={gv.links ?? ''} />
                         </div>
                         <aside className="space-y-4 order-1 lg:order-2 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto no-scrollbar lg:pb-2">
                             {kind === 'election' ? (
@@ -374,6 +375,8 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                                     entry={entry}
                                     system={system}
                                     electionData={electionData}
+                                    voters={electionTally.data?.voters}
+                                    votersLoading={electionTally.isLoading}
                                     grades={grades}
                                     g={g}
                                     language={language}

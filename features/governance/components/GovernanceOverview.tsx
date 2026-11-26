@@ -63,17 +63,16 @@ export function GovernanceOverview({ entries, g, language, serverNow, collapsed 
     return (
         <HeroCollapse collapsed={collapsed}>
             <ContentHero
-                brandName=""
-                title={g.hero_title || 'Radix Governance'}
+                title={g.hero_word ?? ''}
                 gradient="from-[var(--color-primary)] via-[var(--color-secondary)] to-[var(--color-accent)]"
                 heroPadding="pt-12 pb-10"
                 subtitle={g.hero_subtitle}
             >
                 <div className="max-w-[1500px] mx-auto w-full px-4 sm:px-6 lg:px-12 pb-16 space-y-10">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <Stat icon={Vote} value={openCount.toLocaleString(language)} label={g.stats_open || 'Open votes'} />
-                        <Stat icon={Layers} value={entries.length.toLocaleString(language)} label={g.stats_total || 'Votes in total'} />
-                        <Stat icon={Users} value={totalVoters.toLocaleString(language)} label={g.stats_voters || 'Votes cast'} />
+                        <Stat icon={Vote} value={openCount.toLocaleString(language)} label={g.stats_open ?? ''} />
+                        <Stat icon={Layers} value={entries.length.toLocaleString(language)} label={g.stats_total ?? ''} />
+                        <Stat icon={Users} value={totalVoters.toLocaleString(language)} label={g.stats_voters ?? ''} />
                     </div>
 
                     {steps.length > 0 && (
@@ -102,33 +101,33 @@ export function GovernanceOverview({ entries, g, language, serverNow, collapsed 
                         <div className="flex flex-col xl:flex-row xl:items-center gap-3">
                             <div className="flex flex-wrap gap-2">
                                 <Segmented<StatusFilter>
-                                    label={g.filter_status || 'Status'}
+                                    label={g.filter_status ?? ''}
                                     value={status}
                                     onChange={setStatus}
                                     options={[
-                                        { value: 'all', label: g.status_all || 'All' },
-                                        { value: 'open', label: g.status_open || 'Open' },
-                                        { value: 'upcoming', label: g.status_upcoming || 'Upcoming' },
-                                        { value: 'closed', label: g.status_closed || 'Closed' },
+                                        { value: 'all', label: g.status_all ?? '' },
+                                        { value: 'open', label: g.status_open ?? '' },
+                                        { value: 'upcoming', label: g.status_upcoming ?? '' },
+                                        { value: 'closed', label: g.status_closed ?? '' },
                                     ]}
                                 />
                                 <Segmented<KindFilter>
-                                    label={g.filter_kind || 'Type'}
+                                    label={g.filter_kind ?? ''}
                                     value={kind}
                                     onChange={setKind}
                                     options={[
-                                        { value: 'all', label: g.kind_all || 'All' },
-                                        { value: 'proposal', label: g.kind_proposal || 'Proposals' },
-                                        { value: 'temperature_check', label: g.kind_temperature_check || 'Temperature checks' },
+                                        { value: 'all', label: g.kind_all ?? '' },
+                                        { value: 'proposal', label: g.kind_proposal ?? '' },
+                                        { value: 'temperature_check', label: g.kind_temperature_check ?? '' },
                                         { value: 'election', label: g.kind_election ?? '' },
                                     ]}
                                 />
                                 {GOVERNANCE_SYSTEMS.length > 1 && (
                                     <Segmented<string>
-                                        label={g.filter_system || 'System'}
+                                        label={g.filter_system ?? ''}
                                         value={system}
                                         onChange={setSystem}
-                                        options={[{ value: 'all', label: g.system_all || 'All' }, ...GOVERNANCE_SYSTEMS.map(s => ({ value: s.key, label: s.name }))]}
+                                        options={[{ value: 'all', label: g.system_all ?? '' }, ...GOVERNANCE_SYSTEMS.map(s => ({ value: s.key, label: s.name }))]}
                                     />
                                 )}
                             </div>
@@ -139,13 +138,13 @@ export function GovernanceOverview({ entries, g, language, serverNow, collapsed 
                                     type="search"
                                     value={query}
                                     onChange={e => setQuery(e.target.value)}
-                                    placeholder={g.search_placeholder || 'Search by title'}
+                                    placeholder={g.search_placeholder ?? ''}
                                     className="w-full h-10 pl-9 pr-3 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
                                 />
                             </label>
                         </div>
 
-                        <p className="text-xs text-[var(--color-text-muted)]">{fill(g.results_count || '{n} votes', { n: visible.length.toLocaleString(language) })}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">{fill(g.results_count ?? '', { n: visible.length.toLocaleString(language) })}</p>
 
                         {visible.length > 0 ? (
                             <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
@@ -155,7 +154,7 @@ export function GovernanceOverview({ entries, g, language, serverNow, collapsed 
                             </div>
                         ) : (
                             <p className="rounded-2xl border border-dashed border-[var(--color-card-border)] p-10 text-center text-sm text-[var(--color-text-muted)]">
-                                {entries.length === 0 ? (g.load_error || 'The ledger could not be read right now.') : (g.empty || 'No votes match these filters.')}
+                                {entries.length === 0 ? (g.load_error ?? '') : (g.empty ?? '')}
                             </p>
                         )}
 
