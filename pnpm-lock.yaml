@@ -53,7 +53,7 @@ importers:
         version: 3.3.0(pdf-lib@1.17.1)
       '@signpdf/signer-p12':
         specifier: ^3.3.0
-        version: 3.3.0(node-forge@1.4.0)
+        version: 3.3.0(node-forge@1.4.4)
       '@signpdf/signpdf':
         specifier: ^3.3.0
         version: 3.3.0
@@ -109,8 +109,8 @@ importers:
         specifier: 16.4.3
         version: 16.4.3(@babel/core@7.29.7)(@types/node@22.19.19)(babel-plugin-react-compiler@19.0.0-beta-ebf51a3-20250411)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       node-forge:
-        specifier: ^1.4.0
-        version: 1.4.0
+        specifier: ^1.4.4
+        version: 1.4.4
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
@@ -4187,8 +4187,8 @@ packages:
       encoding:
         optional: true
 
-  node-forge@1.4.0:
-    resolution: {integrity: sha512-LarFH0+6VfriEhqMMcLX2F7SwSXeWwnEAJEsYm5QKWchiVYVvJyV9v7UDvUv+w5HO23ZpQTXDv/GxdDdMyOuoQ==}
+  node-forge@1.4.4:
+    resolution: {integrity: sha512-T6VRRpF3+czIGcXW/LOeoD7Ej28d8CF1UMEAbJyJRUtYMvyXAgxUPW2kbUibumvV9LiUQAznJOFyeYclzSJMMg==}
     engines: {node: '>= 6.13.0'}
 
   node-gyp-build@4.8.4:
@@ -6482,10 +6482,10 @@ snapshots:
       '@signpdf/utils': 3.3.0
       pdf-lib: 1.17.1
 
-  '@signpdf/signer-p12@3.3.0(node-forge@1.4.0)':
+  '@signpdf/signer-p12@3.3.0(node-forge@1.4.4)':
     dependencies:
       '@signpdf/utils': 3.3.0
-      node-forge: 1.4.0
+      node-forge: 1.4.4
 
   '@signpdf/signpdf@3.3.0':
     dependencies:
@@ -9506,7 +9506,7 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-forge@1.4.0: {}
+  node-forge@1.4.4: {}
 
   node-gyp-build@4.8.4: {}
 
