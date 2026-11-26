@@ -12,14 +12,14 @@ import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
 import { itemChoices } from '../lib/governanceVotes';
 import {
-    METHODS, balanceExtremes, compareMethods, effectiveExtremes, spreadExtremes,
+    METHODS, balanceExtremes, compareMethods, computeElectionConsensus, effectiveExtremes, spreadExtremes,
     type MethodFamily, type MethodResult,
 } from '../lib/votingMethods';
 import { isCountedVoter } from '../lib/comparisonUtils';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE } from './VoteParts';
 import { stanceResolver, type G } from './GovernanceBadges';
-import { ElectionCandidatesKpiGrid } from './ElectionSection';
+import { ElectionCandidatesKpiGrid, ElectionConsensusKpiGrid } from './ElectionSection';
 import { MethodGuideModal } from './MethodGuideModal';
 import { MethodRow } from './ComparisonMethodRow';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
@@ -51,6 +51,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const [query, setQuery] = useState('');
     const [sort, setSort] = useState<SortState>(null);
     const [guideMethod, setGuideMethod] = useState<MethodResult | null>(null);
+    const [consensusGuideOpen, setConsensusGuideOpen] = useState(false);
 
     // Same query as the result tab: switching tabs does not ask again.
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);
@@ -65,11 +66,12 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         : [];
     const params = ruleParams(language);
     const pending = rows.length - counted.length;
+    const readyForExport = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
+    const electionConsensus = kind === 'election' ? computeElectionConsensus(readyForExport) : null;
 
     useRegisterTabExport(onRegisterExport, () => {
         const currentResult = results.find(r => r.current);
-        const readyResults = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
-        const otherResults = readyResults.filter(r => !r.current);
+        const otherResults = readyForExport.filter(r => !r.current);
         return {
             tab: 'compare',
             exportedAt: new Date().toISOString(),
@@ -101,6 +103,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 sameOutcomeCount: otherResults.filter(r => r.sameAsCurrent).length,
                 comparedMethodsCount: otherResults.length,
             },
+            ...(electionConsensus ? { electionConsensus } : {}),
             methods: results,
         };
     });
@@ -278,11 +281,30 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             </section>
 
             {isElection && item.election && electionData && (
-                <ElectionCandidatesKpiGrid
-                    election={item.election}
-                    electionData={electionData}
+                <section aria-labelledby="election-current-ranking-heading" className="space-y-2.5">
+                    <h3 id="election-current-ranking-heading" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
+                        <Crown className="size-4 text-[var(--color-primary)] shrink-0" aria-hidden="true" />
+                        <span>{c.election_current_ranking_title ?? ''}</span>
+                    </h3>
+                    <ElectionCandidatesKpiGrid
+                        election={item.election}
+                        electionData={electionData}
+                        g={g}
+                        language={language}
+                    />
+                </section>
+            )}
+
+            {isElection && electionConsensus && (
+                <ElectionConsensusKpiGrid
+                    consensus={electionConsensus}
+                    c={c}
                     g={g}
                     language={language}
+                    onOpenGuide={() => {
+                        setGuideMethod(null);
+                        setConsensusGuideOpen(true);
+                    }}
                 />
             )}
 
@@ -334,7 +356,10 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             quorum={item.quorum}
                             ageLoading={!ages.done}
                             language={language}
-                            onOpenGuide={setGuideMethod}
+                            onOpenGuide={m => {
+                                setConsensusGuideOpen(false);
+                                setGuideMethod(m);
+                            }}
                         />
                     )}
                 />
@@ -343,17 +368,29 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             <ComparisonGlossary id="methods-glossary" c={c} />
 
             <MethodGuideModal
-                isOpen={Boolean(guideMethod)}
-                onClose={() => setGuideMethod(null)}
+                isOpen={Boolean(guideMethod) || (consensusGuideOpen && Boolean(electionConsensus))}
+                onClose={() => {
+                    setGuideMethod(null);
+                    setConsensusGuideOpen(false);
+                }}
                 target={guideMethod ? {
                     mode: 'single',
                     method: guideMethod,
                     quorum: item.quorum,
                     threshold: item.approvalThreshold,
                     gradeQuantile: electionData?.gradeQuantileApplied ?? null,
+                } : consensusGuideOpen && electionConsensus ? {
+                    mode: 'consensus',
+                    consensus: electionConsensus,
                 } : null}
-                methodName={guideMethod ? methodText(c, guideMethod.key, params).name : ''}
-                methodRule={guideMethod ? methodText(c, guideMethod.key, params).rule : ''}
+                methodName={guideMethod
+                    ? methodText(c, guideMethod.key, params).name
+                    : electionConsensus
+                        ? fill(c.election_consensus_title ?? '', { n: electionConsensus.evaluatedMethods.toLocaleString(language) })
+                        : ''}
+                methodRule={guideMethod
+                    ? methodText(c, guideMethod.key, params).rule
+                    : (c.election_consensus_hint ?? '')}
                 c={c}
                 g={g}
                 language={language}
