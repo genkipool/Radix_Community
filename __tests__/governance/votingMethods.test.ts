@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { balanceExtremes, balanceScore, compareMethods, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
+import { balanceExtremes, balanceScore, compareMethods, computeElectionConsensus, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
 import { itemChoices, type GovernanceItem } from '@/features/governance/lib/governanceVotes';
 
 const item: GovernanceItem = {
@@ -398,5 +398,76 @@ describe('Majority Judgment election comparison', () => {
         expect(linear.electionSummary?.elected.map(c => c.label)).toEqual(['A']);
         expect(linear.electionSummary?.tiedAtCutoff.map(c => c.label)).toEqual(['B', 'C']);
         expect(linear.electionSummary?.standings.map(c => c.rank)).toEqual([1, 2, 2]);
+    });
+
+    it('computes family-balanced consensus and aligns entered/dropped flags with official electionData', () => {
+        const electionItem: GovernanceItem = {
+            ...item,
+            title: 'Council Election #2',
+            quorum: 100,
+            approvalThreshold: null,
+            options: [
+                { id: 0, label: 'Alice' },
+                { id: 1, label: 'Bob' },
+                { id: 2, label: 'Carol' },
+                { id: 3, label: 'Dave' },
+            ],
+            election: {
+                roleId: 'council',
+                seatCount: 2,
+                minimumMedianGrade: 2,
+                candidates: [
+                    { id: 0, displayName: 'Alice', reference: 'alice', description: '', links: [], displayOrder: 0 },
+                    { id: 1, displayName: 'Bob', reference: 'bob', description: '', links: [], displayOrder: 1 },
+                    { id: 2, displayName: 'Carol', reference: 'carol', description: '', links: [], displayOrder: 2 },
+                    { id: 3, displayName: 'Dave', reference: 'dave', description: '', links: [], displayOrder: 3 },
+                ],
+            },
+        };
+        const electionChoices = itemChoices('election', electionItem);
+        const electionVoters: MethodVoter[] = [
+            { account: 'whale', choices: ['0', '1', '2', '3'], grades: { '0': 4, '1': 4, '2': 2, '3': 0 }, power: 100_000, ageDays: 900 },
+            { account: 's1', choices: ['0', '1', '2', '3'], grades: { '0': 4, '1': 0, '2': 4, '3': 0 }, power: 1_000, ageDays: 900 },
+            { account: 's2', choices: ['0', '1', '2', '3'], grades: { '0': 4, '1': 0, '2': 4, '3': 0 }, power: 1_000, ageDays: 900 },
+            { account: 's3', choices: ['0', '1', '2', '3'], grades: { '0': 4, '1': 0, '2': 4, '3': 0 }, power: 1_000, ageDays: 900 },
+            { account: 's4', choices: ['0', '1', '2', '3'], grades: { '0': 4, '1': 0, '2': 4, '3': 0 }, power: 1_000, ageDays: 900 },
+        ];
+        const res = compareMethods(electionVoters, electionChoices, electionItem);
+        const consensus = computeElectionConsensus(res);
+        expect(consensus).not.toBeNull();
+        // Dave is #4 in both current and consensus -> never flagged as changed/dropped.
+        const dave = consensus!.candidates.find(c => c.label === 'Dave')!;
+        expect(dave.inSeats).toBe(false);
+        expect(dave.changedFromCurrent).toBe(false);
+
+        // When official electionData already matches the consensus top 2 (Alice & Carol),
+        // neither Alice, Carol, Bob, nor Dave is flagged as changedFromCurrent.
+        const officialAligned = {
+            status: 'LIVE',
+            round: 'RoundOne' as const,
+            provisional: true,
+            totalVotingPower: '104000',
+            quorumXrd: '100',
+            quorumMet: true,
+            minimumMedianGrade: 2,
+            gradeQuantileApplied: '3/5',
+            reserveListDays: null,
+            parameterSetId: null,
+            parameterSetVersion: null,
+            tcVotingStart: null,
+            tcVotingEnd: null,
+            temperatureCheckResult: null,
+            candidateResults: [
+                { candidateId: 0, histogram: ['0', '0', '0', '0', '104000'] as [string, string, string, string, string], qualifyingGrade: 4, powerAbove: '0', powerBelow: '0', p: '0', q: '0', band: 'B', electable: true, rank: 1, tieGroupId: 1, outcome: 'ELECTED' },
+                { candidateId: 2, histogram: ['0', '0', '100000', '0', '4000'] as [string, string, string, string, string], qualifyingGrade: 2, powerAbove: '4000', powerBelow: '0', p: '0.038', q: '0', band: 'A', electable: true, rank: 2, tieGroupId: 2, outcome: 'ELECTED' },
+                { candidateId: 1, histogram: ['4000', '0', '0', '0', '100000'] as [string, string, string, string, string], qualifyingGrade: 4, powerAbove: '0', powerBelow: '4000', p: '0', q: '0.038', band: 'C', electable: true, rank: 3, tieGroupId: 3, outcome: 'RESERVE' },
+                { candidateId: 3, histogram: ['104000', '0', '0', '0', '0'] as [string, string, string, string, string], qualifyingGrade: 0, powerAbove: '0', powerBelow: '0', p: '0', q: '0', band: 'B', electable: false, rank: 4, tieGroupId: 4, outcome: 'NOT_ELECTABLE' },
+            ],
+        };
+        const aligned = computeElectionConsensus(res, officialAligned)!;
+        expect(aligned.candidates.find(c => c.label === 'Dave')!.changedFromCurrent).toBe(false);
+        const enteredCount = aligned.candidates.filter(c => c.changedFromCurrent && c.inSeats).length;
+        const droppedCount = aligned.candidates.filter(c => c.changedFromCurrent && !c.inSeats).length;
+        expect(enteredCount).toBe(droppedCount);
     });
 });

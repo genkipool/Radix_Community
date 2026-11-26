@@ -67,7 +67,9 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const params = ruleParams(language);
     const pending = rows.length - counted.length;
     const readyForExport = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
-    const electionConsensus = kind === 'election' ? computeElectionConsensus(readyForExport) : null;
+    const electionConsensus = kind === 'election'
+        ? computeElectionConsensus(readyForExport, tallyQuery.data?.electionData)
+        : null;
 
     useRegisterTabExport(onRegisterExport, () => {
         const currentResult = results.find(r => r.current);
