@@ -23,7 +23,7 @@ const PHASE_ICON: Record<VotingPhase, typeof CircleDot> = { open: CircleDot, upc
 /** Open / upcoming / closed, always as a word next to the colour. */
 export function PhasePill({ phase, g }: { phase: VotingPhase; g: G }) {
     const Icon = PHASE_ICON[phase];
-    const label = { open: g.status_open || 'Open', upcoming: g.status_upcoming || 'Upcoming', closed: g.status_closed || 'Closed', unknown: '—' }[phase];
+    const label = { open: g.status_open ?? '', upcoming: g.status_upcoming ?? '', closed: g.status_closed ?? '', unknown: '—' }[phase];
     return (
         <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${PHASE_STYLE[phase]}`}>
             <Icon className={`size-3 ${phase === 'open' ? 'animate-pulse' : ''}`} />
@@ -36,10 +36,10 @@ export function PhasePill({ phase, g }: { phase: VotingPhase; g: G }) {
 export function KindPill({ kind, g }: { kind: GovernanceItemKind; g: G }) {
     const Icon = kind === 'proposal' ? FileText : kind === 'election' ? Vote : Thermometer;
     const label = kind === 'proposal'
-        ? (g.vote?.kind_proposal || 'Formal proposal')
+        ? (g.vote?.kind_proposal ?? '')
         : kind === 'election'
             ? (g.vote?.kind_election ?? '')
-            : (g.vote?.kind_temperature_check || 'Temperature check');
+            : (g.vote?.kind_temperature_check ?? '');
     return (
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
             <Icon className="size-3" />

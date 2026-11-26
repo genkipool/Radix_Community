@@ -1,70 +1,69 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useQueryClient } from '@tanstack/react-query';
+import React from 'react';
+import { Scale, ShieldCheck, Vote } from 'lucide-react';
+import type { MajorityJudgmentElectionData } from '../types';
+import type { GovernanceElectionSpec } from '../lib/governanceVotes';
 import {
-    AlertTriangle,
-    CheckCircle2,
-    Clock,
-    ExternalLink,
-    Info,
-    Loader2,
-    Lock,
-    Scale,
-    ShieldCheck,
-    Users,
-    Vote,
-    Wallet,
-} from 'lucide-react';
-import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
-import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
-import type { GovernanceSystem } from '../config/systems';
-import type { GovernanceEntry, MajorityJudgmentCandidateResult, MajorityJudgmentElectionData } from '../types';
-import { votingPhase, type GovernanceCandidate, type GovernanceElectionSpec } from '../lib/governanceVotes';
-import { buildElectionVoteManifest } from '../lib/voteManifest';
-import { useGovernanceTally } from '../hooks/useGovernanceTally';
-import { fill, formatDate, formatPct, formatRelative, formatXrd } from '../lib/format';
-import { shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
-import { CollapsibleCard } from './CollapsibleCard';
-import { AccountPicker } from './AccountPicker';
-import { Notice } from './VoteControls';
-import { useTranslatedList } from './BrowserTranslation';
+    MJ_GRADE_BAR_COLOR,
+    MJ_GRADE_DOT_COLOR,
+    MJ_GRADE_ORDER,
+    bandHint,
+    gradeLabel,
+    parseQuantile,
+} from '../lib/majorityJudgment';
+import { fill, formatDate, formatPct, formatXrd } from '../lib/format';
 import type { G } from './GovernanceBadges';
+
+export { ElectionVoteSidebar } from './ElectionVoteSidebar';
+export { ElectionCandidatesBallot } from './ElectionCandidatesBallot';
 
 type MjDict = NonNullable<G['mj']>;
 
-const GRADE_ORDER = [4, 3, 2, 1, 0] as const;
-
-const GRADE_BAR_COLOR: Record<number, string> = {
-    4: 'bg-emerald-500',
-    3: 'bg-teal-400',
-    2: 'bg-[var(--color-primary)]',
-    1: 'bg-amber-400',
-    0: 'bg-rose-500',
-};
-
-const GRADE_DOT_COLOR: Record<number, string> = {
-    4: 'bg-emerald-500',
-    3: 'bg-teal-400',
-    2: 'bg-[var(--color-primary)]',
-    1: 'bg-amber-400',
-    0: 'bg-rose-500',
-};
-
-function gradeLabel(mj: MjDict | undefined, grade: number): string {
-    return mj?.grades?.[grade] ?? String(grade);
+/** Stacked 5-grade distribution bar with a quantile tick mark (default 60%). */
+function GradeDistributionBar({
+    histogram,
+    totalPower,
+    quantile = '3/5',
+    mj,
+    language,
+    heightClass = 'h-2',
+    showTooltips = false,
+}: {
+    histogram: Record<number, string>;
+    totalPower: number;
+    quantile?: string;
+    mj: MjDict | undefined;
+    language: string;
+    heightClass?: string;
+    showTooltips?: boolean;
+}) {
+    const tickPct = `${Math.round(parseQuantile(quantile) * 100)}%`;
+    return (
+        <div className={`relative ${heightClass} w-full rounded-full bg-[var(--color-card-border)] overflow-hidden flex`}>
+            {MJ_GRADE_ORDER.map(gradeIdx => {
+                const xrd = Number(histogram[gradeIdx]) || 0;
+                const pct = totalPower > 0 ? (xrd / totalPower) * 100 : 0;
+                if (pct <= 0) return null;
+                return (
+                    <span
+                        key={gradeIdx}
+                        className={`h-full ${MJ_GRADE_BAR_COLOR[gradeIdx]}`}
+                        style={{ width: `${pct}%` }}
+                        title={showTooltips ? `${gradeLabel(mj, gradeIdx)}: ${formatXrd(xrd, language)} XRD (${pct.toFixed(1)}%)` : undefined}
+                    />
+                );
+            })}
+            <span
+                className="pointer-events-none absolute inset-y-0 w-0.5 bg-[var(--color-text-main)]/80"
+                style={{ left: tickPct }}
+                aria-hidden="true"
+            />
+        </div>
+    );
 }
 
-function bandHint(mj: MjDict | undefined, band: string): string | undefined {
-    if (band === 'A') return mj?.band_hint_A;
-    if (band === 'B') return mj?.band_hint_B;
-    if (band === 'C') return mj?.band_hint_C;
-    return undefined;
-}
-
-function outcomeBadge(outcome: string, mj: MjDict | undefined): { label: string; cls: string } {
+export function electionOutcomeBadge(outcome: string, mj: MjDict | undefined): { label: string; cls: string } {
     if (outcome === 'ELECTED') {
         return {
             label: mj?.outcome_elected ?? '',
@@ -221,112 +220,9 @@ export function ElectionOverviewCards({
     );
 }
 
-function CandidateMetricsBlock({
-    result,
-    totalVotingPower,
-    minGrade,
-    quantile,
-    mj,
-    language,
-}: {
-    result: MajorityJudgmentCandidateResult;
-    totalVotingPower: number;
-    minGrade: number;
-    quantile: string;
-    mj: MjDict | undefined;
-    language: string;
-}) {
-    return (
-        <div className="space-y-3.5 border-t border-[var(--color-card-border)] pt-4">
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                    <dt className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">
-                        {fill(mj?.qualifying_grade ?? '', { quantile })}
-                    </dt>
-                    <dd className="mt-0.5 font-semibold text-[var(--color-text-main)]">
-                        {gradeLabel(mj, result.qualifyingGrade)}
-                    </dd>
-                </div>
-                <div>
-                    <dt className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">
-                        {mj?.min_qualifying_grade ?? ''}
-                    </dt>
-                    <dd className="mt-0.5 font-semibold text-[var(--color-text-main)]">
-                        {gradeLabel(mj, minGrade)} ·{' '}
-                        <span className={result.electable ? 'text-[var(--color-accent)]' : 'text-amber-500'}>
-                            {result.electable ? (mj?.meets_floor ?? '') : (mj?.below_floor ?? '')}
-                        </span>
-                    </dd>
-                </div>
-                <div>
-                    <dt className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">
-                        {mj?.majority_gauge ?? ''}
-                    </dt>
-                    <dd
-                        className="mt-0.5 font-mono text-[11px] font-medium text-[var(--color-text-main)] tabular-nums break-all cursor-help"
-                        title={bandHint(mj, result.band)}
-                    >
-                        {fill(mj?.gauge_value ?? '', {
-                            band: result.band,
-                            p: Number(result.p).toFixed(4),
-                            q: Number(result.q).toFixed(4),
-                        })}
-                    </dd>
-                </div>
-                <div>
-                    <dt className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">
-                        {mj?.published_standing ?? ''}
-                    </dt>
-                    <dd className="mt-0.5 font-semibold text-[var(--color-text-main)]">
-                        {fill(mj?.standing_value ?? '', {
-                            rank: String(result.rank),
-                            group: String(result.tieGroupId),
-                        })}
-                    </dd>
-                </div>
-                <div className="sm:col-span-2">
-                    <dt className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-text-muted)]">
-                        {mj?.exact_gauge_power ?? ''}
-                    </dt>
-                    <dd className="mt-0.5 font-mono text-[11px] text-[var(--color-text-secondary)] break-all">
-                        {fill(mj?.exact_gauge_value ?? '', {
-                            above: formatXrd(Number(result.powerAbove) || 0, language),
-                            below: formatXrd(Number(result.powerBelow) || 0, language),
-                        })}
-                    </dd>
-                </div>
-            </dl>
-
-            <div className="space-y-1.5">
-                {GRADE_ORDER.map((gradeIdx) => {
-                    const xrd = Number(result.histogram[gradeIdx]) || 0;
-                    const pct = totalVotingPower > 0 ? Math.min(100, (xrd / totalVotingPower) * 100) : 0;
-                    const isQualifying = result.qualifyingGrade === gradeIdx;
-                    return (
-                        <div key={gradeIdx} className="flex items-center gap-2.5 text-[11px]">
-                            <span className={`w-24 shrink-0 truncate ${isQualifying ? 'font-bold text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)]'}`}>
-                                {gradeLabel(mj, gradeIdx)}
-                            </span>
-                            <span className="h-1.5 flex-1 rounded-full bg-[var(--color-card-border)] overflow-hidden">
-                                <span
-                                    className={`block h-full rounded-full transition-all ${isQualifying ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-primary)]/70'}`}
-                                    style={{ width: `${pct}%` }}
-                                />
-                            </span>
-                            <span className="w-24 shrink-0 text-right font-mono tabular-nums text-[var(--color-text-muted)]">
-                                {formatXrd(xrd, language)} XRD
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
 /**
  * 2-row × 7-column KPI strip of all candidates ordered by rank, sitting right
- * under the headline KPI cards in the Results tab.
+ * under the headline KPI cards in the Results & Comparison tabs.
  */
 export function ElectionCandidatesKpiGrid({
     election,
@@ -378,25 +274,14 @@ export function ElectionCandidatesKpiGrid({
                             <span className={`block truncate text-sm font-black leading-none ${res.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-main)]'}`}>
                                 {gradeLabel(mj, res.qualifyingGrade)}
                             </span>
-                            <div className="relative h-1.5 w-full rounded-full bg-[var(--color-card-border)] overflow-hidden flex">
-                                {GRADE_ORDER.map(gradeIdx => {
-                                    const xrd = Number(res.histogram[gradeIdx]) || 0;
-                                    const pct = totalPower > 0 ? (xrd / totalPower) * 100 : 0;
-                                    if (pct <= 0) return null;
-                                    return (
-                                        <span
-                                            key={gradeIdx}
-                                            className={`h-full ${GRADE_BAR_COLOR[gradeIdx]}`}
-                                            style={{ width: `${pct}%` }}
-                                        />
-                                    );
-                                })}
-                                <span
-                                    className="pointer-events-none absolute inset-y-0 w-0.5 bg-[var(--color-text-main)]/80"
-                                    style={{ left: '60%' }}
-                                    aria-hidden="true"
-                                />
-                            </div>
+                            <GradeDistributionBar
+                                histogram={res.histogram}
+                                totalPower={totalPower}
+                                quantile={electionData.gradeQuantileApplied}
+                                mj={mj}
+                                language={language}
+                                heightClass="h-1.5"
+                            />
                         </div>
 
                         <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-[var(--color-text-muted)] tabular-nums">
@@ -418,8 +303,6 @@ export function ElectionCandidatesKpiGrid({
 /**
  * Compact Results card for Majority Judgment elections, sitting in the left
  * column of the Results tab alongside TurnoutMeter & VotingWindow.
- * Displays a 5-grade color legend, ranked candidates with stacked grade bars,
- * a 60% quantile tick, and a visual seat cutoff line after `seatCount`.
  */
 export function ElectionResultsSummaryCard({
     election,
@@ -463,9 +346,9 @@ export function ElectionResultsSummaryCard({
             </div>
 
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)]">
-                {GRADE_ORDER.map(gradeIdx => (
+                {MJ_GRADE_ORDER.map(gradeIdx => (
                     <span key={gradeIdx} className="inline-flex items-center gap-1">
-                        <span className={`size-2 rounded-full ${GRADE_DOT_COLOR[gradeIdx]}`} aria-hidden="true" />
+                        <span className={`size-2 rounded-full ${MJ_GRADE_DOT_COLOR[gradeIdx]}`} aria-hidden="true" />
                         <span>{gradeLabel(mj, gradeIdx)}</span>
                     </span>
                 ))}
@@ -478,7 +361,7 @@ export function ElectionResultsSummaryCard({
                     const inSeatRange = seats > 0 && idx < seats;
                     const showTopHeader = seats > 0 && idx === 0;
                     const showRestHeader = seats > 0 && idx === seats && ranked.length > seats;
-                    const badge = outcomeBadge(res.outcome, mj);
+                    const badge = electionOutcomeBadge(res.outcome, mj);
 
                     return (
                         <React.Fragment key={candidate.id}>
@@ -526,427 +409,20 @@ export function ElectionResultsSummaryCard({
                                     </div>
                                 </div>
 
-                                <div className="relative h-2 w-full rounded-full bg-[var(--color-card-border)] overflow-hidden flex">
-                                    {GRADE_ORDER.map(gradeIdx => {
-                                        const xrd = Number(res.histogram[gradeIdx]) || 0;
-                                        const pct = totalPower > 0 ? (xrd / totalPower) * 100 : 0;
-                                        if (pct <= 0) return null;
-                                        return (
-                                            <span
-                                                key={gradeIdx}
-                                                className={`h-full ${GRADE_BAR_COLOR[gradeIdx]}`}
-                                                style={{ width: `${pct}%` }}
-                                                title={`${gradeLabel(mj, gradeIdx)}: ${formatXrd(xrd, language)} XRD (${pct.toFixed(1)}%)`}
-                                            />
-                                        );
-                                    })}
-                                    <span
-                                        className="pointer-events-none absolute inset-y-0 w-0.5 bg-[var(--color-text-main)]/80"
-                                        style={{ left: '60%' }}
-                                        aria-hidden="true"
-                                    />
-                                </div>
+                                <GradeDistributionBar
+                                    histogram={res.histogram}
+                                    totalPower={totalPower}
+                                    quantile={electionData.gradeQuantileApplied}
+                                    mj={mj}
+                                    language={language}
+                                    heightClass="h-2"
+                                    showTooltips
+                                />
                             </div>
                         </React.Fragment>
                     );
                 })}
             </div>
         </section>
-    );
-}
-
-/**
- * Interactive Majority Judgment candidates ballot + live per-candidate metrics.
- */
-export function ElectionCandidatesBallot({
-    election,
-    electionData,
-    grades,
-    onGrade,
-    canGrade,
-    g,
-    language,
-    sortByRank = false,
-}: {
-    election: GovernanceElectionSpec;
-    electionData: MajorityJudgmentElectionData | null;
-    grades?: Record<number, number>;
-    onGrade?: (candidateId: number, grade: number) => void;
-    canGrade: boolean;
-    g: G;
-    language: string;
-    sortByRank?: boolean;
-}) {
-    const mj = g.mj;
-    const resultById = new Map((electionData?.candidateResults ?? []).map(r => [r.candidateId, r]));
-    const ordered: GovernanceCandidate[] = sortByRank
-        ? [...election.candidates].sort((a, b) => (resultById.get(a.id)?.rank ?? 999) - (resultById.get(b.id)?.rank ?? 999))
-        : election.candidates;
-    const descriptions = useTranslatedList(ordered.map(c => c.description ?? ''));
-    const totalPower = Number(electionData?.totalVotingPower) || 0;
-    const minGrade = electionData?.minimumMedianGrade ?? election.minimumMedianGrade ?? 2;
-    const quantile = electionData?.gradeQuantileApplied ?? '3/5';
-
-    return (
-        <section className="pt-6 border-t border-[var(--color-card-border)] space-y-4">
-            <div className="space-y-1">
-                <h2 className="flex items-center gap-2 text-base font-bold text-[var(--color-text-main)]">
-                    <Users className="size-4 text-[var(--color-primary)]" aria-hidden="true" />
-                    <span>
-                        {sortByRank ? (mj?.ranked_results_title ?? '') : `${g.candidates_title ?? ''} (${ordered.length})`}
-                    </span>
-                </h2>
-                <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
-                    {sortByRank ? (mj?.ranked_results_hint ?? '') : (mj?.candidates_hint ?? '')}
-                </p>
-            </div>
-
-            <div className={sortByRank ? 'grid grid-cols-1 lg:grid-cols-2 gap-4' : 'space-y-4'}>
-                {ordered.map((candidate, idx) => {
-                    const desc = descriptions[idx] ?? candidate.description;
-                    const res = resultById.get(candidate.id);
-                    const badge = res ? outcomeBadge(res.outcome, mj) : null;
-                    const pickedGrade = grades?.[candidate.id];
-                    const displayNum = String(idx + 1).padStart(2, '0');
-
-                    return (
-                        <div
-                            key={`${candidate.id}-${candidate.displayName}`}
-                            className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-4"
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-baseline gap-3 min-w-0">
-                                    <span className="shrink-0 font-mono text-xs font-bold text-[var(--color-text-muted)]">
-                                        {displayNum}
-                                    </span>
-                                    <div className="min-w-0">
-                                        <h3 className="text-base font-bold text-[var(--color-text-main)] leading-tight">
-                                            {candidate.displayName}
-                                        </h3>
-                                        {candidate.reference && (
-                                            <p className="mt-0.5 font-mono text-[11px] text-[var(--color-text-muted)] break-all">
-                                                {candidate.reference}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                {badge && (
-                                    <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${badge.cls}`}>
-                                        {badge.label}
-                                    </span>
-                                )}
-                            </div>
-
-                            {desc && (
-                                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-wrap">
-                                    {desc.trim()}
-                                </p>
-                            )}
-
-                            {candidate.links.length > 0 && (
-                                <div className="flex flex-wrap gap-3">
-                                    {candidate.links.map((href, linkIdx) => (
-                                        <a
-                                            key={href}
-                                            href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
-                                        >
-                                            <span>
-                                                {g.candidate_profile ?? ''}
-                                                {candidate.links.length > 1 ? ` #${linkIdx + 1}` : ''}
-                                            </span>
-                                            <ExternalLink className="size-3 shrink-0" aria-hidden="true" />
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-
-                            {canGrade && onGrade && (
-                                <fieldset className="border-t border-[var(--color-card-border)] pt-4">
-                                    <legend className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        {mj?.your_grade ?? ''}
-                                    </legend>
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                                        {GRADE_ORDER.map((gradeVal) => {
-                                            const selected = pickedGrade === gradeVal;
-                                            return (
-                                                <button
-                                                    key={gradeVal}
-                                                    type="button"
-                                                    role="radio"
-                                                    aria-checked={selected}
-                                                    onClick={() => onGrade(candidate.id, gradeVal)}
-                                                    className={`rounded-xl border px-2.5 py-2 text-center text-xs font-semibold transition-colors cursor-pointer ${
-                                                        selected
-                                                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-sm'
-                                                            : 'border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50 hover:text-[var(--color-text-main)]'
-                                                    }`}
-                                                >
-                                                    {gradeLabel(mj, gradeVal)}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </fieldset>
-                            )}
-
-                            {res && (
-                                <CandidateMetricsBlock
-                                    result={res}
-                                    totalVotingPower={totalPower}
-                                    minGrade={minGrade}
-                                    quantile={quantile}
-                                    mj={mj}
-                                    language={language}
-                                />
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-        </section>
-    );
-}
-
-/**
- * Sticky sidebar panel to cast a Majority Judgment election ballot directly
- * from our web app using the Radix Wallet.
- */
-export function ElectionVoteSidebar({
-    entry,
-    system,
-    electionData,
-    grades,
-    g,
-    language,
-    now,
-}: {
-    entry: GovernanceEntry;
-    system: GovernanceSystem;
-    electionData: MajorityJudgmentElectionData | null;
-    grades: Record<number, number>;
-    g: G;
-    language: string;
-    now: number;
-}) {
-    const queryClient = useQueryClient();
-    const wallet = useRadixWallet();
-    const tx = useConsoleTransaction();
-    const [chosen, setChosen] = useState<string[] | null>(null);
-
-    const { item, id } = entry;
-    const candidates = item.election?.candidates ?? [];
-    const total = candidates.length;
-    const graded = candidates.filter(c => grades[c.id] !== undefined).length;
-    const allGraded = total > 0 && graded === total;
-
-    const phase = votingPhase(item, now);
-    const available = wallet.accounts.map(a => a.address);
-    const selectedAccounts = (chosen ?? available.slice(0, 1)).filter(a => available.includes(a));
-    const onNetwork = wallet.activeNetwork === system.network;
-    const canVote = phase === 'open' && wallet.isConnected && onNetwork && available.length > 0;
-    const mj = g.mj;
-
-    const votersQuery = useGovernanceTally(
-        { component: system.component, kind: 'election', itemId: id, voters: true },
-        system.network,
-        canVote,
-    );
-    const votedSet = new Set((votersQuery.data?.voters ?? []).map(v => v.account));
-    const currentStatus = selectedAccounts.map(account => ({
-        account,
-        voted: votedSet.has(account),
-    }));
-    const anyVoted = currentStatus.some(c => c.voted);
-    const labelOf = (address: string) => wallet.accounts.find(a => a.address === address)?.label || shortenAddress(address);
-
-    const setAccounts = (next: string[]) => {
-        if (tx.isSending) return;
-        setChosen(next);
-        tx.reset();
-    };
-    const toggleAccount = (address: string) =>
-        setAccounts(selectedAccounts.includes(address) ? selectedAccounts.filter(a => a !== address) : [...selectedAccounts, address]);
-
-    const submit = async () => {
-        if (!allGraded || selectedAccounts.length === 0) return;
-        const manifest = buildElectionVoteManifest({
-            component: system.component,
-            electionId: id,
-            round: electionData?.round ?? item.election?.round ?? 'RoundOne',
-            accounts: selectedAccounts,
-            grades: candidates.map(c => ({ candidateId: c.id, grade: grades[c.id] })),
-        });
-        const result = await tx.sendTransaction(manifest);
-        if (result) {
-            await queryClient.invalidateQueries({ queryKey: ['governance-tally', system.component, 'election', id] });
-        }
-    };
-
-    return (
-        <CollapsibleCard
-            id="vote-panel-title"
-            icon={Wallet}
-            title={g.vote_title ?? ''}
-            headerClassName="bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10"
-        >
-            <div className="space-y-4">
-                {phase === 'closed' && <Notice icon={Lock}>{g.vote_closed ?? ''}</Notice>}
-                {phase === 'upcoming' && item.start && (
-                    <Notice icon={Clock}>
-                        <span suppressHydrationWarning>
-                            {fill(g.vote_upcoming ?? '', { time: formatRelative(item.start, language, now) })}
-                        </span>
-                    </Notice>
-                )}
-
-                {phase === 'open' && !wallet.isConnected && (
-                    <div className="rounded-xl border border-dashed border-[var(--color-primary)]/40 bg-[var(--color-primary)]/5 p-4 text-center space-y-3">
-                        <p className="text-sm font-bold text-[var(--color-text-main)]">{g.connect_title ?? ''}</p>
-                        <p className="text-[13px] text-[var(--color-text-muted)]">{g.connect_subtitle ?? ''}</p>
-                        <button
-                            type="button"
-                            disabled={wallet.isLoading}
-                            onClick={() => wallet.connect(RadixNetworkId.Mainnet)}
-                            className="inline-flex items-center justify-center gap-2 w-full h-11 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
-                        >
-                            {wallet.isLoading ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-                            {g.connect_to_vote ?? ''}
-                        </button>
-                    </div>
-                )}
-
-                {phase === 'open' && wallet.isConnected && !onNetwork && (
-                    <Notice icon={AlertTriangle} tone="warn">
-                        <p>{g.wrong_network ?? ''}</p>
-                        <button type="button" onClick={() => wallet.connect(RadixNetworkId.Mainnet)} className="mt-2 font-bold underline underline-offset-2">
-                            {g.switch_network ?? ''}
-                        </button>
-                    </Notice>
-                )}
-
-                {phase === 'open' && wallet.isConnected && onNetwork && available.length === 0 && (
-                    <Notice icon={AlertTriangle} tone="warn">{g.wallet_accounts_empty ?? ''}</Notice>
-                )}
-
-                {canVote && (
-                    <>
-                        <AccountPicker
-                            accounts={wallet.accounts}
-                            selected={selectedAccounts}
-                            onToggle={toggleAccount}
-                            onSetAll={setAccounts}
-                            label={wallet.accounts.length > 1 ? (g.accounts_label ?? '') : (g.account_label ?? '')}
-                            labels={{
-                                all: g.accounts_all ?? '',
-                                count: g.accounts_count ?? '',
-                                none: g.accounts_none ?? '',
-                            }}
-                        />
-
-                        {votersQuery.isLoading ? (
-                            <div className="h-11 rounded-xl bg-[var(--color-surface)] animate-pulse" aria-hidden />
-                        ) : currentStatus.length === 1 ? (
-                            currentStatus[0].voted ? (
-                                <Notice icon={CheckCircle2} tone="ok">{mj?.already_voted ?? ''}</Notice>
-                            ) : (
-                                <Notice icon={Info}>{g.no_vote_yet ?? ''}</Notice>
-                            )
-                        ) : currentStatus.length > 1 ? (
-                            <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 space-y-2">
-                                <p className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
-                                    {g.current_votes_title ?? ''}
-                                </p>
-                                <ul className="space-y-1.5">
-                                    {currentStatus.map(c => (
-                                        <li key={c.account} className="flex items-center justify-between gap-3 text-xs">
-                                            <span className="truncate font-semibold text-[var(--color-text-main)]" title={c.account}>
-                                                {labelOf(c.account)}
-                                            </span>
-                                            <span className={`shrink-0 font-semibold ${c.voted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
-                                                {c.voted ? (mj?.voted_badge ?? '') : (g.not_voted ?? '')}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                {g.multi_account_hint && (
-                                    <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">{g.multi_account_hint}</p>
-                                )}
-                            </div>
-                        ) : null}
-
-                        <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 space-y-2">
-                            <div className="flex items-center justify-between text-xs font-semibold">
-                                <span className="text-[var(--color-text-main)]">
-                                    {fill(mj?.ballot_progress ?? '', { graded: String(graded), total: String(total) })}
-                                </span>
-                                <span className="font-mono text-[var(--color-primary)] tabular-nums">
-                                    {total > 0 ? `${Math.round((graded / total) * 100)}%` : '0%'}
-                                </span>
-                            </div>
-                            <div className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-all ${allGraded ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-primary)]'}`}
-                                    style={{ width: `${total > 0 ? (graded / total) * 100 : 0}%` }}
-                                />
-                            </div>
-                            <p className="text-[11px] text-[var(--color-text-muted)] leading-snug">
-                                {fill(allGraded ? (mj?.ballot_ready ?? '') : (mj?.ballot_incomplete ?? ''), { total: String(total) })}
-                            </p>
-                        </div>
-
-                        <button
-                            type="button"
-                            disabled={!allGraded || selectedAccounts.length === 0 || tx.isSending}
-                            onClick={() => void submit()}
-                            className="inline-flex items-center justify-center gap-2 w-full h-11 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer"
-                        >
-                            {tx.isSending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-                            <span>
-                                {tx.isSending
-                                    ? (g.sending ?? '')
-                                    : selectedAccounts.length > 1
-                                        ? fill(g.submit_many ?? '', { n: String(selectedAccounts.length) })
-                                        : anyVoted
-                                            ? (g.submit_change ?? '')
-                                            : (mj?.submit_ballot ?? '')}
-                            </span>
-                        </button>
-                        {item.start && g.snapshot_note && (
-                            <p className="flex gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
-                                <Info className="size-3 shrink-0 mt-0.5" />
-                                <span suppressHydrationWarning>
-                                    {fill(g.snapshot_note, { date: formatDate(item.start, language) })}
-                                </span>
-                            </p>
-                        )}
-                    </>
-                )}
-
-                {tx.error && (
-                    <Notice icon={AlertTriangle} tone="error">
-                        {/reject|cancel/i.test(tx.error)
-                            ? (g.error_rejected ?? '')
-                            : fill(g.error_generic ?? '', { code: tx.error })}
-                    </Notice>
-                )}
-                {tx.result && (
-                    <Notice icon={CheckCircle2} tone="ok">
-                        <p className="font-bold">{g.success ?? ''}</p>
-                        <Link
-                            href={`/${language}/dashboard/tx/${tx.result.transactionIntentHash}`}
-                            title={tx.result.transactionIntentHash}
-                            className="mt-1 flex items-center gap-1.5 min-w-0 max-w-full font-mono text-xs text-[var(--color-primary)] hover:underline whitespace-nowrap"
-                        >
-                            <span className="truncate">{shortenAddress(tx.result.transactionIntentHash)}</span>
-                            <ExternalLink className="size-3.5 shrink-0" />
-                        </Link>
-                        {g.tally_delay && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{g.tally_delay}</p>}
-                    </Notice>
-                )}
-            </div>
-        </CollapsibleCard>
     );
 }

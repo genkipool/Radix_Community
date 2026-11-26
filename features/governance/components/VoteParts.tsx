@@ -60,18 +60,18 @@ export function OutcomeBanner({ outcome, tally, item, final, gv, locale }: {
         threshold: item?.approvalThreshold != null ? formatPct(item.approvalThreshold, locale) : '—',
     };
     const headline = final
-        ? { approved: gv.outcome_approved || 'Approved', rejected: gv.outcome_rejected || 'Rejected', no_quorum: gv.outcome_no_quorum || 'Quorum not reached' }[outcome]
-        : { approved: gv.outcome_open_approved || 'Passing so far', rejected: gv.outcome_open_rejected || 'Failing so far', no_quorum: gv.outcome_open_no_quorum || 'Quorum not reached yet' }[outcome];
+        ? { approved: gv.outcome_approved ?? '', rejected: gv.outcome_rejected ?? '', no_quorum: gv.outcome_no_quorum ?? '' }[outcome]
+        : { approved: gv.outcome_open_approved ?? '', rejected: gv.outcome_open_rejected ?? '', no_quorum: gv.outcome_open_no_quorum ?? '' }[outcome];
     const detail = final
         ? {
-            approved: gv.outcome_approved_detail || '{turnout} XRD of voting power took part (the minimum was {quorum}) and {share} voted in favour, where {threshold} was needed.',
-            rejected: gv.outcome_rejected_detail || 'There was quorum ({turnout} of {quorum} XRD), but only {share} voted in favour and {threshold} was needed.',
-            no_quorum: gv.outcome_no_quorum_detail || 'Only {turnout} XRD of voting power took part and {quorum} were needed for the result to count.',
+            approved: gv.outcome_approved_detail ?? '',
+            rejected: gv.outcome_rejected_detail ?? '',
+            no_quorum: gv.outcome_no_quorum_detail ?? '',
         }[outcome]
         : {
-            approved: gv.outcome_open_approved_detail || 'So far {turnout} XRD of voting power is taking part (the minimum is {quorum}) and {share} is in favour; {threshold} is needed.',
-            rejected: gv.outcome_open_rejected_detail || 'There is quorum so far ({turnout} of {quorum} XRD), but only {share} is in favour and {threshold} is needed.',
-            no_quorum: gv.outcome_open_no_quorum_detail || 'So far {turnout} XRD of voting power is taking part and {quorum} is needed for the result to count.',
+            approved: gv.outcome_open_approved_detail ?? '',
+            rejected: gv.outcome_open_rejected_detail ?? '',
+            no_quorum: gv.outcome_open_no_quorum_detail ?? '',
         }[outcome];
 
     return (
@@ -81,7 +81,7 @@ export function OutcomeBanner({ outcome, tally, item, final, gv, locale }: {
             </span>
             <div className="min-w-0">
                 <p className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
-                    {final ? (gv.outcome_label || 'Result') : (gv.outcome_open_label || 'If it closed now')}
+                    {final ? (gv.outcome_label ?? '') : (gv.outcome_open_label ?? '')}
                 </p>
                 <p className={`text-lg font-black leading-tight ${style.text}`}>{headline}</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{fill(detail, values)}</p>
@@ -97,7 +97,7 @@ export function BallotResults({ choices, tally, gv, locale }: { choices: BallotC
     const rows = tally?.rows ?? choices.map(c => ({ ...c, power: 0, share: 0 }));
     return (
         <div>
-            <SectionLabel>{tally ? (gv.results || 'Results') : (gv.options || 'Ballot options')}</SectionLabel>
+            <SectionLabel>{tally ? (gv.results ?? '') : (gv.options ?? '')}</SectionLabel>
             <ul className={`grid grid-cols-1 gap-2 ${tally ? '' : '@md:grid-cols-2 @3xl:grid-cols-3'}`}>
                 {rows.map(r => (
                     <li
@@ -110,7 +110,7 @@ export function BallotResults({ choices, tally, gv, locale }: { choices: BallotC
                                 <span className="break-words">{r.label}</span>
                                 {r.selected && (
                                     <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border border-current/30 shrink-0">
-                                        {gv.selected || 'This vote'}
+                                        {gv.selected ?? ''}
                                     </span>
                                 )}
                             </span>
@@ -137,7 +137,7 @@ export function TurnoutMeter({ tally, item, gv, locale }: { tally: TallySummary;
     const missing = Math.max(0, item.quorum - tally.turnout);
     return (
         <div>
-            <SectionLabel>{gv.turnout || 'Turnout'}</SectionLabel>
+            <SectionLabel>{gv.turnout ?? ''}</SectionLabel>
             <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 @md:p-4 space-y-2.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <span className="text-sm font-semibold text-[var(--color-text-main)]">
@@ -147,13 +147,13 @@ export function TurnoutMeter({ tally, item, gv, locale }: { tally: TallySummary;
                     <span className={`flex items-center gap-1.5 text-xs font-bold ${met ? 'text-[var(--color-accent)]' : 'text-amber-600 dark:text-amber-400'}`}>
                         {met ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
                         {met
-                            ? fill(gv.quorum_met || 'Quorum reached ({pct} of the minimum)', { pct: formatPct(tally.quorumRatio, locale) })
-                            : fill(gv.quorum_missing || '{missing} XRD short of the quorum', { missing: formatXrd(missing, locale) })}
+                            ? fill(gv.quorum_met ?? '', { pct: formatPct(tally.quorumRatio, locale) })
+                            : fill(gv.quorum_missing ?? '', { missing: formatXrd(missing, locale) })}
                     </span>
                 </div>
                 <Bar ratio={tally.quorumRatio} className={met ? 'bg-[var(--color-accent)]' : 'bg-amber-500'} />
                 <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">
-                    {gv.turnout_hint || 'Voting power is the XRD (liquid or staked) held by the accounts that voted. The quorum is the minimum that has to take part for the result to count.'}
+                    {gv.turnout_hint ?? ''}
                 </p>
             </div>
         </div>
@@ -173,20 +173,20 @@ export function VotingWindow({ item, phase, progress, gv, locale, timezone, now 
     now?: number;
 }) {
     if (!item.start || !item.deadline) return null;
-    const phaseText = phase === 'open' ? fill(gv.ends_rel || 'Closes {time}', { time: formatRelative(item.deadline, locale, now) })
-        : phase === 'upcoming' ? fill(gv.starts_rel || 'Starts {time}', { time: formatRelative(item.start, locale, now) })
-            : fill(gv.closed_rel || 'Closed {time}', { time: formatRelative(item.deadline, locale, now) });
+    const phaseText = phase === 'open' ? fill(gv.ends_rel ?? '', { time: formatRelative(item.deadline, locale, now) })
+        : phase === 'upcoming' ? fill(gv.starts_rel ?? '', { time: formatRelative(item.start, locale, now) })
+            : fill(gv.closed_rel ?? '', { time: formatRelative(item.deadline, locale, now) });
     return (
         <div>
-            <SectionLabel>{gv.period || 'Voting period'}</SectionLabel>
+            <SectionLabel>{gv.period ?? ''}</SectionLabel>
             <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 @md:p-4 space-y-3">
                 <div className="flex flex-col @md:flex-row @md:items-end justify-between gap-2 text-xs">
                     <span className="flex flex-col">
-                        <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.starts || 'Opens'}</span>
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.starts ?? ''}</span>
                         <span className="font-semibold text-[var(--color-text-main)]" suppressHydrationWarning>{formatDate(item.start, locale, timezone)}</span>
                     </span>
                     <span className="flex flex-col @md:items-end">
-                        <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.ends || 'Closes'}</span>
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.ends ?? ''}</span>
                         <span className="font-semibold text-[var(--color-text-main)]" suppressHydrationWarning>{formatDate(item.deadline, locale, timezone)}</span>
                     </span>
                 </div>
@@ -198,7 +198,7 @@ export function VotingWindow({ item, phase, progress, gv, locale, timezone, now 
                     {item.elevatedProposalId && (
                         <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
                             <ArrowUpRight className="size-3.5" />
-                            {fill(gv.elevated || 'Moved on to formal proposal #{id}', { id: item.elevatedProposalId })}
+                            {fill(gv.elevated ?? '', { id: item.elevatedProposalId })}
                         </span>
                     )}
                 </div>

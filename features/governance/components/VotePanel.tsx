@@ -58,7 +58,7 @@ export function VotePanel({ entry, system, g, language, now }: {
         <CollapsibleCard
             id="vote-panel-title"
             icon={Wallet}
-            title={g.vote_title || 'Your vote'}
+            title={g.vote_title ?? ''}
             headerClassName="bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10"
         >
             <div className="space-y-4">
@@ -67,7 +67,7 @@ export function VotePanel({ entry, system, g, language, now }: {
                 {vote.canVote && (
                     <fieldset>
                         <legend className="mb-2 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
-                            {vote.maxPick === 1 ? (g.choose_one || 'Pick one option') : fill(g.choose_up_to || 'Pick up to {n} options', { n: String(vote.maxPick) })}
+                            {vote.maxPick === 1 ? (g.choose_one ?? '') : fill(g.choose_up_to ?? '', { n: String(vote.maxPick) })}
                         </legend>
                         <div className="space-y-2">
                             {choices.map(c => {

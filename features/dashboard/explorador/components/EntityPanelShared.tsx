@@ -15,6 +15,7 @@
 import React, { useId } from 'react';
 import { m } from "motion/react";
 import { Check, Copy } from 'lucide-react';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
 import { parseTags, metaKeyLabel, getConfigEntries, resolutionTooltip, parseProgrammaticJson } from '../../utils/resourceUtils';
@@ -57,13 +58,16 @@ export function SummaryInlineRow({
                         </span>
                     )}
                     {copyable && onCopy && (
-                        <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); onCopy(); }}
-                            className={`p-0.5 rounded transition-colors shrink-0 ${isCopied ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                        >
-                            {isCopied ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
-                        </button>
+                        <>
+                            <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); onCopy(); }}
+                                className={`p-0.5 rounded transition-colors shrink-0 ${isCopied ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                            >
+                                {isCopied ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
+                            </button>
+                            {typeof value === 'string' && <SaveToAddressBookButton address={value} size="xs" />}
+                        </>
                     )}
                 </div>
                 {secondaryValue && (
@@ -139,6 +143,7 @@ function PanelRoleRow({
                                 ? <Check className="size-2.5" />
                                 : <Copy className="size-2.5" />}
                         </button>
+                        <SaveToAddressBookButton address={entry.ruleAddress} size="xs" />
                     </div>
                 )}
             </div>

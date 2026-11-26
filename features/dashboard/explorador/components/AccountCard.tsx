@@ -13,6 +13,7 @@ import { getCurrencyForLocale, formatCurrency } from '@/utils/currencyUtils';
 import { Card } from '@/components/ui/Card';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import { AccountDepositsTab } from './AccountDepositsTab';
@@ -212,6 +213,7 @@ export function AccountCard({
                                                 onClick={handleCopy}
                                                 className="shrink-0"
                                             />
+                                            <SaveToAddressBookButton address={address} size="sm" />
                                         </div>
                                     </div>
                                     <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
