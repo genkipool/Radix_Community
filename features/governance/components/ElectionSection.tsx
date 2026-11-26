@@ -349,16 +349,20 @@ export function ElectionConsensusKpiGrid({
                         grade: gradeLabel(mj, cand.modalGrade),
                         current: cand.currentRank != null ? `#${cand.currentRank}` : '—',
                     });
+                    const entered = cand.changedFromCurrent && cand.inSeats;
+                    const dropped = cand.changedFromCurrent && !cand.inSeats;
                     return (
                         <div
                             key={cand.id}
                             title={tooltip}
                             className={`min-w-0 flex flex-col justify-between gap-2 rounded-2xl border p-3 transition-colors ${
-                                cand.changedFromCurrent && cand.inSeats
-                                    ? 'border-amber-500/45 bg-amber-500/5'
-                                    : cand.inSeats
-                                        ? 'border-[var(--color-primary)]/35 bg-[var(--color-card-bg)]'
-                                        : 'border-[var(--color-card-border)] bg-[var(--color-card-bg)]'
+                                entered
+                                    ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10'
+                                    : dropped
+                                        ? 'border-amber-500/50 bg-amber-500/10'
+                                        : cand.inSeats
+                                            ? 'border-[var(--color-primary)]/35 bg-[var(--color-card-bg)]'
+                                            : 'border-[var(--color-card-border)] bg-[var(--color-card-bg)]'
                             }`}
                         >
                             <div className="flex items-center justify-between gap-1.5 min-w-0">
@@ -366,11 +370,13 @@ export function ElectionConsensusKpiGrid({
                                     {cand.label}
                                 </span>
                                 <span className={`shrink-0 font-mono text-[10px] font-bold ${
-                                    cand.changedFromCurrent && cand.inSeats
-                                        ? 'text-amber-600 dark:text-amber-400'
-                                        : cand.inSeats
-                                            ? 'text-[var(--color-primary)]'
-                                            : 'text-[var(--color-text-muted)]'
+                                    entered
+                                        ? 'text-[var(--color-accent)]'
+                                        : dropped
+                                            ? 'text-amber-600 dark:text-amber-400'
+                                            : cand.inSeats
+                                                ? 'text-[var(--color-primary)]'
+                                                : 'text-[var(--color-text-muted)]'
                                 }`}>
                                     #{cand.consensusRank}
                                 </span>
@@ -378,7 +384,13 @@ export function ElectionConsensusKpiGrid({
 
                             <div className="space-y-1.5">
                                 <div className="flex items-baseline justify-between gap-1">
-                                    <span className={`text-sm font-black font-mono leading-none tabular-nums ${cand.inSeats ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-main)]'}`}>
+                                    <span className={`text-sm font-black font-mono leading-none tabular-nums ${
+                                        dropped
+                                            ? 'text-amber-600 dark:text-amber-400'
+                                            : cand.inSeats
+                                                ? 'text-[var(--color-accent)]'
+                                                : 'text-[var(--color-text-main)]'
+                                    }`}>
                                         {formatPct(cand.consensusShare, language)}
                                     </span>
                                     <span className="text-[10px] font-semibold text-[var(--color-text-muted)] truncate">
@@ -387,7 +399,13 @@ export function ElectionConsensusKpiGrid({
                                 </div>
                                 <div className="h-1.5 w-full rounded-full bg-[var(--color-card-border)] overflow-hidden">
                                     <span
-                                        className={`block h-full rounded-full transition-all ${cand.inSeats ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-primary)]/60'}`}
+                                        className={`block h-full rounded-full transition-all ${
+                                            dropped
+                                                ? 'bg-amber-500/80'
+                                                : cand.inSeats
+                                                    ? 'bg-[var(--color-accent)]'
+                                                    : 'bg-[var(--color-primary)]/60'
+                                        }`}
                                         style={{ width: `${pct}%` }}
                                     />
                                 </div>
