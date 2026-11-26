@@ -253,6 +253,8 @@
       "ballot_incomplete": "Califica a los {total} candidatos a la izquierda para enviar tu voto.",
       "ballot_ready": "Los {total} candidatos están calificados. Listo para enviar on-chain.",
       "submit_ballot": "Enviar papeleta de elección",
+      "already_voted": "Esta cuenta ya ha votado en esta elección. Si envías otra papeleta, sustituirá tu voto anterior.",
+      "voted_badge": "Ya votó",
       "ranked_results_title": "Clasificación en vivo por Juicio Mayoritario",
       "ranked_results_hint": "Ordenada por posición publicada (provisional mientras la votación está abierta)."
     },
