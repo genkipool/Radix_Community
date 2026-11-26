@@ -3,10 +3,12 @@
 import React, { useRef } from 'react';
 import { m, AnimatePresence } from "motion/react";
 import {
-    Clock, Coins, Landmark, Users, Mail
+    Clock, Coins, Landmark, Users, Mail, Scale
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
+import { useGovernanceTally } from '@/features/governance/hooks/useGovernanceTally';
+import { formatXrd } from '@/features/governance/lib/format';
 import { usePrefetchTransactionDetails } from '../hooks/usePrefetchTx';
 import { TransactionTabs } from './TransactionTabs';
 import { Card } from '@/components/ui/Card';
@@ -187,6 +189,30 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
     // Immediate type from tx list data — no expand needed
     const immediateClasses: string[] = (tx.manifestClasses as string[]) ?? [];
+    const govVote = tx.governanceVote;
+    const govTallyQuery = useGovernanceTally(
+        {
+            component: govVote?.component ?? '',
+            kind: govVote?.kind ?? 'proposal',
+            itemId: govVote?.itemId ?? '0',
+            voters: true,
+        },
+        network,
+        Boolean(govVote),
+    );
+    let govVotingPower: number | null = null;
+    if (govVote && govTallyQuery.data?.voters) {
+        const accountSet = new Set(govVote.accounts);
+        let sum = 0;
+        let found = false;
+        for (const row of govTallyQuery.data.voters) {
+            if (accountSet.has(row.account) && row.votePower !== null && Number.isFinite(Number(row.votePower))) {
+                sum += Number(row.votePower);
+                found = true;
+            }
+        }
+        if (found) govVotingPower = sum;
+    }
     // When details load they may refine the type (e.g. protocol vote from events)
     const detailDetails = (details as TransactionDetails | null);
     const detailClasses: string[] = detailDetails?.manifest_classes ?? immediateClasses;
@@ -346,6 +372,11 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                             <Landmark className="size-3" />
                                             {tt?.minting || 'Minting'}
                                         </div>
+                                    ) : govVote ? (
+                                        <>
+                                            <Scale className="size-3" />
+                                            {tt?.voting_power ?? ''}
+                                        </>
                                     ) : (
                                         <>
                                             <Coins className="size-3" />
@@ -365,6 +396,16 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                                     <span key={op.key} className="truncate">{op.label}: {formatAmount(op.amount, locale)} {op.unit}</span>
                                                 ))}
                                             </div>
+                                        )
+                                    ) : govVote ? (
+                                        govVotingPower !== null ? (
+                                            <span className="text-[var(--color-primary)] tabular-nums">
+                                                {formatXrd(govVotingPower, locale)} XRD
+                                            </span>
+                                        ) : govTallyQuery.isLoading ? (
+                                            <span className="inline-block h-5 w-20 rounded bg-[var(--color-surface)] animate-pulse align-middle" aria-hidden="true" />
+                                        ) : (
+                                            <span className="text-[var(--color-text-muted)]">—</span>
                                         )
                                     ) : tx.displayAmount !== undefined ? (
                                         <div className="flex items-baseline gap-1.5 min-w-0">

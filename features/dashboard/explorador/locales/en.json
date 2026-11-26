@@ -57,6 +57,7 @@
       "amount": "Amount",
       "minting": "Minting",
       "fee_paid": "Fee Paid",
+      "voting_power": "Voting Power",
       "time": "Time",
       "intent_hash": "Intent Hash",
       "unstake_claim_nft_tooltip": "This NFT is your withdrawal receipt (Stake Claim). The network generates it automatically as proof, and you must keep it in your wallet to claim your XRD once the waiting period ends.",

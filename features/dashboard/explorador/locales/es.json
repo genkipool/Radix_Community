@@ -57,6 +57,7 @@
       "amount": "Cantidad",
       "minting": "Acuñación",
       "fee_paid": "Comisión Pagada",
+      "voting_power": "Poder de voto",
       "time": "Tiempo",
       "intent_hash": "Intent Hash",
       "unstake_claim_nft_tooltip": "Este NFT es tu recibo de retiro (Stake Claim). La red lo genera automáticamente como comprobante y deberás conservarlo en tu billetera para poder reclamar tus XRD una vez que finalice el período de espera.",

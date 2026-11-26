@@ -163,6 +163,13 @@ export interface TransactionInfo {
     hasNfts: boolean;
     /** manifest_classes from Gateway — available without full details fetch */
     manifestClasses?: string[];
+    /** Governance vote reference so collapsed cards can display voting power instead of fees. */
+    governanceVote?: {
+        component: string;
+        kind: 'proposal' | 'temperature_check' | 'election';
+        itemId: string;
+        accounts: string[];
+    };
     /** All validator addresses involved in stake/unstake/claim (one per validator) */
     validatorOps?: ValidatorOp[];
     /** Custom fields for summary cards: dominant asset moved */
