@@ -474,18 +474,28 @@ export function ElectionResultsSummaryCard({
                     const res = resultById.get(candidate.id);
                     if (!res) return null;
                     const inSeatRange = seats > 0 && idx < seats;
-                    const showCutoff = seats > 0 && idx === seats;
+                    const showTopHeader = seats > 0 && idx === 0;
+                    const showRestHeader = seats > 0 && idx === seats && ranked.length > seats;
                     const badge = outcomeBadge(res.outcome, mj);
 
                     return (
                         <React.Fragment key={candidate.id}>
-                            {showCutoff && (
-                                <div className="flex items-center gap-2 py-1">
+                            {showTopHeader && (
+                                <div className="flex items-center gap-2 pb-0.5">
                                     <span className="h-px flex-1 bg-[var(--color-primary)]/35" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                                        1–{seats}
+                                        1–{Math.min(seats, ranked.length)}
                                     </span>
                                     <span className="h-px flex-1 bg-[var(--color-primary)]/35" />
+                                </div>
+                            )}
+                            {showRestHeader && (
+                                <div className="flex items-center gap-2 py-1">
+                                    <span className="h-px flex-1 bg-[var(--color-card-border)]" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                        {seats + 1}–{ranked.length}
+                                    </span>
+                                    <span className="h-px flex-1 bg-[var(--color-card-border)]" />
                                 </div>
                             )}
                             <div

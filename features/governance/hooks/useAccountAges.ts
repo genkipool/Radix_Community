@@ -100,5 +100,6 @@ export function toMethodVoters(rows: VoterRow[], ages: AccountAgesState): Method
         stakedXrd: ages.stakedXrd.has(v.account) ? (ages.stakedXrd.get(v.account) as number) : null,
         twab90Xrd: ages.twab90Xrd.has(v.account) ? (ages.twab90Xrd.get(v.account) as number) : null,
         min90Xrd: ages.min90Xrd.has(v.account) ? (ages.min90Xrd.get(v.account) as number) : null,
+        ...(v.grades ? { grades: v.grades } : {}),
     }));
 }

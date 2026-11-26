@@ -59,6 +59,14 @@ export const VOTE_EVENT_SPECS: readonly VoteEventSpec[] = [
     },
 ];
 
+const EVENT_GRADE_INDEX: Record<string, number> = {
+    Poor: 0,
+    Acceptable: 1,
+    Good: 2,
+    VeryGood: 3,
+    Excellent: 4,
+};
+
 export interface GovernanceVote {
     kind: GovernanceItemKind;
     /** Governance component that recorded the vote. */
@@ -68,6 +76,8 @@ export interface GovernanceVote {
     account: string | null;
     selection: VoteSelection;
     replacingVoteId: string | null;
+    /** Per-candidate Majority Judgment grades (candidate id -> 0..4), when `kind === 'election'`. */
+    grades?: Record<string, number>;
 }
 
 export function extractGovernanceVotes(events: GatewayEvent[] = []): GovernanceVote[] {
@@ -79,6 +89,22 @@ export function extractGovernanceVotes(events: GatewayEvent[] = []): GovernanceV
         if (!spec || !data || !component || itemId === null) return [];
         const account = pjText(pjField(data, 'account'));
         const replacing = pjText(pjOption(pjField(data, 'replacing_vote_id')));
+        let grades: Record<string, number> | undefined;
+        if (spec.kind === 'election') {
+            const parsed: Record<string, number> = {};
+            for (const g of pjList(pjField(data, 'grades'))) {
+                const cid = pjNumber(pjFields(pjField(g, 'candidate_id'))[0]);
+                const variant = pjField(g, 'grade')?.variant_name;
+                const variantId = pjField(g, 'grade')?.variant_id;
+                const val = variant && variant in EVENT_GRADE_INDEX
+                    ? EVENT_GRADE_INDEX[variant]
+                    : variantId !== undefined && Number.isInteger(Number(variantId))
+                        ? Number(variantId)
+                        : null;
+                if (cid !== null && val !== null) parsed[String(cid)] = val;
+            }
+            if (Object.keys(parsed).length > 0) grades = parsed;
+        }
         return [{
             kind: spec.kind,
             component,
@@ -87,6 +113,7 @@ export function extractGovernanceVotes(events: GatewayEvent[] = []): GovernanceV
             account: account ? sanitizeText(account) : null,
             selection: spec.readSelection(data),
             replacingVoteId: replacing,
+            ...(grades ? { grades } : {}),
         }];
     });
 }

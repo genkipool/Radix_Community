@@ -306,3 +306,97 @@ describe('concentration', () => {
         expect(concentrationLevel({ nakamoto: 3, spread: 3 / 4 })).toBe('minimal');
     });
 });
+
+describe('Majority Judgment election comparison', () => {
+    it('evaluates 60% quantile per method without multiplying eligibleXrd across candidates', () => {
+        const electionItem: GovernanceItem = {
+            ...item,
+            title: 'Council Election #1',
+            quorum: 500_000,
+            approvalThreshold: null,
+            options: [
+                { id: 0, label: 'Alice' },
+                { id: 1, label: 'Bob' },
+                { id: 2, label: 'Carol' },
+            ],
+            election: {
+                roleId: 'council',
+                seatCount: 2,
+                minimumMedianGrade: 2,
+                candidates: [
+                    { id: 0, displayName: 'Alice', reference: 'alice', description: '', links: [], displayOrder: 0 },
+                    { id: 1, displayName: 'Bob', reference: 'bob', description: '', links: [], displayOrder: 1 },
+                    { id: 2, displayName: 'Carol', reference: 'carol', description: '', links: [], displayOrder: 2 },
+                ],
+            },
+        };
+        const electionChoices = itemChoices('election', electionItem);
+        // Whale (100k XRD) gives Alice=4, Bob=4, Carol=0.
+        // 4 small voters (1k XRD each) give Alice=4, Bob=0, Carol=4.
+        const electionVoters: MethodVoter[] = [
+            { account: 'whale', choices: ['0', '1', '2'], grades: { '0': 4, '1': 4, '2': 0 }, power: 100_000, ageDays: 900 },
+            { account: 's1', choices: ['0', '1', '2'], grades: { '0': 4, '1': 0, '2': 4 }, power: 1_000, ageDays: 900 },
+            { account: 's2', choices: ['0', '1', '2'], grades: { '0': 4, '1': 0, '2': 4 }, power: 1_000, ageDays: 900 },
+            { account: 's3', choices: ['0', '1', '2'], grades: { '0': 4, '1': 0, '2': 4 }, power: 1_000, ageDays: 900 },
+            { account: 's4', choices: ['0', '1', '2'], grades: { '0': 4, '1': 0, '2': 4 }, power: 1_000, ageDays: 900 },
+        ];
+
+        const res = compareMethods(electionVoters, electionChoices, electionItem);
+        const linear = res.find(r => r.key === 'linear')!;
+        const oneAddr = res.find(r => r.key === 'one_address')!;
+
+        // Eligible XRD is summed once per voter (104,000), NOT 3 × 104,000.
+        expect(linear.eligibleXrd).toBe(104_000);
+        expect(linear.quorumMet).toBe(false);
+
+        // Under 1 XRD = 1 vote, whale dominates: Alice & Bob are elected.
+        expect(linear.electionSummary?.elected.map(c => c.label)).toEqual(['Alice', 'Bob']);
+
+        // Under 1 address = 1 vote, 4 small voters dominate: Alice & Carol are elected (1 seat changes).
+        expect(oneAddr.electionSummary?.elected.map(c => c.label)).toEqual(['Alice', 'Carol']);
+        expect(oneAddr.electionSummary?.seatsChanged).toBe(1);
+        expect(oneAddr.electionSummary?.entered).toEqual(['Carol']);
+        expect(oneAddr.electionSummary?.left).toEqual(['Bob']);
+        expect(oneAddr.sameAsCurrent).toBe(false);
+
+        // Double majority requires both XRD and headcount to meet the grade floor:
+        // Bob fails headcount floor (4 of 5 give 0), so only Alice is elected.
+        const dbl = res.find(r => r.key === 'double_majority')!;
+        expect(dbl.electionSummary?.elected.map(c => c.label)).toEqual(['Alice']);
+        expect(dbl.electionSummary?.seatsChanged).toBe(1);
+        expect(dbl.sameAsCurrent).toBe(false);
+    });
+
+    it('preserves exact ties at the seat cutoff instead of arbitrarily breaking by candidate id', () => {
+        const tieItem: GovernanceItem = {
+            ...item,
+            title: 'Tie Election',
+            quorum: 100,
+            approvalThreshold: null,
+            options: [
+                { id: 0, label: 'A' },
+                { id: 1, label: 'B' },
+                { id: 2, label: 'C' },
+            ],
+            election: {
+                roleId: 'council',
+                seatCount: 2,
+                minimumMedianGrade: 2,
+                candidates: [
+                    { id: 0, displayName: 'A', reference: 'a', description: '', links: [], displayOrder: 0 },
+                    { id: 1, displayName: 'B', reference: 'b', description: '', links: [], displayOrder: 1 },
+                    { id: 2, displayName: 'C', reference: 'c', description: '', links: [], displayOrder: 2 },
+                ],
+            },
+        };
+        const tieChoices = itemChoices('election', tieItem);
+        const tieVoters: MethodVoter[] = [
+            { account: 'v1', choices: ['0', '1', '2'], grades: { '0': 4, '1': 3, '2': 3 }, power: 100, ageDays: 900 },
+            { account: 'v2', choices: ['0', '1', '2'], grades: { '0': 4, '1': 3, '2': 3 }, power: 100, ageDays: 900 },
+        ];
+        const linear = compareMethods(tieVoters, tieChoices, tieItem).find(r => r.key === 'linear')!;
+        expect(linear.electionSummary?.elected.map(c => c.label)).toEqual(['A']);
+        expect(linear.electionSummary?.tiedAtCutoff.map(c => c.label)).toEqual(['B', 'C']);
+        expect(linear.electionSummary?.standings.map(c => c.rank)).toEqual([1, 2, 2]);
+    });
+});

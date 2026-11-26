@@ -1,4 +1,4 @@
-import { summarizeTally, type BallotChoice, type GovernanceItem, type TallyRow, type VoteOutcome } from './governanceVotes';
+import { summarizeTally, type BallotChoice, type GovernanceElectionSpec, type GovernanceItem, type TallyRow, type VoteOutcome } from './governanceVotes';
 
 /**
  * The same ballots counted with other voting rules.
@@ -13,6 +13,8 @@ export interface MethodVoter {
     account: string;
     /** Ballot keys picked (option ids or a stance). */
     choices: string[];
+    /** Per-candidate grade index (0..4) for Majority Judgment elections, keyed by candidate id. */
+    grades?: Record<string, number>;
     /** Voting power the collector gives the account, in XRD. */
     power: number;
     /** Account age when the vote opened, in days; null when unknown (or still loading). */
@@ -354,6 +356,47 @@ export interface Decisive {
     xrd: number;
 }
 
+export type ElectionCandidateOutcome = 'elected' | 'tied' | 'reserve' | 'not_elected';
+
+export interface ElectionMethodCandidate {
+    id: number;
+    label: string;
+    /** Qualifying grade index (0..4) at the applied quantile (default 3/5 = 60%). */
+    qualifyingGrade: number;
+    /** Majority gauge band: A (p > q), B (p = q), C (p < q). */
+    band: 'A' | 'B' | 'C';
+    /** Share of total weight strictly above the qualifying grade. */
+    p: number;
+    /** Share of total weight strictly below the qualifying grade. */
+    q: number;
+    /** Real XRD of counted voters who gave this candidate its qualifying grade. */
+    qualifyingXrd: number;
+    /** Share of total weight at or above the minimum qualifying grade. */
+    electableShare: number;
+    electable: boolean;
+    /** Competition rank (1, 1, 3…) — tied candidates share the same rank. */
+    rank: number;
+    /** True when another candidate has the exact same qualifying grade and majority gauge. */
+    tied: boolean;
+    outcome: ElectionCandidateOutcome;
+}
+
+export interface ElectionMethodSummary {
+    seatCount: number;
+    minimumMedianGrade: number;
+    standings: ElectionMethodCandidate[];
+    /** Candidates unambiguously elected (their entire tie group fits within seatCount). */
+    elected: ElectionMethodCandidate[];
+    /** Candidates in a tie group straddling the seatCount boundary (not arbitrarily broken by id). */
+    tiedAtCutoff: ElectionMethodCandidate[];
+    /** Number of seats that differ from 1 XRD = 1 vote (null for current or when no voters count). */
+    seatsChanged: number | null;
+    /** Candidate names entering the elected slate compared with 1 XRD = 1 vote. */
+    entered: string[];
+    /** Candidate names leaving the elected slate compared with 1 XRD = 1 vote. */
+    left: string[];
+}
+
 export interface MethodResult {
     key: MethodKey;
     family: MethodFamily;
@@ -375,8 +418,10 @@ export interface MethodResult {
     quorumRatio: number | null;
     quorumMet: boolean | null;
     outcome: VoteOutcome | null;
-    /** Option with the most weight. */
+    /** Option with the most weight (or #1 candidate in a Majority Judgment election). */
     winner: TallyRow | null;
+    /** Majority Judgment election standings & seat diff under this method's voter weights. */
+    electionSummary?: ElectionMethodSummary | null;
     concentration: Concentration;
     decisive: Decisive | null;
     /** Whether the result matches the current rule's; null for the current rule itself. */
@@ -564,6 +609,198 @@ function buildWeighContext(voters: MethodVoter[]): WeighContext {
     };
 }
 
+const MJ_BAND_ORDER: Record<'A' | 'B' | 'C', number> = { A: 2, B: 1, C: 0 };
+const MJ_DEFAULT_QUANTILE = 0.6;
+const MJ_EPS = 1e-12;
+
+/** Parses a rational quantile like "3/5" or decimal like "0.6" into a 0..1 number. */
+function parseQuantile(raw?: string | null): number {
+    if (!raw) return MJ_DEFAULT_QUANTILE;
+    const parts = raw.split('/');
+    if (parts.length === 2) {
+        const num = Number(parts[0]);
+        const den = Number(parts[1]);
+        if (Number.isFinite(num) && Number.isFinite(den) && den > 0 && num > 0 && num <= den) {
+            return num / den;
+        }
+    }
+    const dec = Number(raw);
+    if (Number.isFinite(dec) && dec > 0 && dec <= 1) return dec;
+    return MJ_DEFAULT_QUANTILE;
+}
+
+function qualifyingGradeFromHist(hist: number[], total: number, quantile: number): number {
+    let acc = 0;
+    for (let g = 4; g >= 0; g--) {
+        acc += hist[g];
+        if (acc + MJ_EPS >= total * quantile) return g;
+    }
+    return 0;
+}
+
+type RawMjCandidate = Omit<ElectionMethodCandidate, 'rank' | 'tied' | 'outcome'>;
+
+function compareMjGauge(a: RawMjCandidate, b: RawMjCandidate): number {
+    if (b.qualifyingGrade !== a.qualifyingGrade) return b.qualifyingGrade - a.qualifyingGrade;
+    if (MJ_BAND_ORDER[b.band] !== MJ_BAND_ORDER[a.band]) return MJ_BAND_ORDER[b.band] - MJ_BAND_ORDER[a.band];
+    if (a.band === 'A') {
+        if (Math.abs(b.p - a.p) > MJ_EPS) return b.p - a.p;
+        if (Math.abs(a.q - b.q) > MJ_EPS) return a.q - b.q;
+    } else if (a.band === 'C') {
+        if (Math.abs(a.q - b.q) > MJ_EPS) return a.q - b.q;
+        if (Math.abs(b.p - a.p) > MJ_EPS) return b.p - a.p;
+    } else if (Math.abs(b.p - a.p) > MJ_EPS) {
+        return b.p - a.p;
+    }
+    return 0;
+}
+
+/**
+ * Evaluates a Majority Judgment election using each voter's weight `w` under a given voting method.
+ * Uses the applied grade quantile (default 3/5 = 60%), Majority Gauge tie-breaking (Band A > B > C, p, q),
+ * true competition ranking without arbitrary tie-breaking by candidate id, and optional headcount floor
+ * for double-majority rules.
+ */
+function evaluateMajorityJudgment(
+    weighed: Array<{ v: MethodVoter; w: number }>,
+    election: GovernanceElectionSpec,
+    options?: {
+        quantile?: number;
+        headcountPool?: Array<{ v: MethodVoter }>;
+    },
+): ElectionMethodSummary {
+    const seatCount = election.seatCount ?? 7;
+    const minimumMedianGrade = election.minimumMedianGrade ?? 2;
+    const quantile = options?.quantile ?? MJ_DEFAULT_QUANTILE;
+    const headcountPool = options?.headcountPool;
+
+    const raw: RawMjCandidate[] = election.candidates.map(candidate => {
+        const key = String(candidate.id);
+        const hist = [0, 0, 0, 0, 0];
+        const xrdHist = [0, 0, 0, 0, 0];
+        for (const { v, w } of weighed) {
+            const g = v.grades?.[key];
+            if (g !== undefined && g >= 0 && g <= 4) {
+                hist[g] += w;
+                xrdHist[g] += v.power;
+            }
+        }
+        const total = hist[0] + hist[1] + hist[2] + hist[3] + hist[4];
+        if (total <= 0) {
+            return {
+                id: candidate.id,
+                label: candidate.displayName,
+                qualifyingGrade: 0,
+                band: 'B',
+                p: 0,
+                q: 0,
+                qualifyingXrd: 0,
+                electableShare: 0,
+                electable: false,
+            };
+        }
+        const qualifyingGrade = qualifyingGradeFromHist(hist, total, quantile);
+        let above = 0;
+        let below = 0;
+        let electablePower = 0;
+        for (let g = 0; g <= 4; g++) {
+            if (g > qualifyingGrade) above += hist[g];
+            else if (g < qualifyingGrade) below += hist[g];
+            if (g >= minimumMedianGrade) electablePower += hist[g];
+        }
+        const p = above / total;
+        const q = below / total;
+        const band: 'A' | 'B' | 'C' = p > q + MJ_EPS ? 'A' : q > p + MJ_EPS ? 'C' : 'B';
+
+        let headcountOk = true;
+        if (headcountPool) {
+            const hcHist = [0, 0, 0, 0, 0];
+            for (const { v } of headcountPool) {
+                const g = v.grades?.[key];
+                if (g !== undefined && g >= 0 && g <= 4) hcHist[g] += 1;
+            }
+            const hcTotal = hcHist[0] + hcHist[1] + hcHist[2] + hcHist[3] + hcHist[4];
+            headcountOk = hcTotal > 0 && qualifyingGradeFromHist(hcHist, hcTotal, quantile) >= minimumMedianGrade;
+        }
+
+        return {
+            id: candidate.id,
+            label: candidate.displayName,
+            qualifyingGrade,
+            band,
+            p,
+            q,
+            qualifyingXrd: xrdHist[qualifyingGrade],
+            electableShare: electablePower / total,
+            electable: qualifyingGrade >= minimumMedianGrade && headcountOk,
+        };
+    });
+
+    raw.sort((a, b) => {
+        if (a.electable !== b.electable) return a.electable ? -1 : 1;
+        const cmp = compareMjGauge(a, b);
+        return cmp !== 0 ? cmp : a.id - b.id;
+    });
+
+    // Group into exact tie groups (same electable status + identical qualifyingGrade & majority gauge).
+    const groups: RawMjCandidate[][] = [];
+    for (const cand of raw) {
+        const last = groups[groups.length - 1];
+        if (last && last[0].electable === cand.electable && compareMjGauge(last[0], cand) === 0) {
+            last.push(cand);
+        } else {
+            groups.push([cand]);
+        }
+    }
+
+    const standings: ElectionMethodCandidate[] = [];
+    let rankCursor = 1;
+    let electablePlaced = 0;
+    for (const group of groups) {
+        const isTied = group.length > 1;
+        const isElectable = group[0].electable;
+        let groupOutcome: ElectionCandidateOutcome;
+        if (!isElectable) {
+            groupOutcome = 'not_elected';
+        } else if (electablePlaced + group.length <= seatCount) {
+            groupOutcome = 'elected';
+        } else if (electablePlaced < seatCount) {
+            groupOutcome = 'tied';
+        } else {
+            groupOutcome = 'reserve';
+        }
+        for (const cand of group) {
+            standings.push({
+                ...cand,
+                rank: rankCursor,
+                tied: isTied,
+                outcome: groupOutcome,
+            });
+        }
+        rankCursor += group.length;
+        if (isElectable) electablePlaced += group.length;
+    }
+
+    const elected = standings.filter(c => c.outcome === 'elected');
+    const tiedAtCutoff = standings.filter(c => c.outcome === 'tied');
+
+    return {
+        seatCount,
+        minimumMedianGrade,
+        standings,
+        elected,
+        tiedAtCutoff,
+        seatsChanged: null,
+        entered: [],
+        left: [],
+    };
+}
+
+export interface CompareOptions {
+    /** Applied Majority Judgment quantile (e.g. "3/5" or "0.6"). Defaults to 3/5 (60%). */
+    gradeQuantile?: string | null;
+}
+
 /** Counts the ballots with one rule. */
 function applyMethod(
     spec: MethodSpec,
@@ -571,22 +808,21 @@ function applyMethod(
     ctx: WeighContext,
     choices: BallotChoice[],
     item: GovernanceItem | null,
+    options?: CompareOptions,
 ): Omit<MethodResult, 'sameAsCurrent'> {
     const weighed = voters.map(({ v, side }) => ({ v, w: Math.max(0, spec.weigh(v, ctx)), side })).filter(x => x.w > 0);
     const byChoice = new Map<string, number>();
-    const xrdByChoice = new Map<string, number>();
     for (const { v, w } of weighed) {
         for (const k of v.choices) {
             byChoice.set(k, (byChoice.get(k) ?? 0) + w);
-            xrdByChoice.set(k, (xrdByChoice.get(k) ?? 0) + v.power);
         }
     }
     const results = [...byChoice].map(([vote, w]) => ({ vote, votePower: String(w) }));
     const addressesByChoice: Record<string, number> = {};
     for (const { v } of weighed) for (const k of v.choices) addressesByChoice[k] = (addressesByChoice[k] ?? 0) + 1;
-    // Quorum is an XRD rule: it is checked apart, with the XRD of the voters that count.
+    // Quorum is an XRD rule: it is checked apart, with the XRD of the voters that count (counted once per voter).
     const summary = summarizeTally(choices, { results, accountPower: null }, item ? { ...item, quorum: null } : null);
-    const eligibleXrd = [...xrdByChoice.values()].reduce((s, x) => s + x, 0);
+    const eligibleXrd = weighed.reduce((s, x) => s + (x.v.choices.length > 0 ? x.v.power : 0), 0);
     const quorumRatio = item?.quorum ? eligibleXrd / item.quorum : null;
     const quorumMet = quorumRatio === null ? null : quorumRatio >= 1;
     const threshold = item?.approvalThreshold ?? 0.5;
@@ -597,6 +833,14 @@ function applyMethod(
     const hcPro = headcountPool.filter(x => x.side === 'for').length;
     const hcCon = headcountPool.filter(x => x.side === 'against').length;
     const headcountShare = spec.headcount && hcPro + hcCon > 0 ? hcPro / (hcPro + hcCon) : null;
+
+    const isElection = Boolean(item?.election && weighed.some(x => x.v.grades));
+    const electionSummary = isElection && item?.election
+        ? evaluateMajorityJudgment(weighed, item.election, {
+            quantile: parseQuantile(options?.gradeQuantile),
+            headcountPool: spec.headcount ? headcountPool : undefined,
+        })
+        : null;
     const passes = (share: number | null) => share !== null && share >= threshold;
     const outcome: VoteOutcome | null = weighed.length === 0
         ? null
@@ -605,7 +849,17 @@ function applyMethod(
             : summary.approvalShare === null
                 ? null
                 : passes(summary.approvalShare) && (!spec.headcount || passes(headcountShare)) ? 'approved' : 'rejected';
-    const winner = summary.rows.reduce<TallyRow | null>((best, r) => (r.power > 0 && (!best || r.power > best.power) ? r : best), null);
+    const topCandidate = electionSummary?.standings[0] ?? null;
+    const winner: TallyRow | null = topCandidate
+        ? {
+            key: String(topCandidate.id),
+            label: topCandidate.label,
+            power: topCandidate.electableShare,
+            share: topCandidate.electableShare,
+            tone: 'neutral',
+            selected: false,
+        }
+        : summary.rows.reduce<TallyRow | null>((best, r) => (r.power > 0 && (!best || r.power > best.power) ? r : best), null);
 
     return {
         key: spec.key,
@@ -623,10 +877,11 @@ function applyMethod(
         quorumMet,
         outcome,
         winner,
+        electionSummary,
         concentration: concentration(weighed.map(x => x.w)),
-        decisive: decisiveVoters(weighed, outcome, winner, threshold, spec.headcount),
+        decisive: isElection ? null : decisiveVoters(weighed, outcome, winner, threshold, spec.headcount),
         resistance: spec.resistance,
-        attack: attackCost(spec, outcome, summary.rows, {
+        attack: isElection ? null : attackCost(spec, outcome, summary.rows, {
             pro, con, hcPro, hcCon,
             proXrd: weighed.filter(x => x.side === 'for').reduce((s, x) => s + x.v.power, 0),
             conXrd: weighed.filter(x => x.side === 'against').reduce((s, x) => s + x.v.power, 0),
@@ -639,7 +894,12 @@ function applyMethod(
 const verdict = (r: Pick<MethodResult, 'outcome' | 'winner'>) => r.outcome ?? r.winner?.key ?? null;
 
 /** Every rule applied to the same ballots, the current one first. */
-export function compareMethods(voters: MethodVoter[], choices: BallotChoice[], item: GovernanceItem | null): MethodResult[] {
+export function compareMethods(
+    voters: MethodVoter[],
+    choices: BallotChoice[],
+    item: GovernanceItem | null,
+    options?: CompareOptions,
+): MethodResult[] {
     const counted = voters.filter(v => v.power > 0);
     const ctx = buildWeighContext(counted);
     const toneOf = new Map(choices.map(c => [c.key, c.tone]));
@@ -648,12 +908,43 @@ export function compareMethods(voters: MethodVoter[], choices: BallotChoice[], i
         const side: Side = tones.includes('positive') ? 'for' : tones.includes('negative') ? 'against' : 'neutral';
         return { v, side };
     });
-    const results = METHODS.map(spec => applyMethod(spec, prepared, ctx, choices, item));
+    const results = METHODS.map(spec => applyMethod(spec, prepared, ctx, choices, item, options));
     const current = results.find(r => r.current);
-    return results.map(r => ({
-        ...r,
-        sameAsCurrent: r.current || !current || r.counted === 0 ? null : verdict(r) === verdict(current),
-    }));
+    const currentElectedIds = current?.electionSummary
+        ? new Set(current.electionSummary.elected.map(c => c.id))
+        : null;
+    const currentTiedIds = current?.electionSummary
+        ? new Set(current.electionSummary.tiedAtCutoff.map(c => c.id))
+        : null;
+
+    return results.map(r => {
+        if (r.electionSummary && current?.electionSummary && currentElectedIds && currentTiedIds) {
+            if (r.current || r.counted === 0) {
+                return { ...r, sameAsCurrent: null };
+            }
+            const methodIds = new Set(r.electionSummary.elected.map(c => c.id));
+            const methodTiedIds = new Set(r.electionSummary.tiedAtCutoff.map(c => c.id));
+            const entered = r.electionSummary.elected.filter(c => !currentElectedIds.has(c.id)).map(c => c.label);
+            const left = current.electionSummary.elected.filter(c => !methodIds.has(c.id)).map(c => c.label);
+            const sameTies = methodTiedIds.size === currentTiedIds.size
+                && [...methodTiedIds].every(id => currentTiedIds.has(id));
+            const seatsChanged = Math.max(entered.length, left.length);
+            return {
+                ...r,
+                electionSummary: {
+                    ...r.electionSummary,
+                    seatsChanged,
+                    entered,
+                    left,
+                },
+                sameAsCurrent: seatsChanged === 0 && sameTies,
+            };
+        }
+        return {
+            ...r,
+            sameAsCurrent: r.current || !current || r.counted === 0 ? null : verdict(r) === verdict(current),
+        };
+    });
 }
 
 /** Resistance to manipulation on a 0..1 scale. */

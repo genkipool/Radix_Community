@@ -17,6 +17,8 @@ export interface VoteRecord {
     time: string;
     /** How many times this account voted on the item (1 = never changed). */
     votes: number;
+    /** Per-candidate Majority Judgment grades (candidate id -> 0..4), when `kind === 'election'`. */
+    grades?: Record<string, number>;
 }
 
 const PAGE_LIMIT = 100;
@@ -72,6 +74,7 @@ export async function fetchVoteRecords(
                     txid: tx.intent_hash,
                     time: tx.confirmed_at,
                     votes: (prev?.votes ?? 0) + 1,
+                    ...(vote.grades ? { grades: vote.grades } : {}),
                 });
             }
         }
