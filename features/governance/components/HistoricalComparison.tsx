@@ -463,6 +463,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                                         { value: 'all', label: g.kind_all || '' },
                                         { value: 'proposal', label: g.kind_proposal || '' },
                                         { value: 'temperature_check', label: g.kind_temperature_check || '' },
+                                        { value: 'election', label: g.kind_election || '' },
                                     ]}
                                 />
                                 {GOVERNANCE_SYSTEMS.length > 1 && (

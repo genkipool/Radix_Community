@@ -7,8 +7,8 @@ export const PHASE_ORDER: readonly VotingPhase[] = ['open', 'upcoming', 'closed'
 export const entryKey = (e: Pick<GovernanceEntry, 'systemKey' | 'kind' | 'id'>) => `${e.systemKey}:${e.kind}:${e.id}`;
 
 /**
- * Open votes first (closing soonest on top), then upcoming (opening soonest),
- * then closed (most recent first).
+ * Open votes first (most recently opened on top), then upcoming (opening
+ * soonest), then closed (most recent first).
  */
 export function sortEntries(entries: GovernanceEntry[], now: number): GovernanceEntry[] {
     const rank = (e: GovernanceEntry) => PHASE_ORDER.indexOf(votingPhase(e.item, now)) + 1 || PHASE_ORDER.length + 1;
@@ -16,7 +16,7 @@ export function sortEntries(entries: GovernanceEntry[], now: number): Governance
         const byPhase = rank(a) - rank(b);
         if (byPhase !== 0) return byPhase;
         const phase = votingPhase(a.item, now);
-        if (phase === 'open') return (a.item.deadline ?? 0) - (b.item.deadline ?? 0);
+        if (phase === 'open') return (b.item.start ?? b.item.deadline ?? 0) - (a.item.start ?? a.item.deadline ?? 0);
         if (phase === 'upcoming') return (a.item.start ?? 0) - (b.item.start ?? 0);
         return (b.item.deadline ?? 0) - (a.item.deadline ?? 0);
     });

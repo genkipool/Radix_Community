@@ -1,5 +1,5 @@
 import type { GovernanceItemKind } from '../lib/governanceVotes';
-import type { VoterRow } from '../types';
+import type { MajorityJudgmentElectionData, VoterRow } from '../types';
 
 export interface TallyResponse {
     results: Array<{ vote: string; votePower: string }>;
@@ -8,6 +8,8 @@ export interface TallyResponse {
     voters: VoterRow[] | null;
     /** Host of the collector that weighed the votes; null when it was unavailable. */
     source: string | null;
+    /** Full Majority Judgment election payload when `type === 'election'`. */
+    electionData?: MajorityJudgmentElectionData | null;
 }
 
 /** Weighted tally of a governance vote (see /api/governance-votes). Null when the system has no collector. */

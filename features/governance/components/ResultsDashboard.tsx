@@ -2,7 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Activity, Target, ThumbsUp, Users, Hourglass, Info, ExternalLink, Loader2 } from 'lucide-react';
+import { Activity, Target, ThumbsUp, Users, Hourglass, Info, ExternalLink, Loader2, ChevronDown } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
+import { Portal } from '@/components/ui/Portal';
+import { SelectPopup, SelectPopupRow } from '@/components/ui/SelectPopup';
+import { usePickerPopup } from '@/features/console/hooks/usePickerPopup';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
@@ -15,6 +19,7 @@ import { ResultsBallot } from './ResultsBallot';
 import type { VoterRow } from '../types';
 import { stanceResolver, type G } from './GovernanceBadges';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
+import { ElectionCandidatesBallot, ElectionCandidatesKpiGrid, ElectionResultsSummaryCard } from './ElectionSection';
 
 function Kpi({ icon: Icon, label, value, hint, accent, meter, title }: {
     icon: typeof Activity;
@@ -61,6 +66,15 @@ function VotersTable({ tally, voters, choices, g, language }: {
     const [filter, setFilter] = useState<string>('all');
     const [sort, setSort] = useState<VoterSort>('recent');
     const { copied, copy } = useCopy();
+    const {
+        open: filterOpen,
+        show: showFilter,
+        close: closeFilter,
+        buttonRef: filterButtonRef,
+        popupRef: filterPopupRef,
+        layoutFor: filterLayoutFor,
+    } = usePickerPopup();
+    const filterLayout = filterLayoutFor(300, 'left');
     const choiceLabel = (key: string) => choices.find(c => c.key === key)?.label ?? key;
     const power = (v: VoterRow) => Number(v.votePower) || 0;
 
@@ -93,26 +107,93 @@ function VotersTable({ tally, voters, choices, g, language }: {
                 </div>
             </div>
 
-            <div className="mt-3 px-5 flex items-end justify-between gap-4 border-b border-[var(--color-card-border)]">
-                <div role="tablist" aria-label={g.voters_title || 'Voters'} className="no-scrollbar flex gap-5 overflow-x-auto">
-                    {tabs.map(t => {
-                        const active = current.key === t.key;
-                        return (
+            <div className="mt-3 px-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--color-card-border)]">
+                {tabs.length > 5 ? (
+                    <div className="flex items-end gap-5 min-w-0 max-w-full">
+                        <button
+                            type="button"
+                            aria-pressed={current.key === 'all'}
+                            onClick={() => setFilter('all')}
+                            className={`relative shrink-0 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${current.key === 'all' ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                        >
+                            {tabs[0].label}
+                            <span className={`ml-1.5 text-[10px] ${current.key === 'all' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>({tabs[0].rows.length.toLocaleString(language)})</span>
+                            {current.key === 'all' && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
+                        </button>
+                        <div className="relative min-w-0 max-w-full">
                             <button
-                                key={t.key}
+                                ref={filterButtonRef}
                                 type="button"
-                                role="tab"
-                                aria-selected={active}
-                                onClick={() => setFilter(t.key)}
-                                className={`relative shrink-0 pb-2.5 text-xs font-bold transition-colors ${active ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                aria-expanded={filterOpen}
+                                onClick={() => (filterOpen ? closeFilter() : showFilter())}
+                                className={`relative inline-flex items-center gap-1.5 pb-2.5 text-xs font-bold transition-colors cursor-pointer max-w-full ${current.key !== 'all' ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                             >
-                                {t.label}
-                                <span className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] ${active ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]' : 'bg-[var(--color-surface)]'}`}>{t.rows.length.toLocaleString(language)}</span>
-                                {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
+                                <span className="truncate">
+                                    {current.key !== 'all'
+                                        ? `${current.label} (${current.rows.length.toLocaleString(language)})`
+                                        : (g.col_vote || 'Vote')}
+                                </span>
+                                <ChevronDown className={`size-3.5 shrink-0 transition-transform ${filterOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
+                                {current.key !== 'all' && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
                             </button>
-                        );
-                    })}
-                </div>
+                            <Portal>
+                                <AnimatePresence>
+                                    {filterOpen && (
+                                        <SelectPopup
+                                            ref={filterPopupRef}
+                                            title={g.col_vote || 'Vote'}
+                                            closeLabel={g.status_closed ?? ''}
+                                            onClose={closeFilter}
+                                            direction={filterLayout.direction}
+                                            style={{
+                                                ...filterLayout.style,
+                                                height: 'auto',
+                                                maxHeight: filterLayout.style.height,
+                                            }}
+                                        >
+                                            {tabs.slice(1).map(t => (
+                                                <SelectPopupRow
+                                                    key={t.key}
+                                                    selected={current.key === t.key}
+                                                    label={t.label}
+                                                    trailing={
+                                                        <span className="font-mono text-[10px] tabular-nums text-[var(--color-text-muted)]">
+                                                            ({t.rows.length.toLocaleString(language)})
+                                                        </span>
+                                                    }
+                                                    onClick={() => {
+                                                        setFilter(t.key);
+                                                        closeFilter();
+                                                    }}
+                                                />
+                                            ))}
+                                        </SelectPopup>
+                                    )}
+                                </AnimatePresence>
+                            </Portal>
+                        </div>
+                    </div>
+                ) : (
+                    <div role="tablist" aria-label={g.voters_title || 'Voters'} className="no-scrollbar flex gap-5 overflow-x-auto">
+                        {tabs.map(t => {
+                            const active = current.key === t.key;
+                            return (
+                                <button
+                                    key={t.key}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={active}
+                                    onClick={() => setFilter(t.key)}
+                                    className={`relative shrink-0 pb-2.5 text-xs font-bold transition-colors ${active ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                >
+                                    {t.label}
+                                    <span className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] ${active ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]' : 'bg-[var(--color-surface)]'}`}>{t.rows.length.toLocaleString(language)}</span>
+                                    {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
                 <span className="shrink-0 pb-2.5 text-xs text-[var(--color-text-muted)] whitespace-nowrap">
                     {g.voters_total_xrd || 'Total'}: <span className="font-mono font-bold text-[var(--color-text-main)]">{formatXrd(totalXrd, language)} XRD</span>
                     {tally && tally.turnout > 0 && current.key !== 'all' && <span className="ml-1">({formatPct(totalXrd / tally.turnout, language)})</span>}
@@ -148,9 +229,29 @@ function VotersTable({ tally, voters, choices, g, language }: {
                                                 <CopyButton value={v.account} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
                                             </span>
                                         </td>
-                                        <td className="px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
-                                            {v.choices.map(choiceLabel).join(', ')}
-                                            {v.changes > 0 && <span className="ml-1.5 text-[10px] font-normal text-[var(--color-text-muted)]" title={g.vote?.changed_vote}>↻</span>}
+                                        <td className="px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+                                            {v.choices.length > 4 ? (
+                                                <div className="grid grid-cols-4 gap-x-3 gap-y-1 min-w-[360px]">
+                                                    {v.choices.map((c, idx) => {
+                                                        const label = choiceLabel(c);
+                                                        return (
+                                                            <span
+                                                                key={`${c}-${idx}`}
+                                                                title={label}
+                                                                className="truncate text-xs font-semibold text-[var(--color-text-secondary)]"
+                                                            >
+                                                                {label}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                    {v.changes > 0 && <span className="text-[10px] font-normal text-[var(--color-text-muted)] self-center" title={g.vote?.changed_vote}>↻</span>}
+                                                </div>
+                                            ) : (
+                                                <span className="whitespace-nowrap">
+                                                    {v.choices.map(choiceLabel).join(', ')}
+                                                    {v.changes > 0 && <span className="ml-1.5 text-[10px] font-normal text-[var(--color-text-muted)]" title={g.vote?.changed_vote}>↻</span>}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="pl-5 pr-10 py-2 text-right whitespace-nowrap">
                                             {v.votePower === null ? (
@@ -268,6 +369,15 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
                 </div>
             </div>
 
+            {kind === 'election' && item.election && tallyQuery.data?.electionData && (
+                <ElectionCandidatesKpiGrid
+                    election={item.election}
+                    electionData={tallyQuery.data.electionData}
+                    g={g}
+                    language={language}
+                />
+            )}
+
             {tallyQuery.isLoading && <div className="h-24 rounded-2xl bg-[var(--color-surface)] animate-pulse" aria-hidden />}
             {!tallyQuery.isLoading && !tally && (
                 <p className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-card-border)] p-5 text-sm text-[var(--color-text-muted)]">
@@ -280,13 +390,38 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
             )}
 
             {/* The results box is also the ballot: vote from here while voting is open. */}
-            <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <ResultsBallot entry={entry} system={system} choices={choices} tally={tally} g={g} language={language} now={now} />
-                <div className="h-full rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-5">
-                    {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={language} />}
-                    <VotingWindow item={item} phase={phase} progress={votingProgress(item, now)} gv={gv} locale={language} now={now} />
+            {kind === 'election' && item.election && tallyQuery.data?.electionData ? (
+                <div className="space-y-6">
+                    <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                        <ElectionResultsSummaryCard
+                            election={item.election}
+                            electionData={tallyQuery.data.electionData}
+                            g={g}
+                            language={language}
+                        />
+                        <div className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-5 xl:sticky xl:top-24">
+                            {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={language} />}
+                            <VotingWindow item={item} phase={phase} progress={votingProgress(item, now)} gv={gv} locale={language} now={now} />
+                        </div>
+                    </div>
+                    <ElectionCandidatesBallot
+                        election={item.election}
+                        electionData={tallyQuery.data.electionData}
+                        canGrade={false}
+                        g={g}
+                        language={language}
+                        sortByRank
+                    />
                 </div>
-            </div>
+            ) : (
+                <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <ResultsBallot entry={entry} system={system} choices={choices} tally={tally} g={g} language={language} now={now} />
+                    <div className="h-full rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-5">
+                        {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={language} />}
+                        <VotingWindow item={item} phase={phase} progress={votingProgress(item, now)} gv={gv} locale={language} now={now} />
+                    </div>
+                </div>
+            )}
 
             {tallyQuery.data?.voters && (
                 <VotersTable tally={tally} voters={tallyQuery.data.voters} choices={choices} g={g} language={language} />

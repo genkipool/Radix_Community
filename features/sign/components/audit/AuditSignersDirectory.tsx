@@ -24,18 +24,28 @@ import {
  */
 export function AuditSignersDirectory({
   signers,
+  collectionAddress,
   networkId,
   locale,
   labels,
   entries,
+  canRecall = false,
+  recallingNftId = null,
+  recallErrorByNftId,
+  onRecallInvite,
   onSaveAlias,
   onFilterBySigner,
 }: {
   signers: AuditSignerSummary[];
+  collectionAddress?: string;
   networkId: number;
   locale: string;
   labels: AuditLabels;
   entries: AddressBookEntry[];
+  canRecall?: boolean;
+  recallingNftId?: string | null;
+  recallErrorByNftId?: Record<string, string>;
+  onRecallInvite?: (signerAccount: string, nftGlobalId: string) => void;
   onSaveAlias: (address: string, alias: string) => void;
   onFilterBySigner: (account: string) => void;
 }) {
@@ -265,9 +275,14 @@ export function AuditSignersDirectory({
                     <td colSpan={5} className="p-0">
                       <AuditSignerDetailPanel
                         signer={s}
+                        collectionAddress={collectionAddress}
                         networkId={networkId}
                         locale={locale}
                         labels={labels}
+                        canRecall={canRecall}
+                        recallingNftId={recallingNftId}
+                        recallErrorByNftId={recallErrorByNftId}
+                        onRecallInvite={onRecallInvite}
                         onFilterBySigner={() => onFilterBySigner(s.account)}
                       />
                     </td>
@@ -371,9 +386,14 @@ export function AuditSignersDirectory({
               {isOpen && (
                 <AuditSignerDetailPanel
                   signer={s}
+                  collectionAddress={collectionAddress}
                   networkId={networkId}
                   locale={locale}
                   labels={labels}
+                  canRecall={canRecall}
+                  recallingNftId={recallingNftId}
+                  recallErrorByNftId={recallErrorByNftId}
+                  onRecallInvite={onRecallInvite}
                   onFilterBySigner={() => onFilterBySigner(s.account)}
                 />
               )}

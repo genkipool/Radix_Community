@@ -62,3 +62,50 @@ export function buildVoteManifest(params: {
     ]);
     return [...votes, ...signers, ''].join('\n');
 }
+
+/**
+ * Transaction manifest casting (or replacing) a Majority Judgment election
+ * ballot. Every candidate must be graded on the 0..4 scale (Poor..Excellent).
+ */
+export function buildElectionVoteManifest(params: {
+    component: string;
+    electionId: string;
+    round: 'RoundOne' | 'Rerun';
+    accounts: string[];
+    grades: Array<{ candidateId: number; grade: number }>;
+}): string {
+    const { component, electionId, round, accounts, grades } = params;
+    const unique = [...new Set(accounts)];
+    if (unique.length === 0) throw new Error('At least one account is needed');
+    if (!ADDRESS.test(component) || !unique.every(a => ADDRESS.test(a))) throw new Error('Invalid address');
+    if (!/^\d{1,19}$/.test(electionId)) throw new Error('Invalid election id');
+    if (grades.length === 0) throw new Error('At least one candidate grade is needed');
+
+    const sorted = [...grades].sort((a, b) => a.candidateId - b.candidateId);
+    for (const { candidateId, grade } of sorted) {
+        if (!Number.isInteger(candidateId) || candidateId < 0 || candidateId > 0xffffffff) throw new Error('Invalid candidate id');
+        if (!Number.isInteger(grade) || grade < 0 || grade > 4) throw new Error('Invalid grade');
+    }
+
+    const roundEnum = round === 'Rerun' ? 'Enum<1u8>()' : 'Enum<0u8>()';
+    const gradesArg = `Array<Tuple>(${sorted.map(({ candidateId, grade }) => `Tuple(Tuple(${candidateId}u32), Enum<${grade}u8>())`).join(', ')})`;
+
+    const votes = unique.flatMap(account => [
+        'CALL_METHOD',
+        `    Address("${component}")`,
+        '    "vote_on_majority_judgment_election"',
+        `    Address("${account}")`,
+        `    ${electionId}u64`,
+        `    ${roundEnum}`,
+        `    ${gradesArg}`,
+        ';',
+    ]);
+    const signers = unique.flatMap(account => [
+        'CALL_METHOD',
+        `    Address("${account}")`,
+        '    "deposit_batch"',
+        '    Expression("ENTIRE_WORKTOP")',
+        ';',
+    ]);
+    return [...votes, ...signers, ''].join('\n');
+}

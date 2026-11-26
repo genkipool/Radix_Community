@@ -22,7 +22,7 @@ export function PermanentCandidatesTable({ people, locale }: PermanentCandidates
             {people.candidatesBadge}
           </span>
           <Link
-            href={`/${locale}/governance/radix-dao/temperature-check/4`}
+            href={`/${locale}/governance/radix-dao/election/1`}
             className="pt-1.5 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-secondary)] hover:underline"
           >
             <span>{people.tc4Cta}</span>

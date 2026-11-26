@@ -8,12 +8,16 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
+import { resolveTargetVault } from '@/features/console/lib/vault-resolve';
 import { networkOfAddress } from '@/features/dashboard/lib/routes';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAuditExport } from '../../hooks/useAuditExport';
 import { useCollectionAudit } from '../../hooks/useCollectionAudit';
 import { useDomainVerification } from '../../hooks/useDomainVerification';
+import { buildRecallInviteManifest } from '../../lib/manifests/sign-manifests';
+import { splitNftGlobalId } from '../../lib/network';
 import {
   DEFAULT_AUDIT_FILTERS,
   computeAuditKpis,
@@ -68,9 +72,14 @@ export function CollectionAuditTab({
   initialFromDate?: string;
   initialToDate?: string;
 }) {
-  const { activeNetworkId } = useRadixWallet();
+  const { activeNetworkId, accounts } = useRadixWallet();
+  const { sendTransaction } = useConsoleTransaction();
   const { language } = useLanguage();
   const { entries, addEntry, updateEntry, deleteEntry } = useAddressBook();
+  const [recallingNftId, setRecallingNftId] = useState<string | null>(null);
+  const [recallErrorByNftId, setRecallErrorByNftId] = useState<
+    Record<string, string>
+  >({});
 
   const initialExternal =
     initialCollection && RADIX_RESOURCE_RE.test(initialCollection.trim())
@@ -436,10 +445,63 @@ export function CollectionAuditTab({
           {subTab === 'signers' && (
             <AuditSignersDirectory
               signers={filteredSigners}
+              collectionAddress={audit.collection}
               networkId={audit.networkId}
               locale={language}
               labels={labels}
               entries={entries}
+              canRecall={Boolean(
+                isConnected &&
+                  ownedCollections.find(
+                    (c) => c.resourceAddress === audit.collection,
+                  )?.ownerSealGlobalId &&
+                  accounts.length > 0,
+              )}
+              recallingNftId={recallingNftId}
+              recallErrorByNftId={recallErrorByNftId}
+              onRecallInvite={async (signerAccount, nftGlobalId) => {
+                const owned = ownedCollections.find(
+                  (c) => c.resourceAddress === audit.collection,
+                );
+                const ownerAccount =
+                  (audit.issuer.account &&
+                  accounts.some((a) => a.address === audit.issuer.account)
+                    ? audit.issuer.account
+                    : accounts[0]?.address) ?? null;
+                if (!owned?.ownerSealGlobalId || !ownerAccount) return;
+
+                setRecallingNftId(nftGlobalId);
+                setRecallErrorByNftId((prev) => {
+                  const next = { ...prev };
+                  delete next[nftGlobalId];
+                  return next;
+                });
+                try {
+                  const { resource, localId } = splitNftGlobalId(nftGlobalId);
+                  const network = explorerNetworkForId(audit.networkId) ?? 'mainnet';
+                  const resolved = await resolveTargetVault(
+                    signerAccount,
+                    resource,
+                    network,
+                  );
+                  if (!resolved || !resolved.ids.includes(localId)) {
+                    setRecallErrorByNftId((prev) => ({
+                      ...prev,
+                      [nftGlobalId]: labels.signers.recallNotFound,
+                    }));
+                    return;
+                  }
+                  const manifest = buildRecallInviteManifest({
+                    account: ownerAccount,
+                    sealGlobalId: owned.ownerSealGlobalId,
+                    vaultAddress: resolved.vault,
+                    localId,
+                  });
+                  await sendTransaction(manifest);
+                } finally {
+                  setRecallingNftId(null);
+                }
+              }}
               onSaveAlias={handleSaveAlias}
               onFilterBySigner={(account) => {
                 setFilters({ ...filters, signerFilter: account });

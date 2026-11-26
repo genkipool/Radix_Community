@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from 'next/cache';
 import { withRetry } from '@/services/gateway/client';
 import { gatewayPost } from '@/services/gateway/bases';
 import { GOVERNANCE_SYSTEMS, systemByKey, type GovernanceSystem } from '../config/systems';
-import { parseGovernanceItem, type GovernanceItemKind } from '../lib/governanceVotes';
+import { parseGovernanceItem, parseMajorityJudgmentElection, type GovernanceItem, type GovernanceItemKind } from '../lib/governanceVotes';
 import type { GovernanceEntry } from '../types';
 import { pjField, pjNumber, pjText } from '../lib/programmaticJson';
 
@@ -19,6 +19,7 @@ export type { GovernanceEntry };
 const STORES: Record<GovernanceItemKind, { store: string; count: string }> = {
     proposal: { store: 'proposals', count: 'proposal_count' },
     temperature_check: { store: 'temperature_checks', count: 'temperature_check_count' },
+    election: { store: 'majority_judgment_elections', count: 'majority_judgment_election_count' },
 };
 
 const KEYS_PER_REQUEST = 100;
@@ -53,12 +54,29 @@ async function readItems(system: GovernanceSystem, store: string, ids: string[])
 
 async function systemEntries(system: GovernanceSystem, kinds: GovernanceItemKind[], only?: string): Promise<GovernanceEntry[]> {
     const state = await componentState(system);
+    const tcStore = pjText(pjField(state, STORES.temperature_check.store));
     const entries = await Promise.all(kinds.map(async kind => {
         const store = pjText(pjField(state, STORES[kind].store));
         const count = pjNumber(pjField(state, STORES[kind].count)) ?? 0;
         if (!store || count <= 0) return [];
         const ids = only !== undefined ? [only] : Array.from({ length: count }, (_, i) => String(i));
         const rows = await readItems(system, store, ids);
+        if (kind === 'election') {
+            const tcIds = [...new Set(rows.map(r => pjText(pjField(r.raw, 'temperature_check_id'))).filter((id): id is string => id !== null))];
+            const tcById = new Map<string, GovernanceItem>();
+            if (tcStore && tcIds.length > 0) {
+                const tcRows = await readItems(system, tcStore, tcIds);
+                for (const tcRow of tcRows) {
+                    const parsed = parseGovernanceItem(tcRow.raw, 'temperature_check');
+                    if (parsed) tcById.set(tcRow.id, parsed);
+                }
+            }
+            return rows.flatMap(({ id, raw }) => {
+                const tcId = pjText(pjField(raw, 'temperature_check_id'));
+                const item = parseMajorityJudgmentElection(raw, tcId ? (tcById.get(tcId) ?? null) : null);
+                return item ? [{ systemKey: system.key, systemName: system.name, kind, id, item }] : [];
+            });
+        }
         return rows.flatMap(({ id, raw }) => {
             const item = parseGovernanceItem(raw, kind);
             return item ? [{ systemKey: system.key, systemName: system.name, kind, id, item }] : [];
@@ -67,7 +85,7 @@ async function systemEntries(system: GovernanceSystem, kinds: GovernanceItemKind
     return entries.flat();
 }
 
-/** Every visible proposal and temperature check across all governance systems. */
+/** Every visible proposal, temperature check, and election across all governance systems. */
 export async function fetchGovernanceEntries(): Promise<GovernanceEntry[]> {
     'use cache';
     cacheLife('minutes');
@@ -75,7 +93,7 @@ export async function fetchGovernanceEntries(): Promise<GovernanceEntry[]> {
 
     const perSystem = await Promise.all(
         GOVERNANCE_SYSTEMS.map(system =>
-            systemEntries(system, ['proposal', 'temperature_check']).catch(() => [] as GovernanceEntry[]),
+            systemEntries(system, ['proposal', 'temperature_check', 'election']).catch(() => [] as GovernanceEntry[]),
         ),
     );
     // The list does not show full texts; leaving them out keeps the payload small.

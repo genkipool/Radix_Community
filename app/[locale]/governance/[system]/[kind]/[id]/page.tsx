@@ -17,7 +17,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const [t, route] = await Promise.all([getFeatureDictionary(p.locale as Locale, ['governance']), resolveGovernanceRoute(p)]);
     if (!route) return { title: t.seo.governance.title, robots: { index: false } };
     const { entry, system } = route;
-    const kindLabel = entry.kind === 'proposal' ? t.governance.vote.kind_proposal : t.governance.vote.kind_temperature_check;
+    const kindLabel = entry.kind === 'proposal'
+        ? t.governance.vote.kind_proposal
+        : entry.kind === 'election'
+            ? t.governance.vote.kind_election
+            : t.governance.vote.kind_temperature_check;
     return buildMetadata({
         locale: p.locale,
         pathname: governanceItemPath(system.key, entry.kind, entry.id),

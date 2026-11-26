@@ -52,18 +52,19 @@ export function usePickerPopup() {
     };
   }, [open]);
 
-  const layoutFor = (wanted: number) => {
-    const style = place(wanted);
+  const layoutFor = (wanted: number, align: 'right' | 'left' = 'right') => {
+    const style = place(wanted, align);
     return { style, direction: style.bottom !== undefined ? ('up' as const) : ('down' as const) };
   };
-  const place = (wanted: number): CSSProperties => {
+  const place = (wanted: number, align: 'right' | 'left' = 'right'): CSSProperties => {
     if (typeof window === 'undefined' || !rect) {
       return { position: 'fixed', left: 12, top: 72, width: 320, zIndex: 9999 };
     }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const width = Math.min(wanted, vw - 24);
-    const left = Math.min(Math.max(12, rect.right - width), Math.max(12, vw - width - 12));
+    const preferredLeft = align === 'left' ? rect.left : rect.right - width;
+    const left = Math.min(Math.max(12, preferredLeft), Math.max(12, vw - width - 12));
     const spaceBelow = vh - rect.bottom;
     const spaceAbove = rect.top;
     const below = spaceBelow >= 240 || spaceBelow >= spaceAbove;

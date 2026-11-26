@@ -11,6 +11,7 @@ export const DAO_EXTERNAL_LINKS = {
   noticesJson: 'https://radixdao.org/notices.json',
   vote: 'https://vote.radixdao.org',
   tc4Ballot: 'https://vote.radixdao.org/tc/4',
+  election1: 'https://vote.radixdao.org/election/1',
   proposalsHistory: `${DAO_BLOB_BASE}/PROPOSALS.md`,
   rolesRegistry: `${DAO_BLOB_BASE}/guides/roles-registry.md`,
   charterGuide: `${DAO_BLOB_BASE}/guides/charter-reading-guide.md`,

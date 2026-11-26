@@ -22,6 +22,8 @@ import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/comp
 import { useCopy } from '../hooks/useCopy';
 import { TranslationBar, useTranslatedHtml, useTranslatedList, useTranslatedText } from './BrowserTranslation';
 import { JsonExportPill, useRegisterTabExport, type TabExportGetter } from './JsonExportPill';
+import { useGovernanceTally } from '../hooks/useGovernanceTally';
+import { ElectionCandidatesBallot, ElectionOverviewCards, ElectionVoteSidebar } from './ElectionSection';
 
 type Tab = 'proposal' | 'results' | 'compare' | 'historical';
 
@@ -47,7 +49,8 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
     const votes = uniqueVoters(item);
     // What each row means, shown on hover.
     const hints = (g.detail_hints ?? {}) as Record<string, string>;
-    const kindHint = kind === 'proposal' ? hints.kind_proposal : hints.kind_temperature_check;
+    const kindHint = kind === 'proposal' ? hints.kind_proposal : kind === 'election' ? hints.kind_election : hints.kind_temperature_check;
+    const kindText = kind === 'proposal' ? (gv.kind_proposal || 'Formal proposal') : kind === 'election' ? (gv.kind_election ?? '') : (gv.kind_temperature_check || 'Temperature check');
     return (
         <CollapsibleCard id="vote-details" icon={Info} title={g.details || 'Vote details'}>
             <Row icon={Landmark} label={g.detail_system || 'System'} hint={hints.system}>
@@ -56,7 +59,7 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
                 </a>
             </Row>
             <Row icon={FileText} label={g.detail_kind || 'Type'} hint={kindHint}>
-                {kind === 'proposal' ? (gv.kind_proposal || 'Formal proposal') : (gv.kind_temperature_check || 'Temperature check')}
+                {kindText}
             </Row>
             <Row icon={Hash} label={g.detail_number || 'Number'} hint={hints.number}>#{id}</Row>
             {item.parameterLabel && <Row icon={Layers} label={g.detail_parameters || 'Category'} hint={hints.parameters}>{item.parameterLabel}</Row>}
@@ -91,7 +94,7 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
                     <CopyButton value={system.component} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
                 </span>
             </Row>
-            {kind === 'proposal' && item.temperatureCheckId && (
+            {(kind === 'proposal' || kind === 'election') && item.temperatureCheckId && (
                 <Link href={link('temperature_check', item.temperatureCheckId)} title={hints.from_tc} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline">
                     <ArrowDownLeft className="size-3.5" />{fill(g.from_tc || 'Comes from temperature check #{id}', { id: item.temperatureCheckId })}
                 </Link>
@@ -209,6 +212,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     const searchParams = useSearchParams();
     const { entries: allEntries } = useGovernanceNav();
     const [tab, setTabState] = useState<Tab>(tabFromParam(searchParams.get('tab')));
+    const [grades, setGrades] = useState<Record<number, number>>({});
     const exportGetterRef = useRef<TabExportGetter | null>(null);
     const registerExport = (getter: TabExportGetter | null) => {
         exportGetterRef.current = getter;
@@ -217,6 +221,12 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     const { item, kind, id } = entry;
     const phase = votingPhase(item, now);
     const gv: Gv = g.vote ?? {};
+    const electionTally = useGovernanceTally(
+        { component: system.component, kind, itemId: id },
+        system.network,
+        kind === 'election',
+    );
+    const electionData = electionTally.data?.electionData ?? null;
 
     useRegisterTabExport(tab === 'proposal' ? registerExport : undefined, () => ({
         tab: 'proposal',
@@ -234,6 +244,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
             phase,
             item,
             descriptionHtml,
+            ...(electionData ? { electionData } : {}),
         },
     }));
 
@@ -246,7 +257,15 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
         window.history.replaceState(null, '', url);
     };
     const tabs: Array<{ key: Tab; label: string; icon: typeof FileText }> = [
-        { key: 'proposal', label: kind === 'proposal' ? (g.tab_proposal || 'Proposal') : (g.tab_temperature_check || 'Temperature check'), icon: FileText },
+        {
+            key: 'proposal',
+            label: kind === 'proposal'
+                ? (g.tab_proposal || 'Proposal')
+                : kind === 'election'
+                    ? (g.tab_election ?? '')
+                    : (g.tab_temperature_check || 'Temperature check'),
+            icon: FileText,
+        },
         { key: 'results', label: g.tab_results || 'Result', icon: BarChart3 },
         { key: 'compare', label: g.tab_compare || 'Other methods', icon: Scale },
         { key: 'historical', label: g.tab_historical || g.tab_compare || 'Historical', icon: History },
@@ -308,6 +327,15 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                 {tab === 'proposal' ? (
                     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
                         <div className="space-y-6 min-w-0 order-2 lg:order-1">
+                            {kind === 'election' && item.election && (
+                                <ElectionOverviewCards
+                                    election={item.election}
+                                    electionData={electionData}
+                                    quorum={item.quorum}
+                                    g={g}
+                                    language={language}
+                                />
+                            )}
                             {descriptionHtml && (
                                 <article>
                                     <h2 className="mb-4 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{g.full_text || 'Full text of the proposal'}</h2>
@@ -315,12 +343,36 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                                 </article>
                             )}
                             {item.election && item.election.candidates.length > 0 && (
-                                <CandidatesSection election={item.election} g={g} />
+                                kind === 'election' ? (
+                                    <ElectionCandidatesBallot
+                                        election={item.election}
+                                        electionData={electionData}
+                                        grades={grades}
+                                        onGrade={(cid, grade) => setGrades(prev => ({ ...prev, [cid]: grade }))}
+                                        canGrade={phase === 'open'}
+                                        g={g}
+                                        language={language}
+                                    />
+                                ) : (
+                                    <CandidatesSection election={item.election} g={g} />
+                                )
                             )}
                             <LinkList links={item.links} title={gv.links || 'Learn more'} />
                         </div>
                         <aside className="space-y-4 order-1 lg:order-2 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto no-scrollbar lg:pb-2">
-                            <VotePanel entry={entry} system={system} g={g} language={language} now={now} />
+                            {kind === 'election' ? (
+                                <ElectionVoteSidebar
+                                    entry={entry}
+                                    system={system}
+                                    electionData={electionData}
+                                    grades={grades}
+                                    g={g}
+                                    language={language}
+                                    now={now}
+                                />
+                            ) : (
+                                <VotePanel entry={entry} system={system} g={g} language={language} now={now} />
+                            )}
                             <DetailsCard entry={entry} system={system} g={g} language={language} />
                         </aside>
                     </div>

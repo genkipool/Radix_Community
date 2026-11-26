@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Wallet, CheckCircle2, Circle, Square, CheckSquare } from 'lucide-react';
+import { Wallet, CheckCircle2, Circle, Square, CheckSquare, ExternalLink } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { itemChoices } from '../lib/governanceVotes';
@@ -26,6 +26,33 @@ export function VotePanel({ entry, system, g, language, now }: {
     const stanceLabel = stanceResolver(g);
     const vote = useCastVote(entry, system, now, stanceLabel);
     const choices = itemChoices(entry.kind, entry.item, stanceLabel);
+
+    if (entry.kind === 'election') {
+        const href = `${system.website}/election/${entry.id}`;
+        return (
+            <CollapsibleCard
+                id="vote-panel-title"
+                icon={Wallet}
+                title={g.vote_title ?? ''}
+                headerClassName="bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10"
+            >
+                <div className="space-y-3">
+                    <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                        {g.election_vote_note ?? ''}
+                    </p>
+                    <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90"
+                    >
+                        <span>{fill(g.election_vote_cta ?? '', { system: system.name })}</span>
+                        <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+                    </a>
+                </div>
+            </CollapsibleCard>
+        );
+    }
 
     return (
         <CollapsibleCard
