@@ -29,6 +29,10 @@ export interface ChangedVoteRef {
     methodOutcome: VoteOutcome | null;
     methodWinner: string | null;
     methodCounted: number;
+    /** Present for Majority Judgment elections: elected vs total seats under current and method rules. */
+    currentSeats?: { elected: number; total: number } | null;
+    methodSeats?: { elected: number; total: number } | null;
+    seatsChanged?: number | null;
 }
 
 export interface HistoricalMethodRow {
@@ -186,6 +190,13 @@ export function aggregateHistoricalMethods(
                         methodOutcome: r.outcome,
                         methodWinner: r.winner?.label ?? null,
                         methodCounted: r.counted,
+                        currentSeats: currentRes?.electionSummary
+                            ? { elected: currentRes.electionSummary.elected.length, total: currentRes.electionSummary.seatCount }
+                            : null,
+                        methodSeats: r.electionSummary
+                            ? { elected: r.electionSummary.elected.length, total: r.electionSummary.seatCount }
+                            : null,
+                        seatsChanged: r.electionSummary?.seatsChanged ?? null,
                     });
                 } else if (r.sameAsCurrent === true) {
                     acc.sameCount += 1;

@@ -73,4 +73,6 @@ export interface VoterRow {
     voteId: number;
     /** Times the account changed its vote. */
     changes: number;
+    /** Per-candidate Majority Judgment grades (candidate id -> 0..4), for elections. */
+    grades?: Record<string, number>;
 }

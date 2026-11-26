@@ -202,12 +202,21 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     const { item: original } = originalEntry;
     const title = useTranslatedText(original.title);
     const shortDescription = useTranslatedText(original.shortDescription);
-    const optionLabels = useTranslatedList(original.options.map(o => o.label));
+    // Candidate names in elections are proper nouns and must never be translated.
+    const isElection = originalEntry.kind === 'election';
+    const optionLabels = useTranslatedList(isElection ? [] : original.options.map(o => o.label));
     const descriptionHtml = useTranslatedHtml(originalHtml);
     // Everything below reads the entry, so a translated copy of it translates the whole page.
     const entry: GovernanceEntry = {
         ...originalEntry,
-        item: { ...original, title, shortDescription, options: original.options.map((o, i) => ({ ...o, label: optionLabels[i] ?? o.label, sourceLabel: o.label })) },
+        item: {
+            ...original,
+            title,
+            shortDescription,
+            options: isElection
+                ? original.options
+                : original.options.map((o, i) => ({ ...o, label: optionLabels[i] ?? o.label, sourceLabel: o.label })),
+        },
     };
     const searchParams = useSearchParams();
     const { entries: allEntries } = useGovernanceNav();

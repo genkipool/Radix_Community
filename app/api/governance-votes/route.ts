@@ -101,6 +101,14 @@ async function loadVoters(system: GovernanceSystem, kind: CollectorItemType, id:
     const records = await fetchVoteRecords(system, kind, id, { start, deadline, closed });
     return {
         closed,
-        rows: records.map(r => ({ account: r.account, choices: r.choices, txid: r.txid, time: r.time, voteId: r.voteId, changes: r.votes - 1 })),
+        rows: records.map(r => ({
+            account: r.account,
+            choices: r.choices,
+            txid: r.txid,
+            time: r.time,
+            voteId: r.voteId,
+            changes: r.votes - 1,
+            ...(r.grades ? { grades: r.grades } : {}),
+        })),
     };
 }

@@ -266,22 +266,40 @@ function HistoricalMethodItem({ row, c, h, params, pending, language }: {
                                                     </Link>
                                                 </td>
                                                 <td className="py-1.5 px-2 min-w-0">
-                                                    <OutcomeBadge
-                                                        compact
-                                                        outcome={changed.currentOutcome}
-                                                        winnerLabel={changed.currentWinner}
-                                                        counted={1}
-                                                        c={c}
-                                                    />
+                                                    {changed.currentSeats ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-primary)]/35 bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-primary)]">
+                                                            {fill(c.election_seats_pill ?? '', {
+                                                                n: changed.currentSeats.elected.toLocaleString(language),
+                                                                total: changed.currentSeats.total.toLocaleString(language),
+                                                            })}
+                                                        </span>
+                                                    ) : (
+                                                        <OutcomeBadge
+                                                            compact
+                                                            outcome={changed.currentOutcome}
+                                                            winnerLabel={changed.currentWinner}
+                                                            counted={1}
+                                                            c={c}
+                                                        />
+                                                    )}
                                                 </td>
                                                 <td className="py-1.5 px-2 min-w-0 text-right">
-                                                    <OutcomeBadge
-                                                        compact
-                                                        outcome={changed.methodOutcome}
-                                                        winnerLabel={changed.methodWinner}
-                                                        counted={changed.methodCounted}
-                                                        c={c}
-                                                    />
+                                                    {changed.methodSeats && changed.seatsChanged ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                            {fill(
+                                                                changed.seatsChanged === 1 ? (c.election_changes_one ?? '') : (c.election_changes_many ?? ''),
+                                                                { n: changed.seatsChanged.toLocaleString(language) },
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <OutcomeBadge
+                                                            compact
+                                                            outcome={changed.methodOutcome}
+                                                            winnerLabel={changed.methodWinner}
+                                                            counted={changed.methodCounted}
+                                                            c={c}
+                                                        />
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
