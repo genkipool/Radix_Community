@@ -427,3 +427,160 @@ export function compareMethods(
         };
     });
 }
+
+export interface ElectionConsensusCandidate {
+    id: number;
+    label: string;
+    /** Consensus rank (1..N) across all evaluated methods. */
+    consensusRank: number;
+    /** Baseline rank under 1 XRD = 1 vote, when available. */
+    currentRank: number | null;
+    /** Fair weighted share of methods electing this candidate (0..1; cutoff ties count 0.5). */
+    consensusShare: number;
+    /** Raw number of evaluated methods where this candidate is elected. */
+    electedCount: number;
+    /** Raw number of evaluated methods where this candidate is tied at the seat cutoff. */
+    tiedCount: number;
+    /** Total evaluated methods included in the consensus. */
+    evaluatedMethods: number;
+    /** Weighted average rank across all evaluated methods. */
+    avgRank: number;
+    /** Weighted most frequent qualifying grade (0..4). */
+    modalGrade: number;
+    /** True when inside the top `seatCount` of the consensus ranking. */
+    inSeats: boolean;
+    /** True when `inSeats` differs from the baseline 1 XRD = 1 vote elected slate. */
+    changedFromCurrent: boolean;
+}
+
+export interface ElectionConsensusSummary {
+    seatCount: number;
+    evaluatedMethods: number;
+    candidates: ElectionConsensusCandidate[];
+}
+
+/**
+ * Family-balanced, effectiveness-weighted consensus across all evaluated
+ * voting methods (including 1 XRD = 1 vote).
+ *
+ * Each of the 4 method families (wealth, address, seniority, hybrid) carries
+ * an equal 25 % share so families with more variants cannot dominate by count.
+ * Within each family, every method participates with weight `0.25 + 0.75 * effectiveScore(m)`,
+ * rewarding Sybil-resistant, decentralised, quorum-meeting rules up to 4x while
+ * still counting all 50 methods.
+ */
+export function computeElectionConsensus(results: MethodResult[]): ElectionConsensusSummary | null {
+    const evaluated = results.filter(r => r.electionSummary && r.counted > 0);
+    if (evaluated.length === 0) return null;
+
+    const seatCount = evaluated[0].electionSummary!.seatCount;
+    const current = evaluated.find(r => r.current);
+    const currentElectedIds = new Set(current?.electionSummary?.elected.map(c => c.id) ?? []);
+    const currentRankById = new Map(current?.electionSummary?.standings.map(c => [c.id, c.rank]) ?? []);
+
+    // Group by family and compute normalized weights summing to 1.
+    const byFamily = new Map<MethodFamily, MethodResult[]>();
+    for (const r of evaluated) {
+        const list = byFamily.get(r.family);
+        if (list) list.push(r);
+        else byFamily.set(r.family, [r]);
+    }
+    const familyShare = 1 / byFamily.size;
+    const weightOf = new Map<MethodKey, number>();
+    for (const group of byFamily.values()) {
+        const raw = group.map(m => 0.25 + 0.75 * effectiveScore(m));
+        const sum = raw.reduce((a, b) => a + b, 0);
+        group.forEach((m, i) => {
+            weightOf.set(m.key, sum > 0 ? familyShare * (raw[i] / sum) : familyShare / group.length);
+        });
+    }
+
+    // Seed candidate metadata from the first evaluated method.
+    const acc = new Map<number, {
+        id: number;
+        label: string;
+        consensusShare: number;
+        electedCount: number;
+        tiedCount: number;
+        avgRank: number;
+        gradeWeights: [number, number, number, number, number];
+    }>();
+    for (const cand of evaluated[0].electionSummary!.standings) {
+        acc.set(cand.id, {
+            id: cand.id,
+            label: cand.label,
+            consensusShare: 0,
+            electedCount: 0,
+            tiedCount: 0,
+            avgRank: 0,
+            gradeWeights: [0, 0, 0, 0, 0],
+        });
+    }
+
+    for (const m of evaluated) {
+        const summary = m.electionSummary!;
+        const w = weightOf.get(m.key) ?? 0;
+        const electedIds = new Set(summary.elected.map(c => c.id));
+        const tiedIds = new Set(summary.tiedAtCutoff.map(c => c.id));
+        for (const cand of summary.standings) {
+            const entry = acc.get(cand.id);
+            if (!entry) continue;
+            if (electedIds.has(cand.id)) {
+                entry.consensusShare += w;
+                entry.electedCount += 1;
+            } else if (tiedIds.has(cand.id)) {
+                entry.consensusShare += w * 0.5;
+                entry.tiedCount += 1;
+            }
+            entry.avgRank += w * cand.rank;
+            if (cand.qualifyingGrade >= 0 && cand.qualifyingGrade <= 4) {
+                entry.gradeWeights[cand.qualifyingGrade] += w;
+            }
+        }
+    }
+
+    const sorted = [...acc.values()]
+        .map(entry => {
+            let modalGrade = 0;
+            let bestWeight = -1;
+            for (let g = 4; g >= 0; g--) {
+                if (entry.gradeWeights[g] > bestWeight) {
+                    bestWeight = entry.gradeWeights[g];
+                    modalGrade = g;
+                }
+            }
+            return { ...entry, modalGrade };
+        })
+        .sort((a, b) => {
+            const shareDiff = Math.round(b.consensusShare * 1e6) - Math.round(a.consensusShare * 1e6);
+            if (shareDiff !== 0) return shareDiff;
+            const rankDiff = Math.round(a.avgRank * 1e6) - Math.round(b.avgRank * 1e6);
+            if (rankDiff !== 0) return rankDiff;
+            if (b.modalGrade !== a.modalGrade) return b.modalGrade - a.modalGrade;
+            return a.id - b.id;
+        });
+
+    const candidates: ElectionConsensusCandidate[] = sorted.map((entry, idx) => {
+        const inSeats = idx < seatCount;
+        return {
+            id: entry.id,
+            label: entry.label,
+            consensusRank: idx + 1,
+            currentRank: currentRankById.get(entry.id) ?? null,
+            consensusShare: Math.round(entry.consensusShare * 1e6) / 1e6,
+            electedCount: entry.electedCount,
+            tiedCount: entry.tiedCount,
+            evaluatedMethods: evaluated.length,
+            avgRank: Math.round(entry.avgRank * 100) / 100,
+            modalGrade: entry.modalGrade,
+            inSeats,
+            changedFromCurrent: current != null && inSeats !== currentElectedIds.has(entry.id),
+        };
+    });
+
+    return {
+        seatCount,
+        evaluatedMethods: evaluated.length,
+        candidates,
+    };
+}

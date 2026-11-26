@@ -6,7 +6,7 @@ import { SidePanelModal } from '@/components/shared/SidePanelModal';
 import { SidePanelControls } from '@/components/shared/SidePanelControls';
 import { useSidePanelControls } from '@/components/shared/hooks/useSidePanelControls';
 import { useLanguage } from '@/context/LanguageContext';
-import type { MethodResult } from '../lib/votingMethods';
+import type { ElectionConsensusSummary, MethodResult } from '../lib/votingMethods';
 import type { HistoricalMethodRow } from '../lib/historicalMethods';
 import { gradeLabel, parseQuantile } from '../lib/majorityJudgment';
 import { fill, formatPct, formatXrd } from '../lib/format';
@@ -25,6 +25,10 @@ export type MethodGuideTarget =
         mode: 'historical';
         row: HistoricalMethodRow;
         totalVotes: number;
+    }
+    | {
+        mode: 'consensus';
+        consensus: ElectionConsensusSummary;
     };
 
 interface MethodGuideModalProps {
@@ -101,14 +105,17 @@ export function MethodGuideModal({
     const singleMethod = target?.mode === 'single' ? target.method : null;
     const election = singleMethod?.electionSummary ?? null;
     const historicalRow = target?.mode === 'historical' ? target.row : null;
+    const consensusTarget = target?.mode === 'consensus' ? target.consensus : null;
 
-    const guideKind: 'election' | 'standard' | 'historical' | null = !target
+    const guideKind: 'election' | 'standard' | 'historical' | 'consensus' | null = !target
         ? null
         : target.mode === 'historical'
             ? 'historical'
-            : election
-                ? 'election'
-                : 'standard';
+            : target.mode === 'consensus'
+                ? 'consensus'
+                : election
+                    ? 'election'
+                    : 'standard';
 
     const methodKey = singleMethod?.key ?? historicalRow?.key ?? null;
     const isDoubleMajority = methodKey === 'double_majority' || methodKey === 'double_majority_sybil';
@@ -263,6 +270,30 @@ export function MethodGuideModal({
             {
                 label: c.detail_quorum ?? '',
                 value: `${historicalRow.validVotesCount.toLocaleString(language)}/${target.totalVotes.toLocaleString(language)}`,
+            },
+        ];
+    } else if (guideKind === 'consensus' && consensusTarget) {
+        const nStr = consensusTarget.evaluatedMethods.toLocaleString(language);
+        const seatsChanged = consensusTarget.candidates.filter(cand => cand.inSeats && cand.changedFromCurrent).length;
+        kicker = c.election_consensus_guide_kicker ?? '';
+        intro = fill(c.election_consensus_guide_intro ?? '', { n: nStr });
+        steps = [
+            c.election_consensus_guide_step1 ?? '',
+            fill(c.election_consensus_guide_step2 ?? '', { n: nStr }),
+            fill(c.election_consensus_guide_step3 ?? '', { n: nStr }),
+            c.election_consensus_guide_step4 ?? '',
+        ];
+        liveMetrics = [
+            { label: c.col_method ?? '', value: nStr },
+            { label: c.fact_seats ?? '', value: consensusTarget.seatCount.toLocaleString(language) },
+            { label: c.election_consensus_live_families ?? '', value: '25 % × 4' },
+            {
+                label: c.election_consensus_live_changed ?? '',
+                value: seatsChanged === 0
+                    ? fill(c.election_same_seats ?? '', { n: consensusTarget.seatCount.toLocaleString(language) })
+                    : fill(seatsChanged === 1 ? (c.election_changes_one ?? '') : (c.election_changes_many ?? ''), {
+                        n: seatsChanged.toLocaleString(language),
+                    }),
             },
         ];
     }
