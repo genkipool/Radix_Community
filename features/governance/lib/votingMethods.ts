@@ -1,3 +1,4 @@
+import type { MajorityJudgmentElectionData } from '../types';
 import { summarizeTally, type BallotChoice, type GovernanceItem, type TallyRow, type VoteOutcome } from './governanceVotes';
 import {
     evaluateMajorityJudgment,
@@ -469,14 +470,31 @@ export interface ElectionConsensusSummary {
  * rewarding Sybil-resistant, decentralised, quorum-meeting rules up to 4x while
  * still counting all 50 methods.
  */
-export function computeElectionConsensus(results: MethodResult[]): ElectionConsensusSummary | null {
+export function computeElectionConsensus(
+    results: MethodResult[],
+    baselineElectionData?: MajorityJudgmentElectionData | null,
+): ElectionConsensusSummary | null {
     const evaluated = results.filter(r => r.electionSummary && r.counted > 0);
     if (evaluated.length === 0) return null;
 
     const seatCount = evaluated[0].electionSummary!.seatCount;
     const current = evaluated.find(r => r.current);
-    const currentElectedIds = new Set(current?.electionSummary?.elected.map(c => c.id) ?? []);
-    const currentRankById = new Map(current?.electionSummary?.standings.map(c => [c.id, c.rank]) ?? []);
+
+    // Prefer the official collector's `electionData` (the exact ranking shown in
+    // "Current voting method ranking" right above) so entered/dropped highlights
+    // can never disagree with the top grid when `voters` cache lags slightly.
+    const officialResults = baselineElectionData?.candidateResults ?? [];
+    const useOfficialBaseline = officialResults.length > 0;
+    const baselineSorted = useOfficialBaseline
+        ? [...officialResults].sort((a, b) => a.rank - b.rank || a.candidateId - b.candidateId)
+        : [];
+    const currentElectedIds = useOfficialBaseline
+        ? new Set(baselineSorted.slice(0, seatCount).map(c => c.candidateId))
+        : new Set(current?.electionSummary?.elected.map(c => c.id) ?? []);
+    const currentRankById = useOfficialBaseline
+        ? new Map(officialResults.map(c => [c.candidateId, c.rank]))
+        : new Map(current?.electionSummary?.standings.map(c => [c.id, c.rank]) ?? []);
+    const hasBaseline = useOfficialBaseline || current != null;
 
     // Group by family and compute normalized weights summing to 1.
     const byFamily = new Map<MethodFamily, MethodResult[]>();
@@ -574,7 +592,7 @@ export function computeElectionConsensus(results: MethodResult[]): ElectionConse
             avgRank: Math.round(entry.avgRank * 100) / 100,
             modalGrade: entry.modalGrade,
             inSeats,
-            changedFromCurrent: current != null && inSeats !== currentElectedIds.has(entry.id),
+            changedFromCurrent: hasBaseline && inSeats !== currentElectedIds.has(entry.id),
         };
     });
 
