@@ -5,6 +5,7 @@ import {
     type ElectionCandidateOutcome,
     type ElectionMethodCandidate,
     type ElectionMethodSummary,
+    type ElectionSeatChange,
 } from './majorityJudgment';
 import {
     CURRENT_METHOD, DUST, METHODS, METHOD_PARAMS, isVeteran,
@@ -19,7 +20,7 @@ import {
     type Concentration, type ConcentrationLevel,
 } from './methodMetrics';
 
-export type { ElectionCandidateOutcome, ElectionMethodCandidate, ElectionMethodSummary };
+export type { ElectionCandidateOutcome, ElectionMethodCandidate, ElectionMethodSummary, ElectionSeatChange };
 export {
     CURRENT_METHOD, METHODS, METHOD_PARAMS,
     type MethodFamily, type MethodKey, type MethodVoter, type Resistance,
@@ -376,16 +377,34 @@ export function compareMethods(
     const currentTiedIds = current?.electionSummary
         ? new Set(current.electionSummary.tiedAtCutoff.map(c => c.id))
         : null;
+    const currentRankById = current?.electionSummary
+        ? new Map(current.electionSummary.standings.map(c => [c.id, c.rank]))
+        : null;
 
     return results.map(r => {
-        if (r.electionSummary && current?.electionSummary && currentElectedIds && currentTiedIds) {
+        if (r.electionSummary && current?.electionSummary && currentElectedIds && currentTiedIds && currentRankById) {
             if (r.current || r.counted === 0) {
                 return { ...r, sameAsCurrent: null };
             }
             const methodIds = new Set(r.electionSummary.elected.map(c => c.id));
             const methodTiedIds = new Set(r.electionSummary.tiedAtCutoff.map(c => c.id));
-            const entered = r.electionSummary.elected.filter(c => !currentElectedIds.has(c.id)).map(c => c.label);
-            const left = current.electionSummary.elected.filter(c => !methodIds.has(c.id)).map(c => c.label);
+            const methodRankById = new Map(r.electionSummary.standings.map(c => [c.id, c.rank]));
+            const enteredCands = r.electionSummary.elected.filter(c => !currentElectedIds.has(c.id));
+            const leftCands = current.electionSummary.elected.filter(c => !methodIds.has(c.id));
+            const entered = enteredCands.map(c => c.label);
+            const left = leftCands.map(c => c.label);
+            const enteredDetails: ElectionSeatChange[] = enteredCands.map(c => ({
+                id: c.id,
+                label: c.label,
+                currentRank: currentRankById.get(c.id) ?? c.rank,
+                methodRank: c.rank,
+            }));
+            const leftDetails: ElectionSeatChange[] = leftCands.map(c => ({
+                id: c.id,
+                label: c.label,
+                currentRank: c.rank,
+                methodRank: methodRankById.get(c.id) ?? c.rank,
+            }));
             const sameTies = methodTiedIds.size === currentTiedIds.size
                 && [...methodTiedIds].every(id => currentTiedIds.has(id));
             const seatsChanged = Math.max(entered.length, left.length);
@@ -396,6 +415,8 @@ export function compareMethods(
                     seatsChanged,
                     entered,
                     left,
+                    enteredDetails,
+                    leftDetails,
                 },
                 sameAsCurrent: seatsChanged === 0 && sameTies,
             };

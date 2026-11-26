@@ -330,13 +330,26 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         title={c.election_changes_table_title ?? ''}
                         icon={<ArrowLeftRight className="size-3 text-amber-500" />}
                         headers={[
-                            { label: c.election_col_candidate ?? '', className: 'w-[60%]' },
-                            { label: c.election_col_change ?? '', className: 'w-[40%]' },
+                            { label: c.election_col_candidate ?? '', className: 'w-[46%]' },
+                            { label: c.election_col_position ?? '', className: 'w-[24%]' },
+                            { label: c.election_col_change ?? '', className: 'w-[30%]' },
                         ]}
                     >
-                        {election.left.map(name => (
-                            <tr key={`left-${name}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
-                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{name}</td>
+                        {(election.leftDetails ?? election.left.map((label, idx) => ({
+                            id: -idx - 1,
+                            label,
+                            currentRank: 0,
+                            methodRank: election.standings.find(s => s.label === label)?.rank ?? 0,
+                        }))).map(item => (
+                            <tr key={`left-${item.label}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
+                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{item.label}</td>
+                                <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-text-secondary)] whitespace-nowrap tabular-nums">
+                                    {item.currentRank > 0 && item.methodRank > 0
+                                        ? `#${item.currentRank} → #${item.methodRank}`
+                                        : item.methodRank > 0
+                                            ? `#${item.methodRank}`
+                                            : '—'}
+                                </td>
                                 <td className="py-1.5 px-2 text-right">
                                     <span className="inline-flex items-center justify-center h-5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
                                         <span className="text-box-cap leading-none">{c.election_left_badge ?? ''}</span>
@@ -344,9 +357,21 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                                 </td>
                             </tr>
                         ))}
-                        {election.entered.map(name => (
-                            <tr key={`entered-${name}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
-                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{name}</td>
+                        {(election.enteredDetails ?? election.entered.map((label, idx) => ({
+                            id: -idx - 1,
+                            label,
+                            currentRank: 0,
+                            methodRank: election.standings.find(s => s.label === label)?.rank ?? 0,
+                        }))).map(item => (
+                            <tr key={`entered-${item.label}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
+                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{item.label}</td>
+                                <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-accent)] whitespace-nowrap tabular-nums">
+                                    {item.currentRank > 0 && item.methodRank > 0
+                                        ? `#${item.currentRank} → #${item.methodRank}`
+                                        : item.methodRank > 0
+                                            ? `#${item.methodRank}`
+                                            : '—'}
+                                </td>
                                 <td className="py-1.5 px-2 text-right">
                                     <span className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-2 text-[10px] font-bold text-[var(--color-accent)]">
                                         <span className="text-box-cap leading-none">{c.election_entered_badge ?? ''}</span>
@@ -357,6 +382,9 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         {election.tiedAtCutoff.map(cand => (
                             <tr key={`tied-${cand.id}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
                                 <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{cand.label}</td>
+                                <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-primary)] whitespace-nowrap tabular-nums">
+                                    #{cand.rank}
+                                </td>
                                 <td className="py-1.5 px-2 text-right">
                                     <span className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-primary)]/35 bg-[var(--color-primary)]/10 px-2 text-[10px] font-bold text-[var(--color-primary)]">
                                         <span className="text-box-cap leading-none">{g.mj?.outcome_tied ?? ''}</span>

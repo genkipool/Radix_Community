@@ -59,7 +59,7 @@ export function useAddressBook() {
 
     useEffect(() => {
         const loadEntries = () => {
-            if (typeof window === 'undefined') return;
+            if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) {
                 setEntries([]);
@@ -86,7 +86,7 @@ export function useAddressBook() {
 
     const saveEntries = (newEntries: AddressBookEntry[]) => {
         setEntries(newEntries);
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(newEntries));
             window.dispatchEvent(new Event('addressBookUpdated'));
         }

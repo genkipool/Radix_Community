@@ -109,6 +109,7 @@ async function loadVoters(system: GovernanceSystem, kind: CollectorItemType, id:
             voteId: r.voteId,
             changes: r.votes - 1,
             ...(r.grades ? { grades: r.grades } : {}),
+            ...(r.history && r.history.length > 1 ? { history: r.history } : {}),
         })),
     };
 }

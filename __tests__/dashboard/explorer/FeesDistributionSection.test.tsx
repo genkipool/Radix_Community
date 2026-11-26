@@ -15,6 +15,8 @@ vi.mock('lucide-react', () => ({
   Coins: () => <div data-testid="icon-coins" />,
   Landmark: () => <div data-testid="landmark" />,
   Download: () => <div data-testid="icon-download" />,
+  BookUser: () => <div data-testid="icon-book-user" />,
+  BookMarked: () => <div data-testid="icon-book-marked" />,
 }));
 vi.mock('@/features/dashboard/explorador/components/TransactionIcons', () => ({
     IconFlame: () => <div data-testid="icon-flame" />,

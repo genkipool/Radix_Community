@@ -1,7 +1,7 @@
 'use client';
 
 import { BookMarked, BookUser } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useOptionalLanguage } from '@/context/LanguageContext';
 import { addressCategory, isAddressBookSaveable, useAddressBook } from '../hooks/useAddressBook';
 
 const SIZE_STYLES = {
@@ -34,12 +34,12 @@ export function SaveToAddressBookButton({
   size?: 'xs' | 'sm' | 'md';
   className?: string;
 }) {
-  const { t } = useLanguage();
+  const langCtx = useOptionalLanguage();
   const { entries, addContact, deleteEntry } = useAddressBook();
   const clean = address.trim();
   if (!clean || !isAddressBookSaveable(clean)) return null;
 
-  const navT = (t.nav ?? {}) as Record<string, string | undefined>;
+  const navT = (langCtx?.t?.nav ?? {}) as Record<string, string | undefined>;
   const category = addressCategory(clean);
   const categoryLabel = navT[`agenda_cat_${category}`] ?? category;
   const existing = entries.find((entry) => entry.address.trim().toLowerCase() === clean.toLowerCase());

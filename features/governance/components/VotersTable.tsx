@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Users, ExternalLink, Loader2, ChevronDown } from 'lucide-react';
+import { Users, ExternalLink, Loader2, ChevronDown, ArrowLeftRight } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Portal } from '@/components/ui/Portal';
 import { SelectPopup, SelectPopupRow } from '@/components/ui/SelectPopup';
@@ -30,6 +30,7 @@ export function VotersTable({ tally, voters, choices, g, language }: {
     language: string;
 }) {
     const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+    const [onlyChanged, setOnlyChanged] = useState(false);
     const [sort, setSort] = useState<VoterSort>('recent');
     const { copied, copy } = useCopy();
     const {
@@ -72,11 +73,14 @@ export function VotersTable({ tally, voters, choices, g, language }: {
         setSelectedFilters(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
     };
 
+    const changedCount = voters.filter(v => v.changes > 0).length;
+    const baseVoters = onlyChanged ? voters.filter(v => v.changes > 0) : voters;
+
     const filteredRows = isAll
-        ? voters
+        ? baseVoters
         : isElection
-            ? voters.filter(v => Object.values(v.grades ?? {}).some(grade => activeSet.has(String(grade))))
-            : voters.filter(v => v.choices.some(c => activeSet.has(c)));
+            ? baseVoters.filter(v => Object.values(v.grades ?? {}).some(grade => activeSet.has(String(grade))))
+            : baseVoters.filter(v => v.choices.some(c => activeSet.has(c)));
 
     const rows = [...filteredRows].sort(sort === 'recent' ? (a, b) => b.voteId - a.voteId : (a, b) => power(b) - power(a));
     const totalXrd = rows.reduce((sum, v) => sum + power(v), 0);
@@ -97,18 +101,36 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                 <h3 id="voters-table" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
                     <Users className="size-4 text-[var(--color-primary)]" />{g.voters_title || 'Voters'}
                 </h3>
-                <div role="group" aria-label={g.voters_sort ?? ''} className="inline-flex gap-1 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-surface)] p-0.5">
-                    {([['recent', g.voters_recent ?? ''], ['power', g.voters_top_xrd ?? '']] as const).map(([key, label]) => (
-                        <button
-                            key={key}
-                            type="button"
-                            aria-pressed={sort === key}
-                            onClick={() => setSort(key)}
-                            className={`w-28 px-2 py-1 rounded-md text-center text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${sort === key ? 'bg-[var(--color-card-bg)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                        >
-                            {label}
-                        </button>
-                    ))}
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        aria-pressed={onlyChanged}
+                        onClick={() => setOnlyChanged(prev => !prev)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                            onlyChanged
+                                ? 'border-[var(--color-primary)]/40 bg-[var(--color-primary)]/10 text-[var(--color-primary)] shadow-sm'
+                                : 'border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+                        }`}
+                    >
+                        <ArrowLeftRight className="size-3 shrink-0" aria-hidden="true" />
+                        <span>{g.voters_changed ?? ''}</span>
+                        <span className={`font-mono text-[10px] tabular-nums ${onlyChanged ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>
+                            ({changedCount.toLocaleString(language)})
+                        </span>
+                    </button>
+                    <div role="group" aria-label={g.voters_sort ?? ''} className="inline-flex gap-1 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-surface)] p-0.5">
+                        {([['recent', g.voters_recent ?? ''], ['power', g.voters_top_xrd ?? '']] as const).map(([key, label]) => (
+                            <button
+                                key={key}
+                                type="button"
+                                aria-pressed={sort === key}
+                                onClick={() => setSort(key)}
+                                className={`w-28 px-2 py-1 rounded-md text-center text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${sort === key ? 'bg-[var(--color-card-bg)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -197,23 +219,23 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                     </div>
                 )}
                 <span className="shrink-0 pb-2.5 text-xs text-[var(--color-text-muted)] whitespace-nowrap tabular-nums">
-                    {g.voters_total_xrd || 'Total'}: <span className="font-mono font-bold text-[var(--color-text-main)]">{formatXrd(totalXrd, language)} XRD</span>
-                    {tally && tally.turnout > 0 && !isAll && <span className="ml-1">({formatPct(totalXrd / tally.turnout, language)})</span>}
+                    {g.voters_total_xrd ?? ''}: <span className="font-mono font-bold text-[var(--color-text-main)]">{formatXrd(totalXrd, language)} XRD</span>
+                    {tally && tally.turnout > 0 && (!isAll || onlyChanged) && <span className="ml-1">({formatPct(totalXrd / tally.turnout, language)})</span>}
                 </span>
             </div>
 
             {rows.length === 0 ? (
-                <p className="p-5 text-sm text-[var(--color-text-muted)]">{g.voters_empty}</p>
+                <p className="p-5 text-sm text-[var(--color-text-muted)]">{onlyChanged ? (g.voters_changed_empty ?? '') : (g.voters_empty ?? '')}</p>
             ) : (
                 <div className="max-h-[520px] overflow-auto">
-                    <table className="w-full min-w-[1220px] table-fixed text-sm">
+                    <table className="w-full min-w-[1260px] table-fixed text-sm">
                         <colgroup>
                             <col className="w-[42px]" />
                             <col className="w-[196px]" />
                             <col />
                             <col className="w-[156px]" />
-                            <col className="w-[168px]" />
-                            <col className="w-[196px]" />
+                            <col className="w-[180px]" />
+                            <col className="w-[236px]" />
                         </colgroup>
                         <thead className="sticky top-0 z-10 bg-[var(--color-card-bg)] shadow-[0_1px_0_var(--color-card-border)]">
                             <tr className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -228,6 +250,8 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                         <tbody>
                             {rows.map((v, i) => {
                                 const p = power(v);
+                                const history = v.history && v.history.length > 1 ? v.history : null;
+                                const original = history ? history[0] : null;
                                 const visibleChoices = isElection && !isAll
                                     ? v.choices.filter(c => {
                                         const gIdx = v.grades?.[c];
@@ -235,14 +259,14 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                     })
                                     : v.choices;
                                 return (
-                                    <tr key={v.account} className="border-t border-[var(--color-card-border)] hover:bg-[var(--color-surface)] transition-colors">
+                                    <tr key={v.account} className="border-t border-[var(--color-card-border)] hover:bg-[var(--color-surface)] transition-colors align-top">
                                         <td className="pl-4 pr-2 py-2.5 font-mono text-xs text-[var(--color-text-muted)] tabular-nums">{i + 1}</td>
                                         <td className="px-3 py-2.5">
                                             <span className="inline-flex items-center gap-1 whitespace-nowrap">
                                                 <Link href={`/${language}/dashboard/account/${v.account}`} prefetch={false} className="font-mono text-xs text-[var(--color-text-main)] hover:text-[var(--color-primary)]" title={v.account}>
                                                     {shortenAddress(v.account)}
                                                 </Link>
-                                                <CopyButton value={v.account} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
+                                                <CopyButton value={v.account} copiedAddress={copied} onCopy={copy} title={g.copy ?? ''} />
                                             </span>
                                         </td>
                                         <td className="px-3 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -251,24 +275,63 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                                     {visibleChoices.map((c, idx) => {
                                                         const label = choiceLabel(c);
                                                         const gradeIdx = v.grades?.[c];
+                                                        const origGradeIdx = original?.grades?.[c];
+                                                        const gradeChanged = origGradeIdx !== undefined && gradeIdx !== undefined && origGradeIdx !== gradeIdx;
                                                         const gradeAbbr = gradeIdx !== undefined ? g.mj?.grade_abbrs?.[gradeIdx] : undefined;
+                                                        const origGradeAbbr = origGradeIdx !== undefined ? g.mj?.grade_abbrs?.[origGradeIdx] : undefined;
                                                         const gradeFull = gradeIdx !== undefined ? g.mj?.grades?.[gradeIdx] : undefined;
+                                                        const origGradeFull = origGradeIdx !== undefined ? g.mj?.grades?.[origGradeIdx] : undefined;
                                                         return (
                                                             <span
                                                                 key={`${c}-${idx}`}
-                                                                title={gradeFull ? `${label} — ${gradeFull}` : label}
-                                                                className="whitespace-nowrap text-xs font-semibold text-[var(--color-text-secondary)]"
+                                                                title={gradeChanged
+                                                                    ? `${label} — ${origGradeFull ?? origGradeIdx} → ${gradeFull ?? gradeIdx}`
+                                                                    : gradeFull ? `${label} — ${gradeFull}` : label}
+                                                                className={`whitespace-nowrap text-xs ${
+                                                                    gradeChanged
+                                                                        ? 'font-bold text-[var(--color-text-main)]'
+                                                                        : onlyChanged && history
+                                                                            ? 'font-medium text-[var(--color-text-muted)]'
+                                                                            : 'font-semibold text-[var(--color-text-secondary)]'
+                                                                }`}
                                                             >
                                                                 {label}
-                                                                {gradeAbbr && (
+                                                                {gradeChanged ? (
+                                                                    <span className="ml-1 font-mono text-[10px]">
+                                                                        <span className="line-through text-[var(--color-text-muted)] opacity-75">
+                                                                            {origGradeAbbr ?? origGradeIdx}
+                                                                        </span>
+                                                                        <span className="mx-0.5 text-[var(--color-text-muted)]">→</span>
+                                                                        <span className={`font-bold ${MJ_GRADE_ABBR_COLOR[gradeIdx] ?? ''}`}>
+                                                                            {gradeAbbr ?? gradeIdx}
+                                                                        </span>
+                                                                    </span>
+                                                                ) : gradeAbbr ? (
                                                                     <span className={`ml-0.5 font-mono text-[10px] font-bold ${MJ_GRADE_ABBR_COLOR[gradeIdx!] ?? ''}`}>
                                                                         ({gradeAbbr})
                                                                     </span>
-                                                                )}
+                                                                ) : null}
                                                             </span>
                                                         );
                                                     })}
-                                                    {v.changes > 0 && <span className="text-[10px] font-normal text-[var(--color-text-muted)] self-center" title={g.vote?.changed_vote}>↻</span>}
+                                                    {v.changes > 0 && !history && <span className="text-[10px] font-normal text-[var(--color-text-muted)] self-center" title={g.vote?.changed_vote}>↻</span>}
+                                                </div>
+                                            ) : history && original ? (
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
+                                                        <span className="shrink-0 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                                                            {g.voters_vote_original ?? ''}
+                                                        </span>
+                                                        <span className="line-through opacity-80">
+                                                            {original.choices.map(choiceLabel).join(', ')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-main)]">
+                                                        <span className="shrink-0 rounded bg-[var(--color-primary)]/15 border border-[var(--color-primary)]/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                                                            {g.voters_vote_current ?? ''}
+                                                        </span>
+                                                        <span>{visibleChoices.map(choiceLabel).join(', ')}</span>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <span className="whitespace-nowrap">
@@ -298,7 +361,7 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                         <td className="px-3 py-2 text-right whitespace-nowrap">
                                             {v.votePower === null ? (
                                                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-text-muted)]" title={g.power_pending}>
-                                                    <Loader2 className="size-3 animate-spin" />{g.power_counting || 'Counting…'}
+                                                    <Loader2 className="size-3 animate-spin" />{g.power_counting ?? ''}
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex flex-col items-end leading-tight tabular-nums">
@@ -310,13 +373,59 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                             )}
                                         </td>
                                         <td className="px-3 py-2.5 text-xs text-[var(--color-text-muted)] whitespace-nowrap" suppressHydrationWarning>
-                                            {formatDate(Date.parse(v.time) / 1000, language)}
+                                            {history ? (
+                                                <div className="space-y-1">
+                                                    {history.map((entry, idx) => (
+                                                        <div key={`${entry.txid}-${idx}`} className={idx === history.length - 1 ? 'text-[var(--color-text-secondary)] font-medium' : 'text-[11px] opacity-80'}>
+                                                            {formatDate(Date.parse(entry.time) / 1000, language)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                formatDate(Date.parse(v.time) / 1000, language)
+                                            )}
                                         </td>
                                         <td className="pl-3 pr-5 py-2.5 text-right whitespace-nowrap">
-                                            <Link href={`/${language}/dashboard/tx/${v.txid}`} prefetch={false} className="inline-flex items-center justify-end gap-1.5 font-mono text-xs text-[var(--color-primary)] hover:underline" title={v.txid}>
-                                                <span>{shortenAddress(v.txid)}</span>
-                                                <ExternalLink className="size-3 shrink-0" />
-                                            </Link>
+                                            {history ? (
+                                                <div className="inline-flex flex-col items-end gap-1">
+                                                    {history.map((entry, idx) => {
+                                                        const isFirst = idx === 0;
+                                                        const isLast = idx === history.length - 1;
+                                                        const tag = isFirst
+                                                            ? (g.voters_vote_original ?? '')
+                                                            : isLast
+                                                                ? (g.voters_vote_current ?? '')
+                                                                : `#${idx + 1}`;
+                                                        return (
+                                                            <div key={`${entry.txid}-${idx}`} className="inline-flex items-center justify-end gap-1.5">
+                                                                <span className={`rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                                                                    isLast
+                                                                        ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
+                                                                        : 'bg-[var(--color-surface)] text-[var(--color-text-muted)]'
+                                                                }`}>
+                                                                    {tag}
+                                                                </span>
+                                                                <Link
+                                                                    href={`/${language}/dashboard/tx/${entry.txid}`}
+                                                                    prefetch={false}
+                                                                    className={`inline-flex items-center gap-1 font-mono text-xs hover:underline ${
+                                                                        isLast ? 'text-[var(--color-primary)] font-semibold' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
+                                                                    }`}
+                                                                    title={entry.txid}
+                                                                >
+                                                                    <span>{shortenAddress(entry.txid)}</span>
+                                                                    <ExternalLink className="size-3 shrink-0" />
+                                                                </Link>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <Link href={`/${language}/dashboard/tx/${v.txid}`} prefetch={false} className="inline-flex items-center justify-end gap-1.5 font-mono text-xs text-[var(--color-primary)] hover:underline" title={v.txid}>
+                                                    <span>{shortenAddress(v.txid)}</span>
+                                                    <ExternalLink className="size-3 shrink-0" />
+                                                </Link>
+                                            )}
                                         </td>
                                     </tr>
                                 );

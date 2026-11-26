@@ -120,6 +120,10 @@ function CandidateMetricsBlock({
                                 above: formatXrd(Number(result.powerAbove) || 0, language),
                                 below: formatXrd(Number(result.powerBelow) || 0, language),
                             })}
+                        {' · '}
+                        <strong className="font-bold text-[var(--color-text-main)]">
+                            {fill(mj?.ranking_badge ?? '', { rank: String(result.rank) })}
+                        </strong>
                     </dd>
                 </div>
             </dl>
