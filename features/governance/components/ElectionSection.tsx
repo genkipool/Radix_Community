@@ -8,6 +8,7 @@ import {
     CheckCircle2,
     Clock,
     ExternalLink,
+    Info,
     Loader2,
     Lock,
     Scale,
@@ -23,6 +24,7 @@ import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry, MajorityJudgmentCandidateResult, MajorityJudgmentElectionData } from '../types';
 import { votingPhase, type GovernanceCandidate, type GovernanceElectionSpec } from '../lib/governanceVotes';
 import { buildElectionVoteManifest } from '../lib/voteManifest';
+import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { fill, formatDate, formatPct, formatRelative, formatXrd } from '../lib/format';
 import { shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { CollapsibleCard } from './CollapsibleCard';
@@ -747,6 +749,19 @@ export function ElectionVoteSidebar({
     const canVote = phase === 'open' && wallet.isConnected && onNetwork && available.length > 0;
     const mj = g.mj;
 
+    const votersQuery = useGovernanceTally(
+        { component: system.component, kind: 'election', itemId: id, voters: true },
+        system.network,
+        canVote,
+    );
+    const votedSet = new Set((votersQuery.data?.voters ?? []).map(v => v.account));
+    const currentStatus = selectedAccounts.map(account => ({
+        account,
+        voted: votedSet.has(account),
+    }));
+    const anyVoted = currentStatus.some(c => c.voted);
+    const labelOf = (address: string) => wallet.accounts.find(a => a.address === address)?.label || shortenAddress(address);
+
     const setAccounts = (next: string[]) => {
         if (tx.isSending) return;
         setChosen(next);
@@ -831,6 +846,37 @@ export function ElectionVoteSidebar({
                             }}
                         />
 
+                        {votersQuery.isLoading ? (
+                            <div className="h-11 rounded-xl bg-[var(--color-surface)] animate-pulse" aria-hidden />
+                        ) : currentStatus.length === 1 ? (
+                            currentStatus[0].voted ? (
+                                <Notice icon={CheckCircle2} tone="ok">{mj?.already_voted ?? ''}</Notice>
+                            ) : (
+                                <Notice icon={Info}>{g.no_vote_yet ?? ''}</Notice>
+                            )
+                        ) : currentStatus.length > 1 ? (
+                            <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 space-y-2">
+                                <p className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                                    {g.current_votes_title ?? ''}
+                                </p>
+                                <ul className="space-y-1.5">
+                                    {currentStatus.map(c => (
+                                        <li key={c.account} className="flex items-center justify-between gap-3 text-xs">
+                                            <span className="truncate font-semibold text-[var(--color-text-main)]" title={c.account}>
+                                                {labelOf(c.account)}
+                                            </span>
+                                            <span className={`shrink-0 font-semibold ${c.voted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
+                                                {c.voted ? (mj?.voted_badge ?? '') : (g.not_voted ?? '')}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {g.multi_account_hint && (
+                                    <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">{g.multi_account_hint}</p>
+                                )}
+                            </div>
+                        ) : null}
+
                         <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 space-y-2">
                             <div className="flex items-center justify-between text-xs font-semibold">
                                 <span className="text-[var(--color-text-main)]">
@@ -858,8 +904,24 @@ export function ElectionVoteSidebar({
                             className="inline-flex items-center justify-center gap-2 w-full h-11 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer"
                         >
                             {tx.isSending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-                            <span>{tx.isSending ? (g.sending ?? '') : (mj?.submit_ballot ?? '')}</span>
+                            <span>
+                                {tx.isSending
+                                    ? (g.sending ?? '')
+                                    : selectedAccounts.length > 1
+                                        ? fill(g.submit_many ?? '', { n: String(selectedAccounts.length) })
+                                        : anyVoted
+                                            ? (g.submit_change ?? '')
+                                            : (mj?.submit_ballot ?? '')}
+                            </span>
                         </button>
+                        {item.start && g.snapshot_note && (
+                            <p className="flex gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
+                                <Info className="size-3 shrink-0 mt-0.5" />
+                                <span suppressHydrationWarning>
+                                    {fill(g.snapshot_note, { date: formatDate(item.start, language) })}
+                                </span>
+                            </p>
+                        )}
                     </>
                 )}
 
