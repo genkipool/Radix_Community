@@ -104,6 +104,15 @@ export interface ElectionMethodCandidate {
     outcome: ElectionCandidateOutcome;
 }
 
+export interface ElectionSeatChange {
+    id: number;
+    label: string;
+    /** Rank under the baseline 1 XRD = 1 vote rule. */
+    currentRank: number;
+    /** Rank under this voting method. */
+    methodRank: number;
+}
+
 export interface ElectionMethodSummary {
     seatCount: number;
     minimumMedianGrade: number;
@@ -118,6 +127,10 @@ export interface ElectionMethodSummary {
     entered: string[];
     /** Candidate names leaving the elected slate compared with 1 XRD = 1 vote. */
     left: string[];
+    /** Candidates entering the elected slate with their baseline and method ranks. */
+    enteredDetails?: ElectionSeatChange[];
+    /** Candidates leaving the elected slate with their baseline and method ranks. */
+    leftDetails?: ElectionSeatChange[];
 }
 
 export interface MajorityJudgmentBallot {

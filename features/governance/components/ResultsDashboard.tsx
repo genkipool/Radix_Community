@@ -86,6 +86,22 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
         },
         choices,
         tally,
+        changedVoters: (tallyQuery.data?.voters ?? [])
+            .filter(v => v.changes > 0)
+            .map(v => ({
+                account: v.account,
+                votePower: v.votePower,
+                changes: v.changes,
+                originalVote: v.history?.[0] ?? null,
+                currentVote: {
+                    choices: v.choices,
+                    voteId: v.voteId,
+                    txid: v.txid,
+                    time: v.time,
+                    ...(v.grades ? { grades: v.grades } : {}),
+                },
+                history: v.history ?? [],
+            })),
         rawTally: tallyQuery.data ?? null,
     }));
 

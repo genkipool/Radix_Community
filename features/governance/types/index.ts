@@ -59,6 +59,18 @@ export interface MajorityJudgmentElectionData {
     candidateResults: MajorityJudgmentCandidateResult[];
 }
 
+/** A single ballot submission in an account's vote history (chronological). */
+export interface VoteHistoryEntry {
+    /** Ballot keys picked: option ids ("0") or a stance ("For"). */
+    choices: string[];
+    voteId: number;
+    txid: string;
+    /** ISO timestamp. */
+    time: string;
+    /** Per-candidate Majority Judgment grades (candidate id -> 0..4), for elections. */
+    grades?: Record<string, number>;
+}
+
 /** A voter's current vote: ledger record joined with the collector's voting power. */
 export interface VoterRow {
     account: string;
@@ -75,4 +87,6 @@ export interface VoterRow {
     changes: number;
     /** Per-candidate Majority Judgment grades (candidate id -> 0..4), for elections. */
     grades?: Record<string, number>;
+    /** Full chronological vote history (original -> ... -> current), present when `changes > 0`. */
+    history?: VoteHistoryEntry[];
 }

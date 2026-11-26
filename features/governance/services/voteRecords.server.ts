@@ -5,6 +5,7 @@ import { gatewayPost } from '@/services/gateway/bases';
 import { extractGovernanceVotes, selectionKeys, type GovernanceItemKind } from '../lib/governanceVotes';
 import type { GatewayEvent } from '@/features/dashboard/types';
 import type { GovernanceSystem } from '../config/systems';
+import type { VoteHistoryEntry } from '../types';
 
 /** One account's current vote on an item, as recorded on the ledger. */
 export interface VoteRecord {
@@ -19,6 +20,8 @@ export interface VoteRecord {
     votes: number;
     /** Per-candidate Majority Judgment grades (candidate id -> 0..4), when `kind === 'election'`. */
     grades?: Record<string, number>;
+    /** Full chronological vote history (original -> ... -> latest), present when `votes > 1`. */
+    history?: VoteHistoryEntry[];
 }
 
 const PAGE_LIMIT = 100;
@@ -46,7 +49,7 @@ export async function fetchVoteRecords(
     if (window.closed) cacheLife('weeks'); else cacheLife('minutes');
     cacheTag('governance-votes', `governance-votes-${system.key}-${kind}-${itemId}`);
 
-    const latest = new Map<string, VoteRecord>();
+    const byAccount = new Map<string, VoteHistoryEntry[]>();
     let cursor: string | null | undefined;
     for (let page = 0; page < MAX_PAGES; page++) {
         const body: Record<string, unknown> = {
@@ -64,22 +67,36 @@ export async function fetchVoteRecords(
             if (!tx.intent_hash || !tx.confirmed_at) continue;
             for (const vote of extractGovernanceVotes(tx.receipt?.events ?? [])) {
                 if (vote.component !== system.component || vote.kind !== kind || vote.itemId !== itemId || !vote.account) continue;
-                const voteId = Number(vote.voteId ?? -1);
-                const prev = latest.get(vote.account);
-                if (prev && prev.voteId > voteId) { prev.votes += 1; continue; }
-                latest.set(vote.account, {
-                    account: vote.account,
+                const entry: VoteHistoryEntry = {
                     choices: selectionKeys(vote.selection),
-                    voteId,
+                    voteId: Number(vote.voteId ?? -1),
                     txid: tx.intent_hash,
                     time: tx.confirmed_at,
-                    votes: (prev?.votes ?? 0) + 1,
                     ...(vote.grades ? { grades: vote.grades } : {}),
-                });
+                };
+                const list = byAccount.get(vote.account);
+                if (list) list.push(entry);
+                else byAccount.set(vote.account, [entry]);
             }
         }
         cursor = res.next_cursor;
         if (!cursor) break;
     }
-    return [...latest.values()];
+
+    const records: VoteRecord[] = [];
+    for (const [account, entries] of byAccount) {
+        entries.sort((a, b) => a.voteId - b.voteId);
+        const latest = entries[entries.length - 1];
+        records.push({
+            account,
+            choices: latest.choices,
+            voteId: latest.voteId,
+            txid: latest.txid,
+            time: latest.time,
+            votes: entries.length,
+            ...(latest.grades ? { grades: latest.grades } : {}),
+            ...(entries.length > 1 ? { history: entries } : {}),
+        });
+    }
+    return records;
 }

@@ -64,6 +64,10 @@ export function DictionaryEnricher({ partial }: { partial: Partial<Dictionary> }
   return null;
 }
 
+export function useOptionalLanguage() {
+  return use(LanguageContext);
+}
+
 export function useLanguage() {
   const context = use(LanguageContext);
   if (context === undefined) {

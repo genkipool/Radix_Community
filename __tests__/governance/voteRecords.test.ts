@@ -45,7 +45,18 @@ describe('fetchVoteRecords', () => {
 
         const records = await fetchVoteRecords(SYSTEM, 'temperature_check', '6', { start: 1785576512, deadline: 1786008512, closed: true });
         expect(records).toEqual([
-            { account: 'account_rdx1_alice', choices: ['Against'], voteId: 2, txid: 'txid_d', time: '2026-08-02T10:00:00Z', votes: 2 },
+            {
+                account: 'account_rdx1_alice',
+                choices: ['Against'],
+                voteId: 2,
+                txid: 'txid_d',
+                time: '2026-08-02T10:00:00Z',
+                votes: 2,
+                history: [
+                    { choices: ['For'], voteId: 0, txid: 'txid_a', time: '2026-08-01T10:00:00Z' },
+                    { choices: ['Against'], voteId: 2, txid: 'txid_d', time: '2026-08-02T10:00:00Z' },
+                ],
+            },
             { account: 'account_rdx1_bob', choices: ['Against'], voteId: 1, txid: 'txid_c', time: '2026-08-02T09:00:00Z', votes: 1 },
         ]);
         const firstBody = gatewayPost.mock.calls[0][2] as Record<string, unknown>;
