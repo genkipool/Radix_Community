@@ -2,6 +2,7 @@
   "dashboard": {
     "transaction_tags": {
       "All": "Todas",
+      "Governance Vote": "Voto de Gobernanza",
       "Success": "Éxito",
       "Failed": "Fallida",
       "With Message": "Con Mensaje",

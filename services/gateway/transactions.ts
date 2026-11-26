@@ -20,6 +20,7 @@ import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
 import { readBlob, writeBlob, SHOWN_VALUE_MAX_AGE_MS } from '@/lib/redisBlob';
 import { TX_TAGS, type TxTag } from '@/features/dashboard/lib/routes';
+import { GOVERNANCE_SYSTEMS } from '@/features/governance/config/systems';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
@@ -381,15 +382,23 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
     // ── Parse all validator ops from events ──
     const validatorOps = parseValidatorOpsFromEvents(events);
 
-    // ── ProtocolVote detection ──
+    // ── ProtocolVote & GovernanceVote detection ──
     const hasProtocolVote = events.some(
         (e) => e.name === 'ProtocolUpdateReadinessSignalEvent',
     );
+    const hasGovernanceVote = events.some(
+        (e) =>
+            e.name === 'ProposalVotedEvent' ||
+            e.name === 'TemperatureCheckVotedEvent' ||
+            e.name === 'MajorityJudgmentElectionVotedEvent',
+    );
     const rawClasses: string[] = item.manifest_classes ?? [];
-    const manifestClasses =
-        hasProtocolVote && !rawClasses.includes('ProtocolVote')
-            ? ['ProtocolVote', ...rawClasses]
-            : rawClasses;
+    let manifestClasses = rawClasses;
+    if (hasProtocolVote && !manifestClasses.includes('ProtocolVote')) {
+        manifestClasses = ['ProtocolVote', ...manifestClasses];
+    } else if (hasGovernanceVote && !manifestClasses.includes('GovernanceVote')) {
+        manifestClasses = ['GovernanceVote', ...manifestClasses];
+    }
 
     // ── Calculate dominant asset transfer for summary ──
     const fungibleChanges: BalanceChange[] = ((item.balance_changes as Record<string, unknown>)?.fungible_balance_changes as BalanceChange[]) || [];
@@ -517,6 +526,7 @@ export async function fetchRecentTransactions(
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; timezone?: string },
     manifestClass?: StakingManifestClass,
+    eventGlobalEmitters?: string[],
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     const gateway = getGateway(network);
     const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.timezone);
@@ -530,6 +540,9 @@ export async function fetchRecentTransactions(
                     opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
                     ...dateParams,
                     ...manifestClassFilter(manifestClass),
+                    ...(eventGlobalEmitters && eventGlobalEmitters.length > 0
+                        ? { event_global_emitters_filter: eventGlobalEmitters }
+                        : {}),
                 },
             }),
         );
@@ -779,6 +792,7 @@ export async function searchTransactionsByAddress(
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; timezone?: string },
     manifestClass?: StakingManifestClass,
+    eventGlobalEmitters?: string[],
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     // Defensive network check: Prevent 400 errors by identifying mismatch before calling Gateway
     const addressToValidate = Array.isArray(address) ? address[0] : address;
@@ -824,6 +838,9 @@ export async function searchTransactionsByAddress(
                     opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
                     ...dateParams,
                     ...manifestClassFilter(manifestClass),
+                    ...(eventGlobalEmitters && eventGlobalEmitters.length > 0
+                        ? { event_global_emitters_filter: eventGlobalEmitters }
+                        : {}),
                 };
                 if (isResource) {
                     streamTransactionsRequest.balance_change_resources_filter = [addr];
@@ -896,6 +913,9 @@ export async function searchTransactionsByAddress(
             opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
             ...dateParams,
             ...manifestClassFilter(manifestClass),
+            ...(eventGlobalEmitters && eventGlobalEmitters.length > 0
+                ? { event_global_emitters_filter: eventGlobalEmitters }
+                : {}),
         };
         
         if (resources.length > 0) {
@@ -964,6 +984,65 @@ async function fetchFilteredTransactionsRaw(options: {
 
     const dateRange = { start, end, timezone };
     const manifestClass = MANIFEST_CLASS_BY_TAG[tag];
+
+    // Gateway `event_global_emitters_filter` is an AND across all addresses in the array,
+    // so for Governance Vote we query each governance system component in parallel (OR)
+    // using a composite cursor, matching `searchTransactionsByAddress`.
+    if (tag === 'Governance Vote') {
+        const emitters = GOVERNANCE_SYSTEMS.filter(s => s.network === network).map(s => s.component);
+        if (emitters.length === 0) return { transactions: [], nextCursor: undefined };
+
+        let cursors: Record<string, string | null | undefined> = {};
+        if (initialCursor) {
+            try {
+                cursors = JSON.parse(Buffer.from(initialCursor, 'base64').toString('utf-8'));
+            } catch {
+                cursors = {};
+            }
+        }
+
+        const perEmitter = await Promise.all(emitters.map(async (emitter) => {
+            if (initialCursor && cursors[emitter] === null) {
+                return { emitter, transactions: [] as TransactionInfo[], nextCursor: null as string | null };
+            }
+            const collected: TransactionInfo[] = [];
+            let cur = cursors[emitter] ?? undefined;
+            const pageSize = Math.min(Math.max(limit, 15), 30);
+            for (let p = 0; p < 3 && collected.length < limit; p++) {
+                const page = address
+                    ? await searchTransactionsByAddress(address, cur, pageSize, network, dateRange, undefined, [emitter])
+                    : await fetchRecentTransactions(cur, pageSize, network, dateRange, undefined, [emitter]);
+                if (page.transactions.length === 0) {
+                    cur = undefined;
+                    break;
+                }
+                collected.push(...page.transactions.filter(tx => matchesTransactionTag(tx, tag)));
+                cur = page.nextCursor;
+                if (!cur) break;
+            }
+            return { emitter, transactions: collected, nextCursor: cur ?? null };
+        }));
+
+        const seen = new Set<string>();
+        const merged = perEmitter
+            .flatMap(r => r.transactions)
+            .filter(tx => {
+                if (seen.has(tx.intentHash)) return false;
+                seen.add(tx.intentHash);
+                return true;
+            })
+            .sort((a, b) => b.confirmedAt.getTime() - a.confirmedAt.getTime());
+
+        const nextCursors: Record<string, string | null> = {};
+        let hasMore = false;
+        for (const r of perEmitter) {
+            nextCursors[r.emitter] = r.nextCursor;
+            if (r.nextCursor) hasMore = true;
+        }
+        const nextCursor = hasMore ? Buffer.from(JSON.stringify(nextCursors)).toString('base64') : undefined;
+        return { transactions: merged, nextCursor };
+    }
+
     const results: TransactionInfo[] = [];
     let currentCursor = initialCursor;
     let pageCount = 0;
