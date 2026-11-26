@@ -133,7 +133,10 @@ function TransactionDetailBody({
                                         if (classes.includes('ProtocolVote') || events.some((e) => e.name === 'ProtocolUpdateReadinessSignalEvent')) {
                                             return tt?.tx_type_protocol_vote || 'Protocol Vote';
                                         }
-                                        if (events.some((e) => e.name === 'ProposalVotedEvent' || e.name === 'TemperatureCheckVotedEvent' || e.name === 'MajorityJudgmentElectionVotedEvent')) {
+                                        if (
+                                            classes.includes('GovernanceVote') ||
+                                            events.some((e) => e.name === 'ProposalVotedEvent' || e.name === 'TemperatureCheckVotedEvent' || e.name === 'MajorityJudgmentElectionVotedEvent')
+                                        ) {
                                             return tt?.tx_type_governance_vote ?? '';
                                         }
                                         if (classes.length === 0) return tt?.tx_type_general || 'General';
