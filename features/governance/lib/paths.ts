@@ -4,6 +4,7 @@ import type { GovernanceItemKind } from './governanceVotes';
 export const KIND_SEGMENT: Record<GovernanceItemKind, string> = {
     proposal: 'proposal',
     temperature_check: 'temperature-check',
+    election: 'election',
 };
 
 export const kindFromSegment = (segment: string): GovernanceItemKind | null =>

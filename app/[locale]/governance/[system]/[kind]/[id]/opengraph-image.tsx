@@ -22,7 +22,11 @@ export default async function Image({ params }: { params: Promise<GovernanceRout
     const { entry, system } = route;
     const { item, kind } = entry;
     const phase = votingPhase(item, Date.now() / 1000);
-    const kindLabel = kind === 'proposal' ? g.vote.kind_proposal : g.vote.kind_temperature_check;
+    const kindLabel = kind === 'proposal'
+        ? g.vote.kind_proposal
+        : kind === 'election'
+            ? g.vote.kind_election
+            : g.vote.kind_temperature_check;
     const tallyData = await fetchVoteTally(system.component, kind, entry.id).catch(() => null);
     const tally = tallyData ? summarizeTally(itemChoices(kind, item, s => (g.vote.stances as Record<string, string>)[s] || s), tallyData, item) : null;
 

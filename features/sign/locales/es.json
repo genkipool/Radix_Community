@@ -825,7 +825,13 @@
           "inviteNftBadge": "Invitación",
           "signatureNftBadge": "Firma",
           "noNftsYet": "Sin NFTs registrados aún",
-          "nftsToggle": "{count} NFT(s)"
+          "nftsToggle": "{count} NFT(s)",
+          "ownCollectionsToggle": "{count} colecciones",
+          "nftDetails": "Detalles",
+          "recallInvite": "Retirar",
+          "recallInviteTooltip": "Retirar (recall) esta invitación NFT de la bóveda del destinatario a tu cuenta",
+          "recallingInvite": "Retirando…",
+          "recallNotFound": "Esta invitación ya no está en la bóveda de esa cuenta."
         },
         "integrityTab": {
           "checksTitle": "Controles de integridad criptográfica",

@@ -8,7 +8,7 @@ import { pjField, pjFields, pjList, pjNumber, pjOption, pjPath, pjText, type PjV
    (e.g. an election) only takes one more entry in VOTE_EVENT_SPECS.
    ───────────────────────────────────────── */
 
-export type GovernanceItemKind = 'proposal' | 'temperature_check';
+export type GovernanceItemKind = 'proposal' | 'temperature_check' | 'election';
 
 /** What the voter picked: option ids from a list, or a For/Against stance. */
 export type VoteSelection =
@@ -44,6 +44,18 @@ export const VOTE_EVENT_SPECS: readonly VoteEventSpec[] = [
         idField: 'temperature_check_id',
         storeField: 'temperature_checks',
         readSelection: data => ({ type: 'stance', stance: pjField(data, 'vote')?.variant_name ?? '' }),
+    },
+    {
+        event: 'MajorityJudgmentElectionVotedEvent',
+        kind: 'election',
+        idField: 'election_id',
+        storeField: 'majority_judgment_elections',
+        readSelection: data => ({
+            type: 'options',
+            optionIds: pjList(pjField(data, 'grades'))
+                .map(g => pjNumber(pjFields(pjField(g, 'candidate_id'))[0]))
+                .filter((id): id is number => id !== null),
+        }),
     },
 ];
 
@@ -96,6 +108,8 @@ export interface GovernanceElectionSpec {
     roleId: string | null;
     seatCount: number | null;
     candidates: GovernanceCandidate[];
+    round?: 'RoundOne' | 'Rerun';
+    minimumMedianGrade?: number | null;
 }
 
 export interface GovernanceItem {
@@ -150,6 +164,7 @@ function parseElectionFollowUp(item: unknown): GovernanceElectionSpec | null {
     });
 
     if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.displayOrder - b.displayOrder);
 
     return {
         roleId: pjText(pjField(followUp, 'role_id'))?.trim() || null,
@@ -191,6 +206,56 @@ export function parseGovernanceItem(item: unknown, kind: GovernanceItemKind): Go
         hidden: pjText(pjField(item, 'hidden')) === 'true',
         votersStore: pjText(pjField(item, 'voters')),
         election: parseElectionFollowUp(item),
+    };
+}
+
+const GRADE_VARIANT_INDEX: Record<string, number> = {
+    Poor: 0,
+    Acceptable: 1,
+    Good: 2,
+    VeryGood: 3,
+    Excellent: 4,
+};
+
+/**
+ * Reads a `MajorityJudgmentElection` entry from the `majority_judgment_elections`
+ * KVS and merges its active round (`rerun` or `round_one`) with the title,
+ * description, links and candidate slate from its originating Temperature Check.
+ */
+export function parseMajorityJudgmentElection(raw: unknown, tcItem: GovernanceItem | null): GovernanceItem | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const tcId = pjText(pjField(raw, 'temperature_check_id'));
+    const hidden = pjText(pjField(raw, 'hidden')) === 'true';
+    const rerun = pjOption(pjField(raw, 'rerun'));
+    const roundOne = pjOption(pjField(raw, 'round_one'));
+    const activeRound = rerun ?? roundOne;
+    const round: 'RoundOne' | 'Rerun' = rerun ? 'Rerun' : 'RoundOne';
+    const minGradeName = activeRound ? pjField(activeRound, 'minimum_median_grade')?.variant_name : undefined;
+    const minimumMedianGrade = minGradeName && minGradeName in GRADE_VARIANT_INDEX ? GRADE_VARIANT_INDEX[minGradeName] : null;
+    const candidates = tcItem?.election?.candidates ?? [];
+
+    return {
+        title: tcItem?.title ?? null,
+        shortDescription: tcItem?.shortDescription ?? null,
+        description: tcItem?.description ?? null,
+        options: candidates.map(c => ({ id: c.id, label: c.displayName })),
+        links: tcItem?.links ?? [],
+        voteCount: activeRound ? pjNumber(pjField(activeRound, 'vote_count')) : null,
+        revoteCount: activeRound ? pjNumber(pjField(activeRound, 'revote_count')) : null,
+        start: activeRound ? pjNumber(pjField(activeRound, 'start')) : null,
+        deadline: activeRound ? pjNumber(pjField(activeRound, 'deadline')) : null,
+        quorum: activeRound ? pjNumber(pjField(activeRound, 'quorum')) : null,
+        approvalThreshold: null,
+        author: tcItem?.author ?? null,
+        parameterLabel: tcItem?.parameterLabel ?? null,
+        elevatedProposalId: null,
+        temperatureCheckId: tcId,
+        maxSelections: 1,
+        hidden: hidden || !activeRound,
+        votersStore: activeRound ? pjText(pjField(activeRound, 'voters')) : null,
+        election: tcItem?.election
+            ? { ...tcItem.election, round, minimumMedianGrade }
+            : null,
     };
 }
 

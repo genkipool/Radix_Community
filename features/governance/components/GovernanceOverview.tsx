@@ -120,6 +120,7 @@ export function GovernanceOverview({ entries, g, language, serverNow, collapsed 
                                         { value: 'all', label: g.kind_all || 'All' },
                                         { value: 'proposal', label: g.kind_proposal || 'Proposals' },
                                         { value: 'temperature_check', label: g.kind_temperature_check || 'Temperature checks' },
+                                        { value: 'election', label: g.kind_election ?? '' },
                                     ]}
                                 />
                                 {GOVERNANCE_SYSTEMS.length > 1 && (

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { CircleDot, Clock, Lock, FileText, Thermometer } from 'lucide-react';
+import { CircleDot, Clock, Lock, FileText, Thermometer, Vote } from 'lucide-react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SidebarGraphic } from '@/components/ui/SidebarGraphic';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -12,15 +12,15 @@ import { SidebarCard, type SidebarCardItem } from '@/components/ui/SidebarCard';
 import type { GovernanceEntry } from '../types';
 import { groupByPhase, matchesQuery, PHASE_ORDER, entryKey } from '../lib/entries';
 import { governanceItemPath } from '../lib/paths';
-import type { VotingPhase } from '../lib/governanceVotes';
+import type { GovernanceItemKind, VotingPhase } from '../lib/governanceVotes';
 import { useNow } from '../hooks/useNow';
 import { useTranslatedList } from './BrowserTranslation';
 import type { G } from './GovernanceBadges';
 import { useGovernanceNav } from './GovernanceNav';
 
-function ItemIcon({ kind, selected }: { kind: 'proposal' | 'temperature_check'; selected: boolean }) {
+function ItemIcon({ kind, selected }: { kind: GovernanceItemKind; selected: boolean }) {
     const { pending } = useLinkStatus();
-    const Icon = kind === 'proposal' ? FileText : Thermometer;
+    const Icon = kind === 'proposal' ? FileText : kind === 'election' ? Vote : Thermometer;
     return (
         <span className={`grid place-items-center size-8 rounded-lg transition-colors ${selected
             ? 'bg-[var(--color-bg)]/20 text-[var(--color-bg)]'
@@ -72,7 +72,11 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
     });
 
     const groupTitle = { open: g.status_open, upcoming: g.status_upcoming, closed: g.status_closed, unknown: '' };
-    const kindShort = { proposal: g.vote?.short_proposal || 'Proposal', temperature_check: g.vote?.short_temperature_check || 'Temperature check' };
+    const kindShort = {
+        proposal: g.vote?.short_proposal || 'Proposal',
+        temperature_check: g.vote?.short_temperature_check || 'Temperature check',
+        election: g.vote?.short_election ?? '',
+    };
 
     return (
         <SidebarLayout

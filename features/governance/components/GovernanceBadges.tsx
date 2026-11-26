@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Thermometer, CircleDot, Clock, Lock } from 'lucide-react';
+import { FileText, Thermometer, Vote, CircleDot, Clock, Lock } from 'lucide-react';
 import type { Dictionary } from '@/types/i18n';
 import type { GovernanceItemKind, VotingPhase } from '../lib/governanceVotes';
 
@@ -32,14 +32,18 @@ export function PhasePill({ phase, g }: { phase: VotingPhase; g: G }) {
     );
 }
 
-/** Formal proposal or temperature check. */
+/** Formal proposal, temperature check, or election. */
 export function KindPill({ kind, g }: { kind: GovernanceItemKind; g: G }) {
-    const isProposal = kind === 'proposal';
-    const Icon = isProposal ? FileText : Thermometer;
+    const Icon = kind === 'proposal' ? FileText : kind === 'election' ? Vote : Thermometer;
+    const label = kind === 'proposal'
+        ? (g.vote?.kind_proposal || 'Formal proposal')
+        : kind === 'election'
+            ? (g.vote?.kind_election ?? '')
+            : (g.vote?.kind_temperature_check || 'Temperature check');
     return (
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
             <Icon className="size-3" />
-            {isProposal ? (g.vote?.kind_proposal || 'Formal proposal') : (g.vote?.kind_temperature_check || 'Temperature check')}
+            {label}
         </span>
     );
 }

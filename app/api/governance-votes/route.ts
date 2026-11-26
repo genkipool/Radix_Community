@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import logger from '@/lib/logger';
 import { validateAddress } from '@/utils/apiValidation';
 import { systemByComponent, type GovernanceSystem } from '@/features/governance/config/systems';
-import { fetchVoteTally, type CollectorItemType } from '@/features/governance/services/voteCollector.server';
+import { fetchAccountVotingPowers, fetchVoteTally, type CollectorItemType } from '@/features/governance/services/voteCollector.server';
 import { fetchVoteRecords } from '@/features/governance/services/voteRecords.server';
 import { fetchGovernanceEntry } from '@/features/governance/services/governanceLedger.server';
 import { votingPhase } from '@/features/governance/lib/governanceVotes';
 import type { VoterRow } from '@/features/governance/types';
 
-const TYPES: readonly CollectorItemType[] = ['proposal', 'temperature_check'];
+const TYPES: readonly CollectorItemType[] = ['proposal', 'temperature_check', 'election'];
 const NO_STORE = { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' };
 
 /**
@@ -47,13 +47,25 @@ export async function GET(request: NextRequest) {
         const closed = voterData?.closed ?? false;
 
         let rows: VoterRow[] | null = null;
+        let accountPower = tally?.accountPower ?? null;
         if (voters) {
             const power = new Map<string, string>();
             for (const v of tally?.accountVotes ?? []) if (!power.has(v.account)) power.set(v.account, v.votePower);
+            if (type === 'election' && voters.length > 0) {
+                const missing = voters.map(r => r.account).filter(a => !power.has(a));
+                const fetched = await fetchAccountVotingPowers(component, missing);
+                for (const [acc, vp] of fetched) power.set(acc, vp);
+            }
             rows = voters.map(r => ({ ...r, votePower: power.get(r.account) ?? null }));
+            if (account && accountPower == null && power.has(account)) {
+                accountPower = power.get(account) ?? null;
+            }
+        } else if (type === 'election' && account && accountPower == null) {
+            const fetched = await fetchAccountVotingPowers(component, [account]);
+            accountPower = fetched.get(account) ?? null;
         }
 
-        const missingRequestedPower = (Boolean(account) && tally?.accountPower == null)
+        const missingRequestedPower = (Boolean(account) && accountPower == null)
             || (withVoters && (rows?.some(r => r.votePower === null) ?? true));
 
         // Closed votes with complete power never change: cache longer at the edge CDN.
@@ -62,7 +74,13 @@ export async function GET(request: NextRequest) {
             : 'public, s-maxage=60, stale-while-revalidate=300';
 
         return NextResponse.json(
-            tally || rows ? { results: tally?.results ?? [], accountPower: tally?.accountPower ?? null, voters: rows, source: tally?.source ?? null } : null,
+            tally || rows ? {
+                results: tally?.results ?? [],
+                accountPower,
+                voters: rows,
+                source: tally?.source ?? null,
+                ...(tally?.electionData ? { electionData: tally.electionData } : {}),
+            } : null,
             {
                 headers: missingRequestedPower
                     ? NO_STORE

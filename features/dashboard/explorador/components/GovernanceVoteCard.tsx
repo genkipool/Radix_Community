@@ -68,7 +68,11 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
     const tally = tallyQuery.data && item ? summarizeTally(choices, tallyQuery.data, item) : null;
     const phase = votingPhase(item);
     const title = item?.title || gv.untitled || 'untitled';
-    const kindShort = isProposal ? (gv.short_proposal || 'Proposal') : (gv.short_temperature_check || 'Temperature check');
+    const kindShort = isProposal
+        ? (gv.short_proposal || 'Proposal')
+        : vote.kind === 'election'
+            ? (gv.short_election ?? '')
+            : (gv.short_temperature_check || 'Temperature check');
     const exactAccountPower = tally?.accountPower != null
         ? new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tally.accountPower)
         : null;
@@ -94,7 +98,11 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
             aside={
                 <>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                        {isProposal ? (gv.kind_proposal || 'Formal proposal') : (gv.kind_temperature_check || 'Temperature check')}
+                        {isProposal
+                            ? (gv.kind_proposal || 'Formal proposal')
+                            : vote.kind === 'election'
+                                ? (gv.kind_election ?? '')
+                                : (gv.kind_temperature_check || 'Temperature check')}
                     </span>
                     {phase !== 'unknown' && (
                         <span className={`hidden @sm:inline text-[10px] font-semibold px-2 py-0.5 rounded-full border ${PHASE_STYLE[phase]}`}>

@@ -825,7 +825,13 @@
           "inviteNftBadge": "Invite",
           "signatureNftBadge": "Signature",
           "noNftsYet": "No NFTs recorded yet",
-          "nftsToggle": "{count} NFT(s)"
+          "nftsToggle": "{count} NFT(s)",
+          "ownCollectionsToggle": "{count} collections",
+          "nftDetails": "Details",
+          "recallInvite": "Recall",
+          "recallInviteTooltip": "Recall this invitation NFT from the recipient's vault back to your account",
+          "recallingInvite": "Recalling…",
+          "recallNotFound": "This invitation is no longer in that account's vault."
         },
         "integrityTab": {
           "checksTitle": "Cryptographic integrity checks",

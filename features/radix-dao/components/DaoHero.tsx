@@ -11,7 +11,7 @@ interface DaoHeroProps {
 }
 
 export function DaoHero({ hero, sequenceSteps, locale }: DaoHeroProps) {
-  const tc4Href = `/${locale}/governance/radix-dao/temperature-check/4`;
+  const electionHref = `/${locale}/governance/radix-dao/election/1`;
   const stats = [
     { value: hero.facts.formedValue, label: hero.facts.formedLabel, gradient: true, title: undefined, href: undefined },
     { value: `${DAO_DOCUMENTS.length} PDFs`, label: hero.ctaDocs, gradient: false, title: undefined, href: '#documents' },
@@ -66,7 +66,7 @@ export function DaoHero({ hero, sequenceSteps, locale }: DaoHeroProps) {
             {/* Primary & Secondary CTAs */}
             <div className="flex flex-col sm:flex-row flex-wrap gap-4">
               <Link
-                href={tc4Href}
+                href={electionHref}
                 className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold hover:opacity-90 transition-opacity"
               >
                 <Vote className="size-4 shrink-0" aria-hidden="true" />
@@ -137,7 +137,7 @@ export function DaoHero({ hero, sequenceSteps, locale }: DaoHeroProps) {
 
               <div className="pt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                 <Link
-                  href={tc4Href}
+                  href={electionHref}
                   className="inline-flex items-center gap-1.5 font-bold text-[var(--color-primary)] hover:underline"
                 >
                   <Vote className="size-4" aria-hidden="true" />

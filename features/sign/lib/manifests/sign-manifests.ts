@@ -3,6 +3,7 @@
  * for the on-ledger Radix Seal flow.
  */
 import type { NftItemData } from '@/features/console/lib/create-token-manifests';
+import { recallManifest } from '@/features/console/lib/resource-actions';
 import type { IssuerMeta } from '../../types/sign.types';
 import { buildSignCollectionCreateManifest } from './collection-manifests';
 import {
@@ -44,6 +45,29 @@ const inviteNft = (args: {
     request: requestKey(args.collection, args.firstId),
     issuedAt: args.issuedAt,
   });
+
+export interface RecallInviteInput {
+  /** Owner account holding the Seal NFT. */
+  account: string;
+  /** Owner Seal global id (`resource_...:...`). */
+  sealGlobalId: string;
+  /** Vault address in the recipient's account holding the invite NFT. */
+  vaultAddress: string;
+  /** NonFungibleLocalId of the invite NFT (e.g. `#12#`). */
+  localId: string;
+}
+
+/**
+ * Recalls a pending signing invitation NFT from the recipient's vault back
+ * to the issuer's account using the owner's Seal proof.
+ */
+export function buildRecallInviteManifest(input: RecallInviteInput): string {
+  return `${sealProof(input.account, input.sealGlobalId)}
+
+${recallManifest(input.vaultAddress, '0', [input.localId]).trim()}
+
+${depositWorktopToAccount(input.account)}`;
+}
 
 export interface SignRequestInput {
   /** Initiator account (holds the seal, owns the collection). */
