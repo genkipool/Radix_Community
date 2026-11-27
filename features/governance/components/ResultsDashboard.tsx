@@ -6,6 +6,7 @@ import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { itemChoices, resolveLiveVoterCounts, summarizeTally, votingPhase, votingProgress } from '../lib/governanceVotes';
+import { computeElectionGradeMatrix } from '../lib/majorityJudgment';
 import { OutcomeBanner, TurnoutMeter, VotingWindow, fill, formatDate, formatPct, formatXrd, type Gv } from './VoteParts';
 import { formatDuration } from '../lib/format';
 import { ResultsBallot } from './ResultsBallot';
@@ -103,6 +104,9 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
                 },
                 history: v.history ?? [],
             })),
+        ...(kind === 'election' && item.election && tallyQuery.data?.voters ? {
+            gradeMatrix: computeElectionGradeMatrix(item.election, tallyQuery.data.electionData, tallyQuery.data.voters),
+        } : {}),
         rawTally: tallyQuery.data ?? null,
     }));
 

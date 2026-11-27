@@ -13,7 +13,7 @@ import { toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
 import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
 import { itemChoices } from '../lib/governanceVotes';
 import {
-    METHODS, balanceExtremes, compareMethods, computeElectionConclusions, computeElectionConsensus, effectiveExtremes, spreadExtremes,
+    METHODS, balanceExtremes, compareMethods, computeConsensusResistance, computeElectionConclusions, computeElectionConsensus, effectiveExtremes, spreadExtremes,
     type MethodResult,
 } from '../lib/votingMethods';
 import { isCountedVoter } from '../lib/comparisonUtils';
@@ -21,7 +21,8 @@ import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE } from './VoteParts';
 import { stanceResolver, type G } from './GovernanceBadges';
 import { ElectionCandidatesKpiGrid, ElectionConsensusKpiGrid } from './ElectionSection';
-import { MethodGuideModal } from './MethodGuideModal';
+import { MethodGuideModal, MethodGuideTrigger } from './MethodGuideModal';
+import { CURRENT_ATTACK_SHARES } from './ElectionResistanceTab';
 import { MethodRow } from './ComparisonMethodRow';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import {
@@ -51,8 +52,12 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const {
         family, setFamily, query, setQuery, sort, setSort, focusedMethod, jumpToMethod,
     } = useMethodComparisonControls('method-row-');
-    const [guideMethod, setGuideMethod] = useState<MethodResult | null>(null);
-    const [consensusGuideOpen, setConsensusGuideOpen] = useState(false);
+    const [guidePanel, setGuidePanel] = useState<
+        | { kind: 'method'; method: MethodResult }
+        | { kind: 'consensus' }
+        | { kind: 'current' }
+        | null
+    >(null);
 
     // Same query as the result tab: switching tabs does not ask again.
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);
@@ -108,18 +113,49 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 sameOutcomeCount: otherResults.filter(r => r.sameAsCurrent).length,
                 comparedMethodsCount: otherResults.length,
             },
-            ...(electionConsensus ? {
-                electionConsensus: {
-                    ...electionConsensus,
-                    conclusions: computeElectionConclusions(
-                        electionConsensus,
-                        readyForExport,
-                        voters.map(v => v.power),
-                        item.quorum,
-                        tallyQuery.data?.electionData?.gradeQuantileApplied ?? null,
-                    ),
-                },
-            } : {}),
+            ...(electionConsensus ? (() => {
+                const conclusions = computeElectionConclusions(
+                    electionConsensus,
+                    readyForExport,
+                    voters.map(v => v.power),
+                    item.quorum,
+                    tallyQuery.data?.electionData?.gradeQuantileApplied ?? null,
+                );
+                return {
+                    electionConsensus: {
+                        ...electionConsensus,
+                        conclusions,
+                        resistance: {
+                            level: 'high' as const,
+                            scenarios: computeConsensusResistance(readyForExport, electionConsensus.methodWeights),
+                        },
+                    },
+                    ...(currentResult ? {
+                        currentMethodAnalysis: {
+                            method: currentResult.key,
+                            conclusions: {
+                                gradeQuantile: conclusions.gradeQuantile,
+                                quantileValue: conclusions.quantileValue,
+                                decisiveBlock: conclusions.currentDecisiveBlock,
+                                concentration: currentResult.concentration,
+                                eligibleXrd: currentResult.eligibleXrd,
+                                quorumXrd: item.quorum,
+                                quorumMet: currentResult.quorumMet,
+                                electedSeats: currentResult.electionSummary?.elected ?? [],
+                                agreementWithOtherMethods: {
+                                    sameAsCurrentCount: conclusions.councilStability.sameAsCurrentCount,
+                                    alternativeMethodsCount: conclusions.councilStability.alternativeMethodsCount,
+                                    sameAsCurrentShare: conclusions.councilStability.sameAsCurrentShare,
+                                },
+                            },
+                            resistance: {
+                                level: 'high' as const,
+                                scenarios: CURRENT_ATTACK_SHARES,
+                            },
+                        },
+                    } : {}),
+                };
+            })() : {}),
             methods: results,
         };
     });
@@ -316,6 +352,12 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                     <h3 id="election-current-ranking-heading" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
                         <Crown className="size-4 text-[var(--color-primary)] shrink-0" aria-hidden="true" />
                         <span>{c.election_current_ranking_title ?? ''}</span>
+                        {electionConsensus && (
+                            <MethodGuideTrigger
+                                onClick={() => setGuidePanel({ kind: 'current' })}
+                                label={c.election_current_guide_open ?? ''}
+                            />
+                        )}
                     </h3>
                     <ElectionCandidatesKpiGrid
                         election={item.election}
@@ -332,10 +374,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                     c={c}
                     g={g}
                     language={language}
-                    onOpenGuide={() => {
-                        setGuideMethod(null);
-                        setConsensusGuideOpen(true);
-                    }}
+                    onOpenGuide={() => setGuidePanel({ kind: 'consensus' })}
                 />
             )}
 
@@ -389,10 +428,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             language={language}
                             rowId={`method-row-${r.key}`}
                             focusNonce={focusedMethod?.key === r.key ? focusedMethod.nonce : 0}
-                            onOpenGuide={m => {
-                                setConsensusGuideOpen(false);
-                                setGuideMethod(m);
-                            }}
+                            onOpenGuide={m => setGuidePanel({ kind: 'method', method: m })}
                         />
                     )}
                 />
@@ -401,18 +437,23 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             <ComparisonGlossary id="methods-glossary" c={c} />
 
             <MethodGuideModal
-                isOpen={Boolean(guideMethod) || (consensusGuideOpen && Boolean(electionConsensus))}
-                onClose={() => {
-                    setGuideMethod(null);
-                    setConsensusGuideOpen(false);
-                }}
-                target={guideMethod ? {
+                isOpen={guidePanel !== null && (guidePanel.kind === 'method' || Boolean(electionConsensus))}
+                onClose={() => setGuidePanel(null)}
+                target={guidePanel?.kind === 'method' ? {
                     mode: 'single',
-                    method: guideMethod,
+                    method: guidePanel.method,
                     quorum: item.quorum,
                     threshold: item.approvalThreshold,
                     gradeQuantile: electionData?.gradeQuantileApplied ?? null,
-                } : consensusGuideOpen && electionConsensus ? {
+                } : guidePanel?.kind === 'current' && electionConsensus ? {
+                    mode: 'current-election',
+                    consensus: electionConsensus,
+                    current,
+                    methods: readyForExport,
+                    voterPowers: voters.map(v => v.power),
+                    quorum: item.quorum,
+                    gradeQuantile: electionData?.gradeQuantileApplied ?? null,
+                } : guidePanel?.kind === 'consensus' && electionConsensus ? {
                     mode: 'consensus',
                     consensus: electionConsensus,
                     current,
@@ -421,14 +462,18 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                     quorum: item.quorum,
                     gradeQuantile: electionData?.gradeQuantileApplied ?? null,
                 } : null}
-                methodName={guideMethod
-                    ? methodText(c, guideMethod.key, params).name
-                    : electionConsensus
-                        ? fill(c.election_consensus_title ?? '', { n: electionConsensus.evaluatedMethods.toLocaleString(language) })
-                        : ''}
-                methodRule={guideMethod
-                    ? methodText(c, guideMethod.key, params).rule
-                    : (c.election_consensus_hint ?? '')}
+                methodName={guidePanel?.kind === 'method'
+                    ? methodText(c, guidePanel.method.key, params).name
+                    : guidePanel?.kind === 'current'
+                        ? methodText(c, current.key, params).name
+                        : electionConsensus
+                            ? fill(c.election_consensus_title ?? '', { n: electionConsensus.evaluatedMethods.toLocaleString(language) })
+                            : ''}
+                methodRule={guidePanel?.kind === 'method'
+                    ? methodText(c, guidePanel.method.key, params).rule
+                    : guidePanel?.kind === 'current'
+                        ? methodText(c, current.key, params).rule
+                        : (c.election_consensus_hint ?? '')}
                 c={c}
                 g={g}
                 language={language}

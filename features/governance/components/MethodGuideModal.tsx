@@ -13,6 +13,8 @@ import { fill, formatPct, formatXrd } from '../lib/format';
 import type { G } from './GovernanceBadges';
 import type { CompareDict, HistoricalDict } from './ComparisonParts';
 import { ElectionConclusionsTab } from './ElectionConclusionsTab';
+import { ElectionCurrentConclusionsTab } from './ElectionCurrentConclusionsTab';
+import { ElectionCurrentResistanceTab, ElectionResistanceTab } from './ElectionResistanceTab';
 
 export type MethodGuideTarget =
     | {
@@ -29,6 +31,15 @@ export type MethodGuideTarget =
     }
     | {
         mode: 'consensus';
+        consensus: ElectionConsensusSummary;
+        current: MethodResult;
+        methods: MethodResult[];
+        voterPowers: number[];
+        quorum: number | null;
+        gradeQuantile?: string | null;
+    }
+    | {
+        mode: 'current-election';
         consensus: ElectionConsensusSummary;
         current: MethodResult;
         methods: MethodResult[];
@@ -91,7 +102,7 @@ export function MethodGuideModal({
     const { t } = useLanguage();
     const navT = (t.nav ?? {}) as Record<string, string | undefined>;
     const mj = g.mj;
-    const [activeTab, setActiveTab] = useState<'guide' | 'conclusions'>('guide');
+    const [activeTab, setActiveTab] = useState<'guide' | 'conclusions' | 'resistance'>('guide');
 
     const {
         isPinned,
@@ -110,10 +121,15 @@ export function MethodGuideModal({
         onClose();
     };
 
-    const singleMethod = target?.mode === 'single' ? target.method : null;
+    const singleMethod = target?.mode === 'single'
+        ? target.method
+        : target?.mode === 'current-election'
+            ? target.current
+            : null;
     const election = singleMethod?.electionSummary ?? null;
     const historicalRow = target?.mode === 'historical' ? target.row : null;
     const consensusTarget = target?.mode === 'consensus' ? target.consensus : null;
+    const hasThreeTabs = target?.mode === 'consensus' || target?.mode === 'current-election';
 
     const guideKind: 'election' | 'standard' | 'historical' | 'consensus' | null = !target
         ? null
@@ -134,7 +150,7 @@ export function MethodGuideModal({
     let steps: string[] = [];
     let liveMetrics: LiveMetric[] = [];
 
-    if (guideKind === 'election' && singleMethod && election && target?.mode === 'single') {
+    if (guideKind === 'election' && singleMethod && election && (target?.mode === 'single' || target?.mode === 'current-election')) {
         const totalVoters = singleMethod.counted + singleMethod.excluded;
         const minGradeName = gradeLabel(mj, election.minimumMedianGrade);
         const quantileRaw = target.gradeQuantile || '3/5';
@@ -289,7 +305,8 @@ export function MethodGuideModal({
             c.election_consensus_guide_step1 ?? '',
             fill(c.election_consensus_guide_step2 ?? '', { n: nStr }),
             fill(c.election_consensus_guide_step3 ?? '', { n: nStr }),
-            c.election_consensus_guide_step4 ?? '',
+            fill(c.election_consensus_guide_step4 ?? '', { n: nStr }),
+            fill(c.election_consensus_guide_step5 ?? '', { n: nStr }),
         ];
         liveMetrics = [
             { label: c.col_method ?? '', value: nStr },
@@ -354,11 +371,12 @@ export function MethodGuideModal({
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 sm:px-8 py-5 custom-scrollbar">
-                    {guideKind === 'consensus' && (
+                    {hasThreeTabs && (
                         <div role="tablist" className="mb-7 flex flex-nowrap items-center gap-2 border-b border-[var(--color-card-border)]">
                             {([
                                 ['guide', c.election_consensus_tab_guide ?? ''],
                                 ['conclusions', c.election_consensus_tab_conclusions ?? ''],
+                                ['resistance', c.election_consensus_tab_resistance ?? ''],
                             ] as const).map(([key, label]) => (
                                 <button
                                     key={key}
@@ -381,13 +399,38 @@ export function MethodGuideModal({
                         </div>
                     )}
 
-                    {guideKind === 'consensus' && activeTab === 'conclusions' && target?.mode === 'consensus' ? (
+                    {target?.mode === 'consensus' && activeTab === 'conclusions' ? (
                         <ElectionConclusionsTab
                             consensus={target.consensus}
                             current={target.current}
                             methods={target.methods}
                             voterPowers={target.voterPowers}
                             quorum={target.quorum}
+                            gradeQuantile={target.gradeQuantile}
+                            c={c}
+                            language={language}
+                        />
+                    ) : target?.mode === 'consensus' && activeTab === 'resistance' ? (
+                        <ElectionResistanceTab
+                            consensus={target.consensus}
+                            methods={target.methods}
+                            c={c}
+                            language={language}
+                        />
+                    ) : target?.mode === 'current-election' && activeTab === 'conclusions' ? (
+                        <ElectionCurrentConclusionsTab
+                            consensus={target.consensus}
+                            current={target.current}
+                            methods={target.methods}
+                            voterPowers={target.voterPowers}
+                            quorum={target.quorum}
+                            gradeQuantile={target.gradeQuantile}
+                            c={c}
+                            language={language}
+                        />
+                    ) : target?.mode === 'current-election' && activeTab === 'resistance' ? (
+                        <ElectionCurrentResistanceTab
+                            current={target.current}
                             gradeQuantile={target.gradeQuantile}
                             c={c}
                             language={language}

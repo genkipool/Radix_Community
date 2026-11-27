@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, BarChart3, Coins } from 'lucide-react';
 import type { GovernanceElectionSpec } from '../lib/governanceVotes';
 import type { MajorityJudgmentElectionData, VoterRow } from '../types';
-import { MJ_GRADE_DOT_COLOR, MJ_GRADE_ORDER } from '../lib/majorityJudgment';
+import { MJ_GRADE_DOT_COLOR, MJ_GRADE_ORDER, computeElectionGradeMatrix } from '../lib/majorityJudgment';
 import { formatXrd } from '../lib/format';
 import type { G } from './GovernanceBadges';
 
@@ -198,43 +198,21 @@ export function ElectionGradesMatrix({
     g: G;
     language: string;
 }) {
-    const resultByCandidate = new Map(
-        (electionData?.candidateResults ?? []).map(r => [r.candidateId, r]),
-    );
+    const matrix = computeElectionGradeMatrix(election, electionData, voters);
+    if (matrix.length === 0) return null;
 
-    const voteRows: CandidateGradeRow[] = [];
-    const powerRows: CandidateGradeRow[] = [];
-
-    for (const candidate of election.candidates) {
-        const key = String(candidate.id);
-        const res = resultByCandidate.get(candidate.id);
-        const voteCounts: [number, number, number, number, number] = [0, 0, 0, 0, 0];
-        const voterPowerSums: [number, number, number, number, number] = [0, 0, 0, 0, 0];
-
-        for (const v of voters) {
-            const grade = v.grades?.[key];
-            if (grade !== undefined && grade >= 0 && grade <= 4) {
-                voteCounts[grade] += 1;
-                voterPowerSums[grade] += Number(v.votePower) || 0;
-            }
-        }
-
-        const powerValues: [number, number, number, number, number] = res
-            ? [
-                Number(res.histogram[0]) || 0,
-                Number(res.histogram[1]) || 0,
-                Number(res.histogram[2]) || 0,
-                Number(res.histogram[3]) || 0,
-                Number(res.histogram[4]) || 0,
-            ]
-            : voterPowerSums;
-
-        const rank = res?.rank ?? null;
-        voteRows.push({ id: candidate.id, name: candidate.displayName, rank, values: voteCounts });
-        powerRows.push({ id: candidate.id, name: candidate.displayName, rank, values: powerValues });
-    }
-
-    if (voteRows.length === 0) return null;
+    const voteRows: CandidateGradeRow[] = matrix.map(r => ({
+        id: r.candidateId,
+        name: r.displayName,
+        rank: r.rank,
+        values: r.votesByGrade,
+    }));
+    const powerRows: CandidateGradeRow[] = matrix.map(r => ({
+        id: r.candidateId,
+        name: r.displayName,
+        rank: r.rank,
+        values: r.powerByGrade,
+    }));
 
     return (
         <div className="space-y-6">
