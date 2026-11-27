@@ -103,99 +103,164 @@ export function ElectionConclusionsTab({
                         </span>
                     </div>
                     <dl className="divide-y divide-[var(--color-card-border)]/40 text-xs">
-                        {[
-                            {
-                                label: fill(c.election_conclusions_row_decisive ?? '', { quantilePct }),
-                                tip: fill(c.election_conclusions_tip_decisive ?? '', {
-                                    quantilePct,
-                                    n: consensus.evaluatedMethods.toLocaleString(language),
-                                }),
-                                cur: `${decisiveCount.toLocaleString(language)}/${decisiveTotal.toLocaleString(language)}`,
-                                wgt: wc.decisiveQuantile != null
-                                    ? `${wc.decisiveQuantile.toLocaleString(language, { maximumFractionDigits: 1 })}/${wc.counted.toLocaleString(language, { maximumFractionDigits: 1 })}`
-                                    : '—',
-                                best: wc.decisiveQuantile == null || wc.decisiveQuantile === decisiveCount
-                                    ? null
-                                    : wc.decisiveQuantile > decisiveCount ? 'wgt' : 'cur',
-                            },
-                            {
-                                label: c.election_conclusions_row_nakamoto ?? '',
-                                tip: fill(c.election_conclusions_tip_nakamoto ?? '', {
-                                    n: consensus.evaluatedMethods.toLocaleString(language),
-                                }),
-                                cur: `${current.concentration.nakamoto.toLocaleString(language)}/${current.counted.toLocaleString(language)}`,
-                                wgt: wc.nakamoto != null
-                                    ? `${wc.nakamoto.toLocaleString(language, { maximumFractionDigits: 1 })}/${wc.counted.toLocaleString(language, { maximumFractionDigits: 1 })}`
-                                    : '—',
-                                best: wc.nakamoto == null || wc.nakamoto === current.concentration.nakamoto
-                                    ? null
-                                    : wc.nakamoto > current.concentration.nakamoto ? 'wgt' : 'cur',
-                            },
-                            {
-                                label: c.election_conclusions_top1_label ?? '',
-                                tip: fill(c.election_conclusions_tip_top1 ?? '', {
-                                    n: consensus.evaluatedMethods.toLocaleString(language),
-                                }),
-                                cur: formatPct(current.concentration.top1, language),
-                                wgt: formatPct(wc.top1, language),
-                                best: wc.top1 === current.concentration.top1
-                                    ? null
-                                    : wc.top1 < current.concentration.top1 ? 'wgt' : 'cur',
-                            },
-                            {
-                                label: c.election_conclusions_top10_label ?? '',
-                                tip: fill(c.election_conclusions_tip_top10 ?? '', {
-                                    n: consensus.evaluatedMethods.toLocaleString(language),
-                                }),
-                                cur: formatPct(current.concentration.top10, language),
-                                wgt: formatPct(wc.top10, language),
-                                best: wc.top10 === current.concentration.top10
-                                    ? null
-                                    : wc.top10 < current.concentration.top10 ? 'wgt' : 'cur',
-                            },
-                            {
-                                label: c.detail_spread ?? '',
-                                tip: fill(c.election_conclusions_tip_spread ?? '', {
-                                    n: consensus.evaluatedMethods.toLocaleString(language),
-                                }),
-                                cur: formatPct(current.concentration.spread, language),
-                                wgt: wc.spread != null ? formatPct(wc.spread, language) : '—',
-                                best: wc.spread == null || wc.spread === current.concentration.spread
-                                    ? null
-                                    : wc.spread > current.concentration.spread ? 'wgt' : 'cur',
-                            },
-                            {
-                                label: c.election_conclusions_row_effective ?? '',
-                                tip: fill(c.election_conclusions_tip_effective ?? '', {
-                                    n: consensus.evaluatedMethods.toLocaleString(language),
-                                }),
-                                cur: current.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }),
-                                wgt: wc.effective.toLocaleString(language, { maximumFractionDigits: 1 }),
-                                best: wc.effective === current.concentration.effective
-                                    ? null
-                                    : wc.effective > current.concentration.effective ? 'wgt' : 'cur',
-                            },
-                        ].map(row => (
+                        {(() => {
+                            const nStr = consensus.evaluatedMethods.toLocaleString(language);
+                            const wCountedStr = wc.counted.toLocaleString(language, { maximumFractionDigits: 1 });
+                            const wEffStr = wc.effective.toLocaleString(language, { maximumFractionDigits: 1 });
+                            const curEffStr = current.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 });
+                            const curTotalStr = current.counted.toLocaleString(language);
+                            return [
+                                {
+                                    label: fill(c.election_conclusions_row_decisive ?? '', { quantilePct }),
+                                    labelTip: fill(c.election_conclusions_tip_decisive ?? '', { quantilePct }),
+                                    curTip: curBlock ? fill(c.election_conclusions_tip_cur_decisive ?? '', {
+                                        count: decisiveCount.toLocaleString(language),
+                                        total: decisiveTotal.toLocaleString(language),
+                                        pct: formatShare(curBlock.share, language),
+                                        xrd: formatXrd(accPower, language),
+                                        quantilePct,
+                                    }) : undefined,
+                                    wgtTip: wgtBlock ? fill(c.election_conclusions_tip_wgt_decisive ?? '', {
+                                        n: nStr,
+                                        count: wgtBlock.avgCount.toLocaleString(language, { maximumFractionDigits: 1 }),
+                                        total: wCountedStr,
+                                        pct: formatShare(wgtBlock.share, language),
+                                        quantilePct,
+                                        ratio: weightedDecisiveRatio ?? '1',
+                                    }) : undefined,
+                                    cur: `${decisiveCount.toLocaleString(language)}/${decisiveTotal.toLocaleString(language)}`,
+                                    wgt: wc.decisiveQuantile != null
+                                        ? `${wc.decisiveQuantile.toLocaleString(language, { maximumFractionDigits: 1 })}/${wCountedStr}`
+                                        : '—',
+                                    best: wc.decisiveQuantile == null || wc.decisiveQuantile === decisiveCount
+                                        ? null
+                                        : wc.decisiveQuantile > decisiveCount ? 'wgt' : 'cur',
+                                },
+                                {
+                                    label: c.election_conclusions_row_nakamoto ?? '',
+                                    labelTip: c.election_conclusions_tip_nakamoto ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_nakamoto ?? '', {
+                                        n_val: current.concentration.nakamoto.toLocaleString(language),
+                                        total: curTotalStr,
+                                        pct: formatShare(current.concentration.nakamoto / Math.max(1, current.counted), language),
+                                    }),
+                                    wgtTip: wc.nakamoto != null ? fill(c.election_conclusions_tip_wgt_nakamoto ?? '', {
+                                        n: nStr,
+                                        n_val: wc.nakamoto.toLocaleString(language, { maximumFractionDigits: 1 }),
+                                        total: wCountedStr,
+                                        pct: wc.counted > 0 ? formatShare(wc.nakamoto / wc.counted, language) : '0 %',
+                                    }) : undefined,
+                                    cur: `${current.concentration.nakamoto.toLocaleString(language)}/${curTotalStr}`,
+                                    wgt: wc.nakamoto != null
+                                        ? `${wc.nakamoto.toLocaleString(language, { maximumFractionDigits: 1 })}/${wCountedStr}`
+                                        : '—',
+                                    best: wc.nakamoto == null || wc.nakamoto === current.concentration.nakamoto
+                                        ? null
+                                        : wc.nakamoto > current.concentration.nakamoto ? 'wgt' : 'cur',
+                                },
+                                {
+                                    label: c.election_conclusions_top1_label ?? '',
+                                    labelTip: c.election_conclusions_tip_top1 ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_top1 ?? '', {
+                                        pct: formatPct(current.concentration.top1, language),
+                                    }),
+                                    wgtTip: fill(c.election_conclusions_tip_wgt_top1 ?? '', {
+                                        n: nStr,
+                                        curPct: formatPct(current.concentration.top1, language),
+                                        pct: formatPct(wc.top1, language),
+                                    }),
+                                    cur: formatPct(current.concentration.top1, language),
+                                    wgt: formatPct(wc.top1, language),
+                                    best: wc.top1 === current.concentration.top1
+                                        ? null
+                                        : wc.top1 < current.concentration.top1 ? 'wgt' : 'cur',
+                                },
+                                {
+                                    label: c.election_conclusions_top10_label ?? '',
+                                    labelTip: c.election_conclusions_tip_top10 ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_top10 ?? '', {
+                                        pct: formatPct(current.concentration.top10, language),
+                                    }),
+                                    wgtTip: fill(c.election_conclusions_tip_wgt_top10 ?? '', {
+                                        n: nStr,
+                                        curPct: formatPct(current.concentration.top10, language),
+                                        pct: formatPct(wc.top10, language),
+                                    }),
+                                    cur: formatPct(current.concentration.top10, language),
+                                    wgt: formatPct(wc.top10, language),
+                                    best: wc.top10 === current.concentration.top10
+                                        ? null
+                                        : wc.top10 < current.concentration.top10 ? 'wgt' : 'cur',
+                                },
+                                {
+                                    label: c.detail_spread ?? '',
+                                    labelTip: c.election_conclusions_tip_spread ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_spread ?? '', {
+                                        pct: formatPct(current.concentration.spread, language),
+                                        eff: curEffStr,
+                                        total: curTotalStr,
+                                    }),
+                                    wgtTip: wc.spread != null ? fill(c.election_conclusions_tip_wgt_spread ?? '', {
+                                        n: nStr,
+                                        curPct: formatPct(current.concentration.spread, language),
+                                        pct: formatPct(wc.spread, language),
+                                        eff: wEffStr,
+                                        total: wCountedStr,
+                                    }) : undefined,
+                                    cur: formatPct(current.concentration.spread, language),
+                                    wgt: wc.spread != null ? formatPct(wc.spread, language) : '—',
+                                    best: wc.spread == null || wc.spread === current.concentration.spread
+                                        ? null
+                                        : wc.spread > current.concentration.spread ? 'wgt' : 'cur',
+                                },
+                                {
+                                    label: c.election_conclusions_row_effective ?? '',
+                                    labelTip: c.election_conclusions_tip_effective ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_effective ?? '', {
+                                        eff: curEffStr,
+                                        total: curTotalStr,
+                                    }),
+                                    wgtTip: fill(c.election_conclusions_tip_wgt_effective ?? '', {
+                                        n: nStr,
+                                        eff: wEffStr,
+                                        curEff: curEffStr,
+                                    }),
+                                    cur: curEffStr,
+                                    wgt: wEffStr,
+                                    best: wc.effective === current.concentration.effective
+                                        ? null
+                                        : wc.effective > current.concentration.effective ? 'wgt' : 'cur',
+                                },
+                            ];
+                        })().map(row => (
                             <div
                                 key={row.label}
-                                title={row.tip}
-                                className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-4 py-2 cursor-help"
+                                className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-4 py-2"
                             >
-                                <dt className="min-w-0 text-[var(--color-text-secondary)] font-medium">
+                                <dt
+                                    title={row.labelTip}
+                                    className="min-w-0 text-[var(--color-text-secondary)] font-medium cursor-help"
+                                >
                                     {row.label}
                                 </dt>
-                                <dd className={`font-mono text-right tabular-nums ${
-                                    row.best === 'cur'
-                                        ? 'font-bold text-[var(--color-text-main)]'
-                                        : 'font-normal text-[var(--color-text-muted)]'
-                                }`}>
+                                <dd
+                                    title={row.curTip}
+                                    className={`font-mono text-right tabular-nums cursor-help ${
+                                        row.best === 'cur'
+                                            ? 'font-bold text-[var(--color-text-main)]'
+                                            : 'font-normal text-[var(--color-text-muted)]'
+                                    }`}
+                                >
                                     {row.cur}
                                 </dd>
-                                <dd className={`font-mono text-right tabular-nums min-w-[4.5rem] ${
-                                    row.best === 'wgt'
-                                        ? 'font-bold text-[var(--color-text-main)]'
-                                        : 'font-normal text-[var(--color-text-muted)]'
-                                }`}>
+                                <dd
+                                    title={row.wgtTip}
+                                    className={`font-mono text-right tabular-nums min-w-[4.5rem] cursor-help ${
+                                        row.best === 'wgt'
+                                            ? 'font-bold text-[var(--color-text-main)]'
+                                            : 'font-normal text-[var(--color-text-muted)]'
+                                    }`}
+                                >
                                     {row.wgt}
                                 </dd>
                             </div>
@@ -225,26 +290,56 @@ export function ElectionConclusionsTab({
                             {c.election_conclusions_solid_label ?? ''}
                         </p>
                         <ul className="divide-y divide-[var(--color-card-border)]/40">
-                            {solidCandidates.map(cand => (
-                                <li key={cand.id} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] w-6 shrink-0">
-                                            #{cand.consensusRank}
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 shrink-0 font-mono tabular-nums">
-                                        <span className="text-[11px] text-[var(--color-text-muted)]">
-                                            {cand.electedCount}/{cand.evaluatedMethods}
-                                        </span>
-                                        <span className="text-xs font-bold text-[var(--color-accent)] w-12 text-right">
-                                            {formatPct(cand.consensusShare, language)}
-                                        </span>
-                                    </div>
-                                </li>
-                            ))}
+                            {solidCandidates.map(cand => {
+                                const rankStr = String(cand.consensusRank);
+                                const electedStr = cand.electedCount.toLocaleString(language);
+                                const totalStr = cand.evaluatedMethods.toLocaleString(language);
+                                const pctStr = formatPct(cand.consensusShare, language);
+                                return (
+                                    <li key={cand.id} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span
+                                                title={fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
+                                                className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] w-6 shrink-0 cursor-help"
+                                            >
+                                                #{cand.consensusRank}
+                                            </span>
+                                            <span
+                                                title={fill(c.election_conclusions_tip_solid_name ?? '', {
+                                                    name: cand.label,
+                                                    rank: rankStr,
+                                                    elected: electedStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
+                                            >
+                                                {cand.label}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2.5 shrink-0 font-mono tabular-nums">
+                                            <span
+                                                title={fill(c.election_conclusions_tip_seat_methods ?? '', {
+                                                    elected: electedStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="text-[11px] text-[var(--color-text-muted)] cursor-help"
+                                            >
+                                                {cand.electedCount}/{cand.evaluatedMethods}
+                                            </span>
+                                            <span
+                                                title={fill(c.election_conclusions_tip_seat_share ?? '', {
+                                                    name: cand.label,
+                                                    pct: pctStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="text-xs font-bold text-[var(--color-accent)] w-12 text-right cursor-help"
+                                            >
+                                                {pctStr}
+                                            </span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     </div>
                 )}
@@ -259,46 +354,114 @@ export function ElectionConclusionsTab({
                         </p>
                     ) : (
                         <ul className="divide-y divide-[var(--color-card-border)]/40">
-                            {enteredCandidates.map(cand => (
-                                <li key={`in-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="font-mono text-[11px] font-bold text-[var(--color-accent)] w-6 shrink-0">
-                                            #{cand.consensusRank}
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 shrink-0">
-                                        <span className="text-[11px] font-bold text-[var(--color-accent)]">
-                                            {c.election_entered_badge ?? ''}
-                                        </span>
-                                        <span className="font-mono text-xs font-bold text-[var(--color-accent)] tabular-nums w-12 text-right">
-                                            {formatPct(cand.consensusShare, language)}
-                                        </span>
-                                    </div>
-                                </li>
-                            ))}
-                            {droppedCandidates.map(cand => (
-                                <li key={`out-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 w-6 shrink-0">
-                                            #{cand.consensusRank}
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 shrink-0">
-                                        <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                                            {c.election_left_badge ?? ''}
-                                        </span>
-                                        <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums w-12 text-right">
-                                            {formatPct(cand.consensusShare, language)}
-                                        </span>
-                                    </div>
-                                </li>
-                            ))}
+                            {enteredCandidates.map(cand => {
+                                const rankStr = String(cand.consensusRank);
+                                const curStr = cand.currentRank != null ? String(cand.currentRank) : '—';
+                                const totalStr = consensus.evaluatedMethods.toLocaleString(language);
+                                const seatsStr = consensus.seatCount.toLocaleString(language);
+                                const pctStr = formatPct(cand.consensusShare, language);
+                                return (
+                                    <li key={`in-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span
+                                                title={cand.currentRank != null
+                                                    ? fill(c.election_conclusions_tip_seat_rank_change ?? '', { rank: rankStr, current: curStr })
+                                                    : fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
+                                                className="font-mono text-[11px] font-bold text-[var(--color-accent)] w-6 shrink-0 cursor-help"
+                                            >
+                                                #{cand.consensusRank}
+                                            </span>
+                                            <span
+                                                title={fill(c.election_conclusions_tip_entered_name ?? '', {
+                                                    name: cand.label,
+                                                    seats: seatsStr,
+                                                    current: curStr,
+                                                    rank: rankStr,
+                                                })}
+                                                className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
+                                            >
+                                                {cand.label}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2.5 shrink-0">
+                                            <span
+                                                title={fill(c.election_conclusions_tip_entered_badge ?? '', {
+                                                    current: curStr,
+                                                    rank: rankStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="text-[11px] font-bold text-[var(--color-accent)] cursor-help"
+                                            >
+                                                {c.election_entered_badge ?? ''}
+                                            </span>
+                                            <span
+                                                title={fill(c.election_conclusions_tip_seat_share ?? '', {
+                                                    name: cand.label,
+                                                    pct: pctStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="font-mono text-xs font-bold text-[var(--color-accent)] tabular-nums w-12 text-right cursor-help"
+                                            >
+                                                {pctStr}
+                                            </span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                            {droppedCandidates.map(cand => {
+                                const rankStr = String(cand.consensusRank);
+                                const curStr = cand.currentRank != null ? String(cand.currentRank) : '—';
+                                const totalStr = consensus.evaluatedMethods.toLocaleString(language);
+                                const seatsStr = consensus.seatCount.toLocaleString(language);
+                                const pctStr = formatPct(cand.consensusShare, language);
+                                return (
+                                    <li key={`out-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span
+                                                title={cand.currentRank != null
+                                                    ? fill(c.election_conclusions_tip_seat_rank_change ?? '', { rank: rankStr, current: curStr })
+                                                    : fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
+                                                className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 w-6 shrink-0 cursor-help"
+                                            >
+                                                #{cand.consensusRank}
+                                            </span>
+                                            <span
+                                                title={fill(c.election_conclusions_tip_dropped_name ?? '', {
+                                                    name: cand.label,
+                                                    seats: seatsStr,
+                                                    current: curStr,
+                                                    rank: rankStr,
+                                                })}
+                                                className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
+                                            >
+                                                {cand.label}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2.5 shrink-0">
+                                            <span
+                                                title={fill(c.election_conclusions_tip_dropped_badge ?? '', {
+                                                    current: curStr,
+                                                    rank: rankStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="text-[11px] font-bold text-amber-600 dark:text-amber-400 cursor-help"
+                                            >
+                                                {c.election_left_badge ?? ''}
+                                            </span>
+                                            <span
+                                                title={fill(c.election_conclusions_tip_seat_share ?? '', {
+                                                    name: cand.label,
+                                                    pct: pctStr,
+                                                    total: totalStr,
+                                                })}
+                                                className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums w-12 text-right cursor-help"
+                                            >
+                                                {pctStr}
+                                            </span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                 </div>
