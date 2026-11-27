@@ -1,4 +1,5 @@
 import type { GovernanceElectionSpec } from './governanceVotes';
+import type { MajorityJudgmentElectionData, VoterRow } from '../types';
 
 /**
  * Shared Majority Judgment constants, helpers, and tally evaluation.
@@ -60,6 +61,64 @@ export function bandHint(mj: MjTextSlice | undefined, band: string): string | un
 }
 
 /** True when a candidate holds a council seat (either finalized ELECTED or provisionally in top `seats` and electable). */
+export interface ElectionGradeMatrixRow {
+    candidateId: number;
+    displayName: string;
+    rank: number | null;
+    /** Raw ballot count per grade (index 0 = Poor .. 4 = Excellent). */
+    votesByGrade: [number, number, number, number, number];
+    /** Voting power in XRD per grade (official histogram when available, otherwise summed from voters). */
+    powerByGrade: [number, number, number, number, number];
+}
+
+/**
+ * Aggregates per-candidate vote counts and XRD voting power across all 5
+ * Majority Judgment grades. Shared by `ElectionGradesMatrix` and the Results
+ * tab JSON export so UI tables and exported data always match exactly.
+ */
+export function computeElectionGradeMatrix(
+    election: GovernanceElectionSpec,
+    electionData: MajorityJudgmentElectionData | null | undefined,
+    voters: ReadonlyArray<Pick<VoterRow, 'grades' | 'votePower'>>,
+): ElectionGradeMatrixRow[] {
+    const resultByCandidate = new Map(
+        (electionData?.candidateResults ?? []).map(r => [r.candidateId, r]),
+    );
+
+    return election.candidates.map(candidate => {
+        const key = String(candidate.id);
+        const res = resultByCandidate.get(candidate.id);
+        const votesByGrade: [number, number, number, number, number] = [0, 0, 0, 0, 0];
+        const voterPowerByGrade: [number, number, number, number, number] = [0, 0, 0, 0, 0];
+
+        for (const v of voters) {
+            const grade = v.grades?.[key];
+            if (grade !== undefined && grade >= 0 && grade <= 4) {
+                votesByGrade[grade] += 1;
+                voterPowerByGrade[grade] += Number(v.votePower) || 0;
+            }
+        }
+
+        const powerByGrade: [number, number, number, number, number] = res
+            ? [
+                Number(res.histogram[0]) || 0,
+                Number(res.histogram[1]) || 0,
+                Number(res.histogram[2]) || 0,
+                Number(res.histogram[3]) || 0,
+                Number(res.histogram[4]) || 0,
+            ]
+            : voterPowerByGrade;
+
+        return {
+            candidateId: candidate.id,
+            displayName: candidate.displayName,
+            rank: res?.rank ?? null,
+            votesByGrade,
+            powerByGrade,
+        };
+    });
+}
+
 export function isCandidateElected(
     res: { outcome: string; electable: boolean },
     indexInRanking: number,

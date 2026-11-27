@@ -90,7 +90,16 @@ export interface ElectionConsensusSummary {
     candidates: ElectionConsensusCandidate[];
     /** Concentration & decisive-block metrics averaged with the exact consensus weights. */
     weightedConcentration: ElectionConsensusConcentration;
+    /** Exact normalized consensus weight (0..1, summing to 1) of each evaluated method. */
+    methodWeights: Partial<Record<MethodKey, number>>;
 }
+
+export {
+    CURRENT_ATTACK_SHARES,
+    computeConsensusResistance,
+    type ConsensusAttackId,
+    type ConsensusAttackScenario,
+} from './consensusResistance';
 
 const FAMILY_ORDER: readonly MethodFamily[] = ['wealth', 'address', 'seniority', 'hybrid'];
 
@@ -363,6 +372,9 @@ export function computeElectionConsensus(
         };
     });
 
+    const methodWeights: Partial<Record<MethodKey, number>> = {};
+    for (const [k, w] of weightOf) methodWeights[k] = w;
+
     return {
         seatCount,
         evaluatedMethods: evaluated.length,
@@ -376,5 +388,6 @@ export function computeElectionConsensus(
             effective: Math.round(wEffective * 10) / 10,
             counted: Math.round(wCounted * 10) / 10,
         },
+        methodWeights,
     };
 }

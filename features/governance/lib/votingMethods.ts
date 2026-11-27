@@ -448,8 +448,12 @@ export function compareMethods(
 }
 
 export {
+    CURRENT_ATTACK_SHARES,
+    computeConsensusResistance,
     computeElectionConclusions,
     computeElectionConsensus,
+    type ConsensusAttackId,
+    type ConsensusAttackScenario,
     type ElectionConsensusCandidate,
     type ElectionConsensusConcentration,
     type ElectionConsensusConclusions,
