@@ -152,7 +152,7 @@ export function AccountStakingSection({
     const [hideStakingControls, setHideStakingControls] = useState(false);
     const [sectionOpen, setSectionOpen] = useState(true);
     const [globalAmountStr, setGlobalAmountStr] = useState('');
-    const [batchAction, setBatchAction] = useState<StakingAction>('Stake');
+    const [batchAction, setBatchAction] = useState<StakingAction | null>(null);
     const [modalBatchActive, setModalBatchActive] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
@@ -293,6 +293,7 @@ export function AccountStakingSection({
         !!summaryPortalTarget &&
         !hasMixedSelections &&
         modalBatchActive &&
+        batchAction !== null &&
         (batchAction === 'Claim'
             ? distributedPlan.groups.length > 0
             : parseFloat(globalAmountStr || '0') > 0 && batchTargetAddresses.length > 0);
@@ -471,14 +472,15 @@ export function AccountStakingSection({
             emptyHint={distributedEmptyHint}
             canSend={distributedPlan.canSend}
             isTransacting={isTransacting}
-            onSend={() => void handleBatchAction(batchAction)}
+            onSend={() => { if (batchAction) void handleBatchAction(batchAction); }}
             onReset={() => {
                 setGlobalAmountStr('');
+                setBatchAction(null);
                 setModalBatchActive(false);
                 setActionError(null);
                 if (clearError) clearError();
             }}
-            resetDisabled={!globalAmountStr && batchAction !== 'Claim'}
+            resetDisabled={!globalAmountStr && batchAction === null}
             onClose={variant === 'floating' ? closeFloatingSummary : undefined}
             onSimulate={consoleMode && onConsoleSimulate ? () => onConsoleSimulate(distributedPlan.manifest) : undefined}
             simulateDisabled={!distributedPlan.manifest.trim()}
@@ -530,20 +532,21 @@ export function AccountStakingSection({
                     if (!consoleMode) setValidatorSelections({});
                     setGlobalAmountStr(val);
                     if (summaryPortalTarget) {
-                        setModalBatchActive(parseFloat(val || '0') > 0 || batchAction === 'Claim');
+                        setModalBatchActive(batchAction !== null && (parseFloat(val || '0') > 0 || batchAction === 'Claim'));
                     }
                 }}
                 onBatchAction={consoleMode
                     ? (action) => {
-                        setBatchAction(action);
+                        setBatchAction(prev => (prev === action ? null : action));
                         setActionError(null);
                         if (clearError) clearError();
                     }
                     : summaryPortalTarget
                         ? (action) => {
                             setValidatorSelections({});
-                            setBatchAction(action);
-                            setModalBatchActive(action === 'Claim' || parseFloat(globalAmountStr || '0') > 0);
+                            const nextAction = batchAction === action ? null : action;
+                            setBatchAction(nextAction);
+                            setModalBatchActive(nextAction !== null && (nextAction === 'Claim' || parseFloat(globalAmountStr || '0') > 0));
                             setActionError(null);
                             if (clearError) clearError();
                         }

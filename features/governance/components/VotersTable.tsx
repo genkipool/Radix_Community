@@ -30,6 +30,7 @@ export function VotersTable({ tally, voters, choices, g, language }: {
     language: string;
 }) {
     const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+    const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
     const [onlyChanged, setOnlyChanged] = useState(false);
     const [sort, setSort] = useState<VoterSort>('recent');
     const { copied, copy } = useCopy();
@@ -42,15 +43,35 @@ export function VotersTable({ tally, voters, choices, g, language }: {
         layoutFor: filterLayoutFor,
     } = usePickerPopup();
     const filterLayout = filterLayoutFor(300, 'left');
+    const {
+        open: candidateOpen,
+        show: showCandidate,
+        close: closeCandidate,
+        buttonRef: candidateButtonRef,
+        popupRef: candidatePopupRef,
+        layoutFor: candidateLayoutFor,
+    } = usePickerPopup();
+    const candidateLayout = candidateLayoutFor(300, 'left');
     const choiceLabel = (key: string) => choices.find(c => c.key === key)?.label ?? key;
     const power = (v: VoterRow) => Number(v.votePower) || 0;
 
     const isElection = voters.some(v => v.grades && Object.keys(v.grades).length > 0);
+    const activeCandidateKeys = isElection
+        ? selectedCandidates.filter(k => choices.some(c => c.key === k))
+        : [];
+    const activeCandidateSet = new Set(activeCandidateKeys);
+
     const gradeOptions = isElection
         ? MJ_GRADE_ORDER.map(gradeIdx => {
             const key = String(gradeIdx);
             const label = g.mj?.grades?.[gradeIdx] ?? key;
-            const matching = voters.filter(v => Object.values(v.grades ?? {}).includes(gradeIdx));
+            const matching = voters.filter(v => {
+                const entries = Object.entries(v.grades ?? {});
+                const scoped = activeCandidateSet.size > 0
+                    ? entries.filter(([cid]) => activeCandidateSet.has(cid))
+                    : entries;
+                return scoped.some(([, grade]) => grade === gradeIdx);
+            });
             return { key, gradeIdx, label, rows: matching };
         })
         : [];
@@ -66,11 +87,26 @@ export function VotersTable({ tally, voters, choices, g, language }: {
 
     const activeKeys = selectedFilters.filter(k => popupOptions.some(o => o.key === k) || (!isElection && tabs.some(t => t.key === k)));
     const activeSet = new Set(activeKeys);
-    const isAll = activeSet.size === 0;
+
+    const candidateOptions = isElection
+        ? choices.map(c => {
+            const matching = voters.filter(v => {
+                const grade = v.grades?.[c.key];
+                if (grade === undefined) return false;
+                return activeSet.size === 0 || activeSet.has(String(grade));
+            });
+            return { key: c.key, label: c.label, rows: matching };
+        })
+        : [];
+
+    const isAll = activeSet.size === 0 && activeCandidateSet.size === 0;
     const useDropdown = isElection || tabs.length > 5;
 
     const toggleFilter = (key: string) => {
         setSelectedFilters(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
+    };
+    const toggleCandidate = (key: string) => {
+        setSelectedCandidates(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
     };
 
     const changedCount = voters.filter(v => v.changes > 0).length;
@@ -79,7 +115,15 @@ export function VotersTable({ tally, voters, choices, g, language }: {
     const filteredRows = isAll
         ? baseVoters
         : isElection
-            ? baseVoters.filter(v => Object.values(v.grades ?? {}).some(grade => activeSet.has(String(grade))))
+            ? baseVoters.filter(v => {
+                const entries = Object.entries(v.grades ?? {});
+                const scoped = activeCandidateSet.size > 0
+                    ? entries.filter(([cid]) => activeCandidateSet.has(cid))
+                    : entries;
+                return activeSet.size > 0
+                    ? scoped.some(([, grade]) => activeSet.has(String(grade)))
+                    : scoped.length > 0;
+            })
             : baseVoters.filter(v => v.choices.some(c => activeSet.has(c)));
 
     const rows = [...filteredRows].sort(sort === 'recent' ? (a, b) => b.voteId - a.voteId : (a, b) => power(b) - power(a));
@@ -93,6 +137,16 @@ export function VotersTable({ tally, voters, choices, g, language }: {
             : `${activeOptions[0].label} +${(activeOptions.length - 1).toLocaleString(language)}`;
     const dropdownTitle = activeOptions.length > 1
         ? activeOptions.map(o => o.label).join(', ')
+        : undefined;
+
+    const activeCandidateOptions = candidateOptions.filter(o => activeCandidateSet.has(o.key));
+    const candidateDropdownLabel = activeCandidateOptions.length === 0
+        ? (g.candidates_title ?? '')
+        : activeCandidateOptions.length === 1
+            ? `${activeCandidateOptions[0].label} (${rows.length.toLocaleString(language)})`
+            : `${activeCandidateOptions[0].label} +${(activeCandidateOptions.length - 1).toLocaleString(language)}`;
+    const candidateDropdownTitle = activeCandidateOptions.length > 1
+        ? activeCandidateOptions.map(o => o.label).join(', ')
         : undefined;
 
     return (
@@ -136,11 +190,14 @@ export function VotersTable({ tally, voters, choices, g, language }: {
 
             <div className="mt-3 px-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--color-card-border)]">
                 {useDropdown ? (
-                    <div className="flex items-end gap-3 min-w-0 max-w-full">
+                    <div className="flex flex-wrap items-end gap-3 min-w-0 max-w-full">
                         <button
                             type="button"
                             aria-pressed={isAll}
-                            onClick={() => setSelectedFilters([])}
+                            onClick={() => {
+                                setSelectedFilters([]);
+                                setSelectedCandidates([]);
+                            }}
                             className={`relative inline-flex items-center justify-center w-36 sm:w-44 shrink-0 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${isAll ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
                             <span className="truncate">{tabs[0].label}</span>
@@ -153,12 +210,16 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                 type="button"
                                 aria-expanded={filterOpen}
                                 title={dropdownTitle}
-                                onClick={() => (filterOpen ? closeFilter() : showFilter())}
-                                className={`relative inline-flex items-center justify-center gap-1.5 w-36 sm:w-44 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${!isAll ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                onClick={() => {
+                                    closeCandidate();
+                                    if (filterOpen) closeFilter();
+                                    else showFilter();
+                                }}
+                                className={`relative inline-flex items-center justify-center gap-1.5 w-36 sm:w-44 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${activeSet.size > 0 ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                             >
                                 <span className="truncate">{dropdownLabel}</span>
                                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${filterOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
-                                {!isAll && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
+                                {activeSet.size > 0 && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
                             </button>
                             <Portal>
                                 <AnimatePresence>
@@ -196,6 +257,58 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                 </AnimatePresence>
                             </Portal>
                         </div>
+                        {isElection && candidateOptions.length > 0 && (
+                            <div className="relative shrink-0">
+                                <button
+                                    ref={candidateButtonRef}
+                                    type="button"
+                                    aria-expanded={candidateOpen}
+                                    title={candidateDropdownTitle}
+                                    onClick={() => {
+                                        closeFilter();
+                                        if (candidateOpen) closeCandidate();
+                                        else showCandidate();
+                                    }}
+                                    className={`relative inline-flex items-center justify-center gap-1.5 w-36 sm:w-44 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${activeCandidateSet.size > 0 ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                >
+                                    <span className="truncate">{candidateDropdownLabel}</span>
+                                    <ChevronDown className={`size-3.5 shrink-0 transition-transform ${candidateOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
+                                    {activeCandidateSet.size > 0 && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
+                                </button>
+                                <Portal>
+                                    <AnimatePresence>
+                                        {candidateOpen && (
+                                            <SelectPopup
+                                                ref={candidatePopupRef}
+                                                title={g.candidates_title ?? ''}
+                                                closeLabel={g.status_closed ?? ''}
+                                                onClose={closeCandidate}
+                                                direction={candidateLayout.direction}
+                                                style={{
+                                                    ...candidateLayout.style,
+                                                    height: 'auto',
+                                                    maxHeight: candidateLayout.style.height,
+                                                }}
+                                            >
+                                                {candidateOptions.map(opt => (
+                                                    <SelectPopupRow
+                                                        key={opt.key}
+                                                        selected={activeCandidateSet.has(opt.key)}
+                                                        label={opt.label}
+                                                        trailing={
+                                                            <span className="font-mono text-[10px] tabular-nums text-[var(--color-text-muted)]">
+                                                                ({opt.rows.length.toLocaleString(language)})
+                                                            </span>
+                                                        }
+                                                        onClick={() => toggleCandidate(opt.key)}
+                                                    />
+                                                ))}
+                                            </SelectPopup>
+                                        )}
+                                    </AnimatePresence>
+                                </Portal>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div role="tablist" aria-label={g.voters_title || 'Voters'} className="no-scrollbar flex gap-3 overflow-x-auto">
@@ -254,8 +367,12 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                 const original = history ? history[0] : null;
                                 const visibleChoices = isElection && !isAll
                                     ? v.choices.filter(c => {
-                                        const gIdx = v.grades?.[c];
-                                        return gIdx !== undefined && activeSet.has(String(gIdx));
+                                        if (activeCandidateSet.size > 0 && !activeCandidateSet.has(c)) return false;
+                                        if (activeSet.size > 0) {
+                                            const gIdx = v.grades?.[c];
+                                            return gIdx !== undefined && activeSet.has(String(gIdx));
+                                        }
+                                        return true;
                                     })
                                     : v.choices;
                                 return (
