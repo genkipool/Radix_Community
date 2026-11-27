@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function GovernanceItemPage({ params }: Props) {
     const p = await params;
-    const [t, route] = await Promise.all([getFeatureDictionary(p.locale as Locale, ['governance']), resolveGovernanceRoute(p)]);
+    const route = await resolveGovernanceRoute(p);
     if (!route) notFound();
     const { entry, system, serverNow } = route;
 
@@ -42,7 +42,6 @@ export default async function GovernanceItemPage({ params }: Props) {
             entry={{ ...entry, item: { ...entry.item, description: null } }}
             system={system}
             descriptionHtml={renderProposalMarkdown(entry.item.description)}
-            g={t.governance}
             language={p.locale}
             serverNow={serverNow}
         />

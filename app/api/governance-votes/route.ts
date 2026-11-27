@@ -5,7 +5,7 @@ import { systemByComponent, type GovernanceSystem } from '@/features/governance/
 import { fetchAccountVotingPowers, fetchVoteTally, type CollectorItemType } from '@/features/governance/services/voteCollector.server';
 import { fetchVoteRecords } from '@/features/governance/services/voteRecords.server';
 import { fetchGovernanceEntry } from '@/features/governance/services/governanceLedger.server';
-import { votingPhase } from '@/features/governance/lib/governanceVotes';
+import { FRESH_VOTE_WINDOW_MS, votingPhase } from '@/features/governance/lib/governanceVotes';
 import type { VoterRow } from '@/features/governance/types';
 
 const TYPES: readonly CollectorItemType[] = ['proposal', 'temperature_check', 'election'];
@@ -35,26 +35,36 @@ export async function GET(request: NextRequest) {
     if (!system) return NextResponse.json(null, { headers: NO_STORE });
 
     try {
-        const [tally, voterData] = await Promise.all([
+        const [tally, voterBundle] = await Promise.all([
             fetchVoteTally(component, type, id, { account, withVoters }).catch(err => {
                 logger.warn({ err }, 'Vote collector unavailable for %s %s #%s', system.key, type, id);
                 return null;
             }),
-            withVoters ? loadVoters(system, type, id) : Promise.resolve(null),
+            withVoters
+                ? loadVoters(system, type, id).then(async data => {
+                    if (!data) return null;
+                    // For elections, fetch per-account voting power in parallel with
+                    // fetchVoteTally instead of waiting for the election summary first.
+                    const electionPowers = type === 'election' && data.rows.length > 0
+                        ? await fetchAccountVotingPowers(component, data.rows.map(r => r.account))
+                        : null;
+                    return { ...data, electionPowers };
+                })
+                : Promise.resolve(null),
         ]);
 
-        const voters = voterData?.rows ?? null;
-        const closed = voterData?.closed ?? false;
+        const voters = voterBundle?.rows ?? null;
+        const closed = voterBundle?.closed ?? false;
 
         let rows: VoterRow[] | null = null;
         let accountPower = tally?.accountPower ?? null;
         if (voters) {
             const power = new Map<string, string>();
             for (const v of tally?.accountVotes ?? []) if (!power.has(v.account)) power.set(v.account, v.votePower);
-            if (type === 'election' && voters.length > 0) {
-                const missing = voters.map(r => r.account).filter(a => !power.has(a));
-                const fetched = await fetchAccountVotingPowers(component, missing);
-                for (const [acc, vp] of fetched) power.set(acc, vp);
+            if (voterBundle?.electionPowers) {
+                for (const [acc, vp] of voterBundle.electionPowers) {
+                    if (!power.has(acc)) power.set(acc, vp);
+                }
             }
             rows = voters.map(r => ({ ...r, votePower: power.get(r.account) ?? null }));
             if (account && accountPower == null && power.has(account)) {
@@ -65,8 +75,11 @@ export async function GET(request: NextRequest) {
             accountPower = fetched.get(account) ?? null;
         }
 
-        const missingRequestedPower = (Boolean(account) && accountPower == null)
-            || (withVoters && (rows?.some(r => r.votePower === null) ?? true));
+        const nowMs = Date.now();
+        const hasPendingFreshVoter = withVoters && (rows
+            ? rows.some(r => r.votePower === null && (nowMs - Date.parse(r.time)) < FRESH_VOTE_WINDOW_MS)
+            : true);
+        const missingRequestedPower = (Boolean(account) && accountPower == null) || hasPendingFreshVoter;
 
         // Closed votes with complete power never change: cache longer at the edge CDN.
         const cacheControl = closed

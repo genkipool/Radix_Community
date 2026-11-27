@@ -75,15 +75,17 @@ function GradeMatrixCard({
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-[var(--color-card-border)] bg-[var(--color-surface)] text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
-                            <th className="py-3 px-4 font-semibold whitespace-nowrap min-w-[180px]">
+                            <th className="py-3 px-4 align-middle font-semibold whitespace-nowrap min-w-[180px]">
                                 <button
                                     type="button"
                                     onClick={() => setSort(null)}
-                                    className={`inline-flex items-center gap-1 uppercase tracking-wider font-semibold transition-colors cursor-pointer ${
+                                    className={`flex items-center gap-1 rounded uppercase tracking-wider font-semibold leading-none outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]/50 transition-colors cursor-pointer ${
                                         sort === null ? 'text-[var(--color-text-main)]' : 'hover:text-[var(--color-text-main)]'
                                     }`}
                                 >
-                                    {g.mj?.col_candidate ?? g.candidates_title ?? ''}
+                                    <span className="text-box-cap leading-none">
+                                        {g.mj?.col_candidate ?? g.candidates_title ?? ''}
+                                    </span>
                                 </button>
                             </th>
                             {MJ_GRADE_ORDER.map(grade => {
@@ -96,19 +98,19 @@ function GradeMatrixCard({
                                     <th
                                         key={grade}
                                         aria-sort={ariaSort}
-                                        className="py-3 px-4 font-semibold whitespace-nowrap text-right"
+                                        className="py-3 px-4 align-middle font-semibold whitespace-nowrap text-center"
                                     >
                                         <button
                                             type="button"
                                             onClick={() => handleGradeSort(grade)}
-                                            className={`group inline-flex items-center justify-end gap-1.5 uppercase tracking-wider font-semibold transition-colors cursor-pointer ${
+                                            className={`group flex w-full items-center justify-center gap-1.5 rounded uppercase tracking-wider font-semibold leading-none outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]/50 transition-colors cursor-pointer ${
                                                 isActive
                                                     ? 'text-[var(--color-primary)]'
                                                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
                                             }`}
                                         >
                                             <span className={`size-2 rounded-full shrink-0 ${MJ_GRADE_DOT_COLOR[grade]}`} aria-hidden="true" />
-                                            <span>{label}</span>
+                                            <span className="text-box-cap leading-none">{label}</span>
                                             {isActive ? (
                                                 sort.dir === 'desc'
                                                     ? <ArrowDown className="size-3 shrink-0" aria-hidden="true" />
@@ -122,21 +124,21 @@ function GradeMatrixCard({
                             })}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--color-card-border)] text-sm">
+                    <tbody className="text-sm">
                         {sortedRows.map(row => (
                             <tr
                                 key={row.id}
-                                className="hover:bg-white/[0.03] transition-colors"
+                                className="border-b border-[var(--color-card-border)] last:border-b-0 hover:bg-white/[0.03] transition-[background-color]"
                             >
-                                <td className="py-3 px-4 font-semibold text-[var(--color-text-main)] whitespace-nowrap">
-                                    <span className="inline-flex items-center gap-2">
+                                <td className="py-3 px-4 align-middle font-semibold text-[var(--color-text-main)] whitespace-nowrap">
+                                    <div className="flex items-center gap-2 leading-none">
                                         {row.rank !== null && (
-                                            <span className="text-[11px] font-mono text-[var(--color-text-muted)] w-6 shrink-0">
+                                            <span className="text-box-cap leading-none text-[11px] font-mono text-[var(--color-text-muted)] w-6 shrink-0">
                                                 #{row.rank}
                                             </span>
                                         )}
-                                        <span>{row.name}</span>
-                                    </span>
+                                        <span className="text-box-cap leading-none">{row.name}</span>
+                                    </div>
                                 </td>
                                 {MJ_GRADE_ORDER.map(grade => {
                                     const val = row.values[grade];
@@ -153,7 +155,7 @@ function GradeMatrixCard({
                                         <td
                                             key={grade}
                                             title={exactTitle}
-                                            className={`py-3 px-4 text-right font-mono text-xs tabular-nums whitespace-nowrap ${
+                                            className={`py-3 px-4 align-middle text-center font-mono text-xs tabular-nums whitespace-nowrap ${
                                                 isSortedCol ? 'bg-[var(--color-primary)]/[0.04]' : ''
                                             } ${
                                                 val > 0
@@ -163,7 +165,9 @@ function GradeMatrixCard({
                                                     : 'text-[var(--color-text-muted)]/60'
                                             }`}
                                         >
-                                            {formatted}
+                                            <div className="flex items-center justify-center leading-none">
+                                                <span className="text-box-cap leading-none">{formatted}</span>
+                                            </div>
                                         </td>
                                     );
                                 })}

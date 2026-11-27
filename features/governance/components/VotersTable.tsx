@@ -2,25 +2,39 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Users, ExternalLink, Loader2, ChevronDown, ArrowLeftRight, ArrowRight } from 'lucide-react';
-import { AnimatePresence } from 'motion/react';
-import { Portal } from '@/components/ui/Portal';
-import { SelectPopup, SelectPopupRow } from '@/components/ui/SelectPopup';
-import { usePickerPopup } from '@/features/console/hooks/usePickerPopup';
+import { Users, Loader2, ArrowLeftRight } from 'lucide-react';
 import type { BallotChoice, TallySummary } from '../lib/governanceVotes';
 import type { VoterRow } from '../types';
-import { MJ_GRADE_ABBR_COLOR, MJ_GRADE_DOT_COLOR, MJ_GRADE_ORDER } from '../lib/majorityJudgment';
+import { MJ_GRADE_DOT_COLOR, MJ_GRADE_ORDER } from '../lib/majorityJudgment';
 import { fill, formatDate, formatPct, formatShare, formatXrd } from '../lib/format';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
 import type { G } from './GovernanceBadges';
+import { MultiFilterDropdown, type MultiFilterOption } from './MultiFilterDropdown';
+import { VoterTxHistoryCell, VoterVoteCell } from './VoterBallotCells';
 
 type VoterSort = 'recent' | 'power';
 
+function formatDropdownLabel(
+    activeOptions: MultiFilterOption[],
+    fallback: string,
+    rowCount: number,
+    language: string,
+): { label: string; title?: string } {
+    if (activeOptions.length === 0) return { label: fallback };
+    if (activeOptions.length === 1) {
+        return { label: `${activeOptions[0].label} (${rowCount.toLocaleString(language)})` };
+    }
+    return {
+        label: `${activeOptions[0].label} +${(activeOptions.length - 1).toLocaleString(language)}`,
+        title: activeOptions.map(o => o.label).join(', '),
+    };
+}
+
 /**
  * Every account with a counted vote: newest first by default or by voting
- * power, with a tab per ballot choice (or multi-select grade filter for
- * Majority Judgment elections). The XRD total follows the filter.
+ * power, with a tab per ballot choice (or multi-select grade & candidate
+ * filters for Majority Judgment elections). The XRD total follows the filter.
  */
 export function VotersTable({ tally, voters, choices, g, language }: {
     tally: TallySummary | null;
@@ -34,24 +48,7 @@ export function VotersTable({ tally, voters, choices, g, language }: {
     const [onlyChanged, setOnlyChanged] = useState(false);
     const [sort, setSort] = useState<VoterSort>('recent');
     const { copied, copy } = useCopy();
-    const {
-        open: filterOpen,
-        show: showFilter,
-        close: closeFilter,
-        buttonRef: filterButtonRef,
-        popupRef: filterPopupRef,
-        layoutFor: filterLayoutFor,
-    } = usePickerPopup();
-    const filterLayout = filterLayoutFor(300, 'left');
-    const {
-        open: candidateOpen,
-        show: showCandidate,
-        close: closeCandidate,
-        buttonRef: candidateButtonRef,
-        popupRef: candidatePopupRef,
-        layoutFor: candidateLayoutFor,
-    } = usePickerPopup();
-    const candidateLayout = candidateLayoutFor(300, 'left');
+
     const choiceLabel = (key: string) => choices.find(c => c.key === key)?.label ?? key;
     const power = (v: VoterRow) => Number(v.votePower) || 0;
 
@@ -61,42 +58,39 @@ export function VotersTable({ tally, voters, choices, g, language }: {
         : [];
     const activeCandidateSet = new Set(activeCandidateKeys);
 
-    const gradeOptions = isElection
-        ? MJ_GRADE_ORDER.map(gradeIdx => {
-            const key = String(gradeIdx);
-            const label = g.mj?.grades?.[gradeIdx] ?? key;
-            const matching = voters.filter(v => {
-                const entries = Object.entries(v.grades ?? {});
-                const scoped = activeCandidateSet.size > 0
-                    ? entries.filter(([cid]) => activeCandidateSet.has(cid))
-                    : entries;
-                return scoped.some(([, grade]) => grade === gradeIdx);
-            });
-            return { key, gradeIdx, label, rows: matching };
-        })
-        : [];
-
     const tabs = [
         { key: 'all', label: g.voters_all || 'All', rows: voters },
         ...choices.map(c => ({ key: c.key, label: c.label, rows: voters.filter(v => v.choices.includes(c.key)) })).filter(t => t.rows.length > 0),
     ];
 
-    const popupOptions = isElection
-        ? gradeOptions
-        : tabs.slice(1).map(t => ({ ...t, gradeIdx: undefined as number | undefined }));
+    const popupOptions: MultiFilterOption[] = isElection
+        ? MJ_GRADE_ORDER.map(gradeIdx => {
+            const key = String(gradeIdx);
+            const label = g.mj?.grades?.[gradeIdx] ?? key;
+            const count = voters.filter(v => {
+                const entries = Object.entries(v.grades ?? {});
+                const scoped = activeCandidateSet.size > 0
+                    ? entries.filter(([cid]) => activeCandidateSet.has(cid))
+                    : entries;
+                return scoped.some(([, grade]) => grade === gradeIdx);
+            }).length;
+            return { key, label, count, dotClass: MJ_GRADE_DOT_COLOR[gradeIdx] };
+        })
+        : tabs.slice(1).map(t => ({ key: t.key, label: t.label, count: t.rows.length }));
 
     const activeKeys = selectedFilters.filter(k => popupOptions.some(o => o.key === k) || (!isElection && tabs.some(t => t.key === k)));
     const activeSet = new Set(activeKeys);
 
-    const candidateOptions = isElection
-        ? choices.map(c => {
-            const matching = voters.filter(v => {
+    const candidateOptions: MultiFilterOption[] = isElection
+        ? choices.map(c => ({
+            key: c.key,
+            label: c.label,
+            count: voters.filter(v => {
                 const grade = v.grades?.[c.key];
                 if (grade === undefined) return false;
                 return activeSet.size === 0 || activeSet.has(String(grade));
-            });
-            return { key: c.key, label: c.label, rows: matching };
-        })
+            }).length,
+        }))
         : [];
 
     const isAll = activeSet.size === 0 && activeCandidateSet.size === 0;
@@ -129,25 +123,18 @@ export function VotersTable({ tally, voters, choices, g, language }: {
     const rows = [...filteredRows].sort(sort === 'recent' ? (a, b) => b.voteId - a.voteId : (a, b) => power(b) - power(a));
     const totalXrd = rows.reduce((sum, v) => sum + power(v), 0);
 
-    const activeOptions = popupOptions.filter(o => activeSet.has(o.key));
-    const dropdownLabel = activeOptions.length === 0
-        ? (g.col_vote || 'Vote')
-        : activeOptions.length === 1
-            ? `${activeOptions[0].label} (${rows.length.toLocaleString(language)})`
-            : `${activeOptions[0].label} +${(activeOptions.length - 1).toLocaleString(language)}`;
-    const dropdownTitle = activeOptions.length > 1
-        ? activeOptions.map(o => o.label).join(', ')
-        : undefined;
-
-    const activeCandidateOptions = candidateOptions.filter(o => activeCandidateSet.has(o.key));
-    const candidateDropdownLabel = activeCandidateOptions.length === 0
-        ? (g.candidates_title ?? '')
-        : activeCandidateOptions.length === 1
-            ? `${activeCandidateOptions[0].label} (${rows.length.toLocaleString(language)})`
-            : `${activeCandidateOptions[0].label} +${(activeCandidateOptions.length - 1).toLocaleString(language)}`;
-    const candidateDropdownTitle = activeCandidateOptions.length > 1
-        ? activeCandidateOptions.map(o => o.label).join(', ')
-        : undefined;
+    const voteDropdown = formatDropdownLabel(
+        popupOptions.filter(o => activeSet.has(o.key)),
+        g.col_vote || 'Vote',
+        rows.length,
+        language,
+    );
+    const candidateDropdown = formatDropdownLabel(
+        candidateOptions.filter(o => activeCandidateSet.has(o.key)),
+        g.candidates_title ?? '',
+        rows.length,
+        language,
+    );
 
     return (
         <section aria-labelledby="voters-table" className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] overflow-hidden">
@@ -204,110 +191,27 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                             <span className={`ml-1.5 shrink-0 text-[10px] tabular-nums ${isAll ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>({tabs[0].rows.length.toLocaleString(language)})</span>
                             {isAll && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
                         </button>
-                        <div className="relative shrink-0">
-                            <button
-                                ref={filterButtonRef}
-                                type="button"
-                                aria-expanded={filterOpen}
-                                title={dropdownTitle}
-                                onClick={() => {
-                                    closeCandidate();
-                                    if (filterOpen) closeFilter();
-                                    else showFilter();
-                                }}
-                                className={`relative inline-flex items-center justify-center gap-1.5 w-36 sm:w-44 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${activeSet.size > 0 ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                            >
-                                <span className="truncate">{dropdownLabel}</span>
-                                <ChevronDown className={`size-3.5 shrink-0 transition-transform ${filterOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
-                                {activeSet.size > 0 && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
-                            </button>
-                            <Portal>
-                                <AnimatePresence>
-                                    {filterOpen && (
-                                        <SelectPopup
-                                            ref={filterPopupRef}
-                                            title={g.col_vote || 'Vote'}
-                                            closeLabel={g.status_closed ?? ''}
-                                            onClose={closeFilter}
-                                            direction={filterLayout.direction}
-                                            style={{
-                                                ...filterLayout.style,
-                                                height: 'auto',
-                                                maxHeight: filterLayout.style.height,
-                                            }}
-                                        >
-                                            {popupOptions.map(opt => (
-                                                <SelectPopupRow
-                                                    key={opt.key}
-                                                    selected={activeSet.has(opt.key)}
-                                                    label={opt.label}
-                                                    icon={opt.gradeIdx !== undefined ? (
-                                                        <span className={`size-2 rounded-full ${MJ_GRADE_DOT_COLOR[opt.gradeIdx]}`} aria-hidden="true" />
-                                                    ) : undefined}
-                                                    trailing={
-                                                        <span className="font-mono text-[10px] tabular-nums text-[var(--color-text-muted)]">
-                                                            ({opt.rows.length.toLocaleString(language)})
-                                                        </span>
-                                                    }
-                                                    onClick={() => toggleFilter(opt.key)}
-                                                />
-                                            ))}
-                                        </SelectPopup>
-                                    )}
-                                </AnimatePresence>
-                            </Portal>
-                        </div>
+                        <MultiFilterDropdown
+                            title={g.col_vote || 'Vote'}
+                            label={voteDropdown.label}
+                            tooltip={voteDropdown.title}
+                            closeLabel={g.status_closed ?? ''}
+                            options={popupOptions}
+                            activeKeys={activeSet}
+                            onToggle={toggleFilter}
+                            language={language}
+                        />
                         {isElection && candidateOptions.length > 0 && (
-                            <div className="relative shrink-0">
-                                <button
-                                    ref={candidateButtonRef}
-                                    type="button"
-                                    aria-expanded={candidateOpen}
-                                    title={candidateDropdownTitle}
-                                    onClick={() => {
-                                        closeFilter();
-                                        if (candidateOpen) closeCandidate();
-                                        else showCandidate();
-                                    }}
-                                    className={`relative inline-flex items-center justify-center gap-1.5 w-36 sm:w-44 pb-2.5 text-xs font-bold transition-colors cursor-pointer ${activeCandidateSet.size > 0 ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                >
-                                    <span className="truncate">{candidateDropdownLabel}</span>
-                                    <ChevronDown className={`size-3.5 shrink-0 transition-transform ${candidateOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
-                                    {activeCandidateSet.size > 0 && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />}
-                                </button>
-                                <Portal>
-                                    <AnimatePresence>
-                                        {candidateOpen && (
-                                            <SelectPopup
-                                                ref={candidatePopupRef}
-                                                title={g.candidates_title ?? ''}
-                                                closeLabel={g.status_closed ?? ''}
-                                                onClose={closeCandidate}
-                                                direction={candidateLayout.direction}
-                                                style={{
-                                                    ...candidateLayout.style,
-                                                    height: 'auto',
-                                                    maxHeight: candidateLayout.style.height,
-                                                }}
-                                            >
-                                                {candidateOptions.map(opt => (
-                                                    <SelectPopupRow
-                                                        key={opt.key}
-                                                        selected={activeCandidateSet.has(opt.key)}
-                                                        label={opt.label}
-                                                        trailing={
-                                                            <span className="font-mono text-[10px] tabular-nums text-[var(--color-text-muted)]">
-                                                                ({opt.rows.length.toLocaleString(language)})
-                                                            </span>
-                                                        }
-                                                        onClick={() => toggleCandidate(opt.key)}
-                                                    />
-                                                ))}
-                                            </SelectPopup>
-                                        )}
-                                    </AnimatePresence>
-                                </Portal>
-                            </div>
+                            <MultiFilterDropdown
+                                title={g.candidates_title ?? ''}
+                                label={candidateDropdown.label}
+                                tooltip={candidateDropdown.title}
+                                closeLabel={g.status_closed ?? ''}
+                                options={candidateOptions}
+                                activeKeys={activeCandidateSet}
+                                onToggle={toggleCandidate}
+                                language={language}
+                            />
                         )}
                     </div>
                 ) : (
@@ -364,7 +268,6 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                             {rows.map((v, i) => {
                                 const p = power(v);
                                 const history = v.history && v.history.length > 1 ? v.history : null;
-                                const original = history ? history[0] : null;
                                 const visibleChoices = isElection && !isAll
                                     ? v.choices.filter(c => {
                                         if (activeCandidateSet.size > 0 && !activeCandidateSet.has(c)) return false;
@@ -387,86 +290,15 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                             </span>
                                         </td>
                                         <td className="px-3 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)]">
-                                            {visibleChoices.length > 3 || isElection ? (
-                                                <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-                                                    {visibleChoices.map((c, idx) => {
-                                                        const label = choiceLabel(c);
-                                                        const gradeIdx = v.grades?.[c];
-                                                        const origGradeIdx = original?.grades?.[c];
-                                                        const gradeChanged = origGradeIdx !== undefined && gradeIdx !== undefined && origGradeIdx !== gradeIdx;
-                                                        const gradeAbbr = gradeIdx !== undefined ? g.mj?.grade_abbrs?.[gradeIdx] : undefined;
-                                                        const origGradeAbbr = origGradeIdx !== undefined ? g.mj?.grade_abbrs?.[origGradeIdx] : undefined;
-                                                        const gradeFull = gradeIdx !== undefined ? g.mj?.grades?.[gradeIdx] : undefined;
-                                                        const origGradeFull = origGradeIdx !== undefined ? g.mj?.grades?.[origGradeIdx] : undefined;
-                                                        return (
-                                                            <span
-                                                                key={`${c}-${idx}`}
-                                                                title={gradeChanged
-                                                                    ? `${label} — ${origGradeFull ?? origGradeIdx} → ${gradeFull ?? gradeIdx}`
-                                                                    : gradeFull ? `${label} — ${gradeFull}` : label}
-                                                                className={`whitespace-nowrap text-xs ${
-                                                                    gradeChanged
-                                                                        ? 'font-bold text-[var(--color-text-main)]'
-                                                                        : onlyChanged && history
-                                                                            ? 'font-medium text-[var(--color-text-muted)]'
-                                                                            : 'font-semibold text-[var(--color-text-secondary)]'
-                                                                }`}
-                                                            >
-                                                                {label}
-                                                                {gradeChanged ? (
-                                                                    <span className="ml-1 inline-flex items-center gap-0.5 font-mono text-[10px] leading-none font-bold align-baseline">
-                                                                        <span className={`text-box-cap leading-none ${MJ_GRADE_ABBR_COLOR[origGradeIdx] ?? 'text-[var(--color-text-muted)]'}`}>
-                                                                            {origGradeAbbr ?? origGradeIdx}
-                                                                        </span>
-                                                                        <ArrowRight className="size-2.5 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
-                                                                        <span className={`text-box-cap leading-none ${MJ_GRADE_ABBR_COLOR[gradeIdx] ?? ''}`}>
-                                                                            {gradeAbbr ?? gradeIdx}
-                                                                        </span>
-                                                                    </span>
-                                                                ) : gradeAbbr ? (
-                                                                    <span className={`ml-0.5 font-mono text-[10px] font-bold ${MJ_GRADE_ABBR_COLOR[gradeIdx!] ?? ''}`}>
-                                                                        ({gradeAbbr})
-                                                                    </span>
-                                                                ) : null}
-                                                            </span>
-                                                        );
-                                                    })}
-                                                    {v.changes > 0 && !history && <span className="text-[10px] font-normal text-[var(--color-text-muted)] self-center" title={g.vote?.changed_vote}>↻</span>}
-                                                </div>
-                                            ) : history && original ? (
-                                                <span className="inline-flex flex-wrap items-center gap-1.5 text-xs">
-                                                    <span className="font-semibold text-[var(--color-text-muted)]">
-                                                        {original.choices.map(choiceLabel).join(', ')}
-                                                    </span>
-                                                    <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
-                                                    <span className="font-bold text-[var(--color-text-main)]">
-                                                        {visibleChoices.map(choiceLabel).join(', ')}
-                                                    </span>
-                                                </span>
-                                            ) : (
-                                                <span className="whitespace-nowrap">
-                                                    {visibleChoices.map((c, idx) => {
-                                                        const label = choiceLabel(c);
-                                                        const gradeIdx = v.grades?.[c];
-                                                        const gradeAbbr = gradeIdx !== undefined ? g.mj?.grade_abbrs?.[gradeIdx] : undefined;
-                                                        const gradeFull = gradeIdx !== undefined ? g.mj?.grades?.[gradeIdx] : undefined;
-                                                        return (
-                                                            <React.Fragment key={`${c}-${idx}`}>
-                                                                {idx > 0 && ', '}
-                                                                <span title={gradeFull ? `${label} — ${gradeFull}` : label}>
-                                                                    {label}
-                                                                    {gradeAbbr && (
-                                                                        <span className={`ml-1 font-mono text-[10px] font-bold ${MJ_GRADE_ABBR_COLOR[gradeIdx!] ?? ''}`}>
-                                                                            ({gradeAbbr})
-                                                                        </span>
-                                                                    )}
-                                                                </span>
-                                                            </React.Fragment>
-                                                        );
-                                                    })}
-                                                    {v.changes > 0 && <span className="ml-1.5 text-[10px] font-normal text-[var(--color-text-muted)]" title={g.vote?.changed_vote}>↻</span>}
-                                                </span>
-                                            )}
+                                            <VoterVoteCell
+                                                voter={v}
+                                                visibleChoices={visibleChoices}
+                                                history={history}
+                                                isElection={isElection}
+                                                onlyChanged={onlyChanged}
+                                                choiceLabel={choiceLabel}
+                                                g={g}
+                                            />
                                         </td>
                                         <td className="px-3 py-2 text-right whitespace-nowrap">
                                             {v.votePower === null ? (
@@ -496,46 +328,7 @@ export function VotersTable({ tally, voters, choices, g, language }: {
                                             )}
                                         </td>
                                         <td className="pl-3 pr-5 py-2.5 text-right whitespace-nowrap">
-                                            {history ? (
-                                                <div className="inline-flex flex-col items-end gap-1">
-                                                    {history.map((entry, idx) => {
-                                                        const isFirst = idx === 0;
-                                                        const isLast = idx === history.length - 1;
-                                                        const tag = isFirst
-                                                            ? (g.voters_vote_original ?? '')
-                                                            : isLast
-                                                                ? (g.voters_vote_current ?? '')
-                                                                : `#${idx + 1}`;
-                                                        return (
-                                                            <div key={`${entry.txid}-${idx}`} className="inline-flex items-center justify-end gap-1.5">
-                                                                <span className={`rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                                                                    isLast
-                                                                        ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
-                                                                        : 'bg-[var(--color-surface)] text-[var(--color-text-muted)]'
-                                                                }`}>
-                                                                    {tag}
-                                                                </span>
-                                                                <Link
-                                                                    href={`/${language}/dashboard/tx/${entry.txid}`}
-                                                                    prefetch={false}
-                                                                    className={`inline-flex items-center gap-1 font-mono text-xs hover:underline ${
-                                                                        isLast ? 'text-[var(--color-primary)] font-semibold' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
-                                                                    }`}
-                                                                    title={entry.txid}
-                                                                >
-                                                                    <span>{shortenAddress(entry.txid)}</span>
-                                                                    <ExternalLink className="size-3 shrink-0" />
-                                                                </Link>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <Link href={`/${language}/dashboard/tx/${v.txid}`} prefetch={false} className="inline-flex items-center justify-end gap-1.5 font-mono text-xs text-[var(--color-primary)] hover:underline" title={v.txid}>
-                                                    <span>{shortenAddress(v.txid)}</span>
-                                                    <ExternalLink className="size-3 shrink-0" />
-                                                </Link>
-                                            )}
+                                            <VoterTxHistoryCell txid={v.txid} history={history} language={language} g={g} />
                                         </td>
                                     </tr>
                                 );

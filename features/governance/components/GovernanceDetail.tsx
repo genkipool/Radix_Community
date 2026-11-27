@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale, History } from 'lucide-react';
@@ -14,8 +15,22 @@ import { formatDuration, formatPct, formatXrd } from '../lib/format';
 import { CollapsibleCard } from './CollapsibleCard';
 import { VotePanel } from './VotePanel';
 import { ResultsDashboard } from './ResultsDashboard';
-import { MethodsComparison } from './MethodsComparison';
-import { HistoricalComparison } from './HistoricalComparison';
+
+const TabSkeleton = () => (
+    <div className="space-y-4" aria-hidden="true">
+        <div className="h-28 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] animate-pulse" />
+        <div className="h-72 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] animate-pulse" />
+    </div>
+);
+
+const MethodsComparison = dynamic(
+    () => import('./MethodsComparison').then(m => m.MethodsComparison),
+    { loading: TabSkeleton },
+);
+const HistoricalComparison = dynamic(
+    () => import('./HistoricalComparison').then(m => m.HistoricalComparison),
+    { loading: TabSkeleton },
+);
 import { useGovernanceNav } from './GovernanceNav';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
@@ -195,15 +210,18 @@ function CandidatesSection({ election, g }: { election: GovernanceElectionSpec; 
  * other voting methods. The tab lives in the URL (`?tab=results`,
  * `?tab=compare`) so any view can be shared.
  */
-export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml: originalHtml, g, language, serverNow }: {
+export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml: originalHtml, g: gProp, language, serverNow }: {
     entry: GovernanceEntry;
     system: GovernanceSystem;
     /** Proposal text, rendered and sanitised on the server. */
     descriptionHtml: string;
-    g: G;
+    /** Optional dictionary override (defaults to the layout shell's shared context). */
+    g?: G;
     language: string;
     serverNow: number;
 }) {
+    const { entries: allEntries, g: navG } = useGovernanceNav();
+    const g = gProp ?? navG;
     // Translated on the reader's device when the browser can; the original otherwise.
     const { item: original } = originalEntry;
     const title = useTranslatedText(original.title);
@@ -225,7 +243,6 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
         },
     };
     const searchParams = useSearchParams();
-    const { entries: allEntries } = useGovernanceNav();
     const [tab, setTabState] = useState<Tab>(tabFromParam(searchParams.get('tab')));
     const [grades, setGrades] = useState<Record<number, number>>({});
     const exportGetterRef = useRef<TabExportGetter | null>(null);

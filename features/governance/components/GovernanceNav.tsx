@@ -3,6 +3,7 @@
 import React, { createContext, use, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { GovernanceEntry } from '../types';
+import type { G } from './GovernanceBadges';
 
 interface GovernanceNav {
     /** The overview is the current page (otherwise it is folded away). */
@@ -11,6 +12,8 @@ interface GovernanceNav {
     overviewMounted: boolean;
     /** All governance proposals and temperature checks loaded by the shell. */
     entries: GovernanceEntry[];
+    /** Governance dictionary provided once by the layout shell (avoids duplicate RSC serialization). */
+    g: G;
     /**
      * Opens a vote. From the overview it jumps to the top and navigates without
      * the router's own scrolling, so the overview folds away above the vote
@@ -19,9 +22,9 @@ interface GovernanceNav {
     openVote: (href: string, e?: React.MouseEvent) => boolean;
 }
 
-const Ctx = createContext<GovernanceNav>({ onOverview: false, overviewMounted: false, entries: [], openVote: () => false });
+const Ctx = createContext<GovernanceNav>({ onOverview: false, overviewMounted: false, entries: [], g: {}, openVote: () => false });
 
-export function GovernanceNavProvider({ language, entries, children }: { language: string; entries: GovernanceEntry[]; children: React.ReactNode }) {
+export function GovernanceNavProvider({ language, entries, g, children }: { language: string; entries: GovernanceEntry[]; g: G; children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const onOverview = pathname === `/${language}/governance`;
@@ -39,7 +42,7 @@ export function GovernanceNavProvider({ language, entries, children }: { languag
         return true;
     };
 
-    return <Ctx value={{ onOverview, overviewMounted, entries, openVote }}>{children}</Ctx>;
+    return <Ctx value={{ onOverview, overviewMounted, entries, g, openVote }}>{children}</Ctx>;
 }
 
 export const useGovernanceNav = () => use(Ctx);
