@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Scale, ShieldCheck, Vote } from 'lucide-react';
+import { Crown, Scale, ShieldCheck, Vote } from 'lucide-react';
 import type { MajorityJudgmentElectionData } from '../types';
 import type { GovernanceElectionSpec } from '../lib/governanceVotes';
 import type { ElectionConsensusSummary } from '../lib/votingMethods';
@@ -274,9 +274,19 @@ export function ElectionCandidatesKpiGrid({
                         </div>
 
                         <div className="space-y-1.5">
-                            <span className={`block truncate text-sm font-black leading-none ${res.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-main)]'}`}>
-                                {gradeLabel(mj, res.qualifyingGrade)}
-                            </span>
+                            <div className="flex items-center justify-between gap-1">
+                                <span className={`block truncate text-sm font-black leading-none ${res.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-main)]'}`}>
+                                    {gradeLabel(mj, res.qualifyingGrade)}
+                                </span>
+                                {(res.outcome === 'ELECTED' || (inSeats && res.electable)) && (
+                                    <span
+                                        className="inline-flex shrink-0 cursor-help"
+                                        title={fill(mj?.elected_crown_tip ?? mj?.outcome_elected ?? '', { seats: String(seats) })}
+                                    >
+                                        <Crown className="size-3.5 text-[var(--color-primary)]" aria-hidden="true" />
+                                    </span>
+                                )}
+                            </div>
                             <GradeDistributionBar
                                 histogram={res.histogram}
                                 totalPower={totalPower}

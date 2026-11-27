@@ -28,7 +28,7 @@ const TWAB_OFFSETS_DAYS = [0, 30, 60, 90] as const;
 /** Addresses the Gateway accepts per entity details request. */
 const PER_REQUEST = 20;
 /** Gateway requests in flight at once from this instance. */
-const MAX_IN_FLIGHT = 2;
+const MAX_IN_FLIGHT = 8;
 
 let inFlight = 0;
 const waiting: Array<() => void> = [];
@@ -109,12 +109,19 @@ async function lsuRatesAt(network: Network, timestamp: string): Promise<Record<s
 
     const rates: Record<string, number> = {};
     const lsuAddrs = [...stakedByLsu.keys()].sort();
+    const chunks: string[][] = [];
     for (let i = 0; i < lsuAddrs.length; i += PER_REQUEST) {
-        const chunk = lsuAddrs.slice(i, i + PER_REQUEST);
-        const res = await withRetry(() => limited(() => gatewayPost<DetailsPage>(network, '/state/entity/details', {
-            addresses: chunk,
-            at_ledger_state: { timestamp },
-        })), 4);
+        chunks.push(lsuAddrs.slice(i, i + PER_REQUEST));
+    }
+    const pages = await Promise.all(
+        chunks.map(chunk =>
+            withRetry(() => limited(() => gatewayPost<DetailsPage>(network, '/state/entity/details', {
+                addresses: chunk,
+                at_ledger_state: { timestamp },
+            })), 4),
+        ),
+    );
+    for (const res of pages) {
         for (const it of res.items ?? []) {
             if (!it.address) continue;
             const supply = parseFloat(it.details?.total_supply ?? '0');
@@ -127,13 +134,12 @@ async function lsuRatesAt(network: Network, timestamp: string): Promise<Record<s
     return rates;
 }
 
-/** Liquid + staked XRD held by each account at `timestamp`, cached permanently. */
-async function balancesAt(
+/** Raw liquid XRD + non-XRD fungible balances per account at `timestamp`, cached permanently without depending on `lsuRates`. */
+async function fungibleBalancesAt(
     network: Network,
     timestamp: string,
     accounts: string[],
-    lsuRates: Record<string, number>,
-): Promise<Record<string, { liquid: number; staked: number }>> {
+): Promise<Record<string, { liquid: number; nonXrd: Record<string, number> }>> {
     'use cache';
     cacheLife('max');
     cacheTag('account-ages');
@@ -143,11 +149,11 @@ async function balancesAt(
         aggregation_level: 'Global',
         at_ledger_state: { timestamp },
     })), 4);
-    const out: Record<string, { liquid: number; staked: number }> = {};
+    const out: Record<string, { liquid: number; nonXrd: Record<string, number> }> = {};
     for (const it of res.items ?? []) {
         if (!it.address) continue;
         let liquid = 0;
-        let staked = 0;
+        const nonXrd: Record<string, number> = {};
         for (const f of it.fungible_resources?.items ?? []) {
             if (!f.resource_address || !f.amount) continue;
             const amt = parseFloat(f.amount);
@@ -155,11 +161,10 @@ async function balancesAt(
             if (f.resource_address === xrdAddr) {
                 liquid += amt;
             } else {
-                const rate = lsuRates[f.resource_address];
-                if (rate) staked += amt * rate;
+                nonXrd[f.resource_address] = (nonXrd[f.resource_address] ?? 0) + amt;
             }
         }
-        out[it.address] = { liquid, staked };
+        out[it.address] = { liquid, nonXrd };
     }
     return out;
 }
@@ -173,10 +178,12 @@ async function fetchAgeYears(network: Network, atSec: number, accounts: string[]
         const cutoff = atSec - k * YEAR;
         if (cutoff < GENESIS[network]) break;
         const timestamp = new Date(cutoff * 1000).toISOString().slice(0, 10) + 'T00:00:00Z';
-        const older: string[] = [];
+        const chunks: string[][] = [];
         for (let i = 0; i < candidates.length; i += PER_REQUEST) {
-            older.push(...await existedAt(network, timestamp, candidates.slice(i, i + PER_REQUEST)));
+            chunks.push(candidates.slice(i, i + PER_REQUEST));
         }
+        const results = await Promise.all(chunks.map(chunk => existedAt(network, timestamp, chunk)));
+        const older = results.flat();
         for (const a of older) years[a] = k;
         candidates = older;
     }
@@ -192,30 +199,54 @@ async function fetchAgeYears(network: Network, atSec: number, accounts: string[]
  */
 export async function fetchAccountHistory(network: Network, atSec: number, accounts: string[]): Promise<AccountHistoryBatch> {
     const sorted = [...accounts].sort();
-    const years = await fetchAgeYears(network, atSec, sorted);
+    const openingTs = new Date(atSec * 1000).toISOString();
+    const accountChunks: string[][] = [];
+    for (let i = 0; i < sorted.length; i += PER_REQUEST) {
+        accountChunks.push(sorted.slice(i, i + PER_REQUEST));
+    }
+
+    // Run age lookup, LSU exchange rates, and all 4 TWAB balance checkpoints concurrently.
+    const [years, lsuRates, checkpointSnaps] = await Promise.all([
+        fetchAgeYears(network, atSec, sorted),
+        atSec >= GENESIS[network] ? lsuRatesAt(network, openingTs) : Promise.resolve<Record<string, number>>({}),
+        Promise.all(
+            TWAB_OFFSETS_DAYS.map(async offsetDays => {
+                const tsSec = atSec - offsetDays * DAY;
+                if (tsSec < GENESIS[network]) return { offsetDays, snap: null };
+                const timestamp = offsetDays === 0
+                    ? openingTs
+                    : new Date(tsSec * 1000).toISOString().slice(0, 10) + 'T00:00:00Z';
+                const parts = await Promise.all(
+                    accountChunks.map(chunk => fungibleBalancesAt(network, timestamp, chunk)),
+                );
+                const merged: Record<string, { liquid: number; nonXrd: Record<string, number> }> = {};
+                for (const part of parts) Object.assign(merged, part);
+                return { offsetDays, snap: merged };
+            }),
+        ),
+    ]);
+
     const stakedXrd: Record<string, number> = Object.fromEntries(sorted.map(a => [a, 0]));
     const totalsByAccount: Record<string, number[]> = Object.fromEntries(sorted.map(a => [a, []]));
 
-    const openingTs = new Date(atSec * 1000).toISOString();
-    const lsuRates = atSec >= GENESIS[network] ? await lsuRatesAt(network, openingTs) : {};
-
-    for (const offsetDays of TWAB_OFFSETS_DAYS) {
-        const tsSec = atSec - offsetDays * DAY;
-        if (tsSec < GENESIS[network]) {
+    for (const { offsetDays, snap } of checkpointSnaps) {
+        if (!snap) {
             for (const a of sorted) totalsByAccount[a].push(0);
             continue;
         }
-        const timestamp = offsetDays === 0
-            ? openingTs
-            : new Date(tsSec * 1000).toISOString().slice(0, 10) + 'T00:00:00Z';
-        for (let i = 0; i < sorted.length; i += PER_REQUEST) {
-            const chunk = sorted.slice(i, i + PER_REQUEST);
-            const snap = await balancesAt(network, timestamp, chunk, lsuRates);
-            for (const a of chunk) {
-                const entry = snap[a] ?? { liquid: 0, staked: 0 };
-                if (offsetDays === 0) stakedXrd[a] = entry.staked;
-                totalsByAccount[a].push(entry.liquid + entry.staked);
+        for (const a of sorted) {
+            const entry = snap[a];
+            let liquid = 0;
+            let staked = 0;
+            if (entry) {
+                liquid = entry.liquid;
+                for (const [resAddr, amt] of Object.entries(entry.nonXrd)) {
+                    const rate = lsuRates[resAddr];
+                    if (rate) staked += amt * rate;
+                }
             }
+            if (offsetDays === 0) stakedXrd[a] = staked;
+            totalsByAccount[a].push(liquid + staked);
         }
     }
 

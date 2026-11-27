@@ -67,7 +67,7 @@ export function collectorFor(component: string): string | null {
     return systemByComponent(component)?.collector ?? null;
 }
 
-const POWER_CONCURRENCY = 6;
+const POWER_CONCURRENCY = 12;
 
 /**
  * Queries `/voting-power?accountAddress=…` for a list of accounts (used for
