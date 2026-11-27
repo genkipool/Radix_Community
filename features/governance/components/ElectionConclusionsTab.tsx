@@ -4,7 +4,7 @@ import React from 'react';
 import { Target, PieChart, ShieldCheck, Layers } from 'lucide-react';
 import { computeElectionConclusions, type ElectionConsensusSummary, type MethodResult } from '../lib/votingMethods';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
-import { FAMILY_ICON, type CompareDict } from './ComparisonParts';
+import { ConcentrationBar, FAMILY_ICON, type CompareDict } from './ComparisonParts';
 
 export interface ElectionConclusionsTabProps {
     consensus: ElectionConsensusSummary;
@@ -266,6 +266,34 @@ export function ElectionConclusionsTab({
                             </div>
                         ))}
                     </dl>
+
+                    <div className="pt-2 space-y-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                            {c.detail_concentration ?? ''}
+                        </p>
+                        <div className="space-y-1.5">
+                            <p className="text-[11px] font-bold text-[var(--color-text-muted)]">
+                                {c.election_conclusions_col_current ?? ''}
+                            </p>
+                            <ConcentrationBar
+                                top1={current.concentration.top1}
+                                top10={current.concentration.top10}
+                                c={c}
+                                language={language}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <p className="text-[11px] font-bold text-[var(--color-primary)]">
+                                {fill(c.election_conclusions_col_weighted ?? '', { n: consensus.evaluatedMethods.toLocaleString(language) })}
+                            </p>
+                            <ConcentrationBar
+                                top1={wc.top1}
+                                top10={wc.top10}
+                                c={c}
+                                language={language}
+                            />
+                        </div>
+                    </div>
                 </section>
             )}
 
