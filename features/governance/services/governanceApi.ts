@@ -51,9 +51,3 @@ export async function apiFetchAccountHistory(network: string, atSec: number, acc
         min90Xrd: data?.min90Xrd ?? {},
     };
 }
-
-/** Full years on the ledger of each account when a vote opened (see /api/governance-votes/account-ages). */
-export async function apiFetchAgeYears(network: string, atSec: number, accounts: string[]): Promise<Record<string, number>> {
-    const data = await apiFetchAccountHistory(network, atSec, accounts);
-    return data.years;
-}

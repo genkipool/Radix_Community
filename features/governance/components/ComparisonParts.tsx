@@ -285,15 +285,16 @@ export function GroupedMethodList<T extends { key: string; family: MethodFamily 
     );
 }
 
-export function ComparisonTile({ icon: Icon, label, value, hint, help }: {
+export function ComparisonTile({ icon: Icon, label, value, hint, help, onClick }: {
     icon: LucideIcon;
     label: string;
     value?: string;
     hint?: string;
     help?: string;
+    onClick?: () => void;
 }) {
-    return (
-        <div className="min-w-0 flex flex-col rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-4">
+    const content = (
+        <>
             <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)] cursor-help" title={help}>
                 <Icon className="size-3.5 text-[var(--color-primary)] shrink-0" />
                 <span className="truncate">{label}</span>
@@ -301,6 +302,22 @@ export function ComparisonTile({ icon: Icon, label, value, hint, help }: {
             </span>
             <span className="mt-2 h-[2lh] line-clamp-2 text-lg font-black leading-tight break-words text-[var(--color-text-main)]" title={value}>{value || '—'}</span>
             <span className="mt-1.5 min-h-[2lh] line-clamp-3 text-[11px] leading-snug text-[var(--color-text-muted)]" title={hint}>{hint}</span>
+        </>
+    );
+    if (onClick) {
+        return (
+            <button
+                type="button"
+                onClick={onClick}
+                className="min-w-0 flex flex-col text-left rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-4 cursor-pointer hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface)]/50 transition-colors"
+            >
+                {content}
+            </button>
+        );
+    }
+    return (
+        <div className="min-w-0 flex flex-col rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-4">
+            {content}
         </div>
     );
 }

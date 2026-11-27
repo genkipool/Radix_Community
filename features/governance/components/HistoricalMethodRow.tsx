@@ -16,7 +16,7 @@ import {
     type CompareDict, type HistoricalDict, type Params,
 } from './ComparisonParts';
 
-export function HistoricalMethodItem({ row, c, h, params, pending, language, onOpenGuide }: {
+export function HistoricalMethodItem({ row, c, h, params, pending, language, onOpenGuide, rowId, focusNonce = 0 }: {
     row: HistoricalMethodRow;
     c: CompareDict;
     h: HistoricalDict;
@@ -24,8 +24,15 @@ export function HistoricalMethodItem({ row, c, h, params, pending, language, onO
     pending: boolean;
     language: string;
     onOpenGuide?: (row: HistoricalMethodRow) => void;
+    rowId?: string;
+    focusNonce?: number;
 }) {
     const [open, setOpen] = useState(row.current);
+    const [seenFocus, setSeenFocus] = useState(0);
+    if (focusNonce > 0 && focusNonce !== seenFocus) {
+        setSeenFocus(focusNonce);
+        if (!open) setOpen(true);
+    }
     const panelId = useId();
     const { name, rule, attack } = methodText(c, row.key, params);
     const { icon: ResIcon, cls: resCls } = RESISTANCE_STYLE[row.resistance];
@@ -54,7 +61,7 @@ export function HistoricalMethodItem({ row, c, h, params, pending, language, onO
     });
 
     return (
-        <li className={`rounded-2xl border bg-[var(--color-card-bg)] transition-colors ${row.current ? 'border-[var(--color-primary)]/50 shadow-[0_0_0_1px_var(--color-primary)]/10' : 'border-[var(--color-card-border)]'}`}>
+        <li id={rowId} className={`scroll-mt-24 rounded-2xl border bg-[var(--color-card-bg)] transition-colors ${row.current ? 'border-[var(--color-primary)]/50 shadow-[0_0_0_1px_var(--color-primary)]/10' : 'border-[var(--color-card-border)]'}`}>
             <button
                 type="button"
                 aria-expanded={open}

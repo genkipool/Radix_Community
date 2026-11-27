@@ -2,15 +2,14 @@
 
 import React, { useId, useState } from 'react';
 import {
-    ChevronDown, Info, Loader2, Equal, ArrowLeftRight, ArrowRight, Target, Crown, Users,
+    ChevronDown, Info, Loader2, Equal, ArrowLeftRight, Target, Crown,
 } from 'lucide-react';
 import { concentrationLevel, type MethodResult } from '../lib/votingMethods';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE } from './VoteParts';
 import type { G } from './GovernanceBadges';
 import { MethodGuideTrigger } from './MethodGuideModal';
-import { bandHint } from '../lib/majorityJudgment';
-import { ExplorerTable } from '@/features/dashboard/explorador/components/ExplorerTable';
+import { ElectionChangesTable, ElectionCouncilList, ElectionRestTable } from './ElectionMethodDetail';
 import {
     RESISTANCE_STYLE,
     tip, methodText, resistanceTooltip,
@@ -175,12 +174,10 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
     onOpenGuide?: () => void;
 }) {
     const d = r.decisive;
-    const mjGrades = g.mj?.grades ?? [];
     const decisiveShare = r.rows.filter(x => x.tone !== 'neutral').reduce((sum, x) => sum + x.share, 0);
     const thresholdMark = threshold !== null && r.approvalShare !== null && decisiveShare > 0 ? threshold * decisiveShare : null;
     const sideLabel = d ? { for: c.side_for ?? '', against: c.side_against ?? '', winner: c.side_winner ?? '' }[d.side] : '';
     const election = r.electionSummary;
-    const enteredSet = election ? new Set(election.entered) : null;
     return (
         <div className="grid gap-5 lg:grid-cols-2 px-4 sm:px-5 pb-5 pt-1">
             <div className="flex flex-col justify-between gap-4 min-w-0">
@@ -194,61 +191,7 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                     )}
                 </p>
                 {r.counted > 0 && election ? (
-                    <div>
-                        <p className="mb-2 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
-                            {fill(c.election_detail_council ?? '', {
-                                n: election.elected.length.toLocaleString(language),
-                                total: election.seatCount.toLocaleString(language),
-                            })}
-                        </p>
-                        {election.elected.length > 0 ? (
-                            <ul className="space-y-1.5">
-                                {election.elected.map(cand => {
-                                    const isNew = Boolean(enteredSet?.has(cand.label));
-                                    return (
-                                        <li
-                                            key={cand.id}
-                                            className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
-                                                isNew
-                                                    ? 'border-amber-500/35 bg-amber-500/5'
-                                                    : 'border-[var(--color-card-border)] bg-[var(--color-surface)]/50'
-                                            }`}
-                                        >
-                                            <span className="flex items-center gap-2 min-w-0">
-                                                <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] shrink-0">
-                                                    #{cand.rank}
-                                                </span>
-                                                <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                                    {cand.label}
-                                                </span>
-                                                {isNew && (
-                                                    <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                                                        {c.election_entered_badge ?? ''}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <span className="flex items-center gap-2 shrink-0">
-                                                <span className="text-[11px] font-semibold text-[var(--color-accent)]">
-                                                    {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
-                                                </span>
-                                                <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">
-                                                    {formatXrd(cand.qualifyingXrd, language)}
-                                                </span>
-                                                <span
-                                                    className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] px-2 font-mono text-[10px] font-bold text-[var(--color-text-secondary)] cursor-help"
-                                                    title={`${bandHint(g.mj, cand.band) ?? ''} (${formatPct(cand.p, language)} / ${formatPct(cand.q, language)})`}
-                                                >
-                                                    <span className="leading-none translate-y-[1px]">{fill(g.mj?.band_short ?? '', { band: cand.band })}</span>
-                                                </span>
-                                            </span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        ) : (
-                            <p className="text-xs text-[var(--color-text-muted)]">{c.election_no_elected ?? ''}</p>
-                        )}
-                    </div>
+                    <ElectionCouncilList election={election} c={c} g={g} language={language} />
                 ) : r.counted > 0 ? (
                     <div>
                         <p className="mb-2 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{c.detail_split ?? ''}</p>
@@ -324,128 +267,11 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         })}
                     </DetailStatBox>
                 </div>
-                {r.current && election && (() => {
-                    const electedIds = new Set(election.elected.map(e => e.id));
-                    const rest = election.standings.filter(cand => !electedIds.has(cand.id));
-                    if (rest.length === 0) return null;
-                    return (
-                        <ExplorerTable
-                            compact
-                            title={fill(c.election_rest_table_title ?? '', { n: rest.length.toLocaleString(language) })}
-                            icon={<Users className="size-3 text-[var(--color-primary)]" />}
-                            headers={[
-                                { label: '#', className: 'w-[12%]' },
-                                { label: c.election_col_candidate ?? '', className: 'w-[40%]' },
-                                { label: c.election_col_grade ?? '', className: 'w-[28%]' },
-                                { label: c.election_col_band ?? '', className: 'w-[20%]' },
-                            ]}
-                        >
-                            {rest.map(cand => (
-                                <tr key={`rest-${cand.id}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
-                                    <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-text-muted)] tabular-nums">
-                                        #{cand.rank}
-                                    </td>
-                                    <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate" title={cand.label}>
-                                        {cand.label}
-                                    </td>
-                                    <td className="py-1.5 px-2 whitespace-nowrap">
-                                        <span className={`text-[11px] font-semibold ${cand.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
-                                            {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
-                                        </span>
-                                        <span className="ml-1.5 font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">
-                                            {formatXrd(cand.qualifyingXrd, language)}
-                                        </span>
-                                    </td>
-                                    <td className="py-1.5 px-2 text-right">
-                                        <span
-                                            className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] px-2 font-mono text-[10px] font-bold text-[var(--color-text-secondary)] cursor-help"
-                                            title={`${bandHint(g.mj, cand.band) ?? ''} (${formatPct(cand.p, language)} / ${formatPct(cand.q, language)})`}
-                                        >
-                                            <span className="text-box-cap leading-none">{fill(g.mj?.band_short ?? '', { band: cand.band })}</span>
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </ExplorerTable>
-                    );
-                })()}
-                {election && (election.left.length > 0 || election.entered.length > 0 || election.tiedAtCutoff.length > 0) && (
-                    <ExplorerTable
-                        compact
-                        title={c.election_changes_table_title ?? ''}
-                        icon={<ArrowLeftRight className="size-3 text-amber-500" />}
-                        headers={[
-                            { label: c.election_col_candidate ?? '', className: 'w-[46%]' },
-                            { label: c.election_col_position ?? '', className: 'w-[24%]' },
-                            { label: c.election_col_change ?? '', className: 'w-[30%]' },
-                        ]}
-                    >
-                        {(election.leftDetails ?? election.left.map((label, idx) => ({
-                            id: -idx - 1,
-                            label,
-                            currentRank: 0,
-                            methodRank: election.standings.find(s => s.label === label)?.rank ?? 0,
-                        }))).map(item => (
-                            <tr key={`left-${item.label}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
-                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{item.label}</td>
-                                <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-text-secondary)] whitespace-nowrap tabular-nums">
-                                    {item.currentRank > 0 && item.methodRank > 0 ? (
-                                        <span className="inline-flex items-center gap-1 leading-none">
-                                            <span className="text-box-cap leading-none">#{item.currentRank}</span>
-                                            <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
-                                            <span className="text-box-cap leading-none">#{item.methodRank}</span>
-                                        </span>
-                                    ) : item.methodRank > 0 ? (
-                                        <span className="text-box-cap leading-none">#{item.methodRank}</span>
-                                    ) : '—'}
-                                </td>
-                                <td className="py-1.5 px-2 text-right">
-                                    <span className="inline-flex items-center justify-center h-5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                        <span className="text-box-cap leading-none">{c.election_left_badge ?? ''}</span>
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                        {(election.enteredDetails ?? election.entered.map((label, idx) => ({
-                            id: -idx - 1,
-                            label,
-                            currentRank: 0,
-                            methodRank: election.standings.find(s => s.label === label)?.rank ?? 0,
-                        }))).map(item => (
-                            <tr key={`entered-${item.label}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
-                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{item.label}</td>
-                                <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-accent)] whitespace-nowrap tabular-nums">
-                                    {item.currentRank > 0 && item.methodRank > 0 ? (
-                                        <span className="inline-flex items-center gap-1 leading-none">
-                                            <span className="text-box-cap leading-none text-[var(--color-text-muted)]">#{item.currentRank}</span>
-                                            <ArrowRight className="size-3 shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
-                                            <span className="text-box-cap leading-none">#{item.methodRank}</span>
-                                        </span>
-                                    ) : item.methodRank > 0 ? (
-                                        <span className="text-box-cap leading-none">#{item.methodRank}</span>
-                                    ) : '—'}
-                                </td>
-                                <td className="py-1.5 px-2 text-right">
-                                    <span className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10 px-2 text-[10px] font-bold text-[var(--color-accent)]">
-                                        <span className="text-box-cap leading-none">{c.election_entered_badge ?? ''}</span>
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                        {election.tiedAtCutoff.map(cand => (
-                            <tr key={`tied-${cand.id}`} className="border-b border-[var(--color-card-border)]/50 last:border-b-0 hover:bg-[var(--color-surface)]/40 transition-colors">
-                                <td className="py-1.5 px-2 font-semibold text-[var(--color-text-main)] truncate">{cand.label}</td>
-                                <td className="py-1.5 px-2 font-mono text-[11px] font-bold text-[var(--color-primary)] whitespace-nowrap tabular-nums">
-                                    #{cand.rank}
-                                </td>
-                                <td className="py-1.5 px-2 text-right">
-                                    <span className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-primary)]/35 bg-[var(--color-primary)]/10 px-2 text-[10px] font-bold text-[var(--color-primary)]">
-                                        <span className="text-box-cap leading-none">{g.mj?.outcome_tied ?? ''}</span>
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </ExplorerTable>
+                {r.current && election && (
+                    <ElectionRestTable election={election} c={c} g={g} language={language} />
+                )}
+                {election && (
+                    <ElectionChangesTable election={election} c={c} g={g} />
                 )}
                 {d ? (
                     <p className="flex items-start gap-2 rounded-xl border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/5 p-3 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
@@ -476,7 +302,7 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
 }
 
 /** One expandable row in the single-vote voting methods comparison table. */
-export function MethodRow({ r, c, g, params, threshold, quorum, ageLoading, language, onOpenGuide }: {
+export function MethodRow({ r, c, g, params, threshold, quorum, ageLoading, language, onOpenGuide, rowId, focusNonce = 0 }: {
     r: MethodResult;
     c: C;
     g: G;
@@ -486,8 +312,15 @@ export function MethodRow({ r, c, g, params, threshold, quorum, ageLoading, lang
     ageLoading: boolean;
     language: string;
     onOpenGuide?: (r: MethodResult) => void;
+    rowId?: string;
+    focusNonce?: number;
 }) {
     const [open, setOpen] = useState(r.current);
+    const [seenFocus, setSeenFocus] = useState(0);
+    if (focusNonce > 0 && focusNonce !== seenFocus) {
+        setSeenFocus(focusNonce);
+        if (!open) setOpen(true);
+    }
     const panelId = useId();
     const { name, rule, attack } = methodText(c, r.key, params);
     const pending = r.needsAge && ageLoading;
@@ -503,7 +336,7 @@ export function MethodRow({ r, c, g, params, threshold, quorum, ageLoading, lang
         ? fill(c.election_same_seats ?? '', { n: election.elected.length.toLocaleString(language) })
         : null;
     return (
-        <li className={`rounded-2xl border bg-[var(--color-card-bg)] transition-colors ${r.current ? 'border-[var(--color-primary)]/50 shadow-[0_0_0_1px_var(--color-primary)]/10' : 'border-[var(--color-card-border)]'}`}>
+        <li id={rowId} className={`scroll-mt-24 rounded-2xl border bg-[var(--color-card-bg)] transition-colors ${r.current ? 'border-[var(--color-primary)]/50 shadow-[0_0_0_1px_var(--color-primary)]/10' : 'border-[var(--color-card-border)]'}`}>
             <button
                 type="button"
                 aria-expanded={open}

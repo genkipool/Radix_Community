@@ -131,6 +131,8 @@ export interface ElectionMethodSummary {
     enteredDetails?: ElectionSeatChange[];
     /** Candidates leaving the elected slate with their baseline and method ranks. */
     leftDetails?: ElectionSeatChange[];
+    /** Fewest largest-weight voters in this method summing to at least the applied grade quantile. */
+    decisiveQuantileCount?: number | null;
 }
 
 export interface MajorityJudgmentBallot {

@@ -457,6 +457,21 @@ export function uniqueVoters(item: GovernanceItem | null): number | null {
     return Math.max(0, item.voteCount - (item.revoteCount ?? 0));
 }
 
+/**
+ * Reconciles SSR-cached voter / revote counts with live voter rows when
+ * available so KPI cards, detail rows, and tables never lag behind each other.
+ */
+export function resolveLiveVoterCounts(
+    item: GovernanceItem | null,
+    liveVoters: ReadonlyArray<{ changes: number }> | null | undefined,
+): { voters: number | null; revotes: number } {
+    const ssrVoters = uniqueVoters(item);
+    const voters = liveVoters != null ? Math.max(ssrVoters ?? 0, liveVoters.length) : ssrVoters;
+    const liveRevotes = liveVoters != null ? liveVoters.reduce((sum, v) => sum + v.changes, 0) : null;
+    const revotes = liveRevotes != null ? Math.max(item?.revoteCount ?? 0, liveRevotes) : (item?.revoteCount ?? 0);
+    return { voters, revotes };
+}
+
 /** A voter's current vote as stored in the item's `voters` key-value store. */
 export function parseVoterEntry(entry: unknown, kind: GovernanceItemKind): VoteSelection | null {
     if (!entry || typeof entry !== 'object') return null;
