@@ -17,6 +17,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { DashboardToolbarProps } from '../types';
 import { NetworkPanelButton } from './NetworkPanelButton';
 import { ReadingModeButton } from '@/components/ui/ReadingModeButton';
+import { CEX_RANKING_KEYS } from '../explorador/constants/wellKnownAddresses';
 
 /** Rankings that have a data source; the others are not offered. */
 const RANKING_TAGS = ['top_accounts', 'top_lsu', 'access_controllers', 'owner_unlocks', 'fee_changes'] as const;
@@ -164,6 +165,15 @@ export const DashboardToolbar = ({
                     onRankingChange(ranking);
                 },
             })),
+            ...(network === 'mainnet' ? CEX_RANKING_KEYS.map(ranking => ({
+                key: `rank:${ranking}`,
+                label: dt?.rankings?.[ranking] || ranking,
+                active: activeRanking === ranking && !isSearchActive,
+                onToggle: () => {
+                    if (activeRanking === ranking && !isSearchActive) return onRankingChange(null);
+                    onRankingChange(ranking);
+                },
+            })) : []),
             ...TRANSACTION_TAGS.filter(tag => tag !== 'All').map(tag => ({
                 // Prefixed: "Staking" means a wallet's stakes in one view and
                 // staking transactions in the other, so a star must not cross.

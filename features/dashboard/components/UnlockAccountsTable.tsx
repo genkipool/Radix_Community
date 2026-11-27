@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { formatPercent, formatXRD, truncateAddress } from '@/utils/formatters';
 import { EntityCard } from '../explorador/components/entityCards';
+import { getKnownAccountLabel } from '../explorador/constants/wellKnownAddresses';
 import type { AccountUnlockData } from '../services/apiClient';
 import type { Network, TranslationsT } from '../types';
 import type { Validator } from '@/types/radix';
@@ -128,12 +130,31 @@ export function UnlockAccountsTable({
                                     >
                                         <td className="py-2.5 pr-2 tabular-nums text-[var(--color-text-muted)]">{rank.get(account.address)}</td>
                                         <td className="py-2.5 pr-4">
-                                            <span className="inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--color-text-main)]" title={account.address}>
-                                                {truncateAddress(account.address, 14, 8)}
-                                                <span onClick={e => e.stopPropagation()}>
-                                                    <CopyButton value={account.address} variant="card-inline" size="sm" forceCopied={copiedAddress === account.address} onClick={() => onCopy(account.address)} />
-                                                </span>
-                                            </span>
+                                            {(() => {
+                                                const known = getKnownAccountLabel(account.address, network);
+                                                return (
+                                                    <span className="inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--color-text-main)]" title={account.address}>
+                                                        {known && (
+                                                            <span className="inline-flex items-center gap-1 px-1.5 h-[20px] rounded-full font-sans text-[10px] font-bold uppercase tracking-wider leading-none bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30">
+                                                                {known.iconUrl && (
+                                                                    <SafeImage
+                                                                        src={known.iconUrl}
+                                                                        alt={known.name}
+                                                                        fallbackName={known.name}
+                                                                        className="size-3.5 rounded-full object-contain bg-white/90 p-0.5 shrink-0"
+                                                                        zoomable={false}
+                                                                    />
+                                                                )}
+                                                                <span className="leading-none pt-[1px]">{known.name}</span>
+                                                            </span>
+                                                        )}
+                                                        {truncateAddress(account.address, 14, 8)}
+                                                        <span onClick={e => e.stopPropagation()}>
+                                                            <CopyButton value={account.address} variant="card-inline" size="sm" forceCopied={copiedAddress === account.address} onClick={() => onCopy(account.address)} />
+                                                        </span>
+                                                    </span>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="py-2.5 pr-4 text-right font-bold tabular-nums text-[var(--color-text-main)]" title={`${Math.round(account.xrd).toLocaleString(locale)} XRD`}>
                                             {formatXRD(account.xrd, locale)} XRD
