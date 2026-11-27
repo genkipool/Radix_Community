@@ -29,7 +29,7 @@ import {
 
 type ScopeKind = 'all' | GovernanceItemKind;
 
-const TALLY_PARALLEL = 3;
+const TALLY_PARALLEL = 6;
 
 /**
  * Historical comparison across all governance proposals and temperature checks,

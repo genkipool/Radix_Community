@@ -384,6 +384,11 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 } : consensusGuideOpen && electionConsensus ? {
                     mode: 'consensus',
                     consensus: electionConsensus,
+                    current,
+                    methods: readyForExport,
+                    voterPowers: voters.map(v => v.power),
+                    quorum: item.quorum,
+                    gradeQuantile: electionData?.gradeQuantileApplied ?? null,
                 } : null}
                 methodName={guideMethod
                     ? methodText(c, guideMethod.key, params).name

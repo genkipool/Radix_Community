@@ -61,7 +61,11 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);
     const tally = tallyQuery.data ? summarizeTally(choices, tallyQuery.data, item) : null;
     const phase = votingPhase(item, now);
-    const voters = uniqueVoters(item);
+    const liveVoters = tallyQuery.data?.voters ?? null;
+    const ssrVoters = uniqueVoters(item);
+    const voters = liveVoters != null ? Math.max(ssrVoters ?? 0, liveVoters.length) : ssrVoters;
+    const liveRevotes = liveVoters != null ? liveVoters.reduce((sum, v) => sum + v.changes, 0) : null;
+    const revotes = liveRevotes != null ? Math.max(item.revoteCount ?? 0, liveRevotes) : (item.revoteCount ?? 0);
 
     useRegisterTabExport(onRegisterExport, () => ({
         tab: 'results',
@@ -82,7 +86,7 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
             quorum: item.quorum,
             approvalThreshold: item.approvalThreshold,
             uniqueVoters: voters,
-            revoteCount: item.revoteCount,
+            revoteCount: revotes,
         },
         choices,
         tally,
@@ -136,7 +140,7 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
                         ? fill(tally.approvalShare >= item.approvalThreshold ? (g.kpi_support_ok ?? '') : (g.kpi_support_ko ?? ''), { pct: formatPct(item.approvalThreshold, language) })
                         : undefined}
                 />
-                <Kpi icon={Users} label={g.kpi_voters ?? ''} value={voters?.toLocaleString(language) ?? '—'} hint={item.revoteCount ? fill(gv.revote_hint ?? '', { n: item.revoteCount.toLocaleString(language) }) : undefined} />
+                <Kpi icon={Users} label={g.kpi_voters ?? ''} value={voters?.toLocaleString(language) ?? '—'} hint={revotes ? fill(gv.revote_hint ?? '', { n: revotes.toLocaleString(language) }) : undefined} />
                 <div className="col-span-2 md:col-span-1">
                     <Kpi icon={Hourglass} label={g.kpi_time ?? ''} value={<span suppressHydrationWarning>{time.value}</span>} hint={time.hint} />
                 </div>

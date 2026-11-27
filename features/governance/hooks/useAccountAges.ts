@@ -7,7 +7,7 @@ import type { MethodVoter } from '../lib/votingMethods';
 import { apiFetchAccountHistory, AGE_BATCH } from '../services/governanceApi';
 
 /** Batches asked at the same time. */
-const PARALLEL = 2;
+const PARALLEL = 3;
 
 /**
  * Sliding-window concurrency helper for `useQueries`: item `i` is enabled once
