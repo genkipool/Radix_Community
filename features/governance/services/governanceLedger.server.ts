@@ -96,10 +96,23 @@ export async function fetchGovernanceEntries(): Promise<GovernanceEntry[]> {
             systemEntries(system, ['proposal', 'temperature_check', 'election']).catch(() => [] as GovernanceEntry[]),
         ),
     );
-    // The list does not show full texts; leaving them out keeps the payload small.
+    // The list does not show full texts; leaving them out keeps the payload small,
+    // while keeping lightweight election metadata so historical comparison can evaluate MJ elections.
     return perSystem.flat()
         .filter(e => !e.item.hidden)
-        .map(e => ({ ...e, item: { ...e.item, description: null, election: null } }));
+        .map(e => ({
+            ...e,
+            item: {
+                ...e.item,
+                description: null,
+                election: e.item.election
+                    ? {
+                        ...e.item.election,
+                        candidates: e.item.election.candidates.map(c => ({ ...c, description: null, links: [] })),
+                    }
+                    : null,
+            },
+        }));
 }
 
 /** One item with its full text, or null when it does not exist. */
