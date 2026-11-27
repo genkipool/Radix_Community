@@ -473,7 +473,7 @@
       "election_conclusions_no_changes": "The weighted council matches all {seats} seats of 1 XRD = 1 vote.",
       "election_conclusions_families_title": "Breakdown by family and quorum",
       "election_conclusions_quorum_text": "{valid} of {total} evaluated methods reach the {quorum} XRD quorum.",
-      "election_conclusions_family_row": "{count} methods · avg decentralisation {spread} · {same} match current",
+      "election_conclusions_family_row": "{count} methods · avg decentralisation {spread} · {same} match the current method's outcome (1 XRD = 1 vote)",
       "election_guide_open": "See how this method is calculated in Majority Judgment",
       "election_guide_kicker": "Majority Judgment · Calculation guide",
       "election_guide_close": "Close guide",
