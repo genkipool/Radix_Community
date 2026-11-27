@@ -12,7 +12,7 @@ import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
 import { itemChoices } from '../lib/governanceVotes';
 import {
-    METHODS, balanceExtremes, compareMethods, computeElectionConsensus, effectiveExtremes, spreadExtremes,
+    METHODS, balanceExtremes, compareMethods, computeElectionConclusions, computeElectionConsensus, effectiveExtremes, spreadExtremes,
     type MethodFamily, type MethodResult,
 } from '../lib/votingMethods';
 import { isCountedVoter } from '../lib/comparisonUtils';
@@ -52,6 +52,19 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const [sort, setSort] = useState<SortState>(null);
     const [guideMethod, setGuideMethod] = useState<MethodResult | null>(null);
     const [consensusGuideOpen, setConsensusGuideOpen] = useState(false);
+    const [focusedMethod, setFocusedMethod] = useState<{ key: string; nonce: number } | null>(null);
+
+    const jumpToMethod = (methodKey: string | undefined) => {
+        if (!methodKey) return;
+        setFamily('all');
+        setQuery('');
+        setFocusedMethod(prev => ({ key: methodKey, nonce: (prev?.nonce ?? 0) + 1 }));
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                document.getElementById(`method-row-${methodKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+    };
 
     // Same query as the result tab: switching tabs does not ask again.
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);
@@ -65,7 +78,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         ? compareMethods(voters, choices, item, { gradeQuantile: tallyQuery.data?.electionData?.gradeQuantileApplied })
         : [];
     const params = ruleParams(language);
-    const pending = rows.length - counted.length;
+    const pending = rows.filter(v => v.votePower === null).length;
+    const zeroPower = rows.filter(v => v.votePower !== null && !(Number(v.votePower) > 0)).length;
     const readyForExport = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
     const electionConsensus = kind === 'election'
         ? computeElectionConsensus(readyForExport, tallyQuery.data?.electionData)
@@ -97,6 +111,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 totalVoters: rows.length,
                 countedVoters: currentResult?.counted ?? 0,
                 pendingVoters: pending,
+                zeroPowerVoters: zeroPower,
                 eligibleXrd: currentResult?.eligibleXrd ?? 0,
                 agesLoaded: ages.loaded,
                 agesTotal: ages.total,
@@ -105,7 +120,18 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 sameOutcomeCount: otherResults.filter(r => r.sameAsCurrent).length,
                 comparedMethodsCount: otherResults.length,
             },
-            ...(electionConsensus ? { electionConsensus } : {}),
+            ...(electionConsensus ? {
+                electionConsensus: {
+                    ...electionConsensus,
+                    conclusions: computeElectionConclusions(
+                        electionConsensus,
+                        readyForExport,
+                        voters.map(v => v.power),
+                        item.quorum,
+                        tallyQuery.data?.electionData?.gradeQuantileApplied ?? null,
+                    ),
+                },
+            } : {}),
             methods: results,
         };
     });
@@ -176,27 +202,36 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{isElection ? (c.intro_election ?? c.intro) : c.intro}</p>
                         </div>
                         <dl className={isElection ? 'grid grid-cols-2 gap-2.5' : 'grid grid-cols-2 sm:grid-cols-3 gap-2.5'}>
-                            {(isElection
-                                ? [
-                                    [Users, c.fact_voters ?? '', current.counted.toLocaleString(language), tip(c, 'fact_voters')],
-                                    [Coins, c.fact_xrd ?? '', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
-                                    [Target, c.fact_quorum ?? '', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
-                                    [Crown, c.fact_seats ?? '', (item.election?.seatCount ?? 0).toLocaleString(language), tip(c, 'fact_seats')],
-                                ]
-                                : [
-                                    [Users, c.fact_voters ?? '', current.counted.toLocaleString(language), tip(c, 'fact_voters')],
-                                    [Coins, c.fact_xrd ?? '', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
-                                    [Target, c.fact_quorum ?? '', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
-                                    [BadgeCheck, c.fact_threshold ?? '', item.approvalThreshold === null ? '—' : formatPct(item.approvalThreshold, language), tip(c, 'fact_threshold')],
-                                    // Addresses behind each option, as they voted.
-                                    ...current.rows.filter(x => x.power > 0 || x.tone !== 'neutral').map(x => {
-                                        const n = current.addressesByChoice[x.key] ?? 0;
-                                        return [TONE[x.tone].icon, x.label, n.toLocaleString(language), tip(c, 'fact_option', {
-                                            n: n.toLocaleString(language), label: x.label, pct: formatShare(n / Math.max(1, current.counted), language),
-                                        }), TONE[x.tone].text] as const;
-                                    }),
-                                ]
-                            ).map(([Icon, label, value, title, tone]) => (
+                            {(() => {
+                                const votersTip = zeroPower > 0
+                                    ? tip(c, 'fact_voters_with_zero', {
+                                        counted: current.counted.toLocaleString(language),
+                                        total: rows.length.toLocaleString(language),
+                                        zero: zeroPower.toLocaleString(language),
+                                    })
+                                    : tip(c, 'fact_voters');
+                                return (isElection
+                                    ? [
+                                        [Users, c.fact_voters ?? '', current.counted.toLocaleString(language), votersTip],
+                                        [Coins, c.fact_xrd ?? '', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
+                                        [Target, c.fact_quorum ?? '', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
+                                        [Crown, c.fact_seats ?? '', (item.election?.seatCount ?? 0).toLocaleString(language), tip(c, 'fact_seats')],
+                                    ]
+                                    : [
+                                        [Users, c.fact_voters ?? '', current.counted.toLocaleString(language), votersTip],
+                                        [Coins, c.fact_xrd ?? '', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
+                                        [Target, c.fact_quorum ?? '', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
+                                        [BadgeCheck, c.fact_threshold ?? '', item.approvalThreshold === null ? '—' : formatPct(item.approvalThreshold, language), tip(c, 'fact_threshold')],
+                                        // Addresses behind each option, as they voted.
+                                        ...current.rows.filter(x => x.power > 0 || x.tone !== 'neutral').map(x => {
+                                            const n = current.addressesByChoice[x.key] ?? 0;
+                                            return [TONE[x.tone].icon, x.label, n.toLocaleString(language), tip(c, 'fact_option', {
+                                                n: n.toLocaleString(language), label: x.label, pct: formatShare(n / Math.max(1, current.counted), language),
+                                            }), TONE[x.tone].text] as const;
+                                        }),
+                                    ]
+                                );
+                            })().map(([Icon, label, value, title, tone]) => (
                                 <FactTile
                                     key={label as string}
                                     icon={Icon as LucideIcon}
@@ -242,6 +277,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             label={c.kpi_most_spread ?? ''}
                             value={most ? name(most) : undefined}
                             hint={most ? fill(c.kpi_spread_hint ?? '', { n: (most.concentration.nakamoto ?? 0).toLocaleString(language), pct: formatPct(most.concentration.spread ?? 0, language) }) : undefined}
+                            onClick={most ? () => jumpToMethod(most.key) : undefined}
                         />
                         <ComparisonTile
                             icon={Crown}
@@ -249,6 +285,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             label={c.kpi_most_concentrated ?? ''}
                             value={least ? name(least) : undefined}
                             hint={least ? fill(c.kpi_spread_hint ?? '', { n: (least.concentration.nakamoto ?? 0).toLocaleString(language), pct: formatPct(least.concentration.spread ?? 0, language) }) : undefined}
+                            onClick={least ? () => jumpToMethod(least.key) : undefined}
                         />
                         <ComparisonTile
                             icon={Gauge}
@@ -256,6 +293,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             label={c.kpi_balanced ?? ''}
                             value={balance.most ? name(balance.most) : undefined}
                             hint={balance.most ? balanceHint(balance.most) : undefined}
+                            onClick={balance.most ? () => jumpToMethod(balance.most!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={TriangleAlert}
@@ -263,6 +301,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             label={c.kpi_unbalanced ?? ''}
                             value={balance.least ? name(balance.least) : undefined}
                             hint={balance.least ? balanceHint(balance.least) : undefined}
+                            onClick={balance.least ? () => jumpToMethod(balance.least!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={BadgeCheck}
@@ -270,6 +309,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             label={c.kpi_effective || ''}
                             value={effective.most ? name(effective.most) : undefined}
                             hint={effective.most ? effectiveHint(effective.most) : undefined}
+                            onClick={effective.most ? () => jumpToMethod(effective.most!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={XCircle}
@@ -277,6 +317,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             label={c.kpi_ineffective || ''}
                             value={effective.least ? name(effective.least) : undefined}
                             hint={effective.least ? effectiveHint(effective.least) : undefined}
+                            onClick={effective.least ? () => jumpToMethod(effective.least!.key) : undefined}
                         />
                     </div>
                 </div>
@@ -358,6 +399,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             quorum={item.quorum}
                             ageLoading={!ages.done}
                             language={language}
+                            rowId={`method-row-${r.key}`}
+                            focusNonce={focusedMethod?.key === r.key ? focusedMethod.nonce : 0}
                             onOpenGuide={m => {
                                 setConsensusGuideOpen(false);
                                 setGuideMethod(m);
@@ -406,6 +449,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             <div className="space-y-1.5">
                 {[
                     c.note_hypothetical,
+                    zeroPower > 0 ? fill(c.note_zero_power ?? '', { n: zeroPower.toLocaleString(language) }) : null,
                     pending > 0 ? fill(c.note_pending ?? '', { n: pending.toLocaleString(language) }) : null,
                     unknownAges > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAges.toLocaleString(language) }) : null,
                 ].filter(Boolean).map((text, i) => (

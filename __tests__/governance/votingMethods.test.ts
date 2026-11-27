@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { balanceExtremes, balanceScore, compareMethods, computeElectionConsensus, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
+import { balanceExtremes, balanceScore, compareMethods, computeElectionConclusions, computeElectionConsensus, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
 import { itemChoices, type GovernanceItem } from '@/features/governance/lib/governanceVotes';
 
 const item: GovernanceItem = {
@@ -469,5 +469,14 @@ describe('Majority Judgment election comparison', () => {
         const enteredCount = aligned.candidates.filter(c => c.changedFromCurrent && c.inSeats).length;
         const droppedCount = aligned.candidates.filter(c => c.changedFromCurrent && !c.inSeats).length;
         expect(enteredCount).toBe(droppedCount);
+
+        // Weighted concentration & conclusions match live math with zero drift.
+        expect(aligned.weightedConcentration.decisiveQuantile).toBeGreaterThan(1);
+        expect(aligned.weightedConcentration.spread).toBeGreaterThan(0);
+        const concl = computeElectionConclusions(aligned, res, electionVoters.map(v => v.power), 100, '3/5');
+        expect(concl.currentDecisiveBlock?.count).toBe(1); // whale alone holds >60%
+        expect(concl.currentDecisiveBlock?.total).toBe(5);
+        expect(concl.weightedDecisiveBlock?.avgCount).toBe(aligned.weightedConcentration.decisiveQuantile);
+        expect(concl.byFamily.length).toBeGreaterThan(0);
     });
 });

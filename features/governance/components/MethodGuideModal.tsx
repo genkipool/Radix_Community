@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Info, Scale, Target, PieChart, ShieldCheck, Layers } from 'lucide-react';
+import { X, Info, Scale } from 'lucide-react';
 import { SidePanelModal } from '@/components/shared/SidePanelModal';
 import { SidePanelControls } from '@/components/shared/SidePanelControls';
 import { useSidePanelControls } from '@/components/shared/hooks/useSidePanelControls';
@@ -9,9 +9,10 @@ import { useLanguage } from '@/context/LanguageContext';
 import type { ElectionConsensusSummary, MethodResult } from '../lib/votingMethods';
 import type { HistoricalMethodRow } from '../lib/historicalMethods';
 import { gradeLabel, parseQuantile } from '../lib/majorityJudgment';
-import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
+import { fill, formatPct, formatXrd } from '../lib/format';
 import type { G } from './GovernanceBadges';
-import { FAMILIES, FAMILY_ICON, type CompareDict, type HistoricalDict } from './ComparisonParts';
+import type { CompareDict, HistoricalDict } from './ComparisonParts';
+import { ElectionConclusionsTab } from './ElectionConclusionsTab';
 
 export type MethodGuideTarget =
     | {
@@ -380,248 +381,18 @@ export function MethodGuideModal({
                         </div>
                     )}
 
-                    {guideKind === 'consensus' && activeTab === 'conclusions' && target?.mode === 'consensus' ? (() => {
-                        const { consensus, current, methods, voterPowers, quorum, gradeQuantile } = target;
-                        const quantileVal = parseQuantile(gradeQuantile);
-                        const quantilePct = formatPct(quantileVal, language);
-                        const sortedPowers = [...voterPowers].filter(p => p > 0).sort((a, b) => b - a);
-                        const totalPower = sortedPowers.reduce((s, x) => s + x, 0);
-                        let accPower = 0;
-                        let decisiveCount = 0;
-                        for (const p of sortedPowers) {
-                            accPower += p;
-                            decisiveCount += 1;
-                            if (accPower >= totalPower * quantileVal) break;
-                        }
-                        const others = methods.filter(m => !m.current);
-                        const sameCount = others.filter(m => m.sameAsCurrent).length;
-                        const solidCandidates = consensus.candidates.filter(cand => cand.inSeats && cand.consensusShare >= 0.8);
-                        const enteredCandidates = consensus.candidates.filter(cand => cand.changedFromCurrent && cand.inSeats);
-                        const droppedCandidates = consensus.candidates.filter(cand => cand.changedFromCurrent && !cand.inSeats);
-                        const quorumMetCount = methods.filter(m => m.quorumMet !== false).length;
-                        const familyNames = (c.families ?? {}) as Record<string, string>;
-
-                        return (
-                            <div className="space-y-8">
-                                {/* 1. Decisive block at 60% quantile — clean left-accent callout, no card box */}
-                                {sortedPowers.length > 0 && (
-                                    <section className="border-l-2 border-[var(--color-primary)] pl-4 space-y-1.5">
-                                        <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                                            <Target className="size-3.5 shrink-0" aria-hidden="true" />
-                                            <span>{fill(c.election_conclusions_decisive_title ?? '', { quantilePct })}</span>
-                                        </h3>
-                                        <p className="text-[13.5px] leading-relaxed text-[var(--color-text-main)]">
-                                            {fill(c.election_conclusions_decisive_text ?? '', {
-                                                count: decisiveCount.toLocaleString(language),
-                                                total: sortedPowers.length.toLocaleString(language),
-                                                pct: formatShare(decisiveCount / sortedPowers.length, language),
-                                                xrd: formatXrd(accPower, language),
-                                                quantilePct,
-                                            })}
-                                        </p>
-                                    </section>
-                                )}
-
-                                {/* 2. Current 1 XRD = 1 vote concentration — open typographic stats + prose */}
-                                {current.concentration.nakamoto !== null && current.concentration.spread !== null && (
-                                    <section className="space-y-3.5">
-                                        <h3 className="flex items-center gap-2 text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2">
-                                            <PieChart className="size-4 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
-                                            <span>{c.election_conclusions_conc_title ?? ''}</span>
-                                        </h3>
-                                        <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                                            <div className="min-w-0">
-                                                <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                    {c.col_nakamoto ?? ''}
-                                                </dt>
-                                                <dd className="mt-0.5 font-mono text-base font-black text-[var(--color-text-main)] tabular-nums">
-                                                    {current.concentration.nakamoto.toLocaleString(language)}
-                                                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">/{current.counted.toLocaleString(language)}</span>
-                                                </dd>
-                                            </div>
-                                            <div className="min-w-0">
-                                                <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                    {c.election_conclusions_top1_label ?? ''}
-                                                </dt>
-                                                <dd className="mt-0.5 font-mono text-base font-black text-[var(--color-text-main)] tabular-nums">
-                                                    {formatPct(current.concentration.top1, language)}
-                                                </dd>
-                                            </div>
-                                            <div className="min-w-0">
-                                                <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                    {c.election_conclusions_top10_label ?? ''}
-                                                </dt>
-                                                <dd className="mt-0.5 font-mono text-base font-black text-[var(--color-text-main)] tabular-nums">
-                                                    {formatPct(current.concentration.top10, language)}
-                                                </dd>
-                                            </div>
-                                            <div className="min-w-0">
-                                                <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                    {c.detail_spread ?? ''}
-                                                </dt>
-                                                <dd className="mt-0.5 font-mono text-base font-black text-[var(--color-text-main)] tabular-nums">
-                                                    {formatPct(current.concentration.spread, language)}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                        <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                                            {fill(c.election_conclusions_conc_text ?? '', {
-                                                nakamoto: current.concentration.nakamoto.toLocaleString(language),
-                                                total: current.counted.toLocaleString(language),
-                                                pct: formatShare(current.concentration.nakamoto / Math.max(1, current.counted), language),
-                                                top1: formatPct(current.concentration.top1, language),
-                                                top10: formatPct(current.concentration.top10, language),
-                                                spread: formatPct(current.concentration.spread, language),
-                                                eff: current.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }),
-                                            })}
-                                        </p>
-                                    </section>
-                                )}
-
-                                {/* 3. Council stability & contested cutoff */}
-                                <section className="space-y-4">
-                                    <h3 className="flex items-center gap-2 text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2">
-                                        <ShieldCheck className="size-4 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
-                                        <span>{fill(c.election_conclusions_stability_title ?? '', { n: consensus.evaluatedMethods.toLocaleString(language) })}</span>
-                                    </h3>
-                                    <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                                        {fill(c.election_conclusions_stability_text ?? '', {
-                                            same: sameCount.toLocaleString(language),
-                                            others: others.length.toLocaleString(language),
-                                            pct: others.length > 0 ? formatShare(sameCount / others.length, language) : '0 %',
-                                            seats: consensus.seatCount.toLocaleString(language),
-                                        })}
-                                    </p>
-
-                                    {solidCandidates.length > 0 && (
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                {c.election_conclusions_solid_label ?? ''}
-                                            </p>
-                                            <ul className="divide-y divide-[var(--color-card-border)]/40">
-                                                {solidCandidates.map(cand => (
-                                                    <li key={cand.id} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] w-6 shrink-0">
-                                                                #{cand.consensusRank}
-                                                            </span>
-                                                            <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                                                {cand.label}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 shrink-0 font-mono tabular-nums">
-                                                            <span className="text-[11px] text-[var(--color-text-muted)]">
-                                                                {cand.electedCount}/{cand.evaluatedMethods}
-                                                            </span>
-                                                            <span className="text-xs font-bold text-[var(--color-accent)] w-12 text-right">
-                                                                {formatPct(cand.consensusShare, language)}
-                                                            </span>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-1.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                            {c.election_conclusions_contested_label ?? ''}
-                                        </p>
-                                        {enteredCandidates.length === 0 && droppedCandidates.length === 0 ? (
-                                            <p className="text-[13px] text-[var(--color-text-muted)]">
-                                                {fill(c.election_conclusions_no_changes ?? '', { seats: consensus.seatCount.toLocaleString(language) })}
-                                            </p>
-                                        ) : (
-                                            <ul className="divide-y divide-[var(--color-card-border)]/40">
-                                                {enteredCandidates.map(cand => (
-                                                    <li key={`in-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="font-mono text-[11px] font-bold text-[var(--color-accent)] w-6 shrink-0">
-                                                                #{cand.consensusRank}
-                                                            </span>
-                                                            <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                                                {cand.label}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 shrink-0">
-                                                            <span className="text-[11px] font-bold text-[var(--color-accent)]">
-                                                                {c.election_entered_badge ?? ''}
-                                                            </span>
-                                                            <span className="font-mono text-xs font-bold text-[var(--color-accent)] tabular-nums w-12 text-right">
-                                                                {formatPct(cand.consensusShare, language)}
-                                                            </span>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                                {droppedCandidates.map(cand => (
-                                                    <li key={`out-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 w-6 shrink-0">
-                                                                #{cand.consensusRank}
-                                                            </span>
-                                                            <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                                                {cand.label}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 shrink-0">
-                                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                                                                {c.election_left_badge ?? ''}
-                                                            </span>
-                                                            <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums w-12 text-right">
-                                                                {formatPct(cand.consensusShare, language)}
-                                                            </span>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                </section>
-
-                                {/* 4. Breakdown by family & quorum — hairline list, no card box */}
-                                <section className="space-y-3">
-                                    <h3 className="flex items-center gap-2 text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2">
-                                        <Layers className="size-4 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
-                                        <span>{c.election_conclusions_families_title ?? ''}</span>
-                                    </h3>
-                                    {quorum !== null && (
-                                        <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                                            {fill(c.election_conclusions_quorum_text ?? '', {
-                                                valid: quorumMetCount.toLocaleString(language),
-                                                total: methods.length.toLocaleString(language),
-                                                quorum: formatXrd(quorum, language),
-                                            })}
-                                        </p>
-                                    )}
-                                    <ul className="divide-y divide-[var(--color-card-border)]/50">
-                                        {FAMILIES.map(fam => {
-                                            const famMethods = methods.filter(m => m.family === fam);
-                                            if (famMethods.length === 0) return null;
-                                            const FamIcon = FAMILY_ICON[fam];
-                                            const spreads = famMethods.map(m => m.concentration.spread).filter((s): s is number => s !== null);
-                                            const avgSpread = spreads.length > 0 ? spreads.reduce((a, b) => a + b, 0) / spreads.length : 0;
-                                            const famSame = famMethods.filter(m => m.current || m.sameAsCurrent).length;
-                                            return (
-                                                <li key={fam} className="flex items-start gap-2.5 py-2.5 first:pt-1 last:pb-0 text-xs">
-                                                    <FamIcon className="size-3.5 mt-0.5 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
-                                                    <div className="min-w-0">
-                                                        <span className="font-bold text-[var(--color-text-main)]">{familyNames[fam] || fam}</span>
-                                                        <p className="text-[11.5px] text-[var(--color-text-muted)]">
-                                                            {fill(c.election_conclusions_family_row ?? '', {
-                                                                count: famMethods.length.toLocaleString(language),
-                                                                spread: formatPct(avgSpread, language),
-                                                                same: famSame.toLocaleString(language),
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                </section>
-                            </div>
-                        );
-                    })() : (
+                    {guideKind === 'consensus' && activeTab === 'conclusions' && target?.mode === 'consensus' ? (
+                        <ElectionConclusionsTab
+                            consensus={target.consensus}
+                            current={target.current}
+                            methods={target.methods}
+                            voterPowers={target.voterPowers}
+                            quorum={target.quorum}
+                            gradeQuantile={target.gradeQuantile}
+                            c={c}
+                            language={language}
+                        />
+                    ) : (
                         <div className="space-y-7">
                         <div className="space-y-2">
                             <p className="text-[14px] leading-relaxed font-semibold text-[var(--color-text-main)]">

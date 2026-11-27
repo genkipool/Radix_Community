@@ -51,6 +51,19 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
     const [query, setQuery] = useState('');
     const [sort, setSort] = useState<SortState>(null);
     const [guideRow, setGuideRow] = useState<HistoricalMethodRow | null>(null);
+    const [focusedMethod, setFocusedMethod] = useState<{ key: string; nonce: number } | null>(null);
+
+    const jumpToMethod = (methodKey: string | undefined) => {
+        if (!methodKey) return;
+        setFamily('all');
+        setQuery('');
+        setFocusedMethod(prev => ({ key: methodKey, nonce: (prev?.nonce ?? 0) + 1 }));
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                document.getElementById(`historical-method-row-${methodKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+    };
 
     const scopedEntries = entries.filter(e => {
         const sys = systemByKey(e.systemKey);
@@ -244,6 +257,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                                 n: summary.mostChanges.changedCount.toLocaleString(language),
                                 total: (summary.mostChanges.changedCount + summary.mostChanges.sameCount).toLocaleString(language),
                             }) : undefined}
+                            onClick={summary.mostChanges ? () => jumpToMethod(summary.mostChanges!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={PieChart}
@@ -265,6 +279,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                                 n: (summary.mostDecentralised.avgNakamoto ?? 0).toLocaleString(language, { maximumFractionDigits: 1 }),
                                 pct: formatPct(summary.mostDecentralised.avgSpread ?? 0, language),
                             }) : undefined}
+                            onClick={summary.mostDecentralised ? () => jumpToMethod(summary.mostDecentralised!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={Crown}
@@ -275,6 +290,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                                 n: (summary.mostCentralised.avgNakamoto ?? 0).toLocaleString(language, { maximumFractionDigits: 1 }),
                                 pct: formatPct(summary.mostCentralised.avgSpread ?? 0, language),
                             }) : undefined}
+                            onClick={summary.mostCentralised ? () => jumpToMethod(summary.mostCentralised!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={Gauge}
@@ -282,6 +298,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                             label={c.kpi_balanced || ''}
                             value={summary.mostBalanced ? name(summary.mostBalanced) : undefined}
                             hint={summary.mostBalanced ? balanceHint(summary.mostBalanced) : undefined}
+                            onClick={summary.mostBalanced ? () => jumpToMethod(summary.mostBalanced!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={TriangleAlert}
@@ -289,6 +306,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                             label={c.kpi_unbalanced || ''}
                             value={summary.leastBalanced ? name(summary.leastBalanced) : undefined}
                             hint={summary.leastBalanced ? balanceHint(summary.leastBalanced) : undefined}
+                            onClick={summary.leastBalanced ? () => jumpToMethod(summary.leastBalanced!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={BadgeCheck}
@@ -296,6 +314,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                             label={h.kpi_effective || ''}
                             value={summary.mostEffective ? name(summary.mostEffective) : undefined}
                             hint={summary.mostEffective ? effectiveHint(summary.mostEffective) : undefined}
+                            onClick={summary.mostEffective ? () => jumpToMethod(summary.mostEffective!.key) : undefined}
                         />
                         <ComparisonTile
                             icon={XCircle}
@@ -303,6 +322,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                             label={h.kpi_ineffective || ''}
                             value={summary.leastEffective ? name(summary.leastEffective) : undefined}
                             hint={summary.leastEffective ? effectiveHint(summary.leastEffective) : undefined}
+                            onClick={summary.leastEffective ? () => jumpToMethod(summary.leastEffective!.key) : undefined}
                         />
                     </div>
                 </div>
@@ -360,6 +380,8 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                                 params={params}
                                 pending={row.needsAge && (!talliesDone || !ages.done)}
                                 language={language}
+                                rowId={`historical-method-row-${row.key}`}
+                                focusNonce={focusedMethod?.key === row.key ? focusedMethod.nonce : 0}
                                 onOpenGuide={setGuideRow}
                             />
                         )}

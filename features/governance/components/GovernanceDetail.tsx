@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale, History } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
-import { uniqueVoters, votingPhase, type GovernanceElectionSpec } from '../lib/governanceVotes';
+import { resolveLiveVoterCounts, votingPhase, type GovernanceElectionSpec } from '../lib/governanceVotes';
 import { governanceItemPath } from '../lib/paths';
 import { useNow } from '../hooks/useNow';
 import { fill, formatDate, LinkList, type Gv } from './VoteParts';
@@ -41,12 +41,18 @@ function Row({ icon: Icon, label, hint, children }: { icon: typeof Hash; label: 
     );
 }
 
-function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; system: GovernanceSystem; g: G; language: string }) {
+function DetailsCard({ entry, system, g, language, liveVoters }: {
+    entry: GovernanceEntry;
+    system: GovernanceSystem;
+    g: G;
+    language: string;
+    liveVoters?: ReadonlyArray<{ changes: number }> | null;
+}) {
     const { item, kind, id } = entry;
     const gv: Gv = g.vote ?? {};
     const { copied, copy } = useCopy();
     const link = (k: 'proposal' | 'temperature_check', target: string) => `/${language}${governanceItemPath(system.key, k, target)}`;
-    const votes = uniqueVoters(item);
+    const { voters: votes, revotes } = resolveLiveVoterCounts(item, liveVoters);
     // What each row means, shown on hover.
     const hints = (g.detail_hints ?? {}) as Record<string, string>;
     const kindHint = kind === 'proposal' ? hints.kind_proposal : kind === 'election' ? hints.kind_election : hints.kind_temperature_check;
@@ -75,8 +81,8 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
             {item.deadline && <Row icon={CalendarClock} label={gv.ends ?? ''} hint={hints.ends}><span suppressHydrationWarning>{formatDate(item.deadline, language)}</span></Row>}
             {votes !== null && (
                 <Row icon={Users} label={g.detail_voters ?? ''} hint={hints.voters}>
-                    {item.revoteCount
-                        ? fill(g.detail_voters_value ?? '', { n: votes.toLocaleString(language), changed: item.revoteCount.toLocaleString(language) })
+                    {revotes
+                        ? fill(g.detail_voters_value ?? '', { n: votes.toLocaleString(language), changed: revotes.toLocaleString(language) })
                         : votes.toLocaleString(language)}
                 </Row>
             )}
@@ -385,7 +391,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                             ) : (
                                 <VotePanel entry={entry} system={system} g={g} language={language} now={now} />
                             )}
-                            <DetailsCard entry={entry} system={system} g={g} language={language} />
+                            <DetailsCard entry={entry} system={system} g={g} language={language} liveVoters={electionTally.data?.voters} />
                         </aside>
                     </div>
                 ) : tab === 'results' ? (
