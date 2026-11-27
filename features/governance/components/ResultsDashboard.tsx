@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, Target, ThumbsUp, Users, Hourglass, Info } from 'lucide-react';
+import { Activity, Crown, Target, ThumbsUp, Users, Hourglass, Info } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
@@ -124,18 +124,30 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
                     meter={tally?.quorumRatio != null ? { ratio: tally.quorumRatio, ok: !!tally.quorumMet } : undefined}
                     hint={item.quorum ? fill(g.kpi_quorum_hint ?? '', { amount: formatXrd(item.quorum, language) }) : undefined}
                 />
-                <Kpi
-                    icon={ThumbsUp}
-                    label={g.kpi_support ?? ''}
-                    title={g.kpi_support_note}
-                    value={tally?.approvalShare != null ? formatPct(tally.approvalShare, language) : '—'}
-                    meter={tally?.approvalShare != null && item.approvalThreshold != null
-                        ? { ratio: tally.approvalShare, mark: item.approvalThreshold, ok: tally.approvalShare >= item.approvalThreshold }
-                        : undefined}
-                    hint={tally?.approvalShare != null && item.approvalThreshold != null
-                        ? fill(tally.approvalShare >= item.approvalThreshold ? (g.kpi_support_ok ?? '') : (g.kpi_support_ko ?? ''), { pct: formatPct(item.approvalThreshold, language) })
-                        : undefined}
-                />
+                {kind === 'election' && item.election ? (
+                    <Kpi
+                        icon={Crown}
+                        label={g.compare?.fact_seats ?? g.mj?.rules_seats ?? ''}
+                        title={((g.compare?.tips ?? {}) as Record<string, string>).fact_seats}
+                        value={item.election.seatCount !== null ? item.election.seatCount.toLocaleString(language) : '—'}
+                        hint={item.election.candidates.length > 0
+                            ? `${item.election.candidates.length.toLocaleString(language)} ${(g.candidates_title ?? '').toLowerCase()}`
+                            : undefined}
+                    />
+                ) : (
+                    <Kpi
+                        icon={ThumbsUp}
+                        label={g.kpi_support ?? ''}
+                        title={g.kpi_support_note}
+                        value={tally?.approvalShare != null ? formatPct(tally.approvalShare, language) : '—'}
+                        meter={tally?.approvalShare != null && item.approvalThreshold != null
+                            ? { ratio: tally.approvalShare, mark: item.approvalThreshold, ok: tally.approvalShare >= item.approvalThreshold }
+                            : undefined}
+                        hint={tally?.approvalShare != null && item.approvalThreshold != null
+                            ? fill(tally.approvalShare >= item.approvalThreshold ? (g.kpi_support_ok ?? '') : (g.kpi_support_ko ?? ''), { pct: formatPct(item.approvalThreshold, language) })
+                            : undefined}
+                    />
+                )}
                 <Kpi icon={Users} label={g.kpi_voters ?? ''} value={voters?.toLocaleString(language) ?? '—'} hint={revotes ? fill(gv.revote_hint ?? '', { n: revotes.toLocaleString(language) }) : undefined} />
                 <div className="col-span-2 md:col-span-1">
                     <Kpi icon={Hourglass} label={g.kpi_time ?? ''} value={<span suppressHydrationWarning>{time.value}</span>} hint={time.hint} />
