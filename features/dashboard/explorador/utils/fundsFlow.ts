@@ -6,6 +6,7 @@
 
 /** The part of a Gateway stream item this reads. */
 export interface FlowItem {
+    intent_hash?: string | null;
     confirmed_at?: string | null;
     balance_changes?: {
         fungible_balance_changes?: { entity_address: string; resource_address: string; balance_change: string }[];

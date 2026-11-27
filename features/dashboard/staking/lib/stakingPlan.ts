@@ -93,7 +93,7 @@ function resolveLsuAmount(
  */
 export function buildDistributedPlan(params: {
     accountAddress: string;
-    action: StakingAction;
+    action: StakingAction | null;
     globalAmountStr: string;
     targetAddresses: string[];
     displayRows: StakingEntry[];
@@ -119,6 +119,10 @@ export function buildDistributedPlan(params: {
         locale,
         labels,
     } = params;
+
+    if (!action) {
+        return { stakeItems: [], unstakeItems: [], claimItems: [], groups: [], manifest: '', canSend: false, error: null };
+    }
 
     const empty: DistributedPlan = {
         stakeItems: [],

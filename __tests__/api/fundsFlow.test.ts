@@ -118,6 +118,30 @@ describe('readFundsFlow', () => {
         expect(flow).toMatchObject({ txs: 3, more: true, received: 3 });
     });
 
+    it('falls back to XRD manifest filter when the latest 300 transactions contain only non-XRD noise', async () => {
+        const noisePage = (cursor?: string) => new Response(JSON.stringify({
+            items: [tx('2026-11-01', [ME, 5, 'resource_rdx1spam'], ['account_rdx1spam', -5, 'resource_rdx1spam'])],
+            next_cursor: cursor,
+        }), { status: 200 });
+        const xrdPage = new Response(JSON.stringify({
+            items: [tx('2025-08-28', [ME, 50], ['account_rdx1sender', -50])],
+            next_cursor: null,
+        }), { status: 200 });
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(noisePage('c1'))
+            .mockResolvedValueOnce(noisePage('c2'))
+            .mockResolvedValueOnce(noisePage('c3'))
+            .mockResolvedValueOnce(xrdPage);
+        vi.stubGlobal('fetch', fetchMock);
+
+        const flow = await service.readFundsFlow(ME, 'mainnet');
+
+        expect(fetchMock).toHaveBeenCalledTimes(4);
+        expect(JSON.parse(fetchMock.mock.calls[3][1].body).manifest_resources_filter).toEqual([XRD]);
+        expect(flow).toMatchObject({ received: 50, sent: 0, moved: 1, more: false });
+        expect(flow.counterparties[0].address).toBe('account_rdx1sender');
+    });
+
     it('stops at the last page', async () => {
         const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [] }), { status: 200 }));
         vi.stubGlobal('fetch', fetchMock);

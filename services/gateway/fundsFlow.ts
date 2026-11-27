@@ -16,7 +16,12 @@ const DESTINATIONS_LOOKED_INTO = 3;
 type StreamPage = { items?: FlowItem[]; next_cursor?: string | null };
 
 /** Newest first, the pages of an account's transactions with their balance changes. */
-async function readTransactions(address: string, network: Network, pages: number): Promise<{ items: FlowItem[]; more: boolean }> {
+async function readTransactions(
+    address: string,
+    network: Network,
+    pages: number,
+    filter: Record<string, unknown> = { affected_global_entities_filter: [address] },
+): Promise<{ items: FlowItem[]; more: boolean }> {
     const base = gatewayRestBase(network);
     const items: FlowItem[] = [];
     let cursor: string | undefined;
@@ -26,7 +31,7 @@ async function readTransactions(address: string, network: Network, pages: number
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    affected_global_entities_filter: [address],
+                    ...filter,
                     opt_ins: { balance_changes: true },
                     limit_per_page: PAGE,
                     ...(cursor ? { cursor } : {}),
@@ -42,6 +47,58 @@ async function readTransactions(address: string, network: Network, pages: number
     return { items, more: true };
 }
 
+function dedupeItems(lists: FlowItem[][]): FlowItem[] {
+    const seen = new Set<string>();
+    const out: FlowItem[] = [];
+    for (const list of lists) {
+        for (const item of list) {
+            const key = item.intent_hash;
+            if (key) {
+                if (seen.has(key)) continue;
+                seen.add(key);
+            }
+            out.push(item);
+        }
+    }
+    return out;
+}
+
+/**
+ * Reads an account's transactions for XRD flow analysis.
+ * When the latest 300 transactions are crowded out by non-XRD activity
+ * (e.g. airdrops, spam tokens, NFTs) and older transactions exist, falls back
+ * to targeted Gateway manifest filters so real XRD movements are still found.
+ */
+async function readAccountFlowItems(
+    address: string,
+    network: Network,
+    xrd: string,
+    pages: number,
+): Promise<{ items: FlowItem[]; more: boolean }> {
+    const recent = await readTransactions(address, network, pages);
+    if (!recent.more || summarizeFunds(address, recent.items, xrd).moved > 0) {
+        return recent;
+    }
+
+    const xrdManifest = await readTransactions(address, network, pages, {
+        affected_global_entities_filter: [address],
+        manifest_resources_filter: [xrd],
+    });
+    if (summarizeFunds(address, xrdManifest.items, xrd).moved > 0) {
+        return xrdManifest;
+    }
+
+    const [deposited, withdrawn] = await Promise.all([
+        readTransactions(address, network, 1, { manifest_accounts_deposited_into_filter: [address] }),
+        readTransactions(address, network, 1, { manifest_accounts_withdrawn_from_filter: [address] }),
+    ]);
+    const combined = dedupeItems([deposited.items, withdrawn.items]);
+    if (summarizeFunds(address, combined, xrd).moved > 0) {
+        return { items: combined, more: deposited.more || withdrawn.more };
+    }
+    return recent;
+}
+
 export type { DestinationHint };
 
 export interface AccountFunds extends FundsFlow {
@@ -50,8 +107,9 @@ export interface AccountFunds extends FundsFlow {
 }
 
 export async function readFundsFlow(address: string, network: Network): Promise<AccountFunds> {
-    const { items, more } = await readTransactions(address, network, FLOW_PAGES);
-    return { ...summarizeFunds(address, items, getXrdAddress(network)), more };
+    const xrd = getXrdAddress(network);
+    const { items, more } = await readAccountFlowItems(address, network, xrd, FLOW_PAGES);
+    return { ...summarizeFunds(address, items, xrd), more };
 }
 
 /**
@@ -61,7 +119,7 @@ export async function readFundsFlow(address: string, network: Network): Promise<
  */
 export async function readDestinationHints(address: string, network: Network): Promise<Record<string, DestinationHint>> {
     const xrd = getXrdAddress(network);
-    const { items } = await readTransactions(address, network, FLOW_PAGES);
+    const { items } = await readAccountFlowItems(address, network, xrd, FLOW_PAGES);
     const targets = summarizeFunds(address, items, xrd).counterparties
         .filter(c => c.sent > 0 && c.address.startsWith('account_'))
         .toSorted((a, b) => b.sent - a.sent)

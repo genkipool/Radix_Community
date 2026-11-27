@@ -31,11 +31,11 @@ interface BatchValidatorStakeActionProps {
      */
     unstyled?: boolean;
     /**
-     * Console-only: when set, the action buttons select the pending batch
-     * action instead of sending immediately (so the user can inspect the
-     * summary, preview the manifest, and simulate before signing).
+     * When defined (including `null` for none selected), the action buttons toggle
+     * the pending batch action instead of sending immediately (so the user can
+     * inspect the summary, preview the manifest, and simulate before signing).
      */
-    selectedAction?: StakingAction;
+    selectedAction?: StakingAction | null;
 }
 
 export const BatchValidatorStakeAction = ({
@@ -65,6 +65,7 @@ export const BatchValidatorStakeAction = ({
     const globalNum = parseFloat(globalAmountStr || '0');
     const batchLimit = selectedAction === 'Unstake' ? totalStakedXrdSelected : xrdBalance;
     const isBatchExceeded =
+        selectedAction != null &&
         selectedAction !== 'Claim' &&
         globalAmountStr !== '' &&
         globalNum > batchLimit + 1e-6;
@@ -131,7 +132,7 @@ export const BatchValidatorStakeAction = ({
                         className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-32 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] bg-[var(--color-bg)] ${actionError || isBatchExceeded ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${isTransacting || selectedAction === 'Claim' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                        {selectedAction !== undefined && selectedAction !== 'Claim' && (
+                        {selectedAction != null && selectedAction !== 'Claim' && (
                             <span className={`text-[10px] font-mono ${isBatchExceeded ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
                                 {batchRemaining.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                             </span>
