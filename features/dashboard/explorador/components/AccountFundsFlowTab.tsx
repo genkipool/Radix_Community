@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Info } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
+import { getKnownAccountLabel } from '../constants/wellKnownAddresses';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import { formatPercent, formatXRD } from '@/utils/formatters';
 import { useDestinationHints, useFundsFlow } from '../hooks/useFundsFlow';
@@ -37,18 +38,30 @@ function Row({ row, side, max, total, hint, network, locale, text, copiedAddress
     text: NonNullable<NonNullable<Tt['account_summary']>['funds']> | undefined; copiedAddress: string | null; onCopy: (v: string) => void;
 }) {
     const meta = useEntityData(row.address, network);
+    const known = getKnownAccountLabel(row.address, network);
+    const displayName = meta?.name ?? known?.name ?? null;
+    const displayIcon = meta?.iconUrl ?? known?.iconUrl ?? null;
     const amount = side === 'in' ? row.received : row.sent;
     const tone = side === 'in' ? 'var(--color-accent)' : 'var(--color-danger)';
     const passesOn = hint?.hub && hint.share >= NOTABLE_SHARE;
+    const hubLabel = hint?.hub ? getKnownAccountLabel(hint.hub, network) : null;
     return (
         <li className="py-2.5 border-b border-[var(--color-card-border)]/50 last:border-b-0">
             <div className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-2 min-w-0">
-                    {meta?.iconUrl && <SafeImage src={meta.iconUrl} alt={meta.name ?? row.address} fallbackName={meta.name ?? row.address} className="size-5 rounded-full shrink-0 object-cover" />}
+                    {displayIcon && (
+                        <SafeImage
+                            src={displayIcon}
+                            alt={displayName ?? row.address}
+                            fallbackName={displayName ?? row.address}
+                            className={`size-5 rounded-full shrink-0 ${known?.iconUrl ? 'object-contain bg-white/90 p-0.5' : 'object-cover'}`}
+                            zoomable={false}
+                        />
+                    )}
                     <span className="flex flex-col min-w-0">
-                        {meta?.name && <span className="text-xs font-semibold text-[var(--color-text-main)] truncate">{meta.name}</span>}
+                        {displayName && <span className="text-xs font-semibold text-[var(--color-text-main)] truncate">{displayName}</span>}
                         <span className="flex items-center gap-0.5 min-w-0">
-                            <AddressChip address={row.address} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={text?.copy ?? 'Copy'} />
+                            <AddressChip address={row.address} name={displayName} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={text?.copy ?? 'Copy'} />
                             <OlympiaCsvButton address={row.address} />
                         </span>
                     </span>
@@ -68,7 +81,7 @@ function Row({ row, side, max, total, hint, network, locale, text, copiedAddress
                 <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[var(--color-text-muted)]">
                     <Info className="size-3 shrink-0 mt-0.5" />
                     <span>
-                        {passesOn && <>{fill(text?.passes_on, { share: formatPercent(hint.share * 100, 0, locale) })}{' '}<span className="inline-flex items-center gap-0.5 align-middle"><span className="font-mono" title={hint.hub ?? undefined}>{hint.hub!.slice(0, 12)}…{hint.hub!.slice(-6)}</span><CopyButton value={hint.hub!} copiedAddress={copiedAddress} onCopy={onCopy} title={text?.copy ?? 'Copy'} /></span>. </>}
+                        {passesOn && <>{fill(text?.passes_on, { share: formatPercent(hint.share * 100, 0, locale) })}{' '}<span className="inline-flex items-center gap-1 align-middle">{hubLabel?.iconUrl && <SafeImage src={hubLabel.iconUrl} alt={hubLabel.name} fallbackName={hubLabel.name} className="size-3.5 rounded-full object-contain bg-white/90 p-0.5 shrink-0" zoomable={false} />}{hubLabel && <span className="font-semibold text-[var(--color-primary)]">{hubLabel.name}</span>}<span className="font-mono" title={hint.hub ?? undefined}>{hint.hub!.slice(0, 12)}…{hint.hub!.slice(-6)}</span><CopyButton value={hint.hub!} copiedAddress={copiedAddress} onCopy={onCopy} title={text?.copy ?? 'Copy'} /></span>. </>}
                         {hint.kind === 'collector' && <span className="font-semibold text-[var(--color-text-main)]">{fill(text?.collector, { n: hint.hubSenders })}</span>}
                     </span>
                 </p>

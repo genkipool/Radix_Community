@@ -81,8 +81,82 @@ const STOKENET_ADDRESSES: Record<string, string> = {
 };
 
 // ─────────────────────────────────────────
+//  Known Account Labels (CEX, etc.)
+// ─────────────────────────────────────────
+
+export interface KnownAccountLabel {
+  name: string;
+  category: 'cex' | 'protocol' | 'foundation' | 'community';
+  iconUrl?: string;
+}
+
+const KUCOIN_LABEL: KnownAccountLabel = {
+  name: 'KuCoin',
+  category: 'cex',
+  iconUrl: '/images/exchanges/kucoin.png',
+};
+
+const GATE_IO_LABEL: KnownAccountLabel = {
+  name: 'Gate.io',
+  category: 'cex',
+  iconUrl: '/images/exchanges/gate-io.png',
+};
+
+const MAINNET_KNOWN_ACCOUNTS: Record<string, KnownAccountLabel> = {
+  // KuCoin — verified via DefiLlama CEX Proof of Reserves (projects/kucoin/index.js)
+  'account_rdx16x4ryh2tnlfxw3ezwuuktczgp7wekhy89szxgkqanqvf4ygpy0rley': KUCOIN_LABEL,
+  'account_rdx168m6px4dqaqtpyqhgr35f2zw54f80mtmxpzggvr2gwpx6l38uxlpge': KUCOIN_LABEL,
+  'account_rdx16xvsegdgs5u7jggrvekcmcle7mrcxntlk879qwntvw525dww0qnpnx': KUCOIN_LABEL,
+  'account_rdx169z44u9avlmqfkshpeav32p8sg955zsa4d8vs2qsy3ruey2p3xer7g': KUCOIN_LABEL,
+  // Gate.io — verified via DefiLlama CEX Proof of Reserves (projects/gate-io/index.js)
+  'account_rdx16y5vw2latcyn7h2leujsc0th2junpgxnafx0aqrher4yw7pmnmfyx8': GATE_IO_LABEL,
+  'account_rdx16xkm9wvwcwq0q8ly6hm6m86s90zcqxeexhnzn8l9jkgtk3t8z7j2yz': GATE_IO_LABEL,
+  'account_rdx169r653rp86kepz28wrzlxzy6ll2use5jmew5rz9h24uyj9cjqtl38n': GATE_IO_LABEL,
+};
+
+// ─────────────────────────────────────────
 //  Public API
 // ─────────────────────────────────────────
+
+/**
+ * Returns the known entity label for a labeled account address (e.g. a CEX
+ * wallet), or `null` if the address is not in the registry.
+ */
+export function getKnownAccountLabel(
+  address: string,
+  network: Network = 'mainnet',
+): KnownAccountLabel | null {
+  if (!address || network !== 'mainnet') return null;
+  return MAINNET_KNOWN_ACCOUNTS[address] ?? null;
+}
+
+export const CEX_RANKING_KEYS = ['exchanges', 'cex_kucoin', 'cex_gate_io'] as const;
+export type CexRankingKey = (typeof CEX_RANKING_KEYS)[number];
+
+const CEX_RANKING_FILTER: Record<CexRankingKey, string | null> = {
+  exchanges: null,
+  cex_kucoin: 'KuCoin',
+  cex_gate_io: 'Gate.io',
+};
+
+export function isCexRankingKey(value: string | null | undefined): value is CexRankingKey {
+  return !!value && (CEX_RANKING_KEYS as readonly string[]).includes(value);
+}
+
+/**
+ * Returns the verified CEX account addresses for a given explorer filter key
+ * (`exchanges` for all verified CEXes, or a single exchange key).
+ */
+export function getKnownCexAddresses(
+  network: Network = 'mainnet',
+  key: CexRankingKey = 'exchanges',
+): string[] {
+  if (network !== 'mainnet') return [];
+  const exchangeName = CEX_RANKING_FILTER[key];
+  return Object.entries(MAINNET_KNOWN_ACCOUNTS)
+    .filter(([, meta]) => meta.category === 'cex' && (!exchangeName || meta.name === exchangeName))
+    .map(([address]) => address);
+}
 
 /**
  * Returns the translation key for a well-known Radix address,

@@ -114,7 +114,7 @@ export const TX_TAGS = ['All', 'Governance Vote', 'Success', 'Failed', 'With Mes
 export type TxTag = (typeof TX_TAGS)[number];
 
 /** Explorer rankings that can be carried in the URL query. */
-export const RANKING_KEYS = ['top_accounts', 'top_lsu', 'access_controllers', 'owner_unlocks', 'fee_changes'] as const;
+export const RANKING_KEYS = ['top_accounts', 'top_lsu', 'access_controllers', 'owner_unlocks', 'fee_changes', 'exchanges', 'cex_kucoin', 'cex_gate_io'] as const;
 export type RankingKey = (typeof RANKING_KEYS)[number];
 
 /** ISO `YYYY-MM-DD`, the only date shape the explorer's range accepts. */

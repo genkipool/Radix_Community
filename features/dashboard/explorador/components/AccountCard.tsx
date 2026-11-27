@@ -11,6 +11,7 @@ import { getCurrencyForLocale, formatCurrency } from '@/utils/currencyUtils';
 
 /* Dashboard & Common Components */
 import { Card } from '@/components/ui/Card';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
@@ -43,6 +44,7 @@ import {
 } from './EntityPanelShared';
 import { AccountSummaryTab } from './AccountSummaryTab';
 import { getMetaValue } from '../utils/metadataUtils';
+import { getKnownAccountLabel } from '../constants/wellKnownAddresses';
 
 /* Types */
 import type { AccountCardProps } from '../types/components.types';
@@ -160,8 +162,9 @@ export function AccountCard({
     // Expandable Tabs Data Processing
     const metadataItems: MetadataItem[] = entityData?.metadata?.items ?? [];
     const getMeta = (key: string) => getMetaValue(metadataItems, key) ?? '';
-    const entityName = getMeta('name');
-    const iconUrl = getMeta('icon_url');
+    const knownAccount = getKnownAccountLabel(address, network);
+    const entityName = getMeta('name') || knownAccount?.name || '';
+    const iconUrl = getMeta('icon_url') || knownAccount?.iconUrl || '';
 
     const o = olympiaDict(tt);
     // Rewards and then Olympia right after Lockers; the account on a past day right
@@ -190,7 +193,17 @@ export function AccountCard({
                             className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
                             <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
                             <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
-                                <Landmark className="size-8" style={{ color: 'var(--color-accent)' }} />
+                                {iconUrl ? (
+                                    <SafeImage
+                                        src={iconUrl}
+                                        alt={entityName || address}
+                                        fallbackName={entityName || address}
+                                        className="size-8 rounded-lg object-contain"
+                                        zoomable={false}
+                                    />
+                                ) : (
+                                    <Landmark className="size-8" style={{ color: 'var(--color-accent)' }} />
+                                )}
                             </div>
                         </div>
 
@@ -213,10 +226,10 @@ export function AccountCard({
                                                 onClick={handleCopy}
                                                 className="shrink-0"
                                             />
-                                            <SaveToAddressBookButton address={address} size="sm" />
+                                            <SaveToAddressBookButton address={address} name={entityName || undefined} size="sm" />
                                         </div>
                                     </div>
-                                    <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
+                                    <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-2">
                                         {network === 'mainnet' && (
                                             <button
                                                 type="button"
@@ -228,6 +241,20 @@ export function AccountCard({
                                                 <Download className="size-3" />
                                                 <span className="mt-[0.5px]">{accT?.csv || 'CSV'}</span>
                                             </button>
+                                        )}
+                                        {knownAccount && (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 h-[22px] rounded-full text-[10px] font-black uppercase tracking-wider leading-none shrink-0 bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30">
+                                                {knownAccount.iconUrl && (
+                                                    <SafeImage
+                                                        src={knownAccount.iconUrl}
+                                                        alt={knownAccount.name}
+                                                        fallbackName={knownAccount.name}
+                                                        className="size-3.5 rounded-full object-contain bg-white/90 p-0.5 shrink-0"
+                                                        zoomable={false}
+                                                    />
+                                                )}
+                                                <span className="leading-none pt-[1px]">{knownAccount.name}</span>
+                                            </span>
                                         )}
 
                                         {isModal && onExpand && (

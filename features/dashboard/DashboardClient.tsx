@@ -70,6 +70,7 @@ import { walletAccountsForNetwork } from './staking/lib/walletAccounts';
 import { useSettledPins } from './staking/hooks/useSettledPins';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetchEntityDetails, apiFetchRanking, type RankingType } from '@/features/dashboard/services/apiClient';
+import { getKnownCexAddresses, isCexRankingKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
 import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 
@@ -624,7 +625,8 @@ export default function DashboardClient({
    * cached holders request plus the (batched) details of the accounts it shows.
    */
   const rankingType: RankingType | null = activeRanking === 'top_accounts' || activeRanking === 'top_lsu' || activeRanking === 'access_controllers' || activeRanking === 'owner_unlocks' || activeRanking === 'fee_changes' ? activeRanking : null;
-  const rankingActive = activeView === 'transactions' && rankingType !== null && !hasActiveSearch;
+  const cexRankingKey = isCexRankingKey(activeRanking) ? activeRanking : null;
+  const rankingActive = activeView === 'transactions' && (rankingType !== null || cexRankingKey !== null) && !hasActiveSearch;
   const {
     data: rankedPages,
     isLoading: isRankingLoading,
@@ -638,18 +640,22 @@ export default function DashboardClient({
     queryFn: ({ pageParam }) => apiFetchRanking(rankingType!, deferredNetwork as 'mainnet' | 'stokenet', pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor,
-    enabled: rankingActive,
+    enabled: rankingActive && rankingType !== null,
     staleTime: 300_000,
     // A ranking still being built is read again until it is complete; a finished one is not.
     refetchInterval: (query) => (query.state.data?.pages.some(page => page.partial) ? 20_000 : false),
   });
-  const rankedAddresses = rankingActive && rankedPages
-    ? [...new Set(rankedPages.pages.flatMap(page => page.accounts.map(a => a.address)))]
-    : EMPTY_ACCOUNTS;
+  const rankedAddresses = !rankingActive
+    ? EMPTY_ACCOUNTS
+    : cexRankingKey !== null
+      ? getKnownCexAddresses(deferredNetwork as 'mainnet' | 'stokenet', cexRankingKey)
+      : rankedPages
+        ? [...new Set(rankedPages.pages.flatMap(page => page.accounts.map(a => a.address)))]
+        : EMPTY_ACCOUNTS;
   const visibleRankCount = useInfiniteScrollTx({
     activeView: rankingActive ? 'transactions' : 'staking',
-    hasNextPage: rankingHasNextPage,
-    isFetchingNextPage: isFetchingMoreRanking,
+    hasNextPage: rankingType !== null && rankingHasNextPage,
+    isFetchingNextPage: rankingType !== null && isFetchingMoreRanking,
     fetchNextPage: fetchMoreRanking,
     loadedCount: rankedAddresses.length,
   });
@@ -661,7 +667,10 @@ export default function DashboardClient({
    * the new ones arrived. This keeps the last complete list on screen meanwhile.
    */
   const [shownRankedAccounts, setShownRankedAccounts] = useState<string[]>(EMPTY_ACCOUNTS);
-  if (readyRanked.length > 0 && readyRanked.length !== shownRankedAccounts.length) {
+  if (
+    readyRanked.length > 0 &&
+    (readyRanked.length !== shownRankedAccounts.length || readyRanked.some((addr, i) => addr !== shownRankedAccounts[i]))
+  ) {
     setShownRankedAccounts(readyRanked);
   } else if (wantedRanked.length === 0 && shownRankedAccounts.length > 0) {
     setShownRankedAccounts(EMPTY_ACCOUNTS);
@@ -949,8 +958,8 @@ export default function DashboardClient({
             network={viewNetwork}
             entitiesToShow={entitiesToShow}
             rankingActive={rankingActive}
-            loadingRanking={isRankingLoading || (wantedRanked.length > 0 && shownRankedAccounts.length === 0)}
-            rankingFailed={isRankingError}
+            loadingRanking={(rankingType !== null && isRankingLoading) || (wantedRanked.length > 0 && shownRankedAccounts.length === 0)}
+            rankingFailed={rankingType !== null && isRankingError}
             onRetryRanking={() => void refetchRanking()}
             t={t}
             dt={dt}
