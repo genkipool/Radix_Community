@@ -20,7 +20,7 @@ import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/typ
 import { NetworkScopePills, type NetworkScope } from '../olympia/OlympiaParts';
 import { OlympiaTxBabylonRows, OlympiaTxTable } from '../olympia/OlympiaTxTable';
 import { olympiaDict } from '../olympia/dict';
-import { useOlympiaLink, useOlympiaTransactions } from '@/features/dashboard/services/olympiaApi';
+import { localDateRangeToMs, useOlympiaLink, useOlympiaTransactions } from '@/features/dashboard/services/olympiaApi';
 import { useAccountMonthTxDays, useOlympiaYearTxDays } from '../hooks/useAccountMonthTxDays';
 import { exportAccountTransactionsCsv } from '../utils/accountTransactionsCsv';
 import { dayLabel } from './DayPicker';
@@ -190,6 +190,15 @@ export function AccountTransactionsTab({
     const dateRangeKey = hasDateFilter ? `${activeStart ?? ''}_${activeEnd ?? ''}` : undefined;
     const todayStr = localTodayStr();
 
+    const [scope, setScope] = useState<NetworkScope>('all');
+    const [olympiaStarted, setOlympiaStarted] = useState(false);
+    const { data: olympiaLink } = useOlympiaLink(accountAddress, network);
+    const o = olympiaDict(tt);
+
+    const rangeOverlapsBabylon = !hasDateFilter || (activeEnd !== undefined && activeEnd >= '2023-09-28');
+    const rangeOverlapsOlympia = !hasDateFilter || (activeStart !== undefined && activeStart <= '2023-09-28');
+    const babylonEnabled = scope !== 'olympia' && rangeOverlapsBabylon;
+
     const {
         data,
         fetchNextPage,
@@ -211,23 +220,21 @@ export function AccountTransactionsTab({
             }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
+        enabled: babylonEnabled,
         staleTime: hasDateFilter ? 0 : CACHE_TIMES.SHORT });
 
     // An account that existed on Olympia (same key) shows its Olympia history
     // here too. In "All" it follows the Babylon one in the same table: once the
-    // Babylon pages run out, "Load more" goes on with the Olympia ones.
-    const [scope, setScope] = useState<NetworkScope>('all');
-    const [olympiaStarted, setOlympiaStarted] = useState(false);
-    const { data: olympiaLink } = useOlympiaLink(accountAddress, network);
-    const o = olympiaDict(tt);
+    // Babylon pages run out, "Load more" goes on with the Olympia ones. When a
+    // date filter only covers Olympia (or Babylon has no hits in the range),
+    // Olympia loads directly with the selected time window.
     const olympiaInline = !!olympiaLink && scope === 'all';
-    // An account with no Babylon history at all goes straight to its Olympia
-    // one: there is nothing to scroll past, and an empty table with only
-    // "Load more" reads as broken.
-    const noBabylonHistory = !isPending && !hasNextPage && !(data?.pages.some((p) => (p.transactions?.length ?? 0) > 0));
-    const olympiaOn = olympiaStarted || (olympiaInline && noBabylonHistory);
-    const olympiaPages = useOlympiaTransactions(olympiaLink?.olympiaAddress, olympiaInline && olympiaOn && !hasDateFilter);
-    const olympiaTxs = olympiaInline && olympiaOn && !hasDateFilter ? olympiaPages.data?.pages.flatMap((p) => p?.items ?? []) ?? [] : [];
+    const olympiaAllowed = olympiaInline && rangeOverlapsOlympia;
+    const olympiaRangeMs = hasDateFilter && rangeOverlapsOlympia ? localDateRangeToMs(activeStart, activeEnd) : null;
+    const babylonDoneEmpty = !babylonEnabled || (!isPending && !hasNextPage && !(data?.pages.some((p) => (p.transactions?.length ?? 0) > 0)));
+    const olympiaOn = olympiaAllowed && (babylonDoneEmpty || (olympiaStarted && !isPending && !hasNextPage));
+    const olympiaPages = useOlympiaTransactions(olympiaLink?.olympiaAddress, olympiaOn, olympiaRangeMs);
+    const olympiaTxs = olympiaOn ? olympiaPages.data?.pages.flatMap((p) => p?.items ?? []) ?? [] : [];
 
     const { data: entityDetails } = useQuery({
         queryKey: dashboardKeys.entities.detail(accountAddress, network),
@@ -442,7 +449,7 @@ export function AccountTransactionsTab({
                 : accT?.tx_export_csv_range_tooltip_babylon ?? accT?.tx_export_csv_range_tooltip;
     const exportRangeTooltip = exportRangeTemplate?.replace('{range}', rangeLabel);
 
-    const calendarMinDate = scope === 'babylon' ? '2023-09-28' : olympiaLink ? '2021-07-28' : '2023-09-28';
+    const calendarMinDate = scope === 'babylon' ? '2023-09-28' : olympiaLink ? '2021-07-26' : '2023-09-28';
     const calendarMaxDate = scope === 'olympia' ? '2023-09-28' : todayStr;
 
     const toolbar = (
@@ -578,8 +585,14 @@ export function AccountTransactionsTab({
         );
     }
 
-    if (isError) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
+    const babylonPending = babylonEnabled && isPending;
+    const babylonError = babylonEnabled && isError;
+    const olympiaPending = olympiaOn && olympiaPages.isPending;
+    const olympiaError = olympiaOn && olympiaPages.isError && transactions.length === 0;
+
+    if (babylonError || olympiaError) {
+        const rawErr = babylonError ? error : olympiaPages.error;
+        const errorMsg = rawErr instanceof Error ? rawErr.message : String(rawErr);
         return (
             <div className={containerClass}>
                 {toolbar}
@@ -592,16 +605,17 @@ export function AccountTransactionsTab({
     }
 
     // Babylon pages first; after the last one, the Olympia pages, newest first.
-    const olympiaMore = olympiaInline && !hasDateFilter && (!olympiaOn || olympiaPages.hasNextPage);
-    const showLoadMore = hasNextPage || olympiaMore;
+    const babylonHasNext = babylonEnabled && hasNextPage;
+    const olympiaMore = olympiaAllowed && (!olympiaOn || olympiaPages.hasNextPage);
+    const showLoadMore = babylonHasNext || olympiaMore;
     const loadingMore = isFetchingNextPage || olympiaPages.isFetching;
     const loadMore = () => {
-        if (hasNextPage) void fetchNextPage();
+        if (babylonHasNext) void fetchNextPage();
         else if (!olympiaOn) setOlympiaStarted(true);
         else void olympiaPages.fetchNextPage();
     };
 
-    if (isPending) {
+    if (babylonPending || (transactions.length === 0 && olympiaPending)) {
         return (
             <div className={containerClass}>
                 {toolbar}
@@ -613,7 +627,7 @@ export function AccountTransactionsTab({
         );
     }
 
-    if (transactions.length === 0 && (!olympiaInline || hasDateFilter)) {
+    if (transactions.length === 0 && olympiaTxs.length === 0) {
         return (
             <div className={containerClass}>
                 {toolbar}

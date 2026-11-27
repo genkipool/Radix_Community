@@ -12,6 +12,7 @@ import { ResultsBallot } from './ResultsBallot';
 import { stanceResolver, type G } from './GovernanceBadges';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import { ElectionCandidatesBallot, ElectionCandidatesKpiGrid, ElectionResultsSummaryCard } from './ElectionSection';
+import { ElectionGradesMatrix } from './ElectionGradesMatrix';
 import { VotersTable } from './VotersTable';
 
 function Kpi({ icon: Icon, label, value, hint, accent, meter, title }: {
@@ -227,6 +228,16 @@ export function ResultsDashboard({ entry, system, g, language, now, onRegisterEx
 
             {tallyQuery.data?.voters && (
                 <VotersTable tally={tally} voters={tallyQuery.data.voters} choices={choices} g={g} language={language} />
+            )}
+
+            {kind === 'election' && item.election && tallyQuery.data?.voters && (
+                <ElectionGradesMatrix
+                    election={item.election}
+                    electionData={tallyQuery.data.electionData}
+                    voters={tallyQuery.data.voters}
+                    g={g}
+                    language={language}
+                />
             )}
 
             <div className="space-y-1.5">

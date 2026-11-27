@@ -270,7 +270,11 @@
       "already_voted": "Esta cuenta ya ha votado en esta elección. Si envías otra papeleta, sustituirá tu voto anterior.",
       "voted_badge": "Ya votó",
       "ranked_results_title": "Clasificación en vivo por Juicio Mayoritario",
-      "ranked_results_hint": "Ordenada por posición publicada (provisional mientras la votación está abierta)."
+      "ranked_results_hint": "Ordenada por posición publicada (provisional mientras la votación está abierta).",
+      "col_candidate": "Candidato",
+      "grade_votes_table_title": "Votos por nota",
+      "grade_power_table_title": "Poder de voto por nota",
+      "grade_table_sort_hint": "Pulsa una nota para ordenar"
     },
     "tab_results": "Resultado",
     "tab_compare": "Comparativa",

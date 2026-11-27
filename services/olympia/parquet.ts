@@ -231,6 +231,16 @@ export async function readEqCovering(path: string, keyColumn: string, key: Key, 
     });
 }
 
+export interface PageDescFilter {
+    /** Optional inclusive [minOrder, maxOrder] bounds on `orderColumn`. */
+    minOrder?: bigint;
+    maxOrder?: bigint;
+    /** Optional inclusive [filterLo, filterHi] bounds on another column (e.g. `round_timestamp`). */
+    filterColumn?: string;
+    filterLo?: Key;
+    filterHi?: Key;
+}
+
 /**
  * The newest `limit` rows whose `keyColumn` equals `key`, ordered by
  * `orderColumn` descending and strictly below `before` when given. The file must
@@ -244,14 +254,23 @@ export async function readPageDesc(
     orderColumn: string,
     before: bigint | null,
     limit: number,
+    filter?: PageDescFilter,
 ): Promise<{ rows: Row[]; more: boolean }> {
     const of = await openCached(path);
     const oi = columnIndex(of.metadata, orderColumn);
+    const minOrder = filter?.minOrder;
+    const maxOrder = filter?.maxOrder;
+    const filterCol = filter?.filterColumn;
+    const filterLo = filter?.filterLo;
+    const filterHi = filter?.filterHi;
     const groups = groupsInRange(of, keyColumn, key, key).filter((g) => {
-        if (before === null) return true;
         const st = of.metadata.row_groups[g].columns[oi]?.meta_data?.statistics;
         const min = asKey(st?.min_value ?? st?.min);
-        return min === undefined || cmp(min, before) < 0;
+        const max = asKey(st?.max_value ?? st?.max);
+        if (before !== null && min !== undefined && cmp(min, before) >= 0) return false;
+        if (minOrder !== undefined && max !== undefined && cmp(max, minOrder) < 0) return false;
+        if (maxOrder !== undefined && min !== undefined && cmp(min, maxOrder) > 0) return false;
+        return true;
     });
     const out: Row[] = [];
     let i = groups.length - 1;
@@ -263,7 +282,14 @@ export async function readPageDesc(
         for (const r of rows) {
             if (cmp(keyOf(r, keyColumn) ?? '', key) !== 0) continue;
             const o = keyOf(r, orderColumn);
-            if (o === undefined || (before !== null && cmp(o, before) >= 0)) continue;
+            if (o === undefined) continue;
+            if (before !== null && cmp(o, before) >= 0) continue;
+            if (minOrder !== undefined && cmp(o, minOrder) < 0) continue;
+            if (maxOrder !== undefined && cmp(o, maxOrder) > 0) continue;
+            if (filterCol !== undefined && filterLo !== undefined && filterHi !== undefined) {
+                const f = keyOf(r, filterCol);
+                if (f === undefined || cmp(f, filterLo) < 0 || cmp(f, filterHi) > 0) continue;
+            }
             out.push(r);
         }
     }
