@@ -20,6 +20,8 @@ export interface HistoricalVoteInput {
     voters: MethodVoter[];
     /** Optional stance label resolver for ballot choices. */
     stanceLabel?: (stance: string) => string;
+    /** Applied Majority Judgment grade quantile for elections (e.g. "3/5"). */
+    gradeQuantile?: string | null;
 }
 
 export interface ChangedVoteRef {
@@ -77,6 +79,8 @@ export interface HistoricalMethodRow {
     decisiveVotesCount: number;
     /** Number of analysed votes where this method had qualifying voters and met quorum (when required). */
     validVotesCount: number;
+    /** Average capped quorum progress (0..1) across evaluated votes, matching single-vote tie-breaking. */
+    avgQuorumProgress: number;
     /** Historical balance score: geometric mean of resistance and average decentralisation. */
     balanceScore: number;
     /** Historical effectiveness score: 3-factor geometric mean of resistance, decentralisation, and quorum rate. */
@@ -133,6 +137,7 @@ export function aggregateHistoricalMethods(
         decisiveXrdSum: number;
         decisiveVotes: number;
         validVotes: number;
+        quorumProgressSum: number;
     };
 
     const byKey = new Map<MethodKey, Acc>();
@@ -157,10 +162,11 @@ export function aggregateHistoricalMethods(
             decisiveXrdSum: 0,
             decisiveVotes: 0,
             validVotes: 0,
+            quorumProgressSum: 0,
         });
     }
 
-    for (const { entry, voters, stanceLabel } of validInputs) {
+    for (const { entry, voters, stanceLabel, gradeQuantile } of validInputs) {
         const countedVoters = voters.filter(v => v.power > 0);
         totalBallots += countedVoters.length;
         for (const v of countedVoters) {
@@ -168,7 +174,7 @@ export function aggregateHistoricalMethods(
             totalXrd += v.power;
         }
         const choices = itemChoices(entry.kind, entry.item, stanceLabel);
-        const results: MethodResult[] = compareMethods(countedVoters, choices, entry.item);
+        const results: MethodResult[] = compareMethods(countedVoters, choices, entry.item, { gradeQuantile });
         const currentRes = results.find(r => r.current);
 
         for (const r of results) {
@@ -215,6 +221,7 @@ export function aggregateHistoricalMethods(
                 if (r.quorumMet !== false) {
                     acc.validVotes += 1;
                 }
+                acc.quorumProgressSum += r.quorumRatio === null ? 1 : Math.min(1, r.quorumRatio);
                 if (r.decisive) {
                     acc.decisiveCountSum += r.decisive.count;
                     acc.decisiveOfSum += r.counted;
@@ -249,6 +256,7 @@ export function aggregateHistoricalMethods(
         const avgDecisiveXrd = acc.decisiveVotes > 0 ? acc.decisiveXrdSum / acc.decisiveVotes : null;
         const score = balanceScoreOf(spec.resistance, avgSpread);
         const validRate = validInputs.length > 0 ? acc.validVotes / validInputs.length : 0;
+        const avgQuorumProgress = validInputs.length > 0 ? acc.quorumProgressSum / validInputs.length : 0;
         const effectiveScore = effectiveScoreOf(spec.resistance, avgSpread, validRate);
         return {
             key: spec.key,
@@ -274,6 +282,7 @@ export function aggregateHistoricalMethods(
             totalDecisiveXrd: acc.decisiveXrdSum,
             decisiveVotesCount: acc.decisiveVotes,
             validVotesCount: acc.validVotes,
+            avgQuorumProgress,
             balanceScore: score,
             effectiveScore,
         };
@@ -286,6 +295,7 @@ export function aggregateHistoricalMethods(
         ready,
         m => m.avgSpread,
         m => (validInputs.length > 0 ? m.validVotesCount / validInputs.length : 0),
+        m => m.avgQuorumProgress,
     );
     const mostChanges = ready
         .filter(m => !m.current)

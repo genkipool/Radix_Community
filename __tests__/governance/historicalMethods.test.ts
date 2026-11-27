@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { aggregateHistoricalMethods, type HistoricalVoteInput } from '@/features/governance/lib/historicalMethods';
-import type { GovernanceItem } from '@/features/governance/lib/governanceVotes';
+import { itemChoices, type GovernanceItem } from '@/features/governance/lib/governanceVotes';
+import { balanceExtremes, compareMethods, effectiveExtremes, spreadExtremes, type MethodVoter } from '@/features/governance/lib/votingMethods';
 import type { GovernanceEntry } from '@/features/governance/types';
 
 const makeItem = (title: string): GovernanceItem => ({
@@ -84,5 +85,64 @@ describe('aggregateHistoricalMethods', () => {
 
         expect(summary.mostBalanced).toBeDefined();
         expect(summary.mostDecentralised).toBeDefined();
+    });
+
+    it('matches single-vote MethodsComparison KPIs 1:1 on a single unmet-quorum Majority Judgment election', () => {
+        const electionItem: GovernanceItem = {
+            ...makeItem('Council Election #1'),
+            quorum: 500_000_000, // unmet quorum -> forces effectiveExtremes tie-break by quorumProgress
+            approvalThreshold: null,
+            options: [
+                { id: 0, label: 'Alice' },
+                { id: 1, label: 'Bob' },
+                { id: 2, label: 'Carol' },
+            ],
+            election: {
+                roleId: 'council',
+                seatCount: 2,
+                minimumMedianGrade: 2,
+                candidates: [
+                    { id: 0, displayName: 'Alice', reference: 'alice', description: null, links: [], displayOrder: 0 },
+                    { id: 1, displayName: 'Bob', reference: 'bob', description: null, links: [], displayOrder: 1 },
+                    { id: 2, displayName: 'Carol', reference: 'carol', description: null, links: [], displayOrder: 2 },
+                ],
+            },
+        };
+        const entry: GovernanceEntry = {
+            systemKey: 'radix-dao',
+            systemName: 'Radix DAO',
+            kind: 'election',
+            id: '1',
+            item: electionItem,
+        };
+        const voters: MethodVoter[] = [
+            { account: 'w1', choices: ['0', '1', '2'], grades: { '0': 4, '1': 4, '2': 0 }, power: 100_000_000, ageDays: 900, stakedXrd: 100_000_000, twab90Xrd: 100_000_000, min90Xrd: 100_000_000 },
+            { account: 'w2', choices: ['0', '1', '2'], grades: { '0': 4, '1': 4, '2': 0 }, power: 50_000_000, ageDays: 900, stakedXrd: 50_000_000, twab90Xrd: 50_000_000, min90Xrd: 50_000_000 },
+            ...Array.from({ length: 12 }, (_, i) => ({
+                account: `s${i}`,
+                choices: ['0', '1', '2'],
+                grades: { '0': 4, '1': 0, '2': 4 },
+                power: 50_000,
+                ageDays: 900,
+                stakedXrd: 50_000,
+                twab90Xrd: 50_000,
+                min90Xrd: 50_000,
+            })),
+        ];
+
+        const singleResults = compareMethods(voters, itemChoices('election', electionItem), electionItem, { gradeQuantile: '3/5' })
+            .filter(r => r.counted > 0);
+        const singleSpread = spreadExtremes(singleResults, r => r.concentration.spread);
+        const singleBalance = balanceExtremes(singleResults);
+        const singleEffective = effectiveExtremes(singleResults);
+
+        const hist = aggregateHistoricalMethods([{ entry, voters, gradeQuantile: '3/5' }], true);
+
+        expect(hist.mostDecentralised?.key).toBe(singleSpread.most?.key);
+        expect(hist.mostCentralised?.key).toBe(singleSpread.least?.key);
+        expect(hist.mostBalanced?.key).toBe(singleBalance.most?.key);
+        expect(hist.leastBalanced?.key).toBe(singleBalance.least?.key);
+        expect(hist.mostEffective?.key).toBe(singleEffective.most?.key);
+        expect(hist.leastEffective?.key).toBe(singleEffective.least?.key);
     });
 });

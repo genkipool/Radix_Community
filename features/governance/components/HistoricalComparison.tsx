@@ -118,7 +118,12 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
         const rows = tallyQueries[i]?.data?.voters ?? [];
         const counted = rows.filter(isCountedVoter);
         if (counted.length === 0) return [];
-        return [{ entry, voters: toMethodVoters(counted, ages), stanceLabel }];
+        return [{
+            entry,
+            voters: toMethodVoters(counted, ages),
+            stanceLabel,
+            gradeQuantile: tallyQueries[i]?.data?.electionData?.gradeQuantileApplied ?? null,
+        }];
     });
 
     const summary = aggregateHistoricalMethods(voteInputs, ages.done);
