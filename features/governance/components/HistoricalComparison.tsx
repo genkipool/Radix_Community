@@ -12,7 +12,8 @@ import type { GovernanceItemKind } from '../lib/governanceVotes';
 import { apiFetchGovernanceTally } from '../services/governanceApi';
 import { tallyKey } from '../hooks/useGovernanceTally';
 import { slidingWindowEnabled, toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
-import { METHODS, type MethodFamily } from '../lib/votingMethods';
+import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
+import { METHODS } from '../lib/votingMethods';
 import { aggregateHistoricalMethods, type HistoricalMethodRow } from '../lib/historicalMethods';
 import { fill, formatPct, formatXrd } from '../lib/format';
 import { MethodGuideModal } from './MethodGuideModal';
@@ -24,7 +25,7 @@ import {
     ruleParams, tip, methodText, matchesMethodQuery, formatBalanceHint, nextSort, sortComparisonRows,
     ComparisonTile, FamilyFilterBar, MethodSearchInput, SortableHeaderButton, ComparisonGlossary,
     ProgressBar, FactTile, GroupedMethodList,
-    type CompareDict, type HistoricalDict, type SortState,
+    type CompareDict, type HistoricalDict,
 } from './ComparisonParts';
 
 type ScopeKind = 'all' | GovernanceItemKind;
@@ -47,23 +48,10 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
     const stanceLabel = stanceResolver(g);
     const [kind, setKind] = useState<ScopeKind>('all');
     const [systemFilter, setSystemFilter] = useState<string>('all');
-    const [family, setFamily] = useState<MethodFamily | 'all'>('all');
-    const [query, setQuery] = useState('');
-    const [sort, setSort] = useState<SortState>(null);
+    const {
+        family, setFamily, query, setQuery, sort, setSort, focusedMethod, jumpToMethod,
+    } = useMethodComparisonControls('historical-method-row-');
     const [guideRow, setGuideRow] = useState<HistoricalMethodRow | null>(null);
-    const [focusedMethod, setFocusedMethod] = useState<{ key: string; nonce: number } | null>(null);
-
-    const jumpToMethod = (methodKey: string | undefined) => {
-        if (!methodKey) return;
-        setFamily('all');
-        setQuery('');
-        setFocusedMethod(prev => ({ key: methodKey, nonce: (prev?.nonce ?? 0) + 1 }));
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                document.getElementById(`historical-method-row-${methodKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-        });
-    };
 
     const scopedEntries = entries.filter(e => {
         const sys = systemByKey(e.systemKey);

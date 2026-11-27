@@ -33,13 +33,32 @@ async function getOrNull<T>(path: string, params: Record<string, string | number
   return res.json() as Promise<T>;
 }
 
+export type OlympiaTimeRange = { from: number; to: number };
+
+/** Converts local `YYYY-MM-DD` bounds (inclusive) to epoch-ms `[from, to]`. */
+export function localDateRangeToMs(start?: string | null, end?: string | null): OlympiaTimeRange | null {
+  if (!start) return null;
+  const [sy, sm, sd] = start.split('-').map(Number);
+  const [ey, em, ed] = (end || start).split('-').map(Number);
+  if (!sy || !sm || !sd || !ey || !em || !ed) return null;
+  const from = new Date(sy, sm - 1, sd, 0, 0, 0, 0).getTime();
+  const to = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+  return Number.isFinite(from) && Number.isFinite(to) && from <= to ? { from, to } : null;
+}
+
 export const olympiaApi = {
   link: (babylonAddress: string) => getOrNull<OlympiaLink>('account/link', { address: babylonAddress }),
   account: (address: string) => getOrNull<OlympiaAccountSummary>('account', { address }),
   /** `at`: a UTC day YYYY-MM-DD of Olympia (its last state version) or a state version. */
   accountAt: (address: string, at: string) => getOrNull<OlympiaAccountStateAt>('account/at', { address, at }),
-  transactions: (address: string, before?: string, limit = 15) =>
-    getOrNull<OlympiaTxPage>('account/transactions', { address, before, limit }),
+  transactions: (address: string, before?: string, limit = 15, range?: OlympiaTimeRange | null) =>
+    getOrNull<OlympiaTxPage>('account/transactions', {
+      address,
+      before,
+      limit,
+      from: range?.from,
+      to: range?.to,
+    }),
   funds: (address: string) => getOrNull<OlympiaFundsResponse>('account/funds', { address }),
   /** Every change of the account's liquid balance in a year, for the "All" rewards CSV. */
   accountMoves: (address: string, year: number) =>
@@ -63,7 +82,8 @@ export const olympiaKeys = {
   link: (a: string) => ['olympia', 'link', a] as const,
   account: (a: string) => ['olympia', 'account', a] as const,
   accountAt: (a: string, at: string) => ['olympia', 'account-at', a, at] as const,
-  transactions: (a: string) => ['olympia', 'transactions', a] as const,
+  transactions: (a: string, range?: OlympiaTimeRange | null) =>
+    range ? (['olympia', 'transactions', a, range.from, range.to] as const) : (['olympia', 'transactions', a] as const),
   funds: (a: string) => ['olympia', 'funds', a] as const,
   tx: (id: string) => ['olympia', 'tx', id.toLowerCase()] as const,
   byDate: (from: number, to: number) => ['olympia', 'by-date', from, to] as const,
@@ -102,10 +122,14 @@ export function useOlympiaAccountAt(address: string | null | undefined, at: stri
   });
 }
 
-export function useOlympiaTransactions(address: string | null | undefined, enabled = true) {
+export function useOlympiaTransactions(
+  address: string | null | undefined,
+  enabled = true,
+  range?: OlympiaTimeRange | null,
+) {
   return useInfiniteQuery({
-    queryKey: olympiaKeys.transactions(address ?? ''),
-    queryFn: ({ pageParam }) => olympiaApi.transactions(address!, pageParam),
+    queryKey: olympiaKeys.transactions(address ?? '', range),
+    queryFn: ({ pageParam }) => olympiaApi.transactions(address!, pageParam, 15, range),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last?.nextCursor,
     enabled: !!address && enabled,

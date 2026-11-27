@@ -30,8 +30,33 @@ function groupBy(rows: Row[], key: string): Map<number, Row[]> {
 }
 
 /** A page of an account's transactions, newest first, each with that account's actions and balance changes. */
-export async function getAccountTxPage(account: AccountRef, before: bigint | null, limit = 15): Promise<OlympiaTxPage> {
-  const { rows, more } = await readPageDesc(F.accountTxs.path, F.accountTxs.key, account.id, F.accountTxs.order, before, limit);
+export async function getAccountTxPage(
+  account: AccountRef,
+  before: bigint | null,
+  limit = 15,
+  timeRange?: { fromMs: number; toMs: number },
+): Promise<OlympiaTxPage> {
+  let pageFilter: Parameters<typeof readPageDesc>[6];
+  if (timeRange) {
+    const bounds = timeRangeVersions(timeRange.fromMs, timeRange.toMs);
+    if (!bounds) return { items: [] };
+    pageFilter = {
+      minOrder: bounds.minSv,
+      maxOrder: bounds.maxSv,
+      filterColumn: 'round_timestamp',
+      filterLo: BigInt(timeRange.fromMs),
+      filterHi: BigInt(timeRange.toMs),
+    };
+  }
+  const { rows, more } = await readPageDesc(
+    F.accountTxs.path,
+    F.accountTxs.key,
+    account.id,
+    F.accountTxs.order,
+    before,
+    limit,
+    pageFilter,
+  );
   if (rows.length === 0) return { items: [] };
 
   const lo = BigInt(toNum(rows[rows.length - 1].state_version));
@@ -67,6 +92,25 @@ const GENESIS_LAST_VERSION = 647;
 export const MAX_ACCOUNT_MOVES = 10_000;
 
 const DAY_ENDS = Object.entries(dayEnds as Record<string, number>).sort((a, b) => a[1] - b[1]);
+const OLYMPIA_FIRST_DAY = DAY_ENDS[0][0];
+const OLYMPIA_LAST_DAY = DAY_ENDS[DAY_ENDS.length - 1][0];
+
+function prevUtcDay(day: string): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Inclusive state-version bounds covering [fromMs, toMs], or null if outside Olympia's lifespan. */
+function timeRangeVersions(fromMs: number, toMs: number): { minSv: bigint; maxSv: bigint } | null {
+  const fromDay = new Date(fromMs).toISOString().slice(0, 10);
+  const toDay = new Date(toMs).toISOString().slice(0, 10);
+  if (toDay < OLYMPIA_FIRST_DAY || fromDay > OLYMPIA_LAST_DAY) return null;
+  const ends = dayEnds as Record<string, number>;
+  const minSv = fromDay <= OLYMPIA_FIRST_DAY ? 1n : BigInt((ends[prevUtcDay(fromDay)] ?? 0) + 1);
+  const maxSv = toDay >= OLYMPIA_LAST_DAY ? BigInt(OLYMPIA_FINAL_STATE_VERSION) : BigInt(ends[toDay] ?? OLYMPIA_FINAL_STATE_VERSION);
+  return { minSv, maxSv };
+}
 
 /** The UTC day a state version belongs to. */
 function dayOfVersion(v: number): string {

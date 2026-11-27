@@ -59,6 +59,15 @@ export function bandHint(mj: MjTextSlice | undefined, band: string): string | un
     return undefined;
 }
 
+/** True when a candidate holds a council seat (either finalized ELECTED or provisionally in top `seats` and electable). */
+export function isCandidateElected(
+    res: { outcome: string; electable: boolean },
+    indexInRanking: number,
+    seatCount: number,
+): boolean {
+    return res.outcome === 'ELECTED' || (seatCount > 0 && indexInRanking < seatCount && res.electable);
+}
+
 const MJ_BAND_ORDER: Record<'A' | 'B' | 'C', number> = { A: 2, B: 1, C: 0 };
 const MJ_DEFAULT_QUANTILE = 0.6;
 const MJ_EPS = 1e-12;

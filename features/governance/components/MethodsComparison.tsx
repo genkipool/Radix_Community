@@ -10,10 +10,11 @@ import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
+import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
 import { itemChoices } from '../lib/governanceVotes';
 import {
     METHODS, balanceExtremes, compareMethods, computeElectionConclusions, computeElectionConsensus, effectiveExtremes, spreadExtremes,
-    type MethodFamily, type MethodResult,
+    type MethodResult,
 } from '../lib/votingMethods';
 import { isCountedVoter } from '../lib/comparisonUtils';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
@@ -27,7 +28,7 @@ import {
     ruleParams, tip, methodText, matchesMethodQuery, formatBalanceHint, nextSort, sortComparisonRows,
     ComparisonTile, FamilyFilterBar, MethodSearchInput, SortableHeaderButton, ComparisonGlossary,
     ProgressBar, FactTile, GroupedMethodList,
-    type CompareDict, type SortState,
+    type CompareDict,
 } from './ComparisonParts';
 
 type C = CompareDict;
@@ -47,24 +48,11 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const { item, kind, id } = entry;
     const c: C = g.compare ?? {};
     const choices = itemChoices(kind, item, stanceResolver(g));
-    const [family, setFamily] = useState<MethodFamily | 'all'>('all');
-    const [query, setQuery] = useState('');
-    const [sort, setSort] = useState<SortState>(null);
+    const {
+        family, setFamily, query, setQuery, sort, setSort, focusedMethod, jumpToMethod,
+    } = useMethodComparisonControls('method-row-');
     const [guideMethod, setGuideMethod] = useState<MethodResult | null>(null);
     const [consensusGuideOpen, setConsensusGuideOpen] = useState(false);
-    const [focusedMethod, setFocusedMethod] = useState<{ key: string; nonce: number } | null>(null);
-
-    const jumpToMethod = (methodKey: string | undefined) => {
-        if (!methodKey) return;
-        setFamily('all');
-        setQuery('');
-        setFocusedMethod(prev => ({ key: methodKey, nonce: (prev?.nonce ?? 0) + 1 }));
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                document.getElementById(`method-row-${methodKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-        });
-    };
 
     // Same query as the result tab: switching tabs does not ask again.
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);

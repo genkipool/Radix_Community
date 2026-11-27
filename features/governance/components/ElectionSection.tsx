@@ -10,6 +10,7 @@ import {
     MJ_GRADE_ORDER,
     bandHint,
     gradeLabel,
+    isCandidateElected,
     parseQuantile,
 } from '../lib/majorityJudgment';
 import { fill, formatDate, formatPct, formatXrd } from '../lib/format';
@@ -276,7 +277,7 @@ export function ElectionCandidatesKpiGrid({
                                 <span className={`block truncate text-sm font-black leading-none ${res.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-main)]'}`}>
                                     {gradeLabel(mj, res.qualifyingGrade)}
                                 </span>
-                                {(res.outcome === 'ELECTED' || (inSeats && res.electable)) && (
+                                {isCandidateElected(res, idx, seats) && (
                                     <span
                                         className="inline-flex shrink-0 cursor-help"
                                         title={fill(mj?.elected_crown_tip ?? mj?.outcome_elected ?? '', { seats: String(seats) })}

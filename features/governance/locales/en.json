@@ -270,7 +270,11 @@
       "already_voted": "This account has already voted in this election. Submitting again will replace your previous ballot.",
       "voted_badge": "Voted",
       "ranked_results_title": "Live Majority Judgment standings",
-      "ranked_results_hint": "Ordered by published rank (provisional while voting is open)."
+      "ranked_results_hint": "Ordered by published rank (provisional while voting is open).",
+      "col_candidate": "Candidate",
+      "grade_votes_table_title": "Votes by grade",
+      "grade_power_table_title": "Voting power by grade",
+      "grade_table_sort_hint": "Click a grade to sort"
     },
     "tab_results": "Result",
     "tab_compare": "Comparison",

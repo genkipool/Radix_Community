@@ -8,7 +8,7 @@ import React from 'react';
 import { m } from 'motion/react';
 import { Lock, MessageSquare } from 'lucide-react';
 import type { OlympiaBalanceChange, OlympiaTxItem } from '@/types/olympia';
-import { useOlympiaTransactions } from '@/features/dashboard/services/olympiaApi';
+import { localDateRangeToMs, useOlympiaTransactions } from '@/features/dashboard/services/olympiaApi';
 import { actionLabel, type OlympiaDict } from './dict';
 import { formatDateTime, formatDecimal } from './format';
 import { Empty, ErrorText, Loading, OlympiaRef } from './OlympiaParts';
@@ -132,13 +132,6 @@ export function OlympiaTxBabylonRows({ tx, o, locale, successLabel }: { tx: Olym
   );
 }
 
-function toLocalDay(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 export function OlympiaTxTable({
   address,
   o,
@@ -152,39 +145,16 @@ export function OlympiaTxTable({
   enabled?: boolean;
   dateRange?: { start?: string; end?: string };
 }) {
-  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useOlympiaTransactions(address, enabled);
+  const timeRange = localDateRangeToMs(dateRange?.start, dateRange?.end);
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useOlympiaTransactions(address, enabled, timeRange);
   if (isLoading) return <Loading text={o.loading} />;
   if (isError) return <ErrorText text={o.error} />;
-  const allTxs = data?.pages.flatMap((p) => p?.items ?? []) ?? [];
-  const start = dateRange?.start;
-  const end = dateRange?.end ?? start;
-  const txs = start
-    ? allTxs.filter((tx) => {
-        const day = toLocalDay(tx.timestamp);
-        if (!day) return false;
-        if (day < start) return false;
-        if (end && day > end) return false;
-        return true;
-      })
-    : allTxs;
-
-  const oldestLoadedDay = allTxs.length > 0 ? toLocalDay(allTxs[allTxs.length - 1].timestamp) : null;
-  const canLoadOlderInRange = hasNextPage && (!start || !oldestLoadedDay || oldestLoadedDay >= start);
+  const txs = data?.pages.flatMap((p) => p?.items ?? []) ?? [];
 
   if (txs.length === 0) {
     return (
       <div className="w-full flex flex-col items-center">
         <Empty text={o.tx_empty} />
-        {canLoadOlderInRange && (
-          <m.button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); void fetchNextPage(); }}
-            disabled={isFetchingNextPage}
-            className="mb-6 px-8 py-2.5 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isFetchingNextPage ? o.loading : o.load_more}
-          </m.button>
-        )}
       </div>
     );
   }
@@ -208,7 +178,7 @@ export function OlympiaTxTable({
           {txs.map((tx) => <TxRows key={tx.transactionId} tx={tx} o={o} locale={locale} />)}
         </table>
       </div>
-      {canLoadOlderInRange && (
+      {hasNextPage && (
         <div className="flex justify-center mt-8 mb-4">
           <m.button
             type="button"

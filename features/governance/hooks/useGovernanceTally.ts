@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Network } from '@/features/dashboard/types';
 import { apiFetchGovernanceTally } from '../services/governanceApi';
-import type { GovernanceItemKind } from '../lib/governanceVotes';
+import { FRESH_VOTE_WINDOW_MS, type GovernanceItemKind } from '../lib/governanceVotes';
 
 export interface TallyTarget {
     component: string;
@@ -32,9 +32,12 @@ export function useGovernanceTally(target: TallyTarget, network: Network, enable
         enabled: enabled && network === 'mainnet',
         staleTime: 60_000,
         // A fresh vote has no voting power until the collector counts it
-        // (about a minute): ask again until every requested voter has one.
+        // (about a minute): ask again while any recent (<10 min) vote is pending.
         refetchInterval: q => {
-            const missingVoterPower = q.state.data?.voters?.some(v => v.votePower === null);
+            const now = Date.now();
+            const missingVoterPower = q.state.data?.voters?.some(
+                v => v.votePower === null && (now - Date.parse(v.time)) < FRESH_VOTE_WINDOW_MS,
+            );
             const missingAccountPower = Boolean(target.account) && q.state.data != null && q.state.data.accountPower === null;
             return missingVoterPower || missingAccountPower ? 15_000 : false;
         },

@@ -1,5 +1,4 @@
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
-import { DictionaryEnricher } from '@/context/LanguageContext';
 import { GovernanceShell } from '@/features/governance/components/GovernanceShell';
 import { loadGovernanceList } from '@/features/governance/services/governanceRoute.server';
 import '@/features/governance/styles/prose.css';
@@ -22,11 +21,8 @@ export default async function GovernanceLayout({
     ]);
 
     return (
-        <>
-            <DictionaryEnricher partial={t} />
-            <GovernanceShell entries={entries} g={t.governance} language={locale} serverNow={serverNow}>
-                {children}
-            </GovernanceShell>
-        </>
+        <GovernanceShell entries={entries} g={t.governance} language={locale} serverNow={serverNow}>
+            {children}
+        </GovernanceShell>
     );
 }

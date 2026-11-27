@@ -31,16 +31,25 @@ export interface VoteTally {
 
 const TIMEOUT_MS = 25_000;
 const CACHE_TTL_MS = 30_000;
+const POWER_CACHE_TTL_MS = 300_000;
+const POWER_ERROR_TTL_MS = 60_000;
 
 const inFlight = new Map<string, Promise<unknown>>();
 const responseCache = new Map<string, { data: unknown; expiresAt: number }>();
+const errorCache = new Map<string, number>();
 
-async function getJson<T>(url: string): Promise<T> {
+async function getJson<T>(url: string, ttlMs = CACHE_TTL_MS, errorTtlMs = 0): Promise<T> {
     const useCache = !process.env.VITEST;
     if (useCache) {
         const cached = responseCache.get(url);
         if (cached && cached.expiresAt > Date.now()) {
             return cached.data as T;
+        }
+        if (errorTtlMs > 0) {
+            const failedUntil = errorCache.get(url);
+            if (failedUntil && failedUntil > Date.now()) {
+                throw new Error('Vote collector cached error');
+            }
         }
     }
 
@@ -49,10 +58,16 @@ async function getJson<T>(url: string): Promise<T> {
 
     const request = (async () => {
         const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), next: { revalidate: 60 } });
-        if (!res.ok) throw new Error(`Vote collector ${res.status}`);
+        if (!res.ok) {
+            if (useCache && errorTtlMs > 0) {
+                errorCache.set(url, Date.now() + errorTtlMs);
+            }
+            throw new Error(`Vote collector ${res.status}`);
+        }
         const data = (await res.json()) as T;
         if (useCache) {
-            responseCache.set(url, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+            errorCache.delete(url);
+            responseCache.set(url, { data, expiresAt: Date.now() + ttlMs });
         }
         return data;
     })().finally(() => {
@@ -67,7 +82,7 @@ export function collectorFor(component: string): string | null {
     return systemByComponent(component)?.collector ?? null;
 }
 
-const POWER_CONCURRENCY = 12;
+const POWER_CONCURRENCY = 24;
 
 /**
  * Queries `/voting-power?accountAddress=…` for a list of accounts (used for
@@ -85,6 +100,8 @@ export async function fetchAccountVotingPowers(component: string, accounts: stri
                 try {
                     const data = await getJson<{ votePower?: unknown }>(
                         `${base}/voting-power?accountAddress=${encodeURIComponent(acc)}`,
+                        POWER_CACHE_TTL_MS,
+                        POWER_ERROR_TTL_MS,
                     );
                     return typeof data.votePower === 'string' ? ([acc, data.votePower] as const) : null;
                 } catch {
