@@ -118,6 +118,17 @@ export function MethodScoresTable({
     const [isPending, startTransition] = useTransition();
 
     const displayedRows = sort ? sortMethodScoreRows(rows, sort.key, sort.dir) : rows;
+    // Ranked by final score (the default order): tied methods share a position and the
+    // consensus row is not numbered, exactly like the "#x/N" ranks in the side panel.
+    const rankedByFinal = sort?.key === 'final' && sort.dir === 'desc';
+    const methodFinals = rows.filter(r => !r.isConsensus).map(r => (r.finalScore === null ? null : (r.finalRaw ?? r.finalScore)));
+    const rankLabel = (row: MethodScoreTableEntry, idx: number): string => {
+        if (!rankedByFinal) return (idx + 1).toLocaleString(language);
+        if (row.isConsensus) return '—';
+        const mine = row.finalScore === null ? null : (row.finalRaw ?? row.finalScore);
+        if (mine === null) return '—';
+        return (methodFinals.filter(v => v !== null && v > mine).length + 1).toLocaleString(language);
+    };
     const familiesDict = (c.families ?? {}) as Record<string, string>;
     const resistanceDict = (c.resistance ?? {}) as Record<string, string>;
     const expandedSet = new Set(expandedKeys);
@@ -150,7 +161,29 @@ export function MethodScoresTable({
             : (familiesDict[row.family] ?? row.family)
     );
 
-    const columns: readonly TableColumnSpec[] = [
+    const isHistorical = rows.some(r => r.votesTotal !== undefined);
+    const coverageColumn: TableColumnSpec = {
+        id: 'coverage',
+        label: c.election_resistance_ranking_col_coverage ?? '',
+        headerTip: c.election_resistance_ranking_tip_coverage ?? '',
+        align: 'right',
+        responsiveClass: 'hidden md:table-cell',
+        renderCell: row => {
+            const total = row.votesTotal ?? 0;
+            const evaluated = row.votesEvaluated ?? 0;
+            return (
+                <span className={`font-mono ${total > 0 && evaluated / total < 0.5 ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--color-text-secondary)]'}`}>
+                    {evaluated.toLocaleString(language)}/{total.toLocaleString(language)}
+                </span>
+            );
+        },
+        cellTip: row => fill(c.election_resistance_ranking_cell_coverage_tip ?? '', {
+            evaluated: (row.votesEvaluated ?? 0).toLocaleString(language),
+            total: (row.votesTotal ?? 0).toLocaleString(language),
+            pct: formatPct((row.votesTotal ?? 0) > 0 ? (row.votesEvaluated ?? 0) / (row.votesTotal ?? 1) : 0, language),
+        }),
+    };
+    const baseColumns: readonly TableColumnSpec[] = [
         {
             id: 'family',
             label: c.election_resistance_ranking_col_family ?? '',
@@ -279,14 +312,25 @@ export function MethodScoresTable({
             align: 'right',
             renderCell: (row, isSorted) => renderScoreCell(row.finalScore, isSorted),
             cellTip: row => (row.finalScore !== null && row.decentralisationScore !== null
-                ? fill(c.election_resistance_final_score_tip ?? '', {
-                    score: formatScoreValue(row.finalScore, language),
-                    resistance: formatScoreValue(row.resistanceScore, language),
-                    decentralisation: formatScoreValue(row.decentralisationScore, language),
-                })
+                ? fill(
+                    (row.votesTotal !== undefined ? c.election_resistance_ranking_cell_final_hist_tip : null)
+                        ?? c.election_resistance_final_score_tip ?? '',
+                    {
+                        score: formatScoreValue(row.finalScore, language),
+                        resistance: formatScoreValue(row.resistanceScore, language),
+                        decentralisation: formatScoreValue(row.decentralisationScore, language),
+                        evaluated: (row.votesEvaluated ?? 0).toLocaleString(language),
+                        total: (row.votesTotal ?? 0).toLocaleString(language),
+                    },
+                )
                 : naTip),
         },
     ];
+
+    // Historical table: coverage sits right before the final score it dilutes.
+    const columns: readonly TableColumnSpec[] = isHistorical
+        ? [...baseColumns.slice(0, -1), coverageColumn, baseColumns[baseColumns.length - 1]]
+        : baseColumns;
 
     const expandable = Boolean(renderExpandedRow);
     const isRowExpandable = (row: MethodScoreTableEntry) => (
@@ -420,12 +464,12 @@ export function MethodScoresTable({
                                     >
                                         <td
                                             title={fill(c.election_resistance_ranking_cell_rank_tip ?? '', {
-                                                rank: (idx + 1).toLocaleString(language),
+                                                rank: rankLabel(row, idx),
                                                 name: row.label,
                                             })}
                                             className="py-2 pr-3 sm:pr-4 w-px whitespace-nowrap font-mono text-[11px] text-[var(--color-text-muted)] tabular-nums align-middle"
                                         >
-                                            {idx + 1}
+                                            {rankLabel(row, idx)}
                                         </td>
                                         <th scope="row" className="py-2 pr-4 sm:pr-5 w-full max-w-0 text-left align-middle">
                                             <span className="flex items-center gap-0.5 min-w-0">

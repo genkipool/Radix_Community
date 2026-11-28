@@ -27,7 +27,11 @@ export interface MethodResistanceMetrics {
 
 export interface MethodAttackEval {
     id: ConsensusAttackId;
-    /** Exact mathematically derived control/impact share (0..1). */
+    /**
+     * Share (0..1) the attack reaches under this rule. Some scenarios are written as
+     * 1 ("decides the outcome") and others as the raw weight share; scoring treats any
+     * share above one half as full control (`controlShare`).
+     */
     maxShare: number;
     /** Translation key under `governance.compare` describing what the attack captures. */
     capturesKey: string;
@@ -246,6 +250,14 @@ export function computeMethodResistance(
         }
     };
 
+    // A single wallet weighs at most the cap, and never more than the capital it brings.
+    const cappedWhale = Math.min(cap, whaleCapital);
+    const capBinds = cappedWhale < whaleCapital;
+    const singleCapKey = capBinds ? 'method_res_cap_single_cap_fixed' : 'method_res_cap_single_cap_unbound';
+    // When the cap does not bind, nothing in the rule stops that wallet: no "blocked by the cap" text.
+    const singleCapBlockedKey = capBinds ? 'method_res_blk_cap_fixed' : 'method_res_blk_none_snapshot';
+    const vetCapBlockedKey = capBinds ? 'method_res_blk_cap_fixed' : 'method_res_blk_vet_whale_none';
+
     const singleCapShareWeight = (rawPower: number, basePool: number) =>
         Math.min(rawPower, (basePool + rawPower) * shareCap);
 
@@ -282,21 +294,21 @@ export function computeMethodResistance(
             map.split_whale = CAP('method_res_cap_split_staked', 'method_res_blk_staked_unstake', 1);
             break;
         case 'capped_10k': {
-            const singleS = shareAfterAddition(W, cap, hasLive, 1);
+            const singleS = shareAfterAddition(W, cappedWhale, hasLive, 1);
             map.funded_sybil = CAP('method_res_cap_funded_cap10k', 'method_res_blk_none_no_age', 1);
-            map.opportunistic_whale = CAP('method_res_cap_single_cap_fixed', 'method_res_blk_cap_fixed', singleS);
+            map.opportunistic_whale = CAP(singleCapKey, singleCapBlockedKey, singleS);
             map.split_whale = CAP('method_res_cap_split_dodge_cap', 'method_res_blk_none_capital', 1);
-            map.veteran_whale = CAP('method_res_cap_single_cap_fixed', 'method_res_blk_cap_fixed', singleS);
+            map.veteran_whale = CAP(singleCapKey, singleCapBlockedKey, singleS);
             break;
         }
         case 'capped_fixed': {
-            const singleS = shareAfterAddition(W, cap, hasLive, 1);
+            const singleS = shareAfterAddition(W, cappedWhale, hasLive, 1);
             if (fundedBypass > 0) {
                 map.funded_sybil = CAP('method_res_cap_funded_bypass', 'method_res_blk_none_no_age', fundedBypass);
             }
-            map.opportunistic_whale = CAP('method_res_cap_single_cap_fixed', 'method_res_blk_cap_fixed', singleS);
+            map.opportunistic_whale = CAP(singleCapKey, singleCapBlockedKey, singleS);
             map.split_whale = CAP('method_res_cap_split_dodge_cap', 'method_res_blk_none_capital', 1);
-            map.veteran_whale = CAP('method_res_cap_single_cap_fixed', 'method_res_blk_cap_fixed', singleS);
+            map.veteran_whale = CAP(singleCapKey, singleCapBlockedKey, singleS);
             break;
         }
         case 'capped_share': {
@@ -467,12 +479,12 @@ export function computeMethodResistance(
             break;
         }
         case 'capped_veterans_fixed': {
-            const sVet = shareAfterAddition(W, cap, hasLive, 1);
+            const sVet = shareAfterAddition(W, cappedWhale, hasLive, 1);
             map.cheap_sybil = CAP('method_res_cap_none_zero', 'method_res_blk_age_gate', 0);
             map.funded_sybil = CAP('method_res_cap_none_zero', 'method_res_blk_age_gate', 0);
             map.opportunistic_whale = CAP('method_res_cap_none_zero', 'method_res_blk_age_gate', 0);
             map.split_whale = CAP('method_res_cap_none_zero', 'method_res_blk_age_gate', 0);
-            map.veteran_whale = CAP('method_res_cap_single_cap_fixed', 'method_res_blk_cap_fixed', sVet);
+            map.veteran_whale = CAP(singleCapKey, vetCapBlockedKey, sVet);
             break;
         }
         case 'capped_veterans_share': {
@@ -594,7 +606,11 @@ export function computeMethodResistance(
         decisivePct,
     };
 
-    const intro1Key = `method_res_intro1_${resistance}`;
+    // High-tier rules with a per-account cap or marginal brackets never give more than 1 vote per XRD,
+    // but splitting across accounts does dodge the cap or the brackets.
+    const cappedHigh = resistance === 'high'
+        && (info.capAmount !== undefined || info.shareCap !== undefined || arch === 'marginal_veterans');
+    const intro1Key = cappedHigh ? 'method_res_intro1_high_capped' : `method_res_intro1_${resistance}`;
     const tableNoteKey = !hasLive
         ? 'method_res_table_note_empty'
         : metrics.isHistorical
@@ -612,8 +628,10 @@ export function computeMethodResistance(
             ? 'method_res_pos_high_sybil_immune'
             : sybilSafe && resistance === 'medium'
                 ? 'method_res_pos_medium_sybil_immune'
-                : resistance === 'medium'
+                : resistance === 'medium' && map.cheap_sybil.maxShare === 0 && map.funded_sybil.maxShare === 0
                     ? 'method_res_pos_medium_aged'
+                    : resistance === 'medium'
+                        ? 'method_res_pos_medium_two_chambers'
                     : resistance === 'low'
                         ? (map.cheap_sybil.maxShare === 0 ? 'method_res_pos_low_capped' : 'method_res_pos_low_split')
                         : 'method_res_pos_very_low';
@@ -626,7 +644,7 @@ export function computeMethodResistance(
                 ? 'method_res_warn_election'
                 : (decisiveCount > 0 ? 'method_res_warn_standard' : 'method_res_warn_no_decisive');
 
-    const summaryKey = `method_res_summary_${resistance}`;
+    const summaryKey = cappedHigh ? 'method_res_summary_high_capped' : `method_res_summary_${resistance}`;
 
     return {
         key,

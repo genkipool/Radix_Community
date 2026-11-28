@@ -1,7 +1,7 @@
 import type { HistoricalMethodRow } from './historicalMethods';
 import type { MethodFamily, MethodKey, Resistance } from './methodCatalog';
 import { RESISTANCE_SCORE } from './methodMetrics';
-import { computeMethodResistance, type MethodResistanceMetrics } from './methodResistance';
+import { computeMethodResistance, type MethodResistanceMetrics, type MethodResistanceReport } from './methodResistance';
 import type { MethodResult } from './votingMethods';
 
 export type ConsensusAttackId =
@@ -15,8 +15,17 @@ export type ConsensusAttackId =
 
 export interface ConsensusAttackScenario {
     id: ConsensusAttackId;
-    /** Exact share (0..1) of the weighted consensus controllable by this technique. */
+    /** Exact share (0..1) of the weighted consensus weight this technique captures (raw, weighted by method). */
     maxShare: number;
+    /**
+     * Share the attack is scored with: the larger of `maxShare` and the summed
+     * weight of the methods whose result the attacker decides (more than half of
+     * their weight). Feeds the difficulty and the global score (including its
+     * average capturable weight); the cards show `maxShare`.
+     */
+    scoringShare: number;
+    /** Per family: evaluated methods, those the attack captures any weight in, and those it decides (> 50 %). */
+    byFamily: Array<{ family: MethodFamily; total: number; affected: number; controlled: number }>;
     /** Number of evaluated methods fully or partially affected. */
     affectedCount: number;
     /** Total evaluated methods in the consensus. */
@@ -52,12 +61,29 @@ export const ATTACK_OPERATIONAL_COST: Record<ConsensusAttackId, AttackOperationa
 };
 
 /**
+ * Above this share of the weight an attacker decides the result on their own.
+ * A deliberate simplification: it ignores the vote's own approval threshold and
+ * the election grade quantile, so every rule is scored against the same bar.
+ */
+export const CONTROL_SHARE = 0.5;
+
+/**
+ * Share an attack is scored with: a majority of the weight decides the result
+ * just like 100 % does, so every rule is scored in the same unit whether its
+ * scenario was written as "controls the outcome" (1) or as the raw weight share.
+ */
+export function controlShare(maxShare: number): number {
+    const clamped = Number.isFinite(maxShare) ? Math.min(1, Math.max(0, maxShare)) : 0;
+    return clamped > CONTROL_SHARE ? 1 : clamped;
+}
+
+/**
  * Computes a deterministic 0/10..10/10 continuous difficulty score for an attack scenario
  * combining its intrinsic operational cost with the rule's exact `maxShare` containment.
  */
 export function computeAttackDifficulty(id: ConsensusAttackId, maxShare: number): AttackDifficulty {
     const cost = ATTACK_OPERATIONAL_COST[id];
-    const clamped = Number.isFinite(maxShare) ? Math.min(1, Math.max(0, maxShare)) : 0;
+    const clamped = controlShare(maxShare);
     const rawScore = clamped === 0
         ? 10
         : Math.min(9.99, Math.max(0, cost.base + (10 - cost.base) * (1 - clamped)));
@@ -65,6 +91,18 @@ export function computeAttackDifficulty(id: ConsensusAttackId, maxShare: number)
         ? 10
         : Math.min(9.9, Math.max(0, Math.round(rawScore * 10) / 10));
     return { ...cost, rawScore, score };
+}
+
+/** Unrounded 0..10 scores (shares 0..1), so averages over many votes are rounded only once. */
+export interface RawResistanceScore {
+    score: number;
+    structuralScore: number;
+    attackScore: number;
+    minDifficulty: number;
+    avgDifficulty: number;
+    avgMaxShare: number;
+    decentralisationScore: number | null;
+    finalScore: number | null;
 }
 
 export interface GlobalResistanceScore {
@@ -80,10 +118,29 @@ export interface GlobalResistanceScore {
     avgDifficulty: number;
     /** Arithmetic mean maximum controllable weight (0..1) across the evaluated attack vectors. */
     avgMaxShare: number;
-    /** Decentralisation score (0..10, 1 decimal) from spread (1 - HHI_norm), or null when spread is unavailable. */
+    /** Decentralisation score (0..10, 1 decimal) from spread (Simpson evenness over every address that voted), or null when spread is unavailable. */
     decentralisationScore: number | null;
     /** Combined final score (0..10, 1 decimal): geometric mean √(resistance × decentralisation), or null when spread is unavailable. */
     finalScore: number | null;
+    /** The same figures before rounding. */
+    raw: RawResistanceScore;
+}
+
+const round1 = (x: number) => Math.round(x * 10) / 10;
+
+/** Display rounding shared by single-vote and historical scores (one decimal; 10 difficulty only when unattackable). */
+export function roundResistanceScore(raw: RawResistanceScore): GlobalResistanceScore {
+    return {
+        score: round1(raw.score),
+        structuralScore: round1(raw.structuralScore),
+        attackScore: round1(raw.attackScore),
+        minDifficulty: raw.minDifficulty >= 10 ? 10 : Math.min(9.9, round1(raw.minDifficulty)),
+        avgDifficulty: round1(raw.avgDifficulty),
+        avgMaxShare: raw.avgMaxShare,
+        decentralisationScore: raw.decentralisationScore !== null ? round1(raw.decentralisationScore) : null,
+        finalScore: raw.finalScore !== null ? round1(raw.finalScore) : null,
+        raw,
+    };
 }
 
 /**
@@ -100,19 +157,18 @@ export function computeGlobalResistanceScore(
 ): GlobalResistanceScore {
     const hasSpread = spread != null && Number.isFinite(spread);
     const decentRaw = hasSpread ? Math.min(1, Math.max(0, spread)) * 10 : null;
-    const decentralisationScore = decentRaw !== null ? Math.round(decentRaw * 10) / 10 : null;
 
     if (scenarios.length === 0) {
-        return {
+        return roundResistanceScore({
             score: 0,
             structuralScore: 0,
             attackScore: 0,
             minDifficulty: 0,
             avgDifficulty: 0,
             avgMaxShare: 0,
-            decentralisationScore,
+            decentralisationScore: decentRaw,
             finalScore: decentRaw !== null ? 0 : null,
-        };
+        });
     }
     const diffs = scenarios.map(s => computeAttackDifficulty(s.id, s.maxShare).rawScore);
     const shares = scenarios.map(s => (Number.isFinite(s.maxShare) ? Math.min(1, Math.max(0, s.maxShare)) : 0));
@@ -130,16 +186,16 @@ export function computeGlobalResistanceScore(
     const combinedRaw = structuralRatio !== null ? 0.5 * structuralRaw + 0.5 * attackRaw : attackRaw;
     const finalRaw = decentRaw !== null ? Math.sqrt(Math.max(0, combinedRaw) * decentRaw) : null;
 
-    return {
-        score: Math.round(combinedRaw * 10) / 10,
-        structuralScore: Math.round(structuralRaw * 10) / 10,
-        attackScore: Math.round(attackRaw * 10) / 10,
-        minDifficulty: minRaw === 10 ? 10 : Math.min(9.9, Math.round(minRaw * 10) / 10),
-        avgDifficulty: Math.round(rawAvg * 10) / 10,
+    return roundResistanceScore({
+        score: combinedRaw,
+        structuralScore: structuralRaw,
+        attackScore: attackRaw,
+        minDifficulty: minRaw,
+        avgDifficulty: rawAvg,
         avgMaxShare,
-        decentralisationScore,
-        finalScore: finalRaw !== null ? Math.round(finalRaw * 10) / 10 : null,
-    };
+        decentralisationScore: decentRaw,
+        finalScore: finalRaw,
+    });
 }
 
 const ATTACK_IDS: readonly ConsensusAttackId[] = [
@@ -238,6 +294,7 @@ export function computeConsensusResistance(
     const evaluated = methods.filter(m => m.electionSummary && m.counted > 0 && (methodWeights[m.key] ?? 0) > 0);
     const totalMethods = evaluated.length;
     const weightedReports = evaluated.map(m => ({
+        family: m.family,
         weight: methodWeights[m.key] ?? 0,
         scenarios: new Map(
             computeMethodResistance(
@@ -249,17 +306,32 @@ export function computeConsensusResistance(
 
     return ATTACK_IDS.map(id => {
         let share = 0;
+        let controlledWeight = 0;
         let affectedCount = 0;
+        const families = new Map<MethodFamily, { family: MethodFamily; total: number; affected: number; controlled: number }>();
         for (const r of weightedReports) {
             const methodShare = r.scenarios.get(id) ?? 0;
+            const fam = families.get(r.family) ?? { family: r.family, total: 0, affected: 0, controlled: 0 };
+            fam.total += 1;
             if (methodShare > 0) {
                 share += r.weight * methodShare;
                 affectedCount += 1;
+                fam.affected += 1;
             }
+            // A method whose outcome the attacker decides counts in full for scoring.
+            if (methodShare > CONTROL_SHARE) {
+                controlledWeight += r.weight;
+                fam.controlled += 1;
+            }
+            families.set(r.family, fam);
         }
+        const familyOrder: MethodFamily[] = ['wealth', 'address', 'seniority', 'hybrid'];
+        const maxShare = Math.min(1, Math.max(0, share));
         return {
             id,
-            maxShare: Math.min(1, Math.max(0, share)),
+            maxShare,
+            scoringShare: Math.max(maxShare, Math.min(1, controlledWeight)),
+            byFamily: familyOrder.flatMap(f => (families.has(f) ? [families.get(f)!] : [])),
             affectedCount,
             totalMethods,
         };
@@ -297,10 +369,86 @@ export interface MethodScoreRow {
     avgMaxShare: number;
     decentralisationScore: number | null;
     finalScore: number | null;
+    /** Unrounded final score: the table sorts by it so its order matches the panel ranks and the tiles. */
+    finalRaw?: number | null;
     nakamoto: number | null;
     top1: number | null;
     effective: number | null;
     isConsensus?: boolean;
+    /** Historical rows only: votes where the method counted someone, out of the votes analysed. */
+    votesEvaluated?: number;
+    votesTotal?: number;
+}
+
+/**
+ * Resistance report and 0..10 scores of one method on one vote. Shared by the
+ * single-vote table and the historical aggregation, so a historical score is
+ * always the average of exactly the scores the single-vote tab shows.
+ */
+export function scoreMethodResult(
+    method: MethodResult,
+    quantile?: number,
+): { report: MethodResistanceReport; scores: GlobalResistanceScore; metrics: MethodResistanceMetrics } {
+    const metrics = methodResistanceMetricsFromResult(method, quantile);
+    const report = computeMethodResistance(method.key, metrics);
+    const scores = computeGlobalResistanceScore(report.scenarios, method.resistance, method.concentration.spread);
+    return { report, scores, metrics };
+}
+
+/**
+ * Balance (0..1) of one method on one vote: its final score / 10, i.e. the
+ * geometric mean of the 0..10 resistance score and the decentralisation, the
+ * same figures as the score table. 0 when the rule counts nobody.
+ */
+export function fairBalanceScore(method: MethodResult, quantile?: number): number {
+    if (method.counted === 0) return 0;
+    return Math.round(((scoreMethodResult(method, quantile).scores.raw.finalScore ?? 0) / 10) * 1e6) / 1e6;
+}
+
+/**
+ * Effectiveness (0..1) of one method on one vote: cube root of resistance score
+ * / 10 × decentralisation × valid (counted someone and met the quorum).
+ */
+export function fairEffectiveScore(method: MethodResult, quantile?: number): number {
+    if (method.counted === 0 || method.quorumMet === false) return 0;
+    const raw = scoreMethodResult(method, quantile).scores.raw;
+    return Math.round(Math.cbrt((raw.score / 10) * (method.concentration.spread ?? 0)) * 1e6) / 1e6;
+}
+
+/**
+ * Most/least balanced and effective rules on one vote, scored like the table.
+ * Ties: the least balanced is the one whose resistance and decentralisation are
+ * furthest apart; the least effective has less quorum progress, then less spread.
+ */
+export function fairScoreExtremes(methods: MethodResult[], quantile?: number): {
+    balance: { most?: MethodResult; least?: MethodResult };
+    effective: { most?: MethodResult; least?: MethodResult };
+} {
+    const scored = methods.map(m => ({
+        m,
+        balance: fairBalanceScore(m, quantile),
+        effective: fairEffectiveScore(m, quantile),
+        gap: Math.abs((m.counted > 0 ? scoreMethodResult(m, quantile).scores.raw.score / 10 : 0) - (m.concentration.spread ?? 0)),
+        progress: m.counted === 0 ? 0 : m.quorumRatio === null ? 1 : Math.min(1, m.quorumRatio),
+        spread: m.concentration.spread ?? 0,
+    }));
+    type S = typeof scored[number];
+    const pick = (score: (x: S) => number, leastTie: (a: S, b: S) => number) => {
+        let most: S | undefined;
+        let least: S | undefined;
+        for (const x of scored) {
+            if (!most || score(x) > score(most)) most = x;
+            if (!least || score(x) < score(least) || (score(x) === score(least) && leastTie(x, least) > 0)) least = x;
+        }
+        return { most: most?.m, least: least?.m };
+    };
+    const effective = pick(x => x.effective, (a, b) => (b.progress - a.progress) || (b.spread - a.spread));
+    // When no method is effective at all (e.g. none reaches the quorum) there is no best or worst to name.
+    const anyEffective = scored.some(x => x.effective > 0);
+    return {
+        balance: pick(x => x.balance, (a, b) => a.gap - b.gap),
+        effective: anyEffective ? effective : {},
+    };
 }
 
 /** Computes resistance, decentralisation, final, and concentration scores for every live method (plus optional consensus). */
@@ -320,15 +468,7 @@ export function computeMethodScoreRows(
     },
 ): MethodScoreRow[] {
     const rows: MethodScoreRow[] = methods.map(method => {
-        const report = computeMethodResistance(
-            method.key,
-            methodResistanceMetricsFromResult(method, options?.quantile),
-        );
-        const scores = computeGlobalResistanceScore(
-            report.scenarios,
-            method.resistance,
-            method.concentration.spread,
-        );
+        const { scores } = scoreMethodResult(method, options?.quantile);
         const hasCounted = method.counted > 0;
         return {
             key: method.key,
@@ -340,6 +480,7 @@ export function computeMethodScoreRows(
             avgMaxShare: scores.avgMaxShare,
             decentralisationScore: scores.decentralisationScore,
             finalScore: scores.finalScore,
+            finalRaw: scores.raw.finalScore,
             nakamoto: hasCounted ? method.concentration.nakamoto : null,
             top1: hasCounted ? method.concentration.top1 : null,
             effective: hasCounted ? method.concentration.effective : null,
@@ -350,7 +491,11 @@ export function computeMethodScoreRows(
         const { methodWeights, concentration } = options.consensus;
         const consensusScenarios = computeConsensusResistance(methods, methodWeights, options.quantile);
         const structuralRatio = computeConsensusStructuralRatio(methods, methodWeights);
-        const consensusScores = computeGlobalResistanceScore(consensusScenarios, structuralRatio, concentration.spread);
+        const consensusScores = computeGlobalResistanceScore(
+            consensusScenarios.map(sc => ({ id: sc.id, maxShare: sc.scoringShare })),
+            structuralRatio,
+            concentration.spread,
+        );
         rows.push({
             key: 'consensus',
             family: 'consensus',
@@ -360,6 +505,7 @@ export function computeMethodScoreRows(
             avgMaxShare: consensusScores.avgMaxShare,
             decentralisationScore: consensusScores.decentralisationScore,
             finalScore: consensusScores.finalScore,
+            finalRaw: consensusScores.raw.finalScore,
             nakamoto: concentration.nakamoto,
             top1: concentration.top1,
             effective: concentration.effective,
@@ -370,35 +516,33 @@ export function computeMethodScoreRows(
     return rows;
 }
 
-/** Computes resistance, decentralisation, final, and concentration scores for every historical method aggregate. */
+/**
+ * Historical score rows: each figure is the average of the per-vote scores
+ * (`scoreMethodResult`) already accumulated by `aggregateHistoricalMethods`.
+ * With a single vote analysed they equal the single-vote table exactly.
+ */
 export function computeHistoricalMethodScoreRows(
     rows: ReadonlyArray<HistoricalMethodRow>,
     totalVotes: number,
 ): MethodScoreRow[] {
     return rows.map(row => {
-        const report = computeMethodResistance(
-            row.key,
-            methodResistanceMetricsFromHistorical(row, totalVotes),
-        );
-        const scores = computeGlobalResistanceScore(
-            report.scenarios,
-            row.resistance,
-            row.avgSpread,
-        );
         const hasEvaluated = row.votesEvaluated > 0;
         return {
             key: row.key,
             family: row.family,
             current: row.current,
             resistance: row.resistance,
-            resistanceScore: scores.score,
-            minDifficulty: scores.minDifficulty,
-            avgMaxShare: scores.avgMaxShare,
-            decentralisationScore: scores.decentralisationScore,
-            finalScore: scores.finalScore,
+            resistanceScore: row.avgResistanceScore,
+            minDifficulty: row.avgMinDifficulty,
+            avgMaxShare: row.avgMaxShare,
+            decentralisationScore: row.avgDecentralisationScore,
+            finalScore: row.avgFinalScore,
+            finalRaw: row.historicalScores.raw.finalScore,
             nakamoto: row.avgNakamoto,
             top1: hasEvaluated ? row.avgTop1 : null,
             effective: hasEvaluated ? row.avgEffective : null,
+            votesEvaluated: row.votesEvaluated,
+            votesTotal: totalVotes,
         };
     });
 }
@@ -407,7 +551,7 @@ function scoreFieldValue(
     row: Pick<
         MethodScoreRow,
         'resistance' | 'resistanceScore' | 'minDifficulty' | 'decentralisationScore' | 'finalScore' | 'nakamoto' | 'top1'
-    >,
+    > & Partial<Pick<MethodScoreRow, 'finalRaw'>>,
     sortKey: MethodScoreSortKey,
 ): number | null {
     switch (sortKey) {
@@ -416,7 +560,8 @@ function scoreFieldValue(
         case 'decentralisation':
             return row.decentralisationScore;
         case 'final':
-            return row.finalScore;
+            // Unrounded, so two rows showing the same decimal keep the order of the tiles and panel ranks.
+            return row.finalScore === null ? null : (row.finalRaw ?? row.finalScore);
         case 'minDifficulty':
             return row.minDifficulty;
         case 'antiSybil':
@@ -440,7 +585,7 @@ export function sortMethodScoreRows<
     T extends Pick<
         MethodScoreRow,
         'resistance' | 'resistanceScore' | 'minDifficulty' | 'decentralisationScore' | 'finalScore' | 'nakamoto' | 'top1'
-    > & { label?: string },
+    > & Partial<Pick<MethodScoreRow, 'finalRaw'>> & { label?: string },
 >(
     rows: readonly T[],
     sortKey: MethodScoreSortKey,
@@ -454,7 +599,10 @@ export function sortMethodScoreRows<
         if (aVal !== null && bVal !== null && aVal !== bVal) {
             return direction === 'desc' ? bVal - aVal : aVal - bVal;
         }
-        const byFinal = compareNullableDesc(a.finalScore, b.finalScore);
+        const byFinal = compareNullableDesc(
+            a.finalScore === null ? null : (a.finalRaw ?? a.finalScore),
+            b.finalScore === null ? null : (b.finalRaw ?? b.finalScore),
+        );
         if (byFinal !== 0) return byFinal;
         if (a.resistanceScore !== b.resistanceScore) return b.resistanceScore - a.resistanceScore;
         const byDecent = compareNullableDesc(a.decentralisationScore, b.decentralisationScore);

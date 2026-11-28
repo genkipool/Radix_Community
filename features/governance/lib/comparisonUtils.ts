@@ -117,9 +117,11 @@ export function formatBalanceHint(
     spread: number | null,
     language: string,
     maxFractionDigits = 0,
+    resistanceScore?: number,
 ): string {
     return fill(c.kpi_balance_hint ?? '', {
         resistance: (((c.resistance ?? {}) as Record<string, string>)[resistance] || resistance).toLowerCase(),
+        score: resistanceScore === undefined ? '—' : resistanceScore.toLocaleString(language, { maximumFractionDigits: 1 }),
         n: (nakamoto ?? 0).toLocaleString(language, { maximumFractionDigits: maxFractionDigits }),
         of: ofCount.toLocaleString(language),
         pct: formatPct(spread ?? 0, language),

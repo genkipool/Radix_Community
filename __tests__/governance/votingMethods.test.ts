@@ -131,7 +131,8 @@ describe('new methods', () => {
         expect(cappedShareVet.resistance).toBe('high');
         expect(cappedShareVet.rows.find(x => x.key === 'For')!.power).toBeCloseTo(325_000);
         expect(cappedShareVet.outcome).toBe('rejected');
-        expect(cappedShareVet.concentration.spread).toBeCloseTo(1);
+        // Equal weights among the counted veterans, but the fresh whale who also voted weighs 0.
+        expect(cappedShareVet.concentration.spread).toBeCloseTo(cappedShareVet.counted / (cappedShareVet.counted + cappedShareVet.excluded));
 
         // marginal_veterans: vet_whale 5M -> 100k + 450k + 400k = 950k; each 500k mid -> 100k + 200k = 300k (900k total).
         const marginalVet = get('marginal_veterans');
@@ -188,7 +189,8 @@ describe('new methods', () => {
         // Staked-capped (5% of 4M = 200k each): stakers win equally
         expect(get('staked_capped_share').resistance).toBe('high');
         expect(get('staked_capped_share').outcome).toBe('rejected');
-        expect(get('staked_capped_share').concentration.spread).toBeCloseTo(1);
+        // Two equal stakers out of three addresses that voted: the flash-buyer weighs 0.
+        expect(get('staked_capped_share').concentration.spread).toBeCloseTo(2 / 3);
 
         // TWAB 90d: flash-buyer only gets 2.5M vs 4M -> rejected
         expect(get('twab_90d').resistance).toBe('high');

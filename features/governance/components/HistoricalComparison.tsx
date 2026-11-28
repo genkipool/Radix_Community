@@ -11,9 +11,9 @@ import type { GovernanceEntry } from '../types';
 import type { GovernanceItemKind } from '../lib/governanceVotes';
 import { apiFetchGovernanceTally } from '../services/governanceApi';
 import { tallyKey } from '../hooks/useGovernanceTally';
-import { slidingWindowEnabled, toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
+import { slidingWindowEnabled, toMethodVoters, useAccountAgesByVote } from '../hooks/useAccountAges';
 import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
-import { METHODS, computeHistoricalMethodScoreRows } from '../lib/votingMethods';
+import { METHODS, computeHistoricalMethodScoreRows, sortMethodScoreRows, type MethodKey } from '../lib/votingMethods';
 import { aggregateHistoricalMethods, type HistoricalMethodRow } from '../lib/historicalMethods';
 import { fill, formatPct, formatXrd } from '../lib/format';
 import { MethodGuideModal } from './MethodGuideModal';
@@ -53,7 +53,8 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
     const {
         family, setFamily, query, setQuery, sort, setSort, focusedMethod, jumpToMethod,
     } = useMethodComparisonControls('historical-method-row-');
-    const [guideRow, setGuideRow] = useState<HistoricalMethodRow | null>(null);
+    // Only the key: the row is looked up on every render so the panel follows scope changes and loading.
+    const [guideKey, setGuideKey] = useState<MethodKey | null>(null);
 
     const scopedEntries = entries.filter(e => {
         const sys = systemByKey(e.systemKey);
@@ -87,39 +88,31 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
     const loadedTallies = tallyQueries.filter(q => q.status === 'success' || q.status === 'error').length;
     const talliesDone = loadedTallies >= scopedEntries.length;
 
-    const allUniqueAccounts: string[] = [];
-    const seen = new Set<string>();
-    let latestStart = 0;
-    tallyQueries.forEach((q, i) => {
-        const start = scopedEntries[i]?.item.start ?? 0;
-        if (start > latestStart) latestStart = start;
-        for (const v of q.data?.voters ?? []) {
-            if (isCountedVoter(v) && !seen.has(v.account)) {
-                seen.add(v.account);
-                allUniqueAccounts.push(v.account);
-            }
-        }
-    });
-
-    const historyAt = latestStart > 0 ? latestStart : now;
-    const ages = useAccountAges(allUniqueAccounts, 'mainnet', historyAt, talliesDone && allUniqueAccounts.length > 0);
+    // Each vote's voters are measured on the day that vote opened, exactly like the single-vote tab.
+    const countedByVote = scopedEntries.map((_, i) => (tallyQueries[i]?.data?.voters ?? []).filter(isCountedVoter));
+    const ageGroups = scopedEntries.map((e, i) => ({
+        accounts: countedByVote[i].map(v => v.account),
+        atSec: e.item.start ?? now,
+    }));
+    const agesAll = useAccountAgesByVote(ageGroups, 'mainnet');
+    const ages = { ...agesAll, done: agesAll.done && talliesDone };
 
     const voteInputs = scopedEntries.flatMap((entry, i) => {
-        const rows = tallyQueries[i]?.data?.voters ?? [];
-        const counted = rows.filter(isCountedVoter);
+        const counted = countedByVote[i];
         if (counted.length === 0) return [];
         return [{
             entry,
-            voters: toMethodVoters(counted, ages),
+            voters: toMethodVoters(counted, agesAll.byGroup[i]),
             stanceLabel,
             gradeQuantile: tallyQueries[i]?.data?.electionData?.gradeQuantileApplied ?? null,
         }];
     });
 
-    const summary = aggregateHistoricalMethods(voteInputs, ages.done);
+    const aggregated = aggregateHistoricalMethods(voteInputs, ages.done);
     const params = ruleParams(language);
-    const current = summary.methods.find(m => m.current);
-    const shown = summary.methods.filter(m =>
+    const current = aggregated.methods.find(m => m.current);
+    const guideRow = guideKey ? aggregated.methods.find(m => m.key === guideKey) ?? null : null;
+    const shown = aggregated.methods.filter(m =>
         (family === 'all' || m.family === family)
         && matchesMethodQuery(c, {
             key: m.key,
@@ -134,16 +127,25 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
     const sortedShown = sortComparisonRows(shown, sort, r => r.avgSpread, r => r.resistance);
     // Same ranking rows as the table, computed before the getter so exports
     // always mirror what is on screen (including while ages are still loading).
-    const scoreEntries = summary.votesAnalyzed > 0
+    const scoreEntries = aggregated.votesAnalyzed > 0
         ? toScoreTableEntries(
             computeHistoricalMethodScoreRows(
-                summary.methods.filter(m => !m.needsAge || ages.done),
-                summary.votesAnalyzed,
+                // Like the single-vote table, a rule that never counted anyone has no score.
+                aggregated.methods.filter(m => (!m.needsAge || ages.done) && m.votesEvaluated > 0),
+                aggregated.votesAnalyzed,
             ),
             c,
             language,
         )
         : [];
+
+    // Balance tiles = first and last rows of the score table, so ties never name a different method.
+    const tableOrder = sortMethodScoreRows(scoreEntries, 'final', 'desc');
+    const summary = {
+        ...aggregated,
+        mostBalanced: tableOrder.length ? aggregated.methods.find(m => m.key === tableOrder[0].key) : aggregated.mostBalanced,
+        leastBalanced: tableOrder.length ? aggregated.methods.find(m => m.key === tableOrder[tableOrder.length - 1].key) : aggregated.leastBalanced,
+    };
 
     useRegisterTabExport(onRegisterExport, () => ({
         tab: 'historical',
@@ -157,6 +159,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
             agesLoaded: ages.loaded,
             agesTotal: ages.total,
             agesDone: ages.done,
+            unknownAges: ages.done ? ages.unknown : 0,
         },
         summary,
         entries: scopedEntries.map((e, i) => ({
@@ -205,12 +208,15 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
         c,
         m.resistance,
         m.avgNakamoto,
-        summary.votesAnalyzed > 0 ? Math.round(m.totalBallotsCounted / summary.votesAnalyzed) : 0,
+        // Same votes as the averaged Nakamoto: those where the method counted voters.
+        m.votesEvaluated > 0 ? Math.round(m.totalBallotsCounted / m.votesEvaluated) : 0,
         m.avgSpread,
         language,
         1,
+        m.avgResistanceScore,
     );
     const effectiveHint = (m: HistoricalMethodRow) => fill(h.kpi_effective_hint || '', {
+        score: m.avgResistanceScore.toLocaleString(language, { maximumFractionDigits: 1 }),
         resistance: (((c.resistance ?? {}) as Record<string, string>)[m.resistance] || m.resistance).toLowerCase(),
         pct: formatPct(m.avgSpread ?? 0, language),
         valid: m.validVotesCount.toLocaleString(language),
@@ -333,7 +339,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                         />
                         <ComparisonTile
                             icon={Gauge}
-                            help={tip(c, 'kpi_balanced')}
+                            help={h.tip_kpi_balanced || tip(c, 'kpi_balanced')}
                             label={c.kpi_balanced || ''}
                             value={summary.mostBalanced ? name(summary.mostBalanced) : undefined}
                             hint={summary.mostBalanced ? balanceHint(summary.mostBalanced) : undefined}
@@ -341,7 +347,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                         />
                         <ComparisonTile
                             icon={TriangleAlert}
-                            help={tip(c, 'kpi_unbalanced')}
+                            help={h.tip_kpi_unbalanced || tip(c, 'kpi_unbalanced')}
                             label={c.kpi_unbalanced || ''}
                             value={summary.leastBalanced ? name(summary.leastBalanced) : undefined}
                             hint={summary.leastBalanced ? balanceHint(summary.leastBalanced) : undefined}
@@ -352,7 +358,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                             help={h.tip_kpi_effective}
                             label={h.kpi_effective || ''}
                             value={summary.mostEffective ? name(summary.mostEffective) : undefined}
-                            hint={summary.mostEffective ? effectiveHint(summary.mostEffective) : undefined}
+                            hint={summary.mostEffective ? effectiveHint(summary.mostEffective) : (summary.votesAnalyzed > 0 ? c.kpi_effective_none : undefined)}
                             onClick={summary.mostEffective ? () => jumpToMethod(summary.mostEffective!.key) : undefined}
                         />
                         <ComparisonTile
@@ -360,7 +366,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                             help={h.tip_kpi_ineffective}
                             label={h.kpi_ineffective || ''}
                             value={summary.leastEffective ? name(summary.leastEffective) : undefined}
-                            hint={summary.leastEffective ? effectiveHint(summary.leastEffective) : undefined}
+                            hint={summary.leastEffective ? effectiveHint(summary.leastEffective) : (summary.votesAnalyzed > 0 ? c.kpi_effective_none : undefined)}
                             onClick={summary.leastEffective ? () => jumpToMethod(summary.leastEffective!.key) : undefined}
                         />
                     </div>
@@ -390,7 +396,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                         <span className="cursor-help" title={h.tip_col_xrd}>{h.col_xrd}</span>
                         <SortableHeaderButton
                             label={h.col_spread || ''}
-                            title={tip(c, 'col_nakamoto')}
+                            title={h.tip_col_spread || tip(c, 'col_nakamoto')}
                             active={sort?.by === 'spread'}
                             dir={sort?.by === 'spread' ? sort.dir : undefined}
                             onClick={() => setSort(prev => nextSort(prev, 'spread'))}
@@ -421,7 +427,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                                 language={language}
                                 rowId={`historical-method-row-${row.key}`}
                                 focusNonce={focusedMethod?.key === row.key ? focusedMethod.nonce : 0}
-                                onOpenGuide={setGuideRow}
+                                onOpenGuide={r => setGuideKey(r.key)}
                             />
                         )}
                     />
@@ -437,7 +443,7 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                     onOpenGuide={key => {
                         if (key === 'consensus') return;
                         const hit = summary.methods.find(m => m.key === key);
-                        if (hit) setGuideRow(hit);
+                        if (hit) setGuideKey(hit.key);
                     }}
                     c={c}
                     language={language}
@@ -446,9 +452,16 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
 
             <ComparisonGlossary id="historical-glossary" c={c} />
 
+            {ages.done && ages.unknown > 0 && (
+                <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
+                    <Info className="size-3 mt-0.5 shrink-0" />
+                    {fill(c.note_unknown_age ?? '', { n: ages.unknown.toLocaleString(language) })}
+                </p>
+            )}
+
             <MethodGuideModal
                 isOpen={Boolean(guideRow)}
-                onClose={() => setGuideRow(null)}
+                onClose={() => setGuideKey(null)}
                 target={guideRow ? {
                     mode: 'historical',
                     row: guideRow,

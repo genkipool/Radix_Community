@@ -1,7 +1,7 @@
 import type { MajorityJudgmentElectionData } from '../types';
 import { parseQuantile } from './majorityJudgment';
+import { fairEffectiveScore } from './consensusResistance';
 import type { MethodFamily, MethodKey } from './methodCatalog';
-import { effectiveScore } from './methodMetrics';
 import type { MethodResult } from './votingMethods';
 
 export interface ElectionConsensusCandidate {
@@ -77,7 +77,8 @@ export interface ElectionConsensusConclusions {
         droppedSeats: Array<{ id: number; label: string; consensusRank: number; currentRank: number | null; consensusShare: number }>;
     };
     quorum: {
-        quorumXrd: number | null;
+        /** Quorum the vote requires, in XRD (not the XRD reached). */
+        quorumRequiredXrd: number | null;
         metCount: number;
         totalMethods: number;
     };
@@ -87,6 +88,8 @@ export interface ElectionConsensusConclusions {
 export interface ElectionConsensusSummary {
     seatCount: number;
     evaluatedMethods: number;
+    /** Families present among the evaluated methods; each carries 1 / familyCount of the weight. */
+    familyCount: number;
     candidates: ElectionConsensusCandidate[];
     /** Concentration & decisive-block metrics averaged with the exact consensus weights. */
     weightedConcentration: ElectionConsensusConcentration;
@@ -107,12 +110,20 @@ export {
     methodResistanceMetricsFromResult,
     nextMethodScoreSort,
     resistanceLevelFromScore,
+    roundResistanceScore,
+    scoreMethodResult,
+    fairBalanceScore,
+    fairEffectiveScore,
+    fairScoreExtremes,
+    controlShare,
+    CONTROL_SHARE,
     sortMethodScoreRows,
     type AttackDifficulty,
     type AttackOperationalCost,
     type ConsensusAttackId,
     type ConsensusAttackScenario,
     type GlobalResistanceScore,
+    type RawResistanceScore,
     type MethodScoreRow,
     type MethodScoreSortKey,
     type MethodScoreSortState,
@@ -201,7 +212,8 @@ export function computeElectionConclusions(
             family: fam,
             methodCount: famMethods.length,
             avgSpread: Math.round(avgSpread * 1e6) / 1e6,
-            sameAsCurrentCount: famMethods.filter(m => m.current || m.sameAsCurrent).length,
+            // The current method is the reference, not a match: same rule as the stability count.
+            sameAsCurrentCount: famMethods.filter(m => !m.current && m.sameAsCurrent).length,
         });
     }
 
@@ -219,7 +231,7 @@ export function computeElectionConclusions(
             droppedSeats,
         },
         quorum: {
-            quorumXrd,
+            quorumRequiredXrd: quorumXrd,
             metCount: methods.filter(m => m.quorumMet !== false).length,
             totalMethods: methods.length,
         },
@@ -231,9 +243,11 @@ export function computeElectionConclusions(
  * Family-balanced, effectiveness-weighted consensus across all evaluated
  * voting methods (including 1 XRD = 1 vote).
  *
- * Each of the 4 method families (wealth, address, seniority, hybrid) carries
- * an equal 25 % share so families with more variants cannot dominate by count.
- * Within each family, every method participates with weight `0.25 + 0.75 * effectiveScore(m)`,
+ * Each method family present among the evaluated methods (up to 4: wealth,
+ * address, seniority, hybrid) carries an equal share (1 / families) so families
+ * with more variants cannot dominate by count.
+ * Within each family, every method participates with weight `0.25 + 0.75 * fairEffectiveScore(m)`
+ * (the same effectiveness index as the KPI tiles: 0..10 resistance score, decentralisation and quorum),
  * rewarding Sybil-resistant, decentralised, quorum-meeting rules up to 4x while
  * still counting all 50 methods.
  */
@@ -246,12 +260,14 @@ export function computeElectionConsensus(
 
     const seatCount = evaluated[0].electionSummary!.seatCount;
     const current = evaluated.find(r => r.current);
+    // Same quantile the score table uses for this election.
+    const quantile = parseQuantile(baselineElectionData?.gradeQuantileApplied);
 
-    // Prefer the official collector's `electionData` (the exact ranking shown in
-    // "Current voting method ranking" right above) so entered/dropped highlights
-    // can never disagree with the top grid when `voters` cache lags slightly.
+    // Baseline = 1 XRD = 1 vote recounted from the same ballots every other method uses, so
+    // "#3 -> #8" here always matches the per-method panels. The official collector ranking
+    // (shown above, with a note when its totals differ) is only a fallback.
     const officialResults = baselineElectionData?.candidateResults ?? [];
-    const useOfficialBaseline = officialResults.length > 0;
+    const useOfficialBaseline = !current?.electionSummary && officialResults.length > 0;
     const baselineSorted = useOfficialBaseline
         ? [...officialResults].sort((a, b) => a.rank - b.rank || a.candidateId - b.candidateId)
         : [];
@@ -273,7 +289,7 @@ export function computeElectionConsensus(
     const familyShare = 1 / byFamily.size;
     const weightOf = new Map<MethodKey, number>();
     for (const group of byFamily.values()) {
-        const raw = group.map(m => 0.25 + 0.75 * effectiveScore(m));
+        const raw = group.map(m => 0.25 + 0.75 * fairEffectiveScore(m, quantile));
         const sum = raw.reduce((a, b) => a + b, 0);
         group.forEach((m, i) => {
             weightOf.set(m.key, sum > 0 ? familyShare * (raw[i] / sum) : familyShare / group.length);
@@ -396,6 +412,7 @@ export function computeElectionConsensus(
     return {
         seatCount,
         evaluatedMethods: evaluated.length,
+        familyCount: byFamily.size,
         candidates,
         weightedConcentration: {
             decisiveQuantile: wDecisiveWeight > 0 ? Math.round((wDecisive / wDecisiveWeight) * 10) / 10 : null,

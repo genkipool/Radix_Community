@@ -134,6 +134,7 @@ function SpreadMeter({ r, c, language }: { r: MethodResult; c: C; language: stri
         ? tip(c, 'nakamoto', {
             n: nakamoto.toLocaleString(language), of: r.counted.toLocaleString(language), share: formatPct(nakamoto / r.counted, language),
             eff: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }), spread: formatPct(spread, language), level: levels[level] || level,
+            voted: (r.counted + r.excluded).toLocaleString(language),
         })
         : undefined;
     return <SpreadMeterBar nakamoto={nakamoto} spread={spread} title={title} emptyTitle={tip(c, 'outcome_none') || c.outcome_none} c={c} language={language} />;
@@ -231,9 +232,9 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         ) : '—'}
                     </DetailStatBox>
                     <DetailStatBox label={c.detail_quorum ?? ''} title={tip(c, 'detail_quorum')}>
-                        {quorum === null ? '—' : (
+                        {quorum === null || r.counted === 0 ? '—' : (
                             <span className={r.quorumMet ? 'text-[var(--color-accent)]' : 'text-amber-600 dark:text-amber-400'}>
-                                {fill(c.detail_quorum_value ?? '', { xrd: formatXrd(r.eligibleXrd, language), quorum: formatXrd(quorum, language) })}
+                                {fill(c.detail_quorum_value ?? '', { xrd: formatXrd(r.quorumXrd, language), quorum: formatXrd(quorum, language) })}
                             </span>
                         )}
                     </DetailStatBox>
@@ -241,7 +242,8 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         {r.concentration.spread === null ? '—' : fill(c.detail_spread_value ?? '', {
                             pct: formatPct(r.concentration.spread, language),
                             eff: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }),
-                            of: r.counted.toLocaleString(language),
+                            // Spread divides by every address that voted, including those the rule leaves out.
+                            of: (r.counted + r.excluded).toLocaleString(language),
                         })}
                     </DetailStatBox>
                 </div>

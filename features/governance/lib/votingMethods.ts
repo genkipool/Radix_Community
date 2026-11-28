@@ -61,8 +61,14 @@ export interface MethodResult {
     approvalShare: number | null;
     /** Double majority only: share in favour counting one vote per address. */
     headcountShare: number | null;
-    /** XRD held by the counted voters, measured against the quorum. */
+    /** XRD held by the counted voters (the pool the rule weighs and attacks are priced against). */
     eligibleXrd: number;
+    /**
+     * XRD measured against the quorum. Equals `eligibleXrd`, except for rules
+     * that leave voters out for their rank among voters (no_top1, no_whales):
+     * those voters still took part, so their XRD counts toward the quorum.
+     */
+    quorumXrd: number;
     /** Sum of transformed voter weights (`w`) under this rule. */
     totalWeight: number;
     quorumRatio: number | null;
@@ -292,10 +298,13 @@ function applyMethod(
     // Quorum is an XRD rule: it is checked apart, with the XRD of the voters that count (counted once per voter).
     const summary = summarizeTally(choices, { results, accountPower: null }, item ? { ...item, quorum: null } : null);
     const totalWeight = weighed.reduce((s, x) => s + x.w, 0);
-    const eligibleXrd = weighed.reduce(
-        (s, x) => s + (x.v.choices.length > 0 || (x.v.grades != null && Object.keys(x.v.grades).length > 0) ? x.v.power : 0),
-        0,
-    );
+    const castBallot = (v: MethodVoter) => v.choices.length > 0 || (v.grades != null && Object.keys(v.grades).length > 0);
+    const eligibleXrd = weighed.reduce((s, x) => s + (castBallot(x.v) ? x.v.power : 0), 0);
+    // Weight caps never shrink the quorum (it is measured in raw XRD). Rules that drop voters for
+    // their rank among voters count them too; rules that drop voters for failing a requirement do not.
+    const quorumXrd = spec.quorumCountsExcluded
+        ? voters.reduce((s, { v }) => s + (castBallot(v) ? v.power : 0), 0)
+        : eligibleXrd;
     let capShareAudit: MethodResult['capShareAudit'];
     if (spec.sybil.kind === 'capital' && spec.sybil.capShare != null) {
         const shareCap = spec.sybil.capShare;
@@ -344,7 +353,7 @@ function applyMethod(
             };
         }
     }
-    const quorumRatio = item?.quorum ? eligibleXrd / item.quorum : null;
+    const quorumRatio = item?.quorum ? quorumXrd / item.quorum : null;
     const quorumMet = quorumRatio === null ? null : quorumRatio >= 1;
     const threshold = item?.approvalThreshold ?? 0.5;
 
@@ -418,13 +427,14 @@ function applyMethod(
         approvalShare: weighed.length ? summary.approvalShare : null,
         headcountShare,
         eligibleXrd,
+        quorumXrd,
         totalWeight,
         quorumRatio,
         quorumMet,
         outcome,
         winner,
         electionSummary,
-        concentration: concentration(weighed.map(x => x.w)),
+        concentration: concentration(weighed.map(x => x.w), voters.length),
         decisive: isElection ? null : decisiveVoters(weighed, outcome, winner, threshold, spec.headcount),
         resistance: spec.resistance,
         attack: isElection ? null : attackCost(spec, outcome, summary.rows, {
@@ -529,6 +539,13 @@ export {
     methodResistanceMetricsFromResult,
     nextMethodScoreSort,
     resistanceLevelFromScore,
+    roundResistanceScore,
+    scoreMethodResult,
+    fairBalanceScore,
+    fairEffectiveScore,
+    fairScoreExtremes,
+    controlShare,
+    CONTROL_SHARE,
     sortMethodScoreRows,
     type AttackDifficulty,
     type AttackOperationalCost,
@@ -540,6 +557,7 @@ export {
     type ElectionConsensusFamilySummary,
     type ElectionConsensusSummary,
     type GlobalResistanceScore,
+    type RawResistanceScore,
     type MethodScoreRow,
     type MethodScoreSortKey,
     type MethodScoreSortState,

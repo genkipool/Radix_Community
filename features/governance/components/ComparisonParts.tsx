@@ -130,12 +130,14 @@ export function DetailStatBox({ label, title, children }: {
 }
 
 /** Metric tile used in the comparison hero summary grids. */
-export function FactTile({ icon: Icon, label, value, title, tone }: {
+export function FactTile({ icon: Icon, label, value, title, tone, hint }: {
     icon: LucideIcon;
     label: string;
     value: string;
     title?: string;
     tone?: string;
+    /** Small line under the value, like the results tab's KPI hints. */
+    hint?: string;
 }) {
     return (
         <div className={`min-w-0 flex flex-col justify-center rounded-xl border border-[var(--color-card-border)] px-4 py-3.5 min-h-[76px] ${title ? 'cursor-help' : ''}`} title={title}>
@@ -144,6 +146,7 @@ export function FactTile({ icon: Icon, label, value, title, tone }: {
                 <span className="truncate">{label}</span>
             </dt>
             <dd className="mt-1.5 font-mono text-base font-bold text-[var(--color-text-main)] truncate">{value}</dd>
+            {hint && <dd className="mt-1 text-[11px] leading-snug text-[var(--color-text-muted)] truncate">{hint}</dd>}
         </div>
     );
 }

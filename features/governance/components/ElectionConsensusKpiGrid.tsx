@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { ChevronDown, Crown, Scale } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Portal } from '@/components/ui/Portal';
-import { SelectPopup, SelectPopupEmpty, SelectPopupRow } from '@/components/ui/SelectPopup';
+import { SelectPopup, SelectPopupEmpty, SelectPopupRow, SelectPopupTabs, selectPopupTabsWidth } from '@/components/ui/SelectPopup';
 import { usePickerPopup } from '@/hooks/usePickerPopup';
 import type {
     ElectionConsensusSummary,
     ElectionMethodSummary,
+    MethodFamily,
     MethodKey,
     MethodResult,
 } from '../lib/votingMethods';
@@ -16,7 +17,7 @@ import { bandHint, gradeLabel } from '../lib/majorityJudgment';
 import { fill, formatPct, formatXrd } from '../lib/format';
 import { matchesMethodQuery, methodText, ruleParams, type CompareDict } from '../lib/comparisonUtils';
 import type { G } from './GovernanceBadges';
-import { FAMILY_ICON } from './ComparisonParts';
+import { FAMILIES, FAMILY_ICON } from './ComparisonParts';
 import { GradeDistributionBar } from './ElectionSection';
 import { MethodGuideTrigger } from './MethodGuideModal';
 import { formatScoreValue, scoreTextTone, type MethodScoreTableEntry } from './MethodScoresTable';
@@ -297,7 +298,7 @@ export function ElectionConsensusKpiGrid({
 }) {
     const { open, show, close, buttonRef, popupRef, layoutFor } = usePickerPopup();
     const [query, setQuery] = useState('');
-    const layout = layoutFor(420, 'left');
+    const [familyTab, setFamilyTab] = useState<MethodFamily | 'all'>('all');
 
     const params = ruleParams(language);
     const familiesDict = (c.families ?? {}) as Record<string, string>;
@@ -311,7 +312,10 @@ export function ElectionConsensusKpiGrid({
     const selectedText = selectedMethod ? methodText(c, selectedMethod.key, params) : null;
     const ActiveIcon = selectedMethod ? FAMILY_ICON[selectedMethod.family] : Scale;
     const activeTitle = selectedText ? selectedText.name : consensusTitle;
-    const activeHint = selectedText ? selectedText.rule : (c.election_consensus_hint ?? '');
+    const activeHint = selectedText ? selectedText.rule : fill(c.election_consensus_hint ?? '', {
+        families: consensus.familyCount.toLocaleString(language),
+        pct: formatPct(consensus.familyCount > 0 ? 1 / consensus.familyCount : 0, language),
+    });
 
     const canPick = Boolean(methods && methods.length > 0 && onSelectKey);
     const scoreByKey = new Map((scoreRows ?? []).map(r => [r.key, r.finalScore]));
@@ -319,7 +323,7 @@ export function ElectionConsensusKpiGrid({
     const showConsensusOption = !trimmedQuery
         || consensusTitle.toLowerCase().includes(trimmedQuery)
         || (c.election_consensus_picker_consensus_sub ?? '').toLowerCase().includes(trimmedQuery);
-    const filteredMethods = (methods ?? [])
+    const searchedMethods = (methods ?? [])
         .filter(m => Boolean(m.electionSummary))
         .filter(m => matchesMethodQuery(c, {
             key: m.key,
@@ -328,11 +332,31 @@ export function ElectionConsensusKpiGrid({
             spread: m.concentration.spread,
             nakamoto: m.concentration.nakamoto,
         }, params, query));
+    // The weighted consensus is not a family, so it only appears under "All".
+    const consensusVisible = showConsensusOption && familyTab === 'all';
+    const filteredMethods = familyTab === 'all' ? searchedMethods : searchedMethods.filter(m => m.family === familyTab);
+    const familiesShort = (c.families_short ?? {}) as Record<string, string>;
+    const pickerTabs: Array<{ value: MethodFamily | 'all'; label: string; count: number }> = [
+        // Counts every row the tab lists: the 50 methods plus the weighted consensus.
+        { value: 'all', label: familiesShort.all || c.filter_all || '', count: searchedMethods.length + (showConsensusOption ? 1 : 0) },
+        ...FAMILIES.map(f => ({
+            value: f,
+            label: familiesShort[f] || familiesDict[f] || f,
+            count: searchedMethods.filter(m => m.family === f).length,
+        })),
+    ];
+    // Wide enough to keep every tab on one line (the helper counts a 32 px close button the toolbar row
+    // does not have, which leaves a little slack), never narrower than the old 420 px.
+    const layout = layoutFor(Math.max(420, selectPopupTabsWidth(pickerTabs.map(t => `${t.label} (${t.count})`))), 'left');
 
+    const resetPicker = () => {
+        setQuery('');
+        setFamilyTab('all');
+    };
     const handlePick = (key: MethodKey | 'consensus') => {
         onSelectKey?.(key);
         close();
-        setQuery('');
+        resetPicker();
     };
 
     const renderScoreTrailing = (key: MethodKey | 'consensus') => {
@@ -356,7 +380,15 @@ export function ElectionConsensusKpiGrid({
                             aria-expanded={open}
                             aria-haspopup="dialog"
                             title={c.election_consensus_picker_open_tip ?? ''}
-                            onClick={() => (open ? close() : show())}
+                            onClick={() => {
+                                if (open) {
+                                    close();
+                                    return;
+                                }
+                                // Escape or an outside click closes without resetting: start clean on every open.
+                                resetPicker();
+                                show();
+                            }}
                             className="inline-flex items-center gap-2 text-left rounded-lg py-0.5 pr-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer"
                         >
                             <ActiveIcon className="size-4 text-[var(--color-primary)] shrink-0" aria-hidden="true" />
@@ -391,10 +423,18 @@ export function ElectionConsensusKpiGrid({
                             <SelectPopup
                                 ref={popupRef}
                                 title={c.election_consensus_picker_title ?? ''}
+                                toolbar={(
+                                    <SelectPopupTabs<MethodFamily | 'all'>
+                                        ariaLabel={c.filter_label ?? ''}
+                                        tabs={pickerTabs}
+                                        active={familyTab}
+                                        onChange={setFamilyTab}
+                                    />
+                                )}
                                 closeLabel={c.election_consensus_picker_close ?? ''}
                                 onClose={() => {
                                     close();
-                                    setQuery('');
+                                    resetPicker();
                                 }}
                                 direction={layout.direction}
                                 style={{
@@ -410,7 +450,7 @@ export function ElectionConsensusKpiGrid({
                                     clearLabel: c.search_clear ?? '',
                                 }}
                             >
-                                {showConsensusOption && (
+                                {consensusVisible && (
                                     <SelectPopupRow
                                         selected={!selectedMethod}
                                         label={consensusTitle}
@@ -436,7 +476,7 @@ export function ElectionConsensusKpiGrid({
                                         />
                                     );
                                 })}
-                                {!showConsensusOption && filteredMethods.length === 0 && (
+                                {!consensusVisible && filteredMethods.length === 0 && (
                                     <SelectPopupEmpty>{c.election_consensus_picker_empty ?? ''}</SelectPopupEmpty>
                                 )}
                             </SelectPopup>

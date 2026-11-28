@@ -206,7 +206,8 @@ export function ElectionConclusionsTab({
                                             curPct: formatPct(current.concentration.spread, language),
                                             pct: formatPct(wc.spread, language),
                                             eff: wEffStr,
-                                            total: wCountedStr,
+                                            // Spread divides by every address that voted (1 XRD = 1 vote counts them all).
+                                            total: curTotalStr,
                                         }) : undefined,
                                         cur: formatPct(current.concentration.spread, language),
                                         wgt: wc.spread != null ? formatPct(wc.spread, language) : '—',
