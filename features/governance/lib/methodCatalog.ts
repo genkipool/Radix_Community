@@ -69,7 +69,7 @@ export const isVeteranFunded = (v: MethodVoter) => isVeteran(v) && v.power >= ME
 const isSybilSafe = (v: MethodVoter) => v.power >= METHOD_PARAMS.sybilBalance && (v.ageDays ?? -1) >= METHOD_PARAMS.sybilDays;
 
 /** Piecewise-linear diminishing marginal weight: 100 % up to 100k, 50 % up to 1M, 10 % above 1M. */
-function marginalWeight(xrd: number): number {
+export function marginalWeight(xrd: number): number {
     const { first, second, midRate, topRate } = METHOD_PARAMS.marginalBrackets;
     if (xrd <= 0) return 0;
     if (xrd <= first) return xrd;

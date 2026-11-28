@@ -13,11 +13,12 @@ import { apiFetchGovernanceTally } from '../services/governanceApi';
 import { tallyKey } from '../hooks/useGovernanceTally';
 import { slidingWindowEnabled, toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
 import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
-import { METHODS } from '../lib/votingMethods';
+import { METHODS, computeHistoricalMethodScoreRows } from '../lib/votingMethods';
 import { aggregateHistoricalMethods, type HistoricalMethodRow } from '../lib/historicalMethods';
 import { fill, formatPct, formatXrd } from '../lib/format';
 import { MethodGuideModal } from './MethodGuideModal';
 import { HistoricalMethodItem } from './HistoricalMethodRow';
+import { MethodScoresTable, toScoreTableEntries } from './MethodScoresTable';
 import { Segmented, stanceResolver, type G } from './GovernanceBadges';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import { isCountedVoter } from '../lib/comparisonUtils';
@@ -170,6 +171,17 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
         valid: m.validVotesCount.toLocaleString(language),
         total: summary.votesAnalyzed.toLocaleString(language),
     });
+
+    const scoreEntries = summary.votesAnalyzed > 0
+        ? toScoreTableEntries(
+            computeHistoricalMethodScoreRows(
+                summary.methods.filter(m => !m.needsAge || ages.done),
+                summary.votesAnalyzed,
+            ),
+            c,
+            language,
+        )
+        : [];
 
     return (
         <div className="space-y-6">
@@ -382,6 +394,22 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                 </section>
             )}
 
+            {scoreEntries.length > 0 && (
+                <MethodScoresTable
+                    rows={scoreEntries}
+                    onJumpToMethod={key => {
+                        if (key !== 'consensus') jumpToMethod(key);
+                    }}
+                    onOpenGuide={key => {
+                        if (key === 'consensus') return;
+                        const hit = summary.methods.find(m => m.key === key);
+                        if (hit) setGuideRow(hit);
+                    }}
+                    c={c}
+                    language={language}
+                />
+            )}
+
             <ComparisonGlossary id="historical-glossary" c={c} />
 
             <MethodGuideModal
@@ -390,7 +418,11 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
                 target={guideRow ? {
                     mode: 'historical',
                     row: guideRow,
+                    currentRow: current ?? null,
+                    allRows: summary.methods.filter(m => !m.needsAge || ages.done),
                     totalVotes: summary.votesAnalyzed,
+                    totalBallots: summary.totalBallots,
+                    totalXrd: summary.totalXrd,
                 } : null}
                 methodName={guideRow ? methodText(c, guideRow.key, params).name : ''}
                 methodRule={guideRow ? methodText(c, guideRow.key, params).rule : ''}

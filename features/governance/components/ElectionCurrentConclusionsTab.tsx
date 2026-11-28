@@ -63,7 +63,7 @@ export function ElectionCurrentConclusionsTab({
                         <span>{fill(c.election_conclusions_decisive_title ?? '', { quantilePct })}</span>
                     </h3>
                     <p className="text-[13.5px] leading-relaxed font-medium text-[var(--color-text-main)]">
-                        {fill(c.election_conclusions_decisive_text ?? '', {
+                        {fill(c.election_current_conclusions_decisive_text ?? '', {
                             count: decCount.toLocaleString(language),
                             total: curTotalStr,
                             pct: formatShare(curBlock.share, language),
@@ -81,91 +81,96 @@ export function ElectionCurrentConclusionsTab({
                         <PieChart className="size-4 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
                         <span>{c.election_current_conclusions_metrics_title ?? ''}</span>
                     </h3>
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 pb-1 text-[10px] font-bold uppercase tracking-wider">
-                        <span />
-                        <span className="text-right text-[var(--color-primary)]">
-                            {c.election_conclusions_col_current ?? ''}
-                        </span>
-                    </div>
-                    <dl className="divide-y divide-[var(--color-card-border)]/40 text-xs">
-                        {[
-                            {
-                                label: fill(c.election_conclusions_row_decisive ?? '', { quantilePct }),
-                                labelTip: fill(c.election_conclusions_tip_decisive ?? '', { quantilePct }),
-                                curTip: curBlock ? fill(c.election_conclusions_tip_cur_decisive ?? '', {
-                                    count: decCount.toLocaleString(language),
-                                    total: curTotalStr,
-                                    pct: formatShare(curBlock.share, language),
-                                    xrd: formatXrd(accPower, language),
-                                    quantilePct,
-                                }) : undefined,
-                                cur: `${decCount.toLocaleString(language)}/${curTotalStr}`,
-                            },
-                            {
-                                label: c.election_conclusions_row_nakamoto ?? '',
-                                labelTip: c.election_conclusions_tip_nakamoto ?? '',
-                                curTip: fill(c.election_conclusions_tip_cur_nakamoto ?? '', {
-                                    n_val: curNak.toLocaleString(language),
-                                    total: curTotalStr,
-                                    pct: formatShare(curNak / Math.max(1, totalVoters), language),
-                                }),
-                                cur: `${curNak.toLocaleString(language)}/${curTotalStr}`,
-                            },
-                            {
-                                label: c.election_conclusions_top1_label ?? '',
-                                labelTip: c.election_conclusions_tip_top1 ?? '',
-                                curTip: fill(c.election_conclusions_tip_cur_top1 ?? '', {
-                                    pct: formatPct(curTop1, language),
-                                }),
-                                cur: formatPct(curTop1, language),
-                            },
-                            {
-                                label: c.election_conclusions_top10_label ?? '',
-                                labelTip: c.election_conclusions_tip_top10 ?? '',
-                                curTip: fill(c.election_conclusions_tip_cur_top10 ?? '', {
-                                    pct: formatPct(curTop10, language),
-                                }),
-                                cur: formatPct(curTop10, language),
-                            },
-                            {
-                                label: c.detail_spread ?? '',
-                                labelTip: c.election_conclusions_tip_spread ?? '',
-                                curTip: fill(c.election_conclusions_tip_cur_spread ?? '', {
-                                    pct: formatPct(curSpread, language),
-                                    eff: curEffStr,
-                                    total: curTotalStr,
-                                }),
-                                cur: formatPct(curSpread, language),
-                            },
-                            {
-                                label: c.election_conclusions_row_effective ?? '',
-                                labelTip: c.election_conclusions_tip_effective ?? '',
-                                curTip: fill(c.election_conclusions_tip_cur_effective ?? '', {
-                                    eff: curEffStr,
-                                    total: curTotalStr,
-                                }),
-                                cur: curEffStr,
-                            },
-                        ].map(row => (
-                            <div
-                                key={row.label}
-                                className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-2"
-                            >
-                                <dt
-                                    title={row.labelTip}
-                                    className="min-w-0 text-[var(--color-text-secondary)] font-medium cursor-help"
+                    <table className="w-full border-collapse text-xs">
+                        <thead>
+                            <tr>
+                                <th scope="col" className="pb-1.5" />
+                                <th
+                                    scope="col"
+                                    className="pb-1.5 pl-4 w-px whitespace-nowrap text-right text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]"
                                 >
-                                    {row.label}
-                                </dt>
-                                <dd
-                                    title={row.curTip}
-                                    className="font-mono text-right tabular-nums font-bold text-[var(--color-text-main)] cursor-help"
-                                >
-                                    {row.cur}
-                                </dd>
-                            </div>
-                        ))}
-                    </dl>
+                                    {c.election_conclusions_col_current ?? ''}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--color-card-border)]/40">
+                            {[
+                                {
+                                    label: fill(c.election_conclusions_row_decisive ?? '', { quantilePct }),
+                                    labelTip: fill(c.election_conclusions_tip_decisive ?? '', { quantilePct }),
+                                    curTip: curBlock ? fill(c.election_conclusions_tip_cur_decisive ?? '', {
+                                        count: decCount.toLocaleString(language),
+                                        total: curTotalStr,
+                                        pct: formatShare(curBlock.share, language),
+                                        xrd: formatXrd(accPower, language),
+                                        quantilePct,
+                                    }) : undefined,
+                                    cur: `${decCount.toLocaleString(language)}/${curTotalStr}`,
+                                },
+                                {
+                                    label: c.election_conclusions_row_nakamoto ?? '',
+                                    labelTip: c.election_conclusions_tip_nakamoto ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_nakamoto ?? '', {
+                                        n_val: curNak.toLocaleString(language),
+                                        total: curTotalStr,
+                                        pct: formatShare(curNak / Math.max(1, totalVoters), language),
+                                    }),
+                                    cur: `${curNak.toLocaleString(language)}/${curTotalStr}`,
+                                },
+                                {
+                                    label: c.election_conclusions_top1_label ?? '',
+                                    labelTip: c.election_conclusions_tip_top1 ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_top1 ?? '', {
+                                        pct: formatPct(curTop1, language),
+                                    }),
+                                    cur: formatPct(curTop1, language),
+                                },
+                                {
+                                    label: c.election_conclusions_top10_label ?? '',
+                                    labelTip: c.election_conclusions_tip_top10 ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_top10 ?? '', {
+                                        pct: formatPct(curTop10, language),
+                                    }),
+                                    cur: formatPct(curTop10, language),
+                                },
+                                {
+                                    label: c.detail_spread ?? '',
+                                    labelTip: c.election_conclusions_tip_spread ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_spread ?? '', {
+                                        pct: formatPct(curSpread, language),
+                                        eff: curEffStr,
+                                        total: curTotalStr,
+                                    }),
+                                    cur: formatPct(curSpread, language),
+                                },
+                                {
+                                    label: c.election_conclusions_row_effective ?? '',
+                                    labelTip: c.election_conclusions_tip_effective ?? '',
+                                    curTip: fill(c.election_conclusions_tip_cur_effective ?? '', {
+                                        eff: curEffStr,
+                                        total: curTotalStr,
+                                    }),
+                                    cur: curEffStr,
+                                },
+                            ].map(row => (
+                                <tr key={row.label}>
+                                    <th
+                                        scope="row"
+                                        title={row.labelTip}
+                                        className="py-2 text-left text-[var(--color-text-secondary)] font-medium cursor-help align-middle"
+                                    >
+                                        {row.label}
+                                    </th>
+                                    <td
+                                        title={row.curTip}
+                                        className="py-2 pl-4 w-px whitespace-nowrap font-mono text-right tabular-nums font-bold text-[var(--color-text-main)] cursor-help align-middle"
+                                    >
+                                        {row.cur}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
 
                     <div className="pt-2 space-y-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
@@ -208,23 +213,24 @@ export function ElectionCurrentConclusionsTab({
                             const pctStr = cons ? formatPct(cons.consensusShare, language) : null;
                             const totalStr = consensus.evaluatedMethods.toLocaleString(language);
                             return (
-                                <li key={cand.id} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] w-6 shrink-0">
-                                            #{cand.rank}
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-text-main)] truncate">
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    {cons && pctStr && (
-                                        <div className="flex items-center gap-2.5 shrink-0 font-mono tabular-nums">
+                                <li
+                                    key={cand.id}
+                                    className="grid grid-cols-[2rem_minmax(0,1fr)_3.75rem_4.25rem] items-center gap-2 py-1.5 text-[13px]"
+                                >
+                                    <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] tabular-nums">
+                                        #{cand.rank}
+                                    </span>
+                                    <span className="font-semibold text-[var(--color-text-main)] truncate">
+                                        {cand.label}
+                                    </span>
+                                    {cons && pctStr ? (
+                                        <>
                                             <span
                                                 title={fill(c.election_conclusions_tip_seat_methods ?? '', {
                                                     elected: cons.electedCount.toLocaleString(language),
                                                     total: totalStr,
                                                 })}
-                                                className="text-[11px] text-[var(--color-text-muted)] cursor-help"
+                                                className="font-mono text-[11px] text-[var(--color-text-muted)] tabular-nums text-right whitespace-nowrap cursor-help"
                                             >
                                                 {cons.electedCount}/{cons.evaluatedMethods}
                                             </span>
@@ -234,13 +240,18 @@ export function ElectionCurrentConclusionsTab({
                                                     pct: pctStr,
                                                     total: totalStr,
                                                 })}
-                                                className={`text-xs font-bold w-12 text-right cursor-help ${
+                                                className={`font-mono text-xs font-bold tabular-nums text-right whitespace-nowrap cursor-help ${
                                                     cons.inSeats ? 'text-[var(--color-accent)]' : 'text-amber-600 dark:text-amber-400'
                                                 }`}
                                             >
                                                 {pctStr}
                                             </span>
-                                        </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span />
+                                            <span />
+                                        </>
                                     )}
                                 </li>
                             );

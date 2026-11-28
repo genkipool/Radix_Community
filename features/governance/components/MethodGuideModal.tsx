@@ -6,20 +6,32 @@ import { SidePanelModal } from '@/components/shared/SidePanelModal';
 import { SidePanelControls } from '@/components/shared/SidePanelControls';
 import { useSidePanelControls } from '@/components/shared/hooks/useSidePanelControls';
 import { useLanguage } from '@/context/LanguageContext';
-import type { ElectionConsensusSummary, MethodResult } from '../lib/votingMethods';
+import {
+    methodResistanceMetricsFromHistorical,
+    methodResistanceMetricsFromResult,
+    type ElectionConsensusSummary,
+    type MethodResult,
+} from '../lib/votingMethods';
 import type { HistoricalMethodRow } from '../lib/historicalMethods';
 import { gradeLabel, parseQuantile } from '../lib/majorityJudgment';
 import { fill, formatPct, formatXrd } from '../lib/format';
 import type { G } from './GovernanceBadges';
-import type { CompareDict, HistoricalDict } from './ComparisonParts';
+import { formatAttackCost, methodText, ruleParams, type CompareDict, type HistoricalDict } from './ComparisonParts';
 import { ElectionConclusionsTab } from './ElectionConclusionsTab';
 import { ElectionCurrentConclusionsTab } from './ElectionCurrentConclusionsTab';
-import { ElectionCurrentResistanceTab, ElectionResistanceTab } from './ElectionResistanceTab';
+import { MethodHistoricalConclusionsTab, MethodSingleConclusionsTab } from './MethodConclusionsTab';
+import {
+    ElectionCurrentResistanceTab,
+    ElectionResistanceTab,
+    MethodResistanceTab,
+} from './ElectionResistanceTab';
 
 export type MethodGuideTarget =
     | {
         mode: 'single';
         method: MethodResult;
+        current: MethodResult;
+        allMethods: MethodResult[];
         quorum: number | null;
         threshold: number | null;
         gradeQuantile?: string | null;
@@ -27,7 +39,11 @@ export type MethodGuideTarget =
     | {
         mode: 'historical';
         row: HistoricalMethodRow;
+        currentRow: HistoricalMethodRow | null;
+        allRows: HistoricalMethodRow[];
         totalVotes: number;
+        totalBallots: number;
+        totalXrd: number;
     }
     | {
         mode: 'consensus';
@@ -67,7 +83,13 @@ interface LiveMetric {
 }
 
 /** Inline info icon button placed right after a method's rule text to open its calculation guide. */
-export function MethodGuideTrigger({ onClick, label }: { onClick: () => void; label: string }) {
+export function MethodGuideTrigger({
+    onClick,
+    label,
+}: {
+    onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+    label: string;
+}) {
     return (
         <button
             type="button"
@@ -129,7 +151,7 @@ export function MethodGuideModal({
     const election = singleMethod?.electionSummary ?? null;
     const historicalRow = target?.mode === 'historical' ? target.row : null;
     const consensusTarget = target?.mode === 'consensus' ? target.consensus : null;
-    const hasThreeTabs = target?.mode === 'consensus' || target?.mode === 'current-election';
+    const hasThreeTabs = Boolean(target);
 
     const guideKind: 'election' | 'standard' | 'historical' | 'consensus' | null = !target
         ? null
@@ -296,9 +318,12 @@ export function MethodGuideModal({
                 value: `${historicalRow.validVotesCount.toLocaleString(language)}/${target.totalVotes.toLocaleString(language)}`,
             },
         ];
-    } else if (guideKind === 'consensus' && consensusTarget) {
+    } else if (guideKind === 'consensus' && consensusTarget && target?.mode === 'consensus') {
         const nStr = consensusTarget.evaluatedMethods.toLocaleString(language);
-        const seatsChanged = consensusTarget.candidates.filter(cand => cand.inSeats && cand.changedFromCurrent).length;
+        const enteredCount = consensusTarget.candidates.filter(cand => cand.inSeats && cand.changedFromCurrent).length;
+        const droppedCount = consensusTarget.candidates.filter(cand => !cand.inSeats && cand.changedFromCurrent).length;
+        const seatsChanged = Math.max(enteredCount, droppedCount);
+        const familyCount = new Set(target.methods.filter(m => m.electionSummary && m.counted > 0).map(m => m.family)).size || 4;
         kicker = c.election_consensus_guide_kicker ?? '';
         intro = fill(c.election_consensus_guide_intro ?? '', { n: nStr });
         steps = [
@@ -311,7 +336,7 @@ export function MethodGuideModal({
         liveMetrics = [
             { label: c.col_method ?? '', value: nStr },
             { label: c.fact_seats ?? '', value: consensusTarget.seatCount.toLocaleString(language) },
-            { label: c.election_consensus_live_families ?? '', value: '25 % × 4' },
+            { label: c.election_consensus_live_families ?? '', value: `${formatPct(1 / familyCount, language)} × ${familyCount}` },
             {
                 label: c.election_consensus_live_changed ?? '',
                 value: seatsChanged === 0
@@ -414,6 +439,7 @@ export function MethodGuideModal({
                         <ElectionResistanceTab
                             consensus={target.consensus}
                             methods={target.methods}
+                            gradeQuantile={target.gradeQuantile}
                             c={c}
                             language={language}
                         />
@@ -432,6 +458,50 @@ export function MethodGuideModal({
                         <ElectionCurrentResistanceTab
                             current={target.current}
                             gradeQuantile={target.gradeQuantile}
+                            c={c}
+                            language={language}
+                        />
+                    ) : target?.mode === 'single' && activeTab === 'conclusions' ? (
+                        <MethodSingleConclusionsTab
+                            method={target.method}
+                            methodName={methodName}
+                            current={target.current}
+                            allMethods={target.allMethods}
+                            quorum={target.quorum}
+                            threshold={target.threshold}
+                            gradeQuantile={target.gradeQuantile}
+                            c={c}
+                            g={g}
+                            language={language}
+                        />
+                    ) : target?.mode === 'single' && activeTab === 'resistance' ? (
+                        <MethodResistanceTab
+                            methodKey={target.method.key}
+                            metrics={methodResistanceMetricsFromResult(target.method, parseQuantile(target.gradeQuantile))}
+                            spread={target.method.concentration.spread}
+                            methodRuleAttack={methodText(c, target.method.key, ruleParams(language)).attack}
+                            attackCostSentence={target.method.electionSummary ? null : formatAttackCost(target.method.attack, target.method.eligibleXrd, c, language)}
+                            c={c}
+                            language={language}
+                        />
+                    ) : target?.mode === 'historical' && activeTab === 'conclusions' ? (
+                        <MethodHistoricalConclusionsTab
+                            row={target.row}
+                            methodName={methodName}
+                            currentRow={target.currentRow}
+                            allRows={target.allRows}
+                            totalVotes={target.totalVotes}
+                            totalBallots={target.totalBallots}
+                            c={c}
+                            h={h}
+                            language={language}
+                        />
+                    ) : target?.mode === 'historical' && activeTab === 'resistance' ? (
+                        <MethodResistanceTab
+                            methodKey={target.row.key}
+                            metrics={methodResistanceMetricsFromHistorical(target.row, target.totalVotes)}
+                            spread={target.row.avgSpread}
+                            methodRuleAttack={methodText(c, target.row.key, ruleParams(language)).attack}
                             c={c}
                             language={language}
                         />

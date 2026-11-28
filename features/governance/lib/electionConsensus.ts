@@ -95,10 +95,28 @@ export interface ElectionConsensusSummary {
 }
 
 export {
+    ATTACK_OPERATIONAL_COST,
     CURRENT_ATTACK_SHARES,
+    computeAttackDifficulty,
     computeConsensusResistance,
+    computeConsensusStructuralRatio,
+    computeGlobalResistanceScore,
+    computeHistoricalMethodScoreRows,
+    computeMethodScoreRows,
+    methodResistanceMetricsFromHistorical,
+    methodResistanceMetricsFromResult,
+    nextMethodScoreSort,
+    resistanceLevelFromScore,
+    sortMethodScoreRows,
+    type AttackDifficulty,
+    type AttackOperationalCost,
     type ConsensusAttackId,
     type ConsensusAttackScenario,
+    type GlobalResistanceScore,
+    type MethodScoreRow,
+    type MethodScoreSortKey,
+    type MethodScoreSortState,
+    type SortDirection,
 } from './consensusResistance';
 
 const FAMILY_ORDER: readonly MethodFamily[] = ['wealth', 'address', 'seniority', 'hybrid'];

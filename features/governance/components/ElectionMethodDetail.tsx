@@ -39,16 +39,16 @@ export function ElectionCouncilList({
                         return (
                             <li
                                 key={cand.id}
-                                className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
+                                className={`grid grid-cols-[2rem_minmax(0,1fr)_5.25rem_3.75rem_4.5rem] items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
                                     isNew
                                         ? 'border-amber-500/35 bg-amber-500/5'
                                         : 'border-[var(--color-card-border)] bg-[var(--color-surface)]/50'
                                 }`}
                             >
-                                <span className="flex items-center gap-2 min-w-0">
-                                    <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] shrink-0">
-                                        #{cand.rank}
-                                    </span>
+                                <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] tabular-nums">
+                                    #{cand.rank}
+                                </span>
+                                <span className="flex items-center gap-1.5 min-w-0">
                                     <span className="font-semibold text-[var(--color-text-main)] truncate">
                                         {cand.label}
                                     </span>
@@ -58,19 +58,17 @@ export function ElectionCouncilList({
                                         </span>
                                     )}
                                 </span>
-                                <span className="flex items-center gap-2 shrink-0">
-                                    <span className="text-[11px] font-semibold text-[var(--color-accent)]">
-                                        {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
-                                    </span>
-                                    <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">
-                                        {formatXrd(cand.qualifyingXrd, language)}
-                                    </span>
-                                    <span
-                                        className="inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] px-2 font-mono text-[10px] font-bold text-[var(--color-text-secondary)] cursor-help"
-                                        title={`${bandHint(g.mj, cand.band) ?? ''} (${formatPct(cand.p, language)} / ${formatPct(cand.q, language)})`}
-                                    >
-                                        <span className="leading-none translate-y-[1px]">{fill(g.mj?.band_short ?? '', { band: cand.band })}</span>
-                                    </span>
+                                <span className="text-[11px] font-semibold text-[var(--color-accent)] text-right whitespace-nowrap">
+                                    {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
+                                </span>
+                                <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums text-right whitespace-nowrap">
+                                    {formatXrd(cand.qualifyingXrd, language)}
+                                </span>
+                                <span
+                                    className="justify-self-end inline-flex items-center justify-center h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-card-bg)] px-2 font-mono text-[10px] font-bold text-[var(--color-text-secondary)] whitespace-nowrap cursor-help"
+                                    title={`${bandHint(g.mj, cand.band) ?? ''} (${formatPct(cand.p, language)} / ${formatPct(cand.q, language)})`}
+                                >
+                                    <span className="leading-none translate-y-[1px]">{fill(g.mj?.band_short ?? '', { band: cand.band })}</span>
                                 </span>
                             </li>
                         );

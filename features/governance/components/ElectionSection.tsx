@@ -18,12 +18,16 @@ import type { G } from './GovernanceBadges';
 
 export { ElectionVoteSidebar } from './ElectionVoteSidebar';
 export { ElectionCandidatesBallot } from './ElectionCandidatesBallot';
-export { ElectionConsensusKpiGrid } from './ElectionConsensusKpiGrid';
+export {
+    ElectionConsensusKpiGrid,
+    ElectionConsensusCandidateCards,
+    ElectionMethodCandidatesGrid,
+} from './ElectionConsensusKpiGrid';
 
 type MjDict = NonNullable<G['mj']>;
 
 /** Stacked 5-grade distribution bar with a quantile tick mark (default 60%). */
-function GradeDistributionBar({
+export function GradeDistributionBar({
     histogram,
     totalPower,
     quantile = '3/5',
@@ -32,7 +36,7 @@ function GradeDistributionBar({
     heightClass = 'h-2',
     showTooltips = false,
 }: {
-    histogram: Record<number, string>;
+    histogram: Record<number, string | number> | readonly number[];
     totalPower: number;
     quantile?: string;
     mj: MjDict | undefined;
@@ -44,7 +48,10 @@ function GradeDistributionBar({
     return (
         <div className={`relative ${heightClass} w-full rounded-full bg-[var(--color-card-border)] overflow-hidden flex`}>
             {MJ_GRADE_ORDER.map(gradeIdx => {
-                const xrd = Number(histogram[gradeIdx]) || 0;
+                const raw = Array.isArray(histogram)
+                    ? histogram[gradeIdx]
+                    : (histogram as Record<number, string | number>)[gradeIdx];
+                const xrd = Number(raw) || 0;
                 const pct = totalPower > 0 ? (xrd / totalPower) * 100 : 0;
                 if (pct <= 0) return null;
                 return (

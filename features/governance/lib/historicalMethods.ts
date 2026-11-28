@@ -57,6 +57,8 @@ export interface HistoricalMethodRow {
     totalBallotsExcluded: number;
     /** Cumulative XRD of eligible voters summed across all votes. */
     totalEligibleXrd: number;
+    /** Average sum of transformed voter weights across evaluated votes. */
+    avgTotalWeight: number;
     /** Average Nakamoto coefficient across evaluated votes. */
     avgNakamoto: number | null;
     /** Average decentralisation (Simpson evenness, 0..1) across evaluated votes. */
@@ -125,6 +127,7 @@ export function aggregateHistoricalMethods(
         totalBallotsCounted: number;
         totalBallotsExcluded: number;
         totalEligibleXrd: number;
+        totalWeightSum: number;
         nakamotoSum: number;
         nakamotoCount: number;
         spreadSum: number;
@@ -150,6 +153,7 @@ export function aggregateHistoricalMethods(
             totalBallotsCounted: 0,
             totalBallotsExcluded: 0,
             totalEligibleXrd: 0,
+            totalWeightSum: 0,
             nakamotoSum: 0,
             nakamotoCount: 0,
             spreadSum: 0,
@@ -187,6 +191,7 @@ export function aggregateHistoricalMethods(
             const currentHasVerdict = Boolean(currentRes && (currentRes.outcome !== null || currentRes.winner !== null));
             if (r.counted > 0) {
                 acc.votesEvaluated += 1;
+                acc.totalWeightSum += r.totalWeight;
                 if (r.sameAsCurrent === false) {
                     acc.changedCount += 1;
                     acc.changedEntries.push({
@@ -271,6 +276,7 @@ export function aggregateHistoricalMethods(
             totalBallotsCounted: acc.totalBallotsCounted,
             totalBallotsExcluded: acc.totalBallotsExcluded,
             totalEligibleXrd: acc.totalEligibleXrd,
+            avgTotalWeight: acc.votesEvaluated > 0 ? acc.totalWeightSum / acc.votesEvaluated : 0,
             avgNakamoto,
             avgSpread,
             avgEffective,
