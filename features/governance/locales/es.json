@@ -416,7 +416,7 @@
       "election_rest_table_title": "Resto de candidatos ({n})",
       "election_col_grade": "Calificación",
       "election_col_band": "Banda",
-      "election_current_ranking_title": "Clasificación método de voto actual",
+      "election_current_ranking_title": "Clasificación método de voto actual 1 XRD = 1 voto",
       "election_current_guide_open": "Ver cómo se calcula el método de voto actual",
       "election_current_conclusions_metrics_title": "Métricas de descentralización (1 XRD = 1 voto)",
       "election_current_conclusions_council_title": "Consejo elegido ({seats} plazas) y coincidencia con otros métodos",

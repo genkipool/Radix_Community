@@ -416,7 +416,7 @@
       "election_rest_table_title": "Remaining candidates ({n})",
       "election_col_grade": "Grade",
       "election_col_band": "Band",
-      "election_current_ranking_title": "Current voting method ranking",
+      "election_current_ranking_title": "Current voting method ranking 1 XRD = 1 vote",
       "election_current_guide_open": "See how the current voting method is calculated",
       "election_current_conclusions_metrics_title": "Decentralisation metrics (1 XRD = 1 vote)",
       "election_current_conclusions_council_title": "Elected council ({seats} seats) & agreement with other methods",

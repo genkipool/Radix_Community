@@ -35,6 +35,7 @@ import { MethodScoresTable, toScoreTableEntries } from './MethodScoresTable';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import {
     ruleParams, tip, methodText, matchesMethodQuery, formatBalanceHint, nextSort, sortComparisonRows,
+    methodCatalogForExport, glossaryForExport,
     ComparisonTile, FamilyFilterBar, MethodSearchInput, SortableHeaderButton, ComparisonGlossary,
     ProgressBar, FactTile, GroupedMethodList,
     type CompareDict,
@@ -83,9 +84,27 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const pending = rows.filter(v => v.votePower === null).length;
     const zeroPower = rows.filter(v => v.votePower !== null && !(Number(v.votePower) > 0)).length;
     const readyForExport = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
+    const unknownAgesCount = ages.done ? voters.filter(v => v.ageDays === null).length : 0;
     const electionConsensus = kind === 'election'
         ? computeElectionConsensus(readyForExport, tallyQuery.data?.electionData)
         : null;
+    const electionData = tallyQuery.data?.electionData ?? null;
+    // Computed before the export getter so the JSON always contains the same
+    // ranking rows as the table, even while tallies/ages are still loading.
+    const scoreEntries = toScoreTableEntries(
+        computeMethodScoreRows(readyForExport, {
+            quantile: parseQuantile(electionData?.gradeQuantileApplied),
+            consensus: kind === 'election' && Boolean(item.election) && electionConsensus
+                ? {
+                    methodWeights: electionConsensus.methodWeights,
+                    concentration: electionConsensus.weightedConcentration,
+                }
+                : null,
+        }),
+        c,
+        language,
+        electionConsensus?.evaluatedMethods,
+    );
 
     useRegisterTabExport(onRegisterExport, () => {
         const currentResult = results.find(r => r.current);
@@ -93,6 +112,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         return {
             tab: 'compare',
             exportedAt: new Date().toISOString(),
+            language,
             system: {
                 key: system.key,
                 name: system.name,
@@ -107,6 +127,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 deadline: item.deadline,
                 quorum: item.quorum,
                 approvalThreshold: item.approvalThreshold,
+                /** Full proposal/election metadata, including options, description and candidate slate. */
+                item,
             },
             filters: { family, query, sort },
             summary: {
@@ -118,7 +140,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 agesLoaded: ages.loaded,
                 agesTotal: ages.total,
                 agesDone: ages.done,
-                unknownAges: ages.done ? voters.filter(v => v.ageDays === null).length : 0,
+                unknownAges: unknownAgesCount,
                 sameOutcomeCount: otherResults.filter(r => r.sameAsCurrent).length,
                 comparedMethodsCount: otherResults.length,
             },
@@ -166,6 +188,27 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 };
             })() : {}),
             methods: results,
+            /** Name, rule, family and resistance of all 50 methods, plus the figures their rules use. */
+            methodCatalog: methodCatalogForExport(c, language),
+            /** Ranking table exactly as rendered, with localized labels and score metrics. */
+            scoreTable: {
+                rows: scoreEntries,
+                defaultSort: { key: 'final', dir: 'desc' },
+            },
+            /** Glossary shown under the table, with every level tip and hint. */
+            glossary: glossaryForExport(c),
+            /** Every ballot row, including vote history and per-candidate grades. */
+            voters: rows,
+            /** Raw tally payload (collector election results when available). */
+            tally: tallyQuery.data ?? null,
+            notes: [
+                c.note_hypothetical ?? '',
+                zeroPower > 0 ? fill(c.note_zero_power ?? '', { n: zeroPower.toLocaleString(language) }) : '',
+                pending > 0 ? fill(c.note_pending ?? '', { n: pending.toLocaleString(language) }) : '',
+                unknownAgesCount > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAgesCount.toLocaleString(language) }) : '',
+            ].filter(Boolean),
+            /** All localized strings used by the governance tabs (labels, tooltips, guide steps). */
+            labels: g,
         };
     });
 
@@ -205,7 +248,6 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             ],
         }, params, query));
     const sortedShown = sortComparisonRows(shown, sort, r => r.concentration.spread, r => r.resistance);
-    const unknownAges = ages.done ? voters.filter(v => v.ageDays === null).length : 0;
     const name = (r: MethodResult) => methodText(c, r.key, params).name;
     const balance = balanceExtremes(ready);
     const effective = effectiveExtremes(ready);
@@ -218,7 +260,6 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     });
 
     const isElection = kind === 'election' && Boolean(item.election);
-    const electionData = tallyQuery.data?.electionData ?? null;
     const methodByKey = new Map(results.map(m => [m.key, m]));
     const openMethodGuide = (key: MethodKey | 'consensus') => {
         if (key === 'consensus') {
@@ -228,21 +269,6 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         const hit = methodByKey.get(key);
         if (hit) setGuidePanel({ kind: 'method', method: hit });
     };
-    const scoreEntries = toScoreTableEntries(
-        computeMethodScoreRows(readyForExport, {
-            quantile: parseQuantile(electionData?.gradeQuantileApplied),
-            consensus: isElection && electionConsensus
-                ? {
-                    methodWeights: electionConsensus.methodWeights,
-                    concentration: electionConsensus.weightedConcentration,
-                }
-                : null,
-        }),
-        c,
-        language,
-        electionConsensus?.evaluatedMethods,
-    );
-
     return (
         <div className="space-y-6">
             <section className="relative overflow-hidden rounded-3xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 sm:p-7">
@@ -565,7 +591,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                     c.note_hypothetical,
                     zeroPower > 0 ? fill(c.note_zero_power ?? '', { n: zeroPower.toLocaleString(language) }) : null,
                     pending > 0 ? fill(c.note_pending ?? '', { n: pending.toLocaleString(language) }) : null,
-                    unknownAges > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAges.toLocaleString(language) }) : null,
+                    unknownAgesCount > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAgesCount.toLocaleString(language) }) : null,
                 ].filter(Boolean).map((text, i) => (
                     <p key={i} className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
                         <Info className="size-3 mt-0.5 shrink-0" />{text}

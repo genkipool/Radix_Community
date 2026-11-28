@@ -24,6 +24,7 @@ import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import { isCountedVoter } from '../lib/comparisonUtils';
 import {
     ruleParams, tip, methodText, matchesMethodQuery, formatBalanceHint, nextSort, sortComparisonRows,
+    methodCatalogForExport, glossaryForExport,
     ComparisonTile, FamilyFilterBar, MethodSearchInput, SortableHeaderButton, ComparisonGlossary,
     ProgressBar, FactTile, GroupedMethodList,
     type CompareDict, type HistoricalDict,
@@ -131,10 +132,23 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
             ],
         }, params, query));
     const sortedShown = sortComparisonRows(shown, sort, r => r.avgSpread, r => r.resistance);
+    // Same ranking rows as the table, computed before the getter so exports
+    // always mirror what is on screen (including while ages are still loading).
+    const scoreEntries = summary.votesAnalyzed > 0
+        ? toScoreTableEntries(
+            computeHistoricalMethodScoreRows(
+                summary.methods.filter(m => !m.needsAge || ages.done),
+                summary.votesAnalyzed,
+            ),
+            c,
+            language,
+        )
+        : [];
 
     useRegisterTabExport(onRegisterExport, () => ({
         tab: 'historical',
         exportedAt: new Date().toISOString(),
+        language,
         filters: { kind, systemFilter, family, query, sort },
         progress: {
             loadedTallies,
@@ -145,15 +159,46 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
             agesDone: ages.done,
         },
         summary,
-        entries: scopedEntries.map(e => ({
+        entries: scopedEntries.map((e, i) => ({
             systemKey: e.systemKey,
+            systemName: e.systemName,
             kind: e.kind,
             id: e.id,
             title: e.item.title,
             start: e.item.start,
             deadline: e.item.deadline,
+            /** Full proposal/election metadata (options, description, candidate slate…). */
+            item: e.item,
+            /** Raw tally as loaded for this vote, including voters and election data. */
+            tally: tallyQueries[i]?.data ?? null,
+            tallyStatus: tallyQueries[i]?.status ?? 'pending',
         })),
+        /** Exact per-vote inputs fed to every method (power, age, stake, TWAB, min balance). */
+        methodInputs: voteInputs.map(v => ({
+            systemKey: v.entry.systemKey,
+            kind: v.entry.kind,
+            id: v.entry.id,
+            title: v.entry.item.title,
+            gradeQuantile: v.gradeQuantile ?? null,
+            voters: v.voters,
+        })),
+        /** Name, rule, family and resistance of all 50 methods, plus their rule parameters. */
+        methodCatalog: methodCatalogForExport(c, language),
+        /** Ranking table exactly as rendered, with localized labels and score metrics. */
+        scoreTable: {
+            rows: scoreEntries,
+            defaultSort: { key: 'final', dir: 'desc' },
+        },
+        /** Glossary shown under the table, with every level tip and hint. */
+        glossary: glossaryForExport(c),
         shownMethodKeys: sortedShown.map(m => m.key),
+        /** Localized name and rule of the methods currently visible after filters. */
+        shownMethods: sortedShown.map(m => {
+            const text = methodText(c, m.key, params);
+            return { key: m.key, name: text.name, rule: text.rule };
+        }),
+        /** All localized strings used by the governance tabs (labels, tooltips, guide steps). */
+        labels: g,
     }));
     const name = (m: HistoricalMethodRow) => methodText(c, m.key, params).name;
     const balanceHint = (m: HistoricalMethodRow) => formatBalanceHint(
@@ -171,17 +216,6 @@ export function HistoricalComparison({ entries, g, language, now, onRegisterExpo
         valid: m.validVotesCount.toLocaleString(language),
         total: summary.votesAnalyzed.toLocaleString(language),
     });
-
-    const scoreEntries = summary.votesAnalyzed > 0
-        ? toScoreTableEntries(
-            computeHistoricalMethodScoreRows(
-                summary.methods.filter(m => !m.needsAge || ages.done),
-                summary.votesAnalyzed,
-            ),
-            c,
-            language,
-        )
-        : [];
 
     return (
         <div className="space-y-6">

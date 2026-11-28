@@ -306,6 +306,58 @@ export function SortableHeaderButton({ label, title, active, dir, onClick }: {
     );
 }
 
+/**
+ * JSON-ready method catalogue: every rule shown in either comparison tab, with
+ * its localized name, explanation, family and structural resistance level.
+ */
+export function methodCatalogForExport(c: CompareDict, language: string) {
+    const params = ruleParams(language);
+    return {
+        params,
+        methods: METHODS.map(spec => {
+            const text = methodText(c, spec.key, params);
+            return {
+                key: spec.key,
+                family: spec.family,
+                structuralResistance: spec.resistance,
+                name: text.name,
+                rule: text.rule,
+            };
+        }),
+    };
+}
+
+/** JSON-ready copy of the glossary (terms, levels and their help texts). */
+export function glossaryForExport(c: CompareDict) {
+    const levels = (c.levels ?? {}) as Record<string, string>;
+    const levelHints = (c.level_hints ?? {}) as Record<string, string>;
+    const resistance = (c.resistance ?? {}) as Record<string, string>;
+    const resistanceHints = (c.resistance_hints ?? {}) as Record<string, string>;
+    return {
+        title: c.glossary_title ?? '',
+        terms: [
+            { key: 'nakamoto', title: c.g_nakamoto_t ?? '', body: c.g_nakamoto ?? '' },
+            { key: 'decisive', title: c.g_decisive_t ?? '', body: c.g_decisive ?? '' },
+            { key: 'effective', title: c.g_effective_t ?? '', body: c.g_effective ?? '' },
+            { key: 'age', title: c.g_age_t ?? '', body: c.g_age ?? '' },
+            { key: 'resistance', title: c.g_resistance_t ?? '', body: c.g_resistance ?? '' },
+        ],
+        concentrationLevels: (Object.keys(LEVEL_STYLE) as ConcentrationLevel[]).map(key => ({
+            key,
+            label: levels[key] ?? key,
+            hint: levelHints[key] ?? '',
+            tip: tip(c, `level_${key}`) ?? '',
+        })),
+        resistanceLevels: RESISTANCE_ORDER.map(key => ({
+            key,
+            label: resistance[key] ?? key,
+            hint: resistanceHints[key] ?? '',
+            legend: fill(c.resistance_legend ?? '', { level: resistance[key] ?? key }),
+            tip: tip(c, `resistance_${key}`) ?? '',
+        })),
+    };
+}
+
 export function ComparisonGlossary({ id, c }: { id: string; c: CompareDict }) {
     return (
         <section aria-labelledby={id} className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5">
