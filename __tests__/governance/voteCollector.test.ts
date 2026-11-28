@@ -39,4 +39,23 @@ describe('voteCollector', () => {
         ]);
         expect(await fetchVoteTally('component_rdx1unknown', 'proposal', '0')).toBeNull();
     });
+
+    it('weighs an election at round one snapshot, also during a rerun', async () => {
+        const payload = (round: string) => ({
+            election: { snapshotAt: '2026-01-01T00:00:00.000Z' },
+            currentRound: { round, snapshotAt: round === 'Rerun' ? '2026-01-20T00:00:00.000Z' : '2026-01-08T00:00:00.000Z' },
+            rounds: [
+                { round: 'RoundOne', snapshotAt: '2026-01-08T00:00:00.000Z' },
+                ...(round === 'Rerun' ? [{ round: 'Rerun', snapshotAt: '2026-01-20T00:00:00.000Z' }] : []),
+            ],
+            result: { round, totalVotingPower: '10', candidateResults: [] },
+        });
+        for (const round of ['RoundOne', 'Rerun']) {
+            vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => payload(round) })));
+            const tally = await fetchVoteTally(DAO, 'election', '7');
+            expect(tally?.electionData?.roundSnapshotAt).toBe('2026-01-08T00:00:00.000Z');
+        }
+        vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ result: { totalVotingPower: '1' } }) })));
+        expect((await fetchVoteTally(DAO, 'election', '8'))?.electionData?.roundSnapshotAt).toBeNull();
+    });
 });

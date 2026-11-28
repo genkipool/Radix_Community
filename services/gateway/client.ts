@@ -95,17 +95,32 @@ function _getRetryAfterMs(err: unknown): number | null {
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = RETRY_MAX,
-  attempt = 0
+  attempt = 0,
+  /** Caller's cancellation: once aborted, nothing is retried and any wait ends at once. */
+  signal?: AbortSignal,
 ): Promise<T> {
+  signal?.throwIfAborted();
   try {
     return await fn();
   } catch (err) {
+    signal?.throwIfAborted();
     if (!_isTransient(err) || attempt >= maxRetries) throw err;
     // A rate limit says when to come back and that is respected; everything
     // else backs off from 400ms, which outlasts a blip without stalling a page.
     const ms = _getRetryAfterMs(err) ?? RETRY_BASE_MS * 2 ** attempt;
-    await new Promise(r => setTimeout(r, ms));
-    return withRetry(fn, maxRetries, attempt + 1);
+    await new Promise<void>((resolve, reject) => {
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(signal?.reason);
+      };
+      const timer = setTimeout(() => {
+        signal?.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+      signal?.addEventListener('abort', onAbort, { once: true });
+      if (signal?.aborted) onAbort();
+    });
+    return withRetry(fn, maxRetries, attempt + 1, signal);
   }
 }
 

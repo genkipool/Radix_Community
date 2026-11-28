@@ -4,11 +4,15 @@ import { validateAddress } from '@/utils/apiValidation';
 import { systemByComponent, type GovernanceSystem } from '@/features/governance/config/systems';
 import { fetchAccountVotingPowers, fetchVoteTally, type CollectorItemType } from '@/features/governance/services/voteCollector.server';
 import { fetchVoteRecords } from '@/features/governance/services/voteRecords.server';
+import { fetchSnapshotVotePowers } from '@/features/governance/services/votePowerSnapshot.server';
+import { decimalsAgree, isAccountAddress, sumDecimals, withDeadline } from '@/features/governance/lib/votePowerChecks';
 import { fetchGovernanceEntry } from '@/features/governance/services/governanceLedger.server';
 import { FRESH_VOTE_WINDOW_MS, votingPhase } from '@/features/governance/lib/governanceVotes';
 import type { VoterRow } from '@/features/governance/types';
 
 const TYPES: readonly CollectorItemType[] = ['proposal', 'temperature_check', 'election'];
+/** Time the snapshot recount may take before current power stands in. */
+const SNAPSHOT_BUDGET_MS = 12_000;
 const NO_STORE = { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' };
 
 /**
@@ -40,29 +44,50 @@ export async function GET(request: NextRequest) {
                 logger.warn({ err }, 'Vote collector unavailable for %s %s #%s', system.key, type, id);
                 return null;
             }),
-            withVoters
-                ? loadVoters(system, type, id).then(async data => {
-                    if (!data) return null;
-                    // For elections, fetch per-account voting power in parallel with
-                    // fetchVoteTally instead of waiting for the election summary first.
-                    const electionPowers = type === 'election' && data.rows.length > 0
-                        ? await fetchAccountVotingPowers(component, data.rows.map(r => r.account))
-                        : null;
-                    return { ...data, electionPowers };
-                })
-                : Promise.resolve(null),
+            withVoters ? loadVoters(system, type, id) : Promise.resolve(null),
         ]);
 
         const voters = voterBundle?.rows ?? null;
         const closed = voterBundle?.closed ?? false;
+
+        // Elections: the collector publishes no per-ballot power, so each ballot is weighed
+        // at round one's snapshot the way the collector does. If that fails or runs out of
+        // time, current power (`/voting-power`) stands in and the response is cached briefly.
+        let powerAt: 'snapshot' | 'current' | null = null;
+        let shortCache = false;
+        const snapshotAt = tally?.roundSnapshotAt ?? tally?.electionData?.roundSnapshotAt ?? null;
+        const electionPowers = async (accounts: string[]): Promise<Map<string, string>> => {
+            const eligible = accounts.length > 0 && accounts.every(a => isAccountAddress(system.network, a));
+            if (snapshotAt && Date.parse(snapshotAt) < Date.now() && eligible) {
+                try {
+                    const controller = new AbortController();
+                    const powers = await withDeadline(
+                        fetchSnapshotVotePowers(system.network, snapshotAt, accounts, { signal: controller.signal }),
+                        SNAPSHOT_BUDGET_MS,
+                        () => controller.abort(new Error('Snapshot recount over budget')),
+                    );
+                    powerAt = 'snapshot';
+                    return powers;
+                } catch (err) {
+                    logger.warn({ err }, 'Snapshot voting power failed for %s election #%s', system.key, id);
+                }
+            }
+            powerAt = 'current';
+            shortCache = true;
+            return fetchAccountVotingPowers(component, accounts);
+        };
 
         let rows: VoterRow[] | null = null;
         let accountPower = tally?.accountPower ?? null;
         if (voters) {
             const power = new Map<string, string>();
             for (const v of tally?.accountVotes ?? []) if (!power.has(v.account)) power.set(v.account, v.votePower);
-            if (voterBundle?.electionPowers) {
-                for (const [acc, vp] of voterBundle.electionPowers) {
+            if (type === 'election' && voters.length > 0) {
+                // First vote first: a new voter only changes the last cached batch of 20.
+                const ordered = [...voters]
+                    .sort((a, b) => (a.history?.[0]?.voteId ?? a.voteId) - (b.history?.[0]?.voteId ?? b.voteId))
+                    .map(r => r.account);
+                for (const [acc, vp] of await electionPowers(ordered)) {
                     if (!power.has(acc)) power.set(acc, vp);
                 }
             }
@@ -70,8 +95,19 @@ export async function GET(request: NextRequest) {
             if (account && accountPower == null && power.has(account)) {
                 accountPower = power.get(account) ?? null;
             }
+            // The recount must reproduce the official total. A closed vote that does not is
+            // logged as an error and cached briefly; a live tally may simply lag the ledger.
+            const official = tally?.electionData?.totalVotingPower;
+            if (powerAt === 'snapshot' && official) {
+                const counted = sumDecimals(rows.map(r => r.votePower ?? '0'));
+                if (!decimalsAgree(counted, official)) {
+                    shortCache = true;
+                    if (closed) logger.error({ counted, official }, 'Snapshot recount differs from the official total for %s election #%s', system.key, id);
+                    else logger.warn({ counted, official }, 'Live snapshot recount differs from the official total for %s election #%s', system.key, id);
+                }
+            }
         } else if (type === 'election' && account && accountPower == null) {
-            const fetched = await fetchAccountVotingPowers(component, [account]);
+            const fetched = await electionPowers([account]);
             accountPower = fetched.get(account) ?? null;
         }
 
@@ -82,7 +118,8 @@ export async function GET(request: NextRequest) {
         const missingRequestedPower = (Boolean(account) && accountPower == null) || hasPendingFreshVoter;
 
         // Closed votes with complete power never change: cache longer at the edge CDN.
-        const cacheControl = closed
+        // Current power standing in for the snapshot is not final: keep it short.
+        const cacheControl = closed && !shortCache
             ? 'public, s-maxage=86400, stale-while-revalidate=604800'
             : 'public, s-maxage=60, stale-while-revalidate=300';
 
@@ -92,7 +129,7 @@ export async function GET(request: NextRequest) {
                 accountPower,
                 voters: rows,
                 source: tally?.source ?? null,
-                ...(tally?.electionData ? { electionData: tally.electionData } : {}),
+                ...(tally?.electionData ? { electionData: powerAt ? { ...tally.electionData, powerAt } : tally.electionData } : {}),
             } : null,
             {
                 headers: missingRequestedPower
