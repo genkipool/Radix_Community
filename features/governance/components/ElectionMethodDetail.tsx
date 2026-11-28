@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowLeftRight, ArrowRight, Users } from 'lucide-react';
 import type { ElectionMethodSummary } from '../lib/votingMethods';
 import { bandHint } from '../lib/majorityJudgment';
-import { fill, formatPct, formatXrd } from '../lib/format';
+import { fill, formatPct, formatXrd, formatXrdFull } from '../lib/format';
 import type { G } from './GovernanceBadges';
 import type { CompareDict } from './ComparisonParts';
 import { ExplorerTable } from '@/features/dashboard/explorador/components/ExplorerTable';
@@ -61,7 +61,10 @@ export function ElectionCouncilList({
                                 <span className="text-[11px] font-semibold text-[var(--color-accent)] text-right whitespace-nowrap">
                                     {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
                                 </span>
-                                <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums text-right whitespace-nowrap">
+                                <span
+                                    className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums text-right whitespace-nowrap cursor-help"
+                                    title={fill(c.election_card_qualifying_xrd_tip ?? '', { xrd: formatXrdFull(cand.qualifyingXrd, language), grade: mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade) })}
+                                >
                                     {formatXrd(cand.qualifyingXrd, language)}
                                 </span>
                                 <span
@@ -122,7 +125,10 @@ export function ElectionRestTable({
                         <span className={`text-[11px] font-semibold ${cand.electable ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
                             {mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade)}
                         </span>
-                        <span className="ml-1.5 font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">
+                        <span
+                            className="ml-1.5 font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums cursor-help"
+                            title={fill(c.election_card_qualifying_xrd_tip ?? '', { xrd: formatXrdFull(cand.qualifyingXrd, language), grade: mjGrades[cand.qualifyingGrade] ?? String(cand.qualifyingGrade) })}
+                        >
                             {formatXrd(cand.qualifyingXrd, language)}
                         </span>
                     </td>
