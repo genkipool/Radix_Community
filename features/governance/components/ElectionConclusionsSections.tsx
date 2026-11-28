@@ -55,47 +55,46 @@ export function ElectionCouncilStabilitySection({
                             const candTotalStr = cand.evaluatedMethods.toLocaleString(language);
                             const pctStr = formatPct(cand.consensusShare, language);
                             return (
-                                <li key={cand.id} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span
-                                            title={fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: candTotalStr })}
-                                            className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] w-6 shrink-0 cursor-help"
-                                        >
-                                            #{cand.consensusRank}
-                                        </span>
-                                        <span
-                                            title={fill(c.election_conclusions_tip_solid_name ?? '', {
-                                                name: cand.label,
-                                                rank: rankStr,
-                                                elected: electedStr,
-                                                total: candTotalStr,
-                                            })}
-                                            className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
-                                        >
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 shrink-0 font-mono tabular-nums">
-                                        <span
-                                            title={fill(c.election_conclusions_tip_seat_methods ?? '', {
-                                                elected: electedStr,
-                                                total: candTotalStr,
-                                            })}
-                                            className="text-[11px] text-[var(--color-text-muted)] cursor-help"
-                                        >
-                                            {cand.electedCount}/{cand.evaluatedMethods}
-                                        </span>
-                                        <span
-                                            title={fill(c.election_conclusions_tip_seat_share ?? '', {
-                                                name: cand.label,
-                                                pct: pctStr,
-                                                total: candTotalStr,
-                                            })}
-                                            className="text-xs font-bold text-[var(--color-accent)] w-12 text-right cursor-help"
-                                        >
-                                            {pctStr}
-                                        </span>
-                                    </div>
+                                <li
+                                    key={cand.id}
+                                    className="grid grid-cols-[2rem_minmax(0,1fr)_3.75rem_4.25rem] items-center gap-2 py-1.5 text-[13px]"
+                                >
+                                    <span
+                                        title={fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: candTotalStr })}
+                                        className="font-mono text-[11px] font-bold text-[var(--color-text-muted)] tabular-nums cursor-help"
+                                    >
+                                        #{cand.consensusRank}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_solid_name ?? '', {
+                                            name: cand.label,
+                                            rank: rankStr,
+                                            elected: electedStr,
+                                            total: candTotalStr,
+                                        })}
+                                        className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
+                                    >
+                                        {cand.label}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_seat_methods ?? '', {
+                                            elected: electedStr,
+                                            total: candTotalStr,
+                                        })}
+                                        className="font-mono text-[11px] text-[var(--color-text-muted)] tabular-nums text-right whitespace-nowrap cursor-help"
+                                    >
+                                        {cand.electedCount}/{cand.evaluatedMethods}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_seat_share ?? '', {
+                                            name: cand.label,
+                                            pct: pctStr,
+                                            total: candTotalStr,
+                                        })}
+                                        className="font-mono text-xs font-bold text-[var(--color-accent)] tabular-nums text-right whitespace-nowrap cursor-help"
+                                    >
+                                        {pctStr}
+                                    </span>
                                 </li>
                             );
                         })}
@@ -118,50 +117,49 @@ export function ElectionCouncilStabilitySection({
                             const curStr = cand.currentRank != null ? String(cand.currentRank) : '—';
                             const pctStr = formatPct(cand.consensusShare, language);
                             return (
-                                <li key={`in-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span
-                                            title={cand.currentRank != null
-                                                ? fill(c.election_conclusions_tip_seat_rank_change ?? '', { rank: rankStr, current: curStr })
-                                                : fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
-                                            className="font-mono text-[11px] font-bold text-[var(--color-accent)] w-6 shrink-0 cursor-help"
-                                        >
-                                            #{cand.consensusRank}
-                                        </span>
-                                        <span
-                                            title={fill(c.election_conclusions_tip_entered_name ?? '', {
-                                                name: cand.label,
-                                                seats: seatsStr,
-                                                current: curStr,
-                                                rank: rankStr,
-                                            })}
-                                            className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
-                                        >
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 shrink-0">
-                                        <span
-                                            title={fill(c.election_conclusions_tip_entered_badge ?? '', {
-                                                current: curStr,
-                                                rank: rankStr,
-                                                total: totalStr,
-                                            })}
-                                            className="text-[11px] font-bold text-[var(--color-accent)] cursor-help"
-                                        >
-                                            {c.election_entered_badge ?? ''}
-                                        </span>
-                                        <span
-                                            title={fill(c.election_conclusions_tip_seat_share ?? '', {
-                                                name: cand.label,
-                                                pct: pctStr,
-                                                total: totalStr,
-                                            })}
-                                            className="font-mono text-xs font-bold text-[var(--color-accent)] tabular-nums w-12 text-right cursor-help"
-                                        >
-                                            {pctStr}
-                                        </span>
-                                    </div>
+                                <li
+                                    key={`in-${cand.id}`}
+                                    className="grid grid-cols-[2rem_minmax(0,1fr)_5rem_4.25rem] items-center gap-2 py-1.5 text-[13px]"
+                                >
+                                    <span
+                                        title={cand.currentRank != null
+                                            ? fill(c.election_conclusions_tip_seat_rank_change ?? '', { rank: rankStr, current: curStr })
+                                            : fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
+                                        className="font-mono text-[11px] font-bold text-[var(--color-accent)] tabular-nums cursor-help"
+                                    >
+                                        #{cand.consensusRank}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_entered_name ?? '', {
+                                            name: cand.label,
+                                            seats: seatsStr,
+                                            current: curStr,
+                                            rank: rankStr,
+                                        })}
+                                        className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
+                                    >
+                                        {cand.label}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_entered_badge ?? '', {
+                                            current: curStr,
+                                            rank: rankStr,
+                                            total: totalStr,
+                                        })}
+                                        className="text-[11px] font-bold text-[var(--color-accent)] text-right whitespace-nowrap cursor-help"
+                                    >
+                                        {c.election_entered_badge ?? ''}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_seat_share ?? '', {
+                                            name: cand.label,
+                                            pct: pctStr,
+                                            total: totalStr,
+                                        })}
+                                        className="font-mono text-xs font-bold text-[var(--color-accent)] tabular-nums text-right whitespace-nowrap cursor-help"
+                                    >
+                                        {pctStr}
+                                    </span>
                                 </li>
                             );
                         })}
@@ -170,50 +168,49 @@ export function ElectionCouncilStabilitySection({
                             const curStr = cand.currentRank != null ? String(cand.currentRank) : '—';
                             const pctStr = formatPct(cand.consensusShare, language);
                             return (
-                                <li key={`out-${cand.id}`} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span
-                                            title={cand.currentRank != null
-                                                ? fill(c.election_conclusions_tip_seat_rank_change ?? '', { rank: rankStr, current: curStr })
-                                                : fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
-                                            className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 w-6 shrink-0 cursor-help"
-                                        >
-                                            #{cand.consensusRank}
-                                        </span>
-                                        <span
-                                            title={fill(c.election_conclusions_tip_dropped_name ?? '', {
-                                                name: cand.label,
-                                                seats: seatsStr,
-                                                current: curStr,
-                                                rank: rankStr,
-                                            })}
-                                            className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
-                                        >
-                                            {cand.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 shrink-0">
-                                        <span
-                                            title={fill(c.election_conclusions_tip_dropped_badge ?? '', {
-                                                current: curStr,
-                                                rank: rankStr,
-                                                total: totalStr,
-                                            })}
-                                            className="text-[11px] font-bold text-amber-600 dark:text-amber-400 cursor-help"
-                                        >
-                                            {c.election_left_badge ?? ''}
-                                        </span>
-                                        <span
-                                            title={fill(c.election_conclusions_tip_seat_share ?? '', {
-                                                name: cand.label,
-                                                pct: pctStr,
-                                                total: totalStr,
-                                            })}
-                                            className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums w-12 text-right cursor-help"
-                                        >
-                                            {pctStr}
-                                        </span>
-                                    </div>
+                                <li
+                                    key={`out-${cand.id}`}
+                                    className="grid grid-cols-[2rem_minmax(0,1fr)_5rem_4.25rem] items-center gap-2 py-1.5 text-[13px]"
+                                >
+                                    <span
+                                        title={cand.currentRank != null
+                                            ? fill(c.election_conclusions_tip_seat_rank_change ?? '', { rank: rankStr, current: curStr })
+                                            : fill(c.election_conclusions_tip_seat_rank ?? '', { rank: rankStr, total: totalStr })}
+                                        className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 tabular-nums cursor-help"
+                                    >
+                                        #{cand.consensusRank}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_dropped_name ?? '', {
+                                            name: cand.label,
+                                            seats: seatsStr,
+                                            current: curStr,
+                                            rank: rankStr,
+                                        })}
+                                        className="font-semibold text-[var(--color-text-main)] truncate cursor-help"
+                                    >
+                                        {cand.label}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_dropped_badge ?? '', {
+                                            current: curStr,
+                                            rank: rankStr,
+                                            total: totalStr,
+                                        })}
+                                        className="text-[11px] font-bold text-amber-600 dark:text-amber-400 text-right whitespace-nowrap cursor-help"
+                                    >
+                                        {c.election_left_badge ?? ''}
+                                    </span>
+                                    <span
+                                        title={fill(c.election_conclusions_tip_seat_share ?? '', {
+                                            name: cand.label,
+                                            pct: pctStr,
+                                            total: totalStr,
+                                        })}
+                                        className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums text-right whitespace-nowrap cursor-help"
+                                    >
+                                        {pctStr}
+                                    </span>
                                 </li>
                             );
                         })}

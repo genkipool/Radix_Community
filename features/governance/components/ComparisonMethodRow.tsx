@@ -12,7 +12,7 @@ import { MethodGuideTrigger } from './MethodGuideModal';
 import { ElectionChangesTable, ElectionCouncilList, ElectionRestTable } from './ElectionMethodDetail';
 import {
     RESISTANCE_STYLE,
-    tip, methodText, resistanceTooltip,
+    tip, methodText, resistanceTooltip, formatAttackCost,
     OutcomeBadge, ComparisonCell, ConcentrationBar, FractionCell, SpreadMeterBar, DetailStatBox, ResistanceCallout,
     type CompareDict, type Params,
 } from './ComparisonParts';
@@ -23,32 +23,10 @@ function addressesText(c: C, n: number, language: string): string {
     return fill(n === 1 ? (c.address_one ?? '') : (c.address_many ?? ''), { n: n.toLocaleString(language) });
 }
 
-function yearsText(c: C, years: number, language: string): string {
-    return fill(years === 1 ? (c.year_one ?? '') : (c.year_many ?? ''), { n: years.toLocaleString(language) });
-}
-
-/** What it would take one person to flip this vote under the rule, in one sentence. */
-function attackText(r: MethodResult, c: C, language: string): string {
-    const a = r.attack;
-    if (!a) return c.cost_none ?? '';
-    if (a.impossible) return c.cost_impossible ?? '';
-    const amount = (n: number) => n.toLocaleString(language, { maximumFractionDigits: 2 });
-    const values = {
-        xrd: amount(a.xrd),
-        addresses: a.addresses.toLocaleString(language),
-        each: amount(a.addresses ? a.xrd / a.addresses : 0),
-        years: yearsText(c, a.years, language),
-        pct: r.eligibleXrd > 0 ? formatShare(a.xrd / r.eligibleXrd, language) : '—',
-    };
-    if (a.perAddress) return fill(a.years ? (c.cost_addresses_aged ?? '') : (c.cost_addresses ?? ''), values);
-    if (a.years) return fill(a.addresses > 1 ? (c.cost_capital_split_aged ?? c.cost_capital_aged ?? '') : (c.cost_capital_aged ?? ''), values);
-    return fill(a.addresses > 1 ? (c.cost_capital_split ?? '') : (c.cost_capital ?? ''), values);
-}
-
 function ResistancePill({ r, c, attack, language }: { r: MethodResult; c: C; attack: string; language: string }) {
     const { icon: Icon, cls } = RESISTANCE_STYLE[r.resistance];
     const label = ((c.resistance ?? {}) as Record<string, string>)[r.resistance] || r.resistance;
-    const title = resistanceTooltip(c, r.resistance, attack, `${c.resistance_here ?? ''}: ${attackText(r, c, language)}`);
+    const title = resistanceTooltip(c, r.resistance, attack, `${c.resistance_here ?? ''}: ${formatAttackCost(r.attack, r.eligibleXrd, c, language)}`);
     return (
         <span
             className={`inline-flex items-center gap-1.5 max-w-full h-7 px-2.5 rounded-full border text-[11px] font-bold cursor-help ${cls}`}
@@ -208,7 +186,7 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                                                 </span>
                                             )}
                                             <span className="text-[11px] text-[var(--color-text-muted)]">{addressesText(c, r.addressesByChoice[x.key] ?? 0, language)}</span>
-                                            <span className="font-mono font-bold text-[var(--color-text-main)] w-12 text-right">{formatPct(x.share, language)}</span>
+                                            <span className="font-mono font-bold text-[var(--color-text-main)] w-[4.25rem] text-right whitespace-nowrap tabular-nums">{formatPct(x.share, language)}</span>
                                         </span>
                                     </div>
                                     <div className="relative mt-1 h-1.5 rounded-full bg-[var(--color-card-border)]">
@@ -267,7 +245,9 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
                         })}
                     </DetailStatBox>
                 </div>
-                {r.current && election && (
+                {/* Current method always shows the full standing; methods that keep the same council show it too
+                    instead of leaving the right column with only the changes table (which renders nothing here). */}
+                {election && (r.current || r.sameAsCurrent === true) && (
                     <ElectionRestTable election={election} c={c} g={g} language={language} />
                 )}
                 {election && (
@@ -294,7 +274,7 @@ function MethodDetail({ r, c, g, rule, attack, quorum, threshold, language, onOp
             <ResistanceCallout resistance={r.resistance} pill={<ResistancePill r={r} c={c} attack={attack} language={language} />}>
                 <div className="min-w-0 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
                     <p><span className="font-bold text-[var(--color-text-main)]">{c.detail_attack ?? ''}: </span>{attack}</p>
-                    <p className="mt-1 font-semibold text-[var(--color-text-main)]">{election && !r.attack ? (c.election_attack_note ?? '') : attackText(r, c, language)}</p>
+                    <p className="mt-1 font-semibold text-[var(--color-text-main)]">{election && !r.attack ? (c.election_attack_note ?? '') : formatAttackCost(r.attack, r.eligibleXrd, c, language)}</p>
                 </div>
             </ResistanceCallout>
         </div>

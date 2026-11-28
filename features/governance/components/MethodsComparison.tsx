@@ -13,17 +13,25 @@ import { toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
 import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
 import { itemChoices } from '../lib/governanceVotes';
 import {
-    METHODS, balanceExtremes, compareMethods, computeConsensusResistance, computeElectionConclusions, computeElectionConsensus, effectiveExtremes, spreadExtremes,
+    METHODS, balanceExtremes, compareMethods, computeConsensusResistance, computeElectionConclusions, computeElectionConsensus, computeMethodScoreRows, effectiveExtremes, spreadExtremes,
+    type MethodKey,
     type MethodResult,
 } from '../lib/votingMethods';
+import { parseQuantile } from '../lib/majorityJudgment';
 import { isCountedVoter } from '../lib/comparisonUtils';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE } from './VoteParts';
 import { stanceResolver, type G } from './GovernanceBadges';
-import { ElectionCandidatesKpiGrid, ElectionConsensusKpiGrid } from './ElectionSection';
+import {
+    ElectionCandidatesKpiGrid,
+    ElectionConsensusCandidateCards,
+    ElectionConsensusKpiGrid,
+    ElectionMethodCandidatesGrid,
+} from './ElectionSection';
 import { MethodGuideModal, MethodGuideTrigger } from './MethodGuideModal';
 import { CURRENT_ATTACK_SHARES } from './ElectionResistanceTab';
 import { MethodRow } from './ComparisonMethodRow';
+import { MethodScoresTable, toScoreTableEntries } from './MethodScoresTable';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import {
     ruleParams, tip, methodText, matchesMethodQuery, formatBalanceHint, nextSort, sortComparisonRows,
@@ -58,6 +66,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         | { kind: 'current' }
         | null
     >(null);
+    const [rankingViewKey, setRankingViewKey] = useState<MethodKey | 'consensus'>('consensus');
 
     // Same query as the result tab: switching tabs does not ask again.
     const tallyQuery = useGovernanceTally({ component: system.component, kind, itemId: id, voters: true }, system.network);
@@ -210,6 +219,29 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
 
     const isElection = kind === 'election' && Boolean(item.election);
     const electionData = tallyQuery.data?.electionData ?? null;
+    const methodByKey = new Map(results.map(m => [m.key, m]));
+    const openMethodGuide = (key: MethodKey | 'consensus') => {
+        if (key === 'consensus') {
+            if (electionConsensus) setGuidePanel({ kind: 'consensus' });
+            return;
+        }
+        const hit = methodByKey.get(key);
+        if (hit) setGuidePanel({ kind: 'method', method: hit });
+    };
+    const scoreEntries = toScoreTableEntries(
+        computeMethodScoreRows(readyForExport, {
+            quantile: parseQuantile(electionData?.gradeQuantileApplied),
+            consensus: isElection && electionConsensus
+                ? {
+                    methodWeights: electionConsensus.methodWeights,
+                    concentration: electionConsensus.weightedConcentration,
+                }
+                : null,
+        }),
+        c,
+        language,
+        electionConsensus?.evaluatedMethods,
+    );
 
     return (
         <div className="space-y-6">
@@ -371,10 +403,15 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             {isElection && electionConsensus && (
                 <ElectionConsensusKpiGrid
                     consensus={electionConsensus}
+                    methods={readyForExport}
+                    scoreRows={scoreEntries}
+                    selectedKey={rankingViewKey}
+                    onSelectKey={setRankingViewKey}
+                    gradeQuantile={electionData?.gradeQuantileApplied ?? null}
                     c={c}
                     g={g}
                     language={language}
-                    onOpenGuide={() => setGuidePanel({ kind: 'consensus' })}
+                    onOpenGuide={openMethodGuide}
                 />
             )}
 
@@ -434,6 +471,48 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 />
             </section>
 
+            {scoreEntries.length > 0 && (
+                <MethodScoresTable
+                    rows={scoreEntries}
+                    onJumpToMethod={key => {
+                        if (key === 'consensus') {
+                            document.getElementById('election-consensus-heading')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            return;
+                        }
+                        jumpToMethod(key);
+                    }}
+                    onOpenGuide={openMethodGuide}
+                    canExpandRow={isElection && electionConsensus ? row => (
+                        row.key === 'consensus' || Boolean(methodByKey.get(row.key)?.electionSummary)
+                    ) : undefined}
+                    renderExpandedRow={isElection && electionConsensus ? row => {
+                        if (row.key === 'consensus') {
+                            return (
+                                <ElectionConsensusCandidateCards
+                                    consensus={electionConsensus}
+                                    c={c}
+                                    g={g}
+                                    language={language}
+                                />
+                            );
+                        }
+                        const method = methodByKey.get(row.key);
+                        if (!method?.electionSummary) return null;
+                        return (
+                            <ElectionMethodCandidatesGrid
+                                summary={method.electionSummary}
+                                gradeQuantile={electionData?.gradeQuantileApplied ?? null}
+                                c={c}
+                                g={g}
+                                language={language}
+                            />
+                        );
+                    } : undefined}
+                    c={c}
+                    language={language}
+                />
+            )}
+
             <ComparisonGlossary id="methods-glossary" c={c} />
 
             <MethodGuideModal
@@ -442,6 +521,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 target={guidePanel?.kind === 'method' ? {
                     mode: 'single',
                     method: guidePanel.method,
+                    current,
+                    allMethods: readyForExport,
                     quorum: item.quorum,
                     threshold: item.approvalThreshold,
                     gradeQuantile: electionData?.gradeQuantileApplied ?? null,

@@ -162,6 +162,8 @@ export interface ElectionMethodCandidate {
     q: number;
     /** Real XRD of counted voters who gave this candidate its qualifying grade. */
     qualifyingXrd: number;
+    /** Weighted voting power per grade (0 = Poor .. 4 = Excellent). */
+    histogram: [number, number, number, number, number];
     /** Share of total weight at or above the minimum qualifying grade. */
     electableShare: number;
     electable: boolean;
@@ -201,6 +203,8 @@ export interface ElectionMethodSummary {
     leftDetails?: ElectionSeatChange[];
     /** Fewest largest-weight voters in this method summing to at least the applied grade quantile. */
     decisiveQuantileCount?: number | null;
+    /** Real XRD held by those decisive-quantile voters. */
+    decisiveQuantileXrd?: number | null;
 }
 
 export interface MajorityJudgmentBallot {
@@ -274,6 +278,7 @@ export function evaluateMajorityJudgment(
                 p: 0,
                 q: 0,
                 qualifyingXrd: 0,
+                histogram: [0, 0, 0, 0, 0],
                 electableShare: 0,
                 electable: false,
             };
@@ -310,6 +315,7 @@ export function evaluateMajorityJudgment(
             p,
             q,
             qualifyingXrd: xrdHist[qualifyingGrade],
+            histogram: [hist[0], hist[1], hist[2], hist[3], hist[4]],
             electableShare: electablePower / total,
             electable: qualifyingGrade >= minimumMedianGrade && headcountOk,
         };

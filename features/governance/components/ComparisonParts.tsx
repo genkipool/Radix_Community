@@ -14,13 +14,13 @@ import {
 } from '../lib/votingMethods';
 import { fill } from '../lib/format';
 import {
-    ruleParams, tip, methodText, matchesMethodQuery, resistanceTooltip, formatBalanceHint, nextSort, sortComparisonRows,
+    ruleParams, tip, methodText, matchesMethodQuery, resistanceTooltip, formatBalanceHint, formatAttackCost, nextSort, sortComparisonRows,
     type CompareDict, type HistoricalDict, type Params, type SortState,
 } from '../lib/comparisonUtils';
 import { LEVEL_STYLE, ProgressBar, FractionCell, SpreadMeterBar, ConcentrationBar } from './ComparisonCharts';
 
 export {
-    ruleParams, tip, methodText, matchesMethodQuery, resistanceTooltip, formatBalanceHint, nextSort, sortComparisonRows,
+    ruleParams, tip, methodText, matchesMethodQuery, resistanceTooltip, formatBalanceHint, formatAttackCost, nextSort, sortComparisonRows,
     LEVEL_STYLE, ProgressBar, FractionCell, SpreadMeterBar, ConcentrationBar,
     type CompareDict, type HistoricalDict, type Params, type SortState,
 };

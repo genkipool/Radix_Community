@@ -63,6 +63,8 @@ export interface MethodResult {
     headcountShare: number | null;
     /** XRD held by the counted voters, measured against the quorum. */
     eligibleXrd: number;
+    /** Sum of transformed voter weights (`w`) under this rule. */
+    totalWeight: number;
     quorumRatio: number | null;
     quorumMet: boolean | null;
     outcome: VoteOutcome | null;
@@ -74,9 +76,15 @@ export interface MethodResult {
     decisive: Decisive | null;
     /** Whether the result matches the current rule's; null for the current rule itself. */
     sameAsCurrent: boolean | null;
+    /** Resistance to manipulation. */
     resistance: Resistance;
     /** Cheapest way found to flip the result by adding votes; null when there is no clear result to flip. */
     attack: Attack | null;
+    /** Exact post-attack whale control shares for relative share-cap rules on live votes. */
+    capShareAudit?: {
+        singleWhaleShare: number;
+        lastMinTwabSingleShare?: number;
+    };
 }
 
 /**
@@ -283,7 +291,59 @@ function applyMethod(
     for (const { v } of weighed) for (const k of v.choices) addressesByChoice[k] = (addressesByChoice[k] ?? 0) + 1;
     // Quorum is an XRD rule: it is checked apart, with the XRD of the voters that count (counted once per voter).
     const summary = summarizeTally(choices, { results, accountPower: null }, item ? { ...item, quorum: null } : null);
-    const eligibleXrd = weighed.reduce((s, x) => s + (x.v.choices.length > 0 ? x.v.power : 0), 0);
+    const totalWeight = weighed.reduce((s, x) => s + x.w, 0);
+    const eligibleXrd = weighed.reduce(
+        (s, x) => s + (x.v.choices.length > 0 || (x.v.grades != null && Object.keys(x.v.grades).length > 0) ? x.v.power : 0),
+        0,
+    );
+    let capShareAudit: MethodResult['capShareAudit'];
+    if (spec.sybil.kind === 'capital' && spec.sybil.capShare != null) {
+        const shareCap = spec.sybil.capShare;
+        const poolValue = (v: MethodVoter): number => {
+            switch (spec.key) {
+                case 'capped_share':
+                case 'capped_share_5':
+                case 'capped_share_10':
+                    return v.power;
+                case 'capped_share_veterans_1':
+                case 'capped_share_veterans':
+                    return isVeteran(v) ? v.power : 0;
+                case 'staked_capped_share':
+                    return v.stakedXrd ?? 0;
+                case 'twab_90d_capped_share':
+                    return v.twab90Xrd ?? 0;
+                default:
+                    return v.power;
+            }
+        };
+        const basePool = spec.key === 'capped_share_veterans_1' || spec.key === 'capped_share_veterans'
+            ? ctx.veteranTotal
+            : spec.key === 'staked_capped_share'
+                ? ctx.stakedTotal
+                : spec.key === 'twab_90d_capped_share'
+                    ? ctx.twabTotal
+                    : ctx.total;
+        if (basePool > 0) {
+            const simShare = (addedCapital: number): number => {
+                const postPool = basePool + addedCapital;
+                const postCap = postPool * shareCap;
+                let honestPostWeight = 0;
+                for (const { v } of weighed) {
+                    honestPostWeight += Math.min(poolValue(v), postCap);
+                }
+                const attackerWeight = Math.min(addedCapital, postCap);
+                const denom = honestPostWeight + attackerWeight;
+                return denom > 0 ? Math.min(1, Math.max(0, attackerWeight / denom)) : 1;
+            };
+            const whaleCapital = 1.5 * basePool;
+            capShareAudit = {
+                singleWhaleShare: simShare(whaleCapital),
+                ...(spec.key === 'twab_90d_capped_share'
+                    ? { lastMinTwabSingleShare: simShare(whaleCapital * 0.25) }
+                    : {}),
+            };
+        }
+    }
     const quorumRatio = item?.quorum ? eligibleXrd / item.quorum : null;
     const quorumMet = quorumRatio === null ? null : quorumRatio >= 1;
     const threshold = item?.approvalThreshold ?? 0.5;
@@ -298,15 +358,19 @@ function applyMethod(
     const isElection = Boolean(item?.election && weighed.some(x => x.v.grades));
     const appliedQuantile = parseQuantile(options?.gradeQuantile);
     let decisiveQuantileCount: number | null = null;
+    let decisiveQuantileXrd: number | null = null;
     if (isElection && weighed.length > 0) {
-        const sortedWeights = weighed.map(x => x.w).filter(w => w > 0).sort((a, b) => b - a);
-        const totalW = sortedWeights.reduce((s, x) => s + x, 0);
+        const sortedForQuantile = [...weighed].filter(x => x.w > 0).sort((a, b) => b.w - a.w || b.v.power - a.v.power);
+        const totalW = sortedForQuantile.reduce((s, x) => s + x.w, 0);
         if (totalW > 0) {
             let accW = 0;
-            for (let i = 0; i < sortedWeights.length; i++) {
-                accW += sortedWeights[i];
+            let accXrd = 0;
+            for (let i = 0; i < sortedForQuantile.length; i++) {
+                accW += sortedForQuantile[i].w;
+                accXrd += sortedForQuantile[i].v.power;
                 if (accW >= totalW * appliedQuantile) {
                     decisiveQuantileCount = i + 1;
+                    decisiveQuantileXrd = Math.round(accXrd * 100) / 100;
                     break;
                 }
             }
@@ -319,6 +383,7 @@ function applyMethod(
                 headcountPool: spec.headcount ? headcountPool : undefined,
             }),
             decisiveQuantileCount,
+            decisiveQuantileXrd,
         }
         : null;
     const passes = (share: number | null) => share !== null && share >= threshold;
@@ -353,6 +418,7 @@ function applyMethod(
         approvalShare: weighed.length ? summary.approvalShare : null,
         headcountShare,
         eligibleXrd,
+        totalWeight,
         quorumRatio,
         quorumMet,
         outcome,
@@ -368,6 +434,7 @@ function applyMethod(
             total: weighed.reduce((s, x) => s + x.v.power, 0),
             count: weighed.length,
         }, threshold),
+        ...(capShareAudit ? { capShareAudit } : {}),
     };
 }
 
@@ -448,10 +515,23 @@ export function compareMethods(
 }
 
 export {
+    ATTACK_OPERATIONAL_COST,
     CURRENT_ATTACK_SHARES,
+    computeAttackDifficulty,
     computeConsensusResistance,
+    computeConsensusStructuralRatio,
     computeElectionConclusions,
     computeElectionConsensus,
+    computeGlobalResistanceScore,
+    computeHistoricalMethodScoreRows,
+    computeMethodScoreRows,
+    methodResistanceMetricsFromHistorical,
+    methodResistanceMetricsFromResult,
+    nextMethodScoreSort,
+    resistanceLevelFromScore,
+    sortMethodScoreRows,
+    type AttackDifficulty,
+    type AttackOperationalCost,
     type ConsensusAttackId,
     type ConsensusAttackScenario,
     type ElectionConsensusCandidate,
@@ -459,4 +539,15 @@ export {
     type ElectionConsensusConclusions,
     type ElectionConsensusFamilySummary,
     type ElectionConsensusSummary,
+    type GlobalResistanceScore,
+    type MethodScoreRow,
+    type MethodScoreSortKey,
+    type MethodScoreSortState,
+    type SortDirection,
 } from './electionConsensus';
+export {
+    computeMethodResistance,
+    type MethodAttackEval,
+    type MethodResistanceMetrics,
+    type MethodResistanceReport,
+} from './methodResistance';

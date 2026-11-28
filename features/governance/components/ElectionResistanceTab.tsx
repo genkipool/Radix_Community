@@ -1,19 +1,40 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Award, CheckCircle2, Scale, ShieldAlert, ShieldCheck } from 'lucide-react';
 import {
     CURRENT_ATTACK_SHARES,
+    computeAttackDifficulty,
     computeConsensusResistance,
+    computeConsensusStructuralRatio,
+    computeGlobalResistanceScore,
+    computeMethodResistance,
+    resistanceLevelFromScore,
     type ConsensusAttackId,
     type ElectionConsensusSummary,
+    type MethodKey,
+    type MethodResistanceMetrics,
     type MethodResult,
+    type Resistance,
 } from '../lib/votingMethods';
 import { parseQuantile } from '../lib/majorityJudgment';
 import { fill, formatPct } from '../lib/format';
 import { RESISTANCE_STYLE, type CompareDict } from './ComparisonParts';
+import {
+    formatScoreValue,
+    scoreBarTone,
+    scoreChipTone,
+    scoreTextTone,
+} from './MethodScoresTable';
 
 export { CURRENT_ATTACK_SHARES };
+
+const LEVEL_CARD_TONE: Record<Resistance, { box: string; icon: string }> = {
+    very_low: { box: 'border-red-500/30 bg-red-500/5', icon: 'text-red-500' },
+    low: { box: 'border-orange-500/30 bg-orange-500/5', icon: 'text-orange-600 dark:text-orange-400' },
+    medium: { box: 'border-yellow-500/30 bg-yellow-500/5', icon: 'text-yellow-600 dark:text-yellow-400' },
+    high: { box: 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5', icon: 'text-[var(--color-accent)]' },
+};
 
 function barTone(share: number): string {
     if (share >= 0.7) return 'bg-red-500';
@@ -27,6 +48,30 @@ function textTone(share: number): string {
     return 'text-[var(--color-accent)]';
 }
 
+function shareChipTone(share: number): string {
+    if (share >= 0.7) return 'border-red-500/30 bg-red-500/8';
+    if (share >= 0.3) return 'border-amber-500/30 bg-amber-500/8';
+    return 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/8';
+}
+
+function difficultyTextTone(score: number): string {
+    if (score < 4) return 'text-red-500';
+    if (score < 7) return 'text-amber-600 dark:text-amber-400';
+    return 'text-[var(--color-accent)]';
+}
+
+function difficultyChipTone(score: number): string {
+    if (score < 4) return 'border-red-500/30 bg-red-500/8';
+    if (score < 7) return 'border-amber-500/30 bg-amber-500/8';
+    return 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/8';
+}
+
+function splitAttackTitle(raw: string): { name: string; detail: string | null } {
+    const m = /^([^(]+?)\s*\((.+)\)$/.exec(raw.trim());
+    if (!m) return { name: raw, detail: null };
+    return { name: m[1].trim(), detail: m[2].trim() };
+}
+
 interface ResistanceScenarioCard {
     id: ConsensusAttackId;
     title: string;
@@ -35,9 +80,12 @@ interface ResistanceScenarioCard {
     maxShare: number;
 }
 
-/** Shared layout rendered by both the 50-method consensus and 1 XRD = 1 vote resistance tabs. */
+/** Shared layout rendered across the 50-method consensus, current method, single-vote, and historical resistance tabs. */
 function ResistanceReportView({
-    highLabel,
+    resistanceLevel,
+    structuralRatio,
+    spread,
+    levelLabel,
     intro1,
     intro2,
     tableNote,
@@ -48,7 +96,10 @@ function ResistanceReportView({
     c,
     language,
 }: {
-    highLabel: string;
+    resistanceLevel: Resistance;
+    structuralRatio?: number;
+    spread?: number | null;
+    levelLabel: string;
     intro1: string;
     intro2: string;
     tableNote: string;
@@ -59,48 +110,213 @@ function ResistanceReportView({
     c: CompareDict;
     language: string;
 }) {
+    const levelStyle = RESISTANCE_STYLE[resistanceLevel];
+    const LevelIcon = levelStyle.icon;
+    const cardTone = LEVEL_CARD_TONE[resistanceLevel];
+    const globalScore = computeGlobalResistanceScore(scenarios, structuralRatio ?? resistanceLevel, spread);
+    const fmtScore = (v: number) => formatScoreValue(v, language);
+    const globalScoreStr = fmtScore(globalScore.score);
+    const globalSybilStr = fmtScore(globalScore.structuralScore);
+    const globalAttacksStr = fmtScore(globalScore.attackScore);
+    const globalMinStr = fmtScore(globalScore.minDifficulty);
+    const globalAvgStr = fmtScore(globalScore.avgDifficulty);
+    const globalAvgShareStr = formatPct(globalScore.avgMaxShare, language);
+    const globalTip = fill(c.election_resistance_global_score_tip ?? '', {
+        score: globalScoreStr,
+        sybil: globalSybilStr,
+        attacks: globalAttacksStr,
+        min: globalMinStr,
+        avg: globalAvgStr,
+        avgShare: globalAvgShareStr,
+    });
+    const decentScoreStr = globalScore.decentralisationScore !== null ? fmtScore(globalScore.decentralisationScore) : null;
+    const finalScoreStr = globalScore.finalScore !== null ? fmtScore(globalScore.finalScore) : null;
+    const spreadPctStr = spread != null && Number.isFinite(spread)
+        ? formatPct(Math.min(1, Math.max(0, spread)), language)
+        : null;
+
+    const scoreCards: Array<{
+        key: string;
+        title: string;
+        score: number;
+        scoreStr: string;
+        tip: string;
+        breakdown: string;
+        Icon: typeof ShieldCheck;
+    }> = [
+        {
+            key: 'resistance',
+            title: c.election_resistance_global_score_title ?? '',
+            score: globalScore.score,
+            scoreStr: globalScoreStr,
+            tip: globalTip,
+            breakdown: fill(c.election_resistance_global_score_breakdown ?? '', {
+                sybil: globalSybilStr,
+                attacks: globalAttacksStr,
+                min: globalMinStr,
+                avg: globalAvgStr,
+                avgShare: globalAvgShareStr,
+            }),
+            Icon: ShieldCheck,
+        },
+    ];
+    if (globalScore.decentralisationScore !== null && decentScoreStr && spreadPctStr) {
+        scoreCards.push({
+            key: 'decentralisation',
+            title: c.election_resistance_decent_score_title ?? '',
+            score: globalScore.decentralisationScore,
+            scoreStr: decentScoreStr,
+            tip: fill(c.election_resistance_decent_score_tip ?? '', {
+                score: decentScoreStr,
+                spreadPct: spreadPctStr,
+            }),
+            breakdown: fill(c.election_resistance_decent_score_breakdown ?? '', {
+                spreadPct: spreadPctStr,
+            }),
+            Icon: Scale,
+        });
+    }
+    if (globalScore.finalScore !== null && finalScoreStr && decentScoreStr) {
+        scoreCards.push({
+            key: 'final',
+            title: c.election_resistance_final_score_title ?? '',
+            score: globalScore.finalScore,
+            scoreStr: finalScoreStr,
+            tip: fill(c.election_resistance_final_score_tip ?? '', {
+                score: finalScoreStr,
+                resistance: globalScoreStr,
+                decentralisation: decentScoreStr,
+            }),
+            breakdown: fill(c.election_resistance_final_score_breakdown ?? '', {
+                resistance: globalScoreStr,
+                decentralisation: decentScoreStr,
+            }),
+            Icon: Award,
+        });
+    }
+
     return (
         <div className="space-y-6">
-            <section className="rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5 p-4 space-y-3">
+            <section className={`rounded-2xl border p-4 space-y-3 ${cardTone.box}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-2">
-                        <ShieldCheck className="size-4 text-[var(--color-accent)] shrink-0" aria-hidden="true" />
+                        <LevelIcon className={`size-4 shrink-0 ${cardTone.icon}`} aria-hidden="true" />
                         {c.election_resistance_global_title ?? ''}
                     </h3>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold ${RESISTANCE_STYLE.high.cls}`}>
-                        <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
-                        {highLabel}
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold ${levelStyle.cls}`}>
+                        <LevelIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                        {levelLabel}
                     </span>
                 </div>
                 <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{intro1}</p>
-                <p className="text-[12px] leading-relaxed text-[var(--color-text-muted)]">{intro2}</p>
+                {intro2 && <p className="text-[12px] leading-relaxed text-[var(--color-text-muted)]">{intro2}</p>}
             </section>
 
             <section className="space-y-3">
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                     <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                         {c.election_resistance_table_title ?? ''}
                     </h3>
                     <p className="text-[12px] leading-relaxed text-[var(--color-text-muted)]">{tableNote}</p>
+                    <div className="space-y-1.5 pt-1 text-[11.5px] leading-relaxed text-[var(--color-text-muted)]">
+                        <p>
+                            <span className="font-bold text-[var(--color-text-secondary)]">
+                                {c.election_resistance_legend_share_title ?? ''}:{' '}
+                            </span>
+                            {c.election_resistance_legend_share_desc ?? ''}
+                        </p>
+                        <p>
+                            <span className="font-bold text-[var(--color-text-secondary)]">
+                                {c.election_resistance_legend_difficulty_title ?? ''}:{' '}
+                            </span>
+                            {c.election_resistance_legend_difficulty_desc ?? ''}
+                        </p>
+                        <p>
+                            <span className="font-bold text-[var(--color-text-secondary)]">
+                                {c.election_resistance_legend_global_title ?? ''}:{' '}
+                            </span>
+                            {c.election_resistance_legend_global_desc ?? ''}
+                        </p>
+                        {globalScore.decentralisationScore !== null && globalScore.finalScore !== null && (
+                            <>
+                                <p>
+                                    <span className="font-bold text-[var(--color-text-secondary)]">
+                                        {c.election_resistance_legend_decent_title ?? ''}:{' '}
+                                    </span>
+                                    {c.election_resistance_legend_decent_desc ?? ''}
+                                </p>
+                                <p>
+                                    <span className="font-bold text-[var(--color-text-secondary)]">
+                                        {c.election_resistance_legend_final_title ?? ''}:{' '}
+                                    </span>
+                                    {c.election_resistance_legend_final_desc ?? ''}
+                                </p>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-2.5">
                     {scenarios.map((s, idx) => {
                         const pct = formatPct(s.maxShare, language);
                         const widthPct = s.maxShare > 0 ? Math.max(2, Math.min(100, s.maxShare * 100)) : 0;
+                        const difficulty = computeAttackDifficulty(s.id, s.maxShare);
+                        const difficultyScoreStr = difficulty.score.toLocaleString(language, { maximumFractionDigits: 1 });
+                        const { name, detail } = splitAttackTitle(s.title);
+                        const shareTip = fill(c.election_resistance_metric_share_tip ?? '', { pct });
+                        const difficultyTip = fill(c.election_resistance_metric_difficulty_tip ?? '', {
+                            score: difficultyScoreStr,
+                            base: String(difficulty.base),
+                            capital: String(difficulty.capital),
+                            time: String(difficulty.time),
+                            coord: String(difficulty.coordination),
+                            pct,
+                        });
                         return (
                             <div
                                 key={s.id}
-                                className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3.5 space-y-2"
+                                className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3.5 space-y-2.5"
                             >
-                                <div className="flex items-start justify-between gap-3">
-                                    <p className="text-xs font-bold text-[var(--color-text-main)] leading-snug">
-                                        <span className="font-mono text-[var(--color-primary)] mr-1.5">{idx + 1}.</span>
-                                        {s.title}
-                                    </p>
-                                    <span className={`shrink-0 font-mono text-xs font-black tabular-nums ${textTone(s.maxShare)}`}>
-                                        {pct}
-                                    </span>
+                                <div className="space-y-2.5 pb-2.5 border-b border-[var(--color-card-border)]/60">
+                                    <div className="flex items-start gap-2.5 min-w-0">
+                                        <span className="size-5 rounded-full bg-[var(--color-primary)]/12 border border-[var(--color-primary)]/30 font-mono text-[10px] font-black text-[var(--color-primary)] grid place-items-center shrink-0 mt-0.5 tabular-nums">
+                                            {idx + 1}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-[var(--color-text-main)] leading-snug">
+                                                {name}
+                                            </p>
+                                            {detail && (
+                                                <p className="text-[11px] leading-snug text-[var(--color-text-muted)] mt-0.5">
+                                                    {detail}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div
+                                            title={shareTip}
+                                            className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 cursor-help ${shareChipTone(s.maxShare)}`}
+                                        >
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] truncate">
+                                                {c.election_resistance_metric_share_label ?? ''}
+                                            </span>
+                                            <span className={`font-mono text-xs font-black tabular-nums whitespace-nowrap ${textTone(s.maxShare)}`}>
+                                                {pct}
+                                            </span>
+                                        </div>
+                                        <div
+                                            title={difficultyTip}
+                                            className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 cursor-help ${difficultyChipTone(difficulty.score)}`}
+                                        >
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] truncate">
+                                                {c.election_resistance_metric_difficulty_label ?? ''}
+                                            </span>
+                                            <span className={`font-mono text-xs font-black tabular-nums whitespace-nowrap ${difficultyTextTone(difficulty.score)}`}>
+                                                {difficultyScoreStr}/10
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
                                     {widthPct > 0 && (
@@ -124,6 +340,39 @@ function ResistanceReportView({
                                         {s.blocked}
                                     </p>
                                 </div>
+                            </div>
+                        );
+                    })}
+                    {scoreCards.map(card => {
+                        const CardIcon = card.Icon;
+                        return (
+                            <div key={card.key} className={`rounded-xl border p-3.5 space-y-2 ${scoreChipTone(card.score)}`}>
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="flex items-center gap-2 text-xs font-bold text-[var(--color-text-main)]">
+                                        <CardIcon
+                                            className={`size-4 shrink-0 ${scoreTextTone(card.score)}`}
+                                            aria-hidden="true"
+                                        />
+                                        {card.title}
+                                    </span>
+                                    <span
+                                        title={card.tip}
+                                        className={`font-mono text-sm font-black tabular-nums whitespace-nowrap cursor-help ${scoreTextTone(card.score)}`}
+                                    >
+                                        {card.scoreStr}/10
+                                    </span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
+                                    {card.score > 0 && (
+                                        <div
+                                            className={`h-full rounded-full ${scoreBarTone(card.score)}`}
+                                            style={{ width: `${Math.min(100, Math.max(2, card.score * 10))}%` }}
+                                        />
+                                    )}
+                                </div>
+                                <p className="text-[11px] leading-relaxed text-[var(--color-text-muted)] tabular-nums">
+                                    {card.breakdown}
+                                </p>
                             </div>
                         );
                     })}
@@ -157,22 +406,26 @@ function ResistanceReportView({
 export function ElectionResistanceTab({
     consensus,
     methods,
+    gradeQuantile,
     c,
     language,
 }: {
     consensus: ElectionConsensusSummary;
     methods: MethodResult[];
+    gradeQuantile?: string | null;
     c: CompareDict;
     language: string;
 }) {
-    const raw = computeConsensusResistance(methods, consensus.methodWeights);
+    const quantile = parseQuantile(gradeQuantile);
+    const raw = computeConsensusResistance(methods, consensus.methodWeights, quantile);
     const nStr = consensus.evaluatedMethods.toLocaleString(language);
     const cheapSybil = raw.find(s => s.id === 'cheap_sybil');
-    const splitWhale = raw.find(s => s.id === 'split_whale');
-    const veteranWhale = raw.find(s => s.id === 'veteran_whale');
-    const maxSingleVector = Math.max(splitWhale?.maxShare ?? 0, veteranWhale?.maxShare ?? 0);
+    const maxSingleVector = Math.max(0, ...raw.filter(s => s.id !== 'nation_state').map(s => s.maxShare));
+    const structuralRatio = computeConsensusStructuralRatio(methods, consensus.methodWeights);
+    const consensusGlobal = computeGlobalResistanceScore(raw, structuralRatio);
+    const resistanceLevel = resistanceLevelFromScore(consensusGlobal.score);
     const dict = c as Record<string, unknown>;
-    const highLabel = ((c.resistance ?? {}) as Record<string, string>).high || 'High';
+    const levelLabel = ((c.resistance ?? {}) as Record<string, string>)[resistanceLevel] || '';
 
     const scenarios: ResistanceScenarioCard[] = raw.map(s => ({
         id: s.id,
@@ -184,12 +437,20 @@ export function ElectionResistanceTab({
 
     return (
         <ResistanceReportView
-            highLabel={highLabel}
+            resistanceLevel={resistanceLevel}
+            structuralRatio={structuralRatio}
+            spread={consensus.weightedConcentration.spread}
+            levelLabel={levelLabel}
             intro1={fill(c.election_resistance_intro_1 ?? '', { n: nStr })}
             intro2={c.election_resistance_intro_2 ?? ''}
             tableNote={fill(c.election_resistance_table_note ?? '', { n: nStr })}
             scenarios={scenarios}
-            nuancePositive={fill(c.election_resistance_nuance_impose ?? '', { maxSingle: formatPct(maxSingleVector, language) })}
+            nuancePositive={fill(
+                maxSingleVector < 0.5
+                    ? (c.election_resistance_nuance_impose ?? '')
+                    : (c.election_resistance_nuance_impose_high ?? ''),
+                { maxSingle: formatPct(maxSingleVector, language) },
+            )}
             nuanceWarning={fill(c.election_resistance_nuance_tie ?? '', { cheapSybil: formatPct(cheapSybil?.maxShare ?? 0, language) })}
             summary={fill(c.election_resistance_summary ?? '', { cheapSybil: formatPct(cheapSybil?.maxShare ?? 0, language) })}
             c={c}
@@ -211,7 +472,7 @@ export function ElectionCurrentResistanceTab({
     language: string;
 }) {
     const dict = c as Record<string, unknown>;
-    const highLabel = ((c.resistance ?? {}) as Record<string, string>).high || 'High';
+    const highLabel = ((c.resistance ?? {}) as Record<string, string>).high || '';
     const decCount = current.electionSummary?.decisiveQuantileCount ?? null;
     const totalVoters = current.counted;
     const quantilePct = formatPct(parseQuantile(gradeQuantile), language);
@@ -220,15 +481,17 @@ export function ElectionCurrentResistanceTab({
         id: s.id,
         maxShare: s.maxShare,
         title: String(dict[`election_resistance_attack_${s.id}_title`] ?? ''),
-        captures: String(dict[`election_current_resistance_${s.id}_captures`] ?? ''),
-        blocked: String(dict[`election_current_resistance_${s.id}_blocked`] ?? ''),
+        captures: fill(String(dict[`election_current_resistance_${s.id}_captures`] ?? ''), { quantilePct }),
+        blocked: fill(String(dict[`election_current_resistance_${s.id}_blocked`] ?? ''), { quantilePct }),
     }));
 
     return (
         <ResistanceReportView
-            highLabel={highLabel}
+            resistanceLevel="high"
+            spread={current.concentration.spread}
+            levelLabel={highLabel}
             intro1={c.election_current_resistance_intro_1 ?? ''}
-            intro2={c.election_current_resistance_intro_2 ?? ''}
+            intro2={fill(c.election_current_resistance_intro_2 ?? '', { quantilePct })}
             tableNote={c.election_current_resistance_table_note ?? ''}
             scenarios={scenarios}
             nuancePositive={c.election_current_resistance_nuance_sybil ?? ''}
@@ -239,6 +502,58 @@ export function ElectionCurrentResistanceTab({
                 quantilePct,
             })}
             summary={c.election_current_resistance_summary ?? ''}
+            c={c}
+            language={language}
+        />
+    );
+}
+
+/** Resistance tab for any of the 50 voting methods in both live and historical comparison views. */
+export function MethodResistanceTab({
+    methodKey,
+    metrics,
+    spread,
+    methodRuleAttack,
+    attackCostSentence,
+    c,
+    language,
+}: {
+    methodKey: MethodKey;
+    metrics: MethodResistanceMetrics;
+    spread?: number | null;
+    methodRuleAttack: string;
+    attackCostSentence?: string | null;
+    c: CompareDict;
+    language: string;
+}) {
+    const report = computeMethodResistance(methodKey, metrics, language);
+    const dict = c as Record<string, unknown>;
+    const levelLabel = ((c.resistance ?? {}) as Record<string, string>)[report.resistance] || report.resistance;
+    const params = {
+        ...report.params,
+        ...(attackCostSentence ? { flipCost: attackCostSentence } : {}),
+    };
+
+    const scenarios: ResistanceScenarioCard[] = report.scenarios.map(s => ({
+        id: s.id,
+        maxShare: s.maxShare,
+        title: String(dict[`election_resistance_attack_${s.id}_title`] ?? ''),
+        captures: fill(String(dict[s.capturesKey] ?? ''), s.params),
+        blocked: fill(String(dict[s.blockedKey] ?? ''), s.params),
+    }));
+
+    return (
+        <ResistanceReportView
+            resistanceLevel={report.resistance}
+            spread={spread}
+            levelLabel={levelLabel}
+            intro1={fill(String(dict[report.intro1Key] ?? ''), params)}
+            intro2={methodRuleAttack}
+            tableNote={fill(String(dict[report.tableNoteKey] ?? ''), params)}
+            scenarios={scenarios}
+            nuancePositive={fill(String(dict[report.nuancePositiveKey] ?? ''), params)}
+            nuanceWarning={fill(String(dict[report.nuanceWarningKey] ?? ''), params)}
+            summary={fill(String(dict[report.summaryKey] ?? ''), params)}
             c={c}
             language={language}
         />

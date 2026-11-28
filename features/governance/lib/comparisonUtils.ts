@@ -1,9 +1,9 @@
 import type { VoterRow } from '../types';
 import {
     METHOD_PARAMS, RESISTANCE_SCORE, concentrationLevel,
-    type MethodFamily, type MethodKey, type Resistance,
+    type Attack, type MethodFamily, type MethodKey, type Resistance,
 } from './votingMethods';
-import { fill, formatPct } from './format';
+import { fill, formatPct, formatShare } from './format';
 import type { G } from '../components/GovernanceBadges';
 
 export type CompareDict = Partial<NonNullable<G['compare']>>;
@@ -158,4 +158,30 @@ export function sortComparisonRows<T>(
         if (ra !== rb) return sort.dir === 'desc' ? rb - ra : ra - rb;
         return (getSpread(b) ?? -1) - (getSpread(a) ?? -1);
     });
+}
+
+function yearsText(c: CompareDict, years: number, language: string): string {
+    return fill(years === 1 ? (c.year_one ?? '') : (c.year_many ?? ''), { n: years.toLocaleString(language) });
+}
+
+/** Human-readable explanation of what it would take one person to flip a single vote under a rule. */
+export function formatAttackCost(
+    attack: Attack | null,
+    eligibleXrd: number,
+    c: CompareDict,
+    language: string,
+): string {
+    if (!attack) return c.cost_none ?? '';
+    if (attack.impossible) return c.cost_impossible ?? '';
+    const amount = (n: number) => n.toLocaleString(language, { maximumFractionDigits: 2 });
+    const values = {
+        xrd: amount(attack.xrd),
+        addresses: attack.addresses.toLocaleString(language),
+        each: amount(attack.addresses ? attack.xrd / attack.addresses : 0),
+        years: yearsText(c, attack.years, language),
+        pct: eligibleXrd > 0 ? formatShare(attack.xrd / eligibleXrd, language) : '—',
+    };
+    if (attack.perAddress) return fill(attack.years ? (c.cost_addresses_aged ?? '') : (c.cost_addresses ?? ''), values);
+    if (attack.years) return fill(attack.addresses > 1 ? (c.cost_capital_split_aged ?? c.cost_capital_aged ?? '') : (c.cost_capital_aged ?? ''), values);
+    return fill(attack.addresses > 1 ? (c.cost_capital_split ?? '') : (c.cost_capital ?? ''), values);
 }
