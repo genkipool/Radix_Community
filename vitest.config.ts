@@ -17,5 +17,8 @@ export default defineConfig({
         setupFiles: ['./__tests__/setup.ts'],
         include: ['__tests__/**/*.test.{ts,tsx}'],
         css: false,
+        // Node 26 enables its own Web Storage by default and warns when it has no backing file;
+        // jsdom already provides localStorage to the tests, so the native one is switched off.
+        execArgv: ['--no-experimental-webstorage'],
     },
 });

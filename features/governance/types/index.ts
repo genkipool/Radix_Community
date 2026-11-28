@@ -55,6 +55,10 @@ export interface MajorityJudgmentElectionData {
     parameterSetVersion: number | null;
     tcVotingStart: string | null;
     tcVotingEnd: string | null;
+    /** ISO time ballots are weighed at: round one's `snapshotAt` (a rerun reuses it). */
+    roundSnapshotAt: string | null;
+    /** Where the per-ballot power of the recount comes from (set by the votes route). */
+    powerAt?: 'snapshot' | 'current';
     temperatureCheckResult: MajorityJudgmentTcResult | null;
     candidateResults: MajorityJudgmentCandidateResult[];
 }

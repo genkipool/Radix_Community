@@ -27,6 +27,8 @@ export interface VoteTally {
     source: string;
     /** Full Majority Judgment election payload when `type === 'election'`. */
     electionData?: MajorityJudgmentElectionData | null;
+    /** Election snapshot (round one's `snapshotAt`), present even before the collector publishes a result. */
+    roundSnapshotAt?: string | null;
 }
 
 const TIMEOUT_MS = 25_000;
@@ -85,8 +87,9 @@ export function collectorFor(component: string): string | null {
 const POWER_CONCURRENCY = 24;
 
 /**
- * Queries `/voting-power?accountAddress=…` for a list of accounts (used for
- * Majority Judgment elections, whose `/account-votes` endpoint is not exposed).
+ * Queries `/voting-power?accountAddress=…` for a list of accounts. This is
+ * *current* power: elections weigh ballots at the round snapshot
+ * (votePowerSnapshot.server.ts), and this only stands in when that fails.
  */
 export async function fetchAccountVotingPowers(component: string, accounts: string[]): Promise<Map<string, string>> {
     const base = collectorFor(component);
@@ -136,6 +139,8 @@ export async function fetchVoteTally(
                 tcVotingEnd?: unknown;
             };
             temperatureCheckResult?: MajorityJudgmentTcResult | null;
+            currentRound?: { round?: unknown; snapshotAt?: unknown } | null;
+            rounds?: Array<{ round?: unknown; snapshotAt?: unknown }>;
             result?: {
                 status?: unknown;
                 round?: unknown;
@@ -161,6 +166,15 @@ export async function fetchVoteTally(
         }>(`${base}/majority-judgment-election?electionId=${encodeURIComponent(entityId)}`);
         const latest = data.result ?? data.results?.[data.results.length - 1] ?? null;
         const totalPower = typeof latest?.totalVotingPower === 'string' ? latest.totalVotingPower : null;
+        // Ballots are weighed at the snapshot taken when round one opened, not the election's
+        // (the list TC's); a rerun reuses round one's snapshot (Proposal & Voting Framework §6.1).
+        const rounds = Array.isArray(data.rounds) ? data.rounds : [];
+        const round = rounds.find(r => r.round === 'RoundOne')
+            ?? (data.currentRound?.round === 'RoundOne' ? data.currentRound : null)
+            ?? rounds.find(r => r.round === latest?.round)
+            ?? data.currentRound
+            ?? null;
+        const roundSnapshotAt = typeof round?.snapshotAt === 'string' && Number.isFinite(Date.parse(round.snapshotAt)) ? round.snapshotAt : null;
         const electionData: MajorityJudgmentElectionData | null = latest ? {
             status: typeof latest.status === 'string' ? latest.status : 'LIVE',
             round: latest.round === 'Rerun' ? 'Rerun' : 'RoundOne',
@@ -175,6 +189,7 @@ export async function fetchVoteTally(
             parameterSetVersion: typeof data.election?.parameterSetVersion === 'number' ? data.election.parameterSetVersion : null,
             tcVotingStart: typeof data.election?.tcVotingStart === 'string' ? data.election.tcVotingStart : null,
             tcVotingEnd: typeof data.election?.tcVotingEnd === 'string' ? data.election.tcVotingEnd : null,
+            roundSnapshotAt,
             temperatureCheckResult: data.temperatureCheckResult ?? null,
             candidateResults: Array.isArray(latest.candidateResults) ? latest.candidateResults : [],
         } : null;
@@ -184,6 +199,7 @@ export async function fetchVoteTally(
             accountVotes: null,
             source: new URL(base).hostname,
             electionData,
+            roundSnapshotAt,
         };
     }
 

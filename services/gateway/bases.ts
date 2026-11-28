@@ -33,16 +33,22 @@ export const CARD_ENTITY_OPT_INS = {
   native_resource_details: true,
 };
 
-/** POST helper for Gateway REST endpoints not wrapped by the SDK. */
+/**
+ * POST helper for Gateway REST endpoints not wrapped by the SDK. `signal`
+ * (optional) aborts the request; an abort or timeout message is what
+ * withRetry treats as transient.
+ */
 export async function gatewayPost<T>(
   network: Network,
   path: string,
   body: Record<string, unknown>,
+  options: { signal?: AbortSignal } = {},
 ): Promise<T> {
   const res = await fetch(`${GATEWAY_BASES[network]}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    ...(options.signal ? { signal: options.signal } : {}),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

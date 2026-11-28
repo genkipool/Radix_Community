@@ -13,7 +13,7 @@ import {
     isCandidateElected,
     parseQuantile,
 } from '../lib/majorityJudgment';
-import { fill, formatDate, formatPct, formatXrd } from '../lib/format';
+import { fill, formatDate, formatPct, formatXrd, formatXrdFull } from '../lib/format';
 import type { G } from './GovernanceBadges';
 
 export { ElectionVoteSidebar } from './ElectionVoteSidebar';
@@ -304,7 +304,9 @@ export function ElectionCandidatesKpiGrid({
                         </div>
 
                         <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-[var(--color-text-muted)] tabular-nums">
-                            <span className="truncate">{formatXrd(qualifyingXrd, language)}</span>
+                            <span className="truncate cursor-help" title={fill(g.compare?.election_card_qualifying_xrd_tip ?? '', { xrd: formatXrdFull(qualifyingXrd, language), grade: gradeLabel(mj, res.qualifyingGrade) })}>
+                                {formatXrd(qualifyingXrd, language)}
+                            </span>
                             <span
                                 className="shrink-0 font-bold text-[var(--color-text-secondary)] cursor-help"
                                 title={bandHint(mj, res.band)}

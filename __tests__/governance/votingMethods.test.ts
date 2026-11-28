@@ -458,6 +458,7 @@ describe('Majority Judgment election comparison', () => {
             parameterSetVersion: null,
             tcVotingStart: null,
             tcVotingEnd: null,
+            roundSnapshotAt: null,
             temperatureCheckResult: null,
             candidateResults: [
                 { candidateId: 0, histogram: ['0', '0', '0', '0', '104000'] as [string, string, string, string, string], qualifyingGrade: 4, powerAbove: '0', powerBelow: '0', p: '0', q: '0', band: 'B', electable: true, rank: 1, tieGroupId: 1, outcome: 'ELECTED' },

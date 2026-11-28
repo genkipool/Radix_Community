@@ -523,11 +523,13 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                         language={language}
                     />
                     {(() => {
-                        // The official ranking and our recount weigh ballots with powers fetched separately;
-                        // say so when the totals differ instead of silently showing two orders.
+                        // The recount weighs ballots at the snapshot like the collector; when current
+                        // power had to stand in, or the totals differ, say so instead of silently
+                        // showing two orders.
                         const official = Number(electionData.totalVotingPower);
                         const recounted = voters.reduce((sum, v) => sum + v.power, 0);
-                        if (!Number.isFinite(official) || Math.abs(official - recounted) < 1) return null;
+                        if (!Number.isFinite(official)) return null;
+                        if (electionData.powerAt !== 'current' && Math.abs(official - recounted) < 1) return null;
                         return (
                             <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
                                 <Info className="size-3 mt-0.5 shrink-0" />

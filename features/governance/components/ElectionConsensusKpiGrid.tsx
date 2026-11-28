@@ -14,7 +14,7 @@ import type {
     MethodResult,
 } from '../lib/votingMethods';
 import { bandHint, gradeLabel } from '../lib/majorityJudgment';
-import { fill, formatPct, formatXrd } from '../lib/format';
+import { fill, formatPct, formatXrd, formatXrdFull } from '../lib/format';
 import { matchesMethodQuery, methodText, ruleParams, type CompareDict } from '../lib/comparisonUtils';
 import type { G } from './GovernanceBadges';
 import { FAMILIES, FAMILY_ICON } from './ComparisonParts';
@@ -254,7 +254,9 @@ export function ElectionMethodCandidatesGrid({
                         </div>
 
                         <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-[var(--color-text-muted)] tabular-nums">
-                            <span className="truncate">{formatXrd(cand.qualifyingXrd, language)}</span>
+                            <span className="truncate cursor-help" title={fill(c.election_card_qualifying_xrd_tip ?? '', { xrd: formatXrdFull(cand.qualifyingXrd, language), grade: gradeLabel(mj, cand.qualifyingGrade) })}>
+                                {formatXrd(cand.qualifyingXrd, language)}
+                            </span>
                             <span
                                 className="shrink-0 font-bold text-[var(--color-text-secondary)] cursor-help"
                                 title={bandHint(mj, cand.band)}

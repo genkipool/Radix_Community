@@ -544,6 +544,7 @@
       "election_resistance_ranking_expand_all_tip": "Desplegar las tarjetas de candidatos de todos los métodos",
       "election_resistance_ranking_collapse_all_tip": "Colapsar todas las filas desplegadas",
       "election_card_tied_tip": "Empate exacto en el corte de escaños (misma nota, banda y cuotas p/q); Juicio Mayoritario no desempata por ID.",
+      "election_card_qualifying_xrd_tip": "Poder de voto, en XRD, de las cuentas que dieron a este candidato exactamente «{grade}», su nota de corte: {xrd} XRD.",
       "election_card_below_min_badge": "< Mín.",
       "election_card_below_min_tip": "No alcanza la nota mínima exigida ({minGrade}) bajo este método.",
       "election_card_dropped_tip": "Fuera de las {seats} plazas frente a 1 XRD = 1 voto.",

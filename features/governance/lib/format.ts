@@ -13,6 +13,10 @@ export const formatXrd = (n: number, locale?: string) =>
         ? new Intl.NumberFormat(locale, { maximumSignificantDigits: 2 }).format(n)
         : new Intl.NumberFormat(locale, { notation: 'compact', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
+/** Full XRD amount (no compact notation, up to two decimals), for tooltips behind `formatXrd`. */
+export const formatXrdFull = (n: number, locale?: string) =>
+    new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(n);
+
 export const formatPct = (n: number, locale?: string) =>
     new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(n);
 

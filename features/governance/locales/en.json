@@ -544,6 +544,7 @@
       "election_resistance_ranking_expand_all_tip": "Expand candidate cards for all methods",
       "election_resistance_ranking_collapse_all_tip": "Collapse all expanded rows",
       "election_card_tied_tip": "Exact tie at the seat cutoff (identical grade, band, and p/q shares); Majority Judgment does not break ties by ID.",
+      "election_card_qualifying_xrd_tip": "Voting power, in XRD, of the accounts that gave this candidate exactly \"{grade}\", its qualifying grade: {xrd} XRD.",
       "election_card_below_min_badge": "< Min",
       "election_card_below_min_tip": "Falls below the minimum required grade ({minGrade}) under this method.",
       "election_card_dropped_tip": "Drops outside the {seats} seats compared with 1 XRD = 1 vote.",
