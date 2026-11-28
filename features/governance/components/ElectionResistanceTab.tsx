@@ -4,6 +4,7 @@ import React from 'react';
 import { AlertTriangle, Award, CheckCircle2, Scale, ShieldAlert, ShieldCheck } from 'lucide-react';
 import {
     CURRENT_ATTACK_SHARES,
+    CONTROL_SHARE,
     computeAttackDifficulty,
     computeConsensusResistance,
     computeConsensusStructuralRatio,
@@ -12,12 +13,16 @@ import {
     resistanceLevelFromScore,
     type ConsensusAttackId,
     type ElectionConsensusSummary,
+    type GlobalResistanceScore,
+    type MethodAttackEval,
     type MethodKey,
     type MethodResistanceMetrics,
+    type MethodResistanceReport,
     type MethodResult,
     type Resistance,
 } from '../lib/votingMethods';
 import { parseQuantile } from '../lib/majorityJudgment';
+import type { HistoricalAttack } from '../lib/historicalMethods';
 import { fill, formatPct } from '../lib/format';
 import { RESISTANCE_STYLE, type CompareDict } from './ComparisonParts';
 import {
@@ -74,6 +79,10 @@ function splitAttackTitle(raw: string): { name: string; detail: string | null } 
 
 interface ResistanceScenarioCard {
     id: ConsensusAttackId;
+    /** Pre-computed difficulty (historical average, consensus control); recomputed from `maxShare` when absent. */
+    difficulty?: number;
+    /** The attacker decides the result (more than half of the weight); defaults to `maxShare > CONTROL_SHARE`. */
+    controls?: boolean;
     title: string;
     captures: string;
     blocked: string;
@@ -93,11 +102,20 @@ function ResistanceReportView({
     nuancePositive,
     nuanceWarning,
     summary,
+    scoreOverride,
+    historicalTips,
     c,
     language,
 }: {
     resistanceLevel: Resistance;
     structuralRatio?: number;
+    /**
+     * Historical view: the scores are the average of the per-vote scores, so they
+     * are passed in instead of being recomputed from the averaged scenarios.
+     */
+    scoreOverride?: GlobalResistanceScore;
+    /** Use the historical wording for the final score (average of per-vote scores). */
+    historicalTips?: boolean;
     spread?: number | null;
     levelLabel: string;
     intro1: string;
@@ -113,7 +131,7 @@ function ResistanceReportView({
     const levelStyle = RESISTANCE_STYLE[resistanceLevel];
     const LevelIcon = levelStyle.icon;
     const cardTone = LEVEL_CARD_TONE[resistanceLevel];
-    const globalScore = computeGlobalResistanceScore(scenarios, structuralRatio ?? resistanceLevel, spread);
+    const globalScore = scoreOverride ?? computeGlobalResistanceScore(scenarios, structuralRatio ?? resistanceLevel, spread);
     const fmtScore = (v: number) => formatScoreValue(v, language);
     const globalScoreStr = fmtScore(globalScore.score);
     const globalSybilStr = fmtScore(globalScore.structuralScore);
@@ -182,12 +200,12 @@ function ResistanceReportView({
             title: c.election_resistance_final_score_title ?? '',
             score: globalScore.finalScore,
             scoreStr: finalScoreStr,
-            tip: fill(c.election_resistance_final_score_tip ?? '', {
+            tip: fill((historicalTips ? c.election_resistance_final_score_tip_hist : null) ?? c.election_resistance_final_score_tip ?? '', {
                 score: finalScoreStr,
                 resistance: globalScoreStr,
                 decentralisation: decentScoreStr,
             }),
-            breakdown: fill(c.election_resistance_final_score_breakdown ?? '', {
+            breakdown: fill((historicalTips ? c.election_resistance_final_score_breakdown_hist : null) ?? c.election_resistance_final_score_breakdown ?? '', {
                 resistance: globalScoreStr,
                 decentralisation: decentScoreStr,
             }),
@@ -260,7 +278,8 @@ function ResistanceReportView({
                     {scenarios.map((s, idx) => {
                         const pct = formatPct(s.maxShare, language);
                         const widthPct = s.maxShare > 0 ? Math.max(2, Math.min(100, s.maxShare * 100)) : 0;
-                        const difficulty = computeAttackDifficulty(s.id, s.maxShare);
+                        const computedDifficulty = computeAttackDifficulty(s.id, s.maxShare);
+                        const difficulty = s.difficulty !== undefined ? { ...computedDifficulty, score: s.difficulty } : computedDifficulty;
                         const difficultyScoreStr = difficulty.score.toLocaleString(language, { maximumFractionDigits: 1 });
                         const { name, detail } = splitAttackTitle(s.title);
                         const shareTip = fill(c.election_resistance_metric_share_tip ?? '', { pct });
@@ -305,6 +324,12 @@ function ResistanceReportView({
                                                 {pct}
                                             </span>
                                         </div>
+                                        {(s.controls ?? s.maxShare > CONTROL_SHARE) && (
+                                            <span className="col-span-2 order-last inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-500">
+                                                <ShieldAlert className="size-3 shrink-0" aria-hidden="true" />
+                                                {c.election_resistance_metric_controls ?? ''}
+                                            </span>
+                                        )}
                                         <div
                                             title={difficultyTip}
                                             className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 cursor-help ${difficultyChipTone(difficulty.score)}`}
@@ -422,17 +447,45 @@ export function ElectionResistanceTab({
     const cheapSybil = raw.find(s => s.id === 'cheap_sybil');
     const maxSingleVector = Math.max(0, ...raw.filter(s => s.id !== 'nation_state').map(s => s.maxShare));
     const structuralRatio = computeConsensusStructuralRatio(methods, consensus.methodWeights);
-    const consensusGlobal = computeGlobalResistanceScore(raw, structuralRatio);
+    // Scored with the control-aware share; the cards still show the raw weighted share.
+    const consensusGlobal = computeGlobalResistanceScore(
+        raw.map(s => ({ id: s.id, maxShare: s.scoringShare })),
+        structuralRatio,
+        consensus.weightedConcentration.spread,
+    );
     const resistanceLevel = resistanceLevelFromScore(consensusGlobal.score);
     const dict = c as Record<string, unknown>;
     const levelLabel = ((c.resistance ?? {}) as Record<string, string>)[resistanceLevel] || '';
+    const familiesDict = (c.families ?? {}) as Record<string, string>;
+    const familyParams = {
+        n: nStr,
+        families: consensus.familyCount.toLocaleString(language),
+        pct: formatPct(consensus.familyCount > 0 ? 1 / consensus.familyCount : 0, language),
+    };
 
     const scenarios: ResistanceScenarioCard[] = raw.map(s => ({
         id: s.id,
         maxShare: s.maxShare,
+        difficulty: computeAttackDifficulty(s.id, s.scoringShare).score,
+        controls: s.scoringShare > CONTROL_SHARE,
         title: String(dict[`election_resistance_attack_${s.id}_title`] ?? ''),
-        captures: String(dict[`election_resistance_attack_${s.id}_captures`] ?? ''),
-        blocked: String(dict[`election_resistance_attack_${s.id}_blocked`] ?? ''),
+        // Built from the computed per-method shares, so the text can never disagree with the figures.
+        captures: fill(c.election_resistance_consensus_captures ?? '', {
+            affected: s.affectedCount.toLocaleString(language),
+            controlled: s.byFamily.reduce((sum, f) => sum + f.controlled, 0).toLocaleString(language),
+            total: s.totalMethods.toLocaleString(language),
+            families: s.byFamily
+                .map(f => fill(c.election_resistance_consensus_family ?? '', {
+                    family: familiesDict[f.family] ?? f.family,
+                    affected: f.affected.toLocaleString(language),
+                    total: f.total.toLocaleString(language),
+                }))
+                .join(' · '),
+        }),
+        blocked: fill(c.election_resistance_consensus_blocked ?? '', {
+            blocked: (s.totalMethods - s.affectedCount).toLocaleString(language),
+            total: s.totalMethods.toLocaleString(language),
+        }),
     }));
 
     return (
@@ -441,18 +494,25 @@ export function ElectionResistanceTab({
             structuralRatio={structuralRatio}
             spread={consensus.weightedConcentration.spread}
             levelLabel={levelLabel}
-            intro1={fill(c.election_resistance_intro_1 ?? '', { n: nStr })}
+            intro1={fill(c.election_resistance_intro_1 ?? '', familyParams)}
             intro2={c.election_resistance_intro_2 ?? ''}
-            tableNote={fill(c.election_resistance_table_note ?? '', { n: nStr })}
+            tableNote={fill(c.election_resistance_table_note ?? '', familyParams)}
             scenarios={scenarios}
+            scoreOverride={consensusGlobal}
             nuancePositive={fill(
-                maxSingleVector < 0.5
+                // Same test as the cards' "decides the result" marker.
+                raw.filter(s => s.id !== 'nation_state').every(s => s.scoringShare <= CONTROL_SHARE)
                     ? (c.election_resistance_nuance_impose ?? '')
                     : (c.election_resistance_nuance_impose_high ?? ''),
                 { maxSingle: formatPct(maxSingleVector, language) },
             )}
             nuanceWarning={fill(c.election_resistance_nuance_tie ?? '', { cheapSybil: formatPct(cheapSybil?.maxShare ?? 0, language) })}
-            summary={fill(c.election_resistance_summary ?? '', { cheapSybil: formatPct(cheapSybil?.maxShare ?? 0, language) })}
+            summary={fill(c.election_resistance_summary ?? '', {
+                score: formatScoreValue(consensusGlobal.score, language),
+                level: levelLabel.toLowerCase(),
+                maxSingle: formatPct(maxSingleVector, language),
+                cheapSybil: formatPct(cheapSybil?.maxShare ?? 0, language),
+            })}
             c={c}
             language={language}
         />
@@ -515,6 +575,7 @@ export function MethodResistanceTab({
     spread,
     methodRuleAttack,
     attackCostSentence,
+    historical,
     c,
     language,
 }: {
@@ -523,10 +584,44 @@ export function MethodResistanceTab({
     spread?: number | null;
     methodRuleAttack: string;
     attackCostSentence?: string | null;
+    /** Historical view: per-attack shares and scores averaged vote by vote. */
+    historical?: {
+        attacks: HistoricalAttack[];
+        scores: GlobalResistanceScore;
+    };
     c: CompareDict;
     language: string;
 }) {
-    const report = computeMethodResistance(methodKey, metrics, language);
+    const baseReport = computeMethodResistance(methodKey, metrics, language);
+    // Historical view: the average share and difficulty of each attack, explained with the
+    // texts of the vote where it captured most (not of a fictitious average vote).
+    const histById = new Map((historical?.attacks ?? []).map(a => [a.id, a]));
+    const report: Omit<MethodResistanceReport, 'scenarios'> & { scenarios: Array<MethodAttackEval & { difficulty?: number; controls?: boolean; worstPrefix?: string }> } = historical
+        ? {
+            ...baseReport,
+            params: {
+                ...baseReport.params,
+                maxVector: formatPct(Math.max(0, ...(historical.attacks).filter(a => a.id !== 'nation_state').map(a => a.avgShare)), language),
+            },
+            scenarios: baseReport.scenarios.map(s => {
+                const h = histById.get(s.id);
+                if (!h) return s;
+                // Texts and figures of the worst vote, rebuilt in the reader's language; the bar shows the average.
+                const worst = computeMethodResistance(methodKey, h.worst.metrics, language).scenarios.find(w => w.id === s.id) ?? s;
+                return {
+                    ...s,
+                    maxShare: h.avgShare,
+                    capturesKey: worst.capturesKey,
+                    blockedKey: worst.blockedKey,
+                    params: worst.params,
+                    difficulty: h.difficulty,
+                    // An average share cannot say whether the attacker decided any single vote.
+                    controls: false,
+                    worstPrefix: fill(c.method_res_hist_worst_prefix ?? '', { pct: formatPct(h.worst.maxShare, language) }),
+                };
+            }),
+        }
+        : baseReport;
     const dict = c as Record<string, unknown>;
     const levelLabel = ((c.resistance ?? {}) as Record<string, string>)[report.resistance] || report.resistance;
     const params = {
@@ -537,8 +632,10 @@ export function MethodResistanceTab({
     const scenarios: ResistanceScenarioCard[] = report.scenarios.map(s => ({
         id: s.id,
         maxShare: s.maxShare,
+        difficulty: s.difficulty,
+        controls: s.controls,
         title: String(dict[`election_resistance_attack_${s.id}_title`] ?? ''),
-        captures: fill(String(dict[s.capturesKey] ?? ''), s.params),
+        captures: `${s.worstPrefix ? `${s.worstPrefix} ` : ''}${fill(String(dict[s.capturesKey] ?? ''), s.params)}`,
         blocked: fill(String(dict[s.blockedKey] ?? ''), s.params),
     }));
 
@@ -554,6 +651,8 @@ export function MethodResistanceTab({
             nuancePositive={fill(String(dict[report.nuancePositiveKey] ?? ''), params)}
             nuanceWarning={fill(String(dict[report.nuanceWarningKey] ?? ''), params)}
             summary={fill(String(dict[report.summaryKey] ?? ''), params)}
+            scoreOverride={historical?.scores}
+            historicalTips={Boolean(historical)}
             c={c}
             language={language}
         />

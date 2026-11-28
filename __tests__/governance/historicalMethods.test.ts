@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { aggregateHistoricalMethods, type HistoricalVoteInput } from '@/features/governance/lib/historicalMethods';
 import { itemChoices, type GovernanceItem } from '@/features/governance/lib/governanceVotes';
-import { balanceExtremes, compareMethods, effectiveExtremes, spreadExtremes, type MethodVoter } from '@/features/governance/lib/votingMethods';
+import {
+    compareMethods, computeHistoricalMethodScoreRows, computeMethodScoreRows, fairScoreExtremes, spreadExtremes,
+    type MethodVoter,
+} from '@/features/governance/lib/votingMethods';
+import { parseQuantile } from '@/features/governance/lib/majorityJudgment';
 import type { GovernanceEntry } from '@/features/governance/types';
 
 const makeItem = (title: string): GovernanceItem => ({
@@ -133,8 +137,7 @@ describe('aggregateHistoricalMethods', () => {
         const singleResults = compareMethods(voters, itemChoices('election', electionItem), electionItem, { gradeQuantile: '3/5' })
             .filter(r => r.counted > 0);
         const singleSpread = spreadExtremes(singleResults, r => r.concentration.spread);
-        const singleBalance = balanceExtremes(singleResults);
-        const singleEffective = effectiveExtremes(singleResults);
+        const { balance: singleBalance, effective: singleEffective } = fairScoreExtremes(singleResults, parseQuantile('3/5'));
 
         const hist = aggregateHistoricalMethods([{ entry, voters, gradeQuantile: '3/5' }], true);
 
@@ -144,5 +147,91 @@ describe('aggregateHistoricalMethods', () => {
         expect(hist.leastBalanced?.key).toBe(singleBalance.least?.key);
         expect(hist.mostEffective?.key).toBe(singleEffective.most?.key);
         expect(hist.leastEffective?.key).toBe(singleEffective.least?.key);
+    });
+
+    describe('historical scores are the vote-by-vote average of the single-vote scores', () => {
+        const mixedVoters: MethodVoter[] = [
+            { account: 'whale', choices: ['For'], power: 12_000_000, ageDays: 1_200, stakedXrd: 9_000_000, twab90Xrd: 11_000_000, min90Xrd: 10_000_000 },
+            { account: 'mid', choices: ['Against'], power: 2_500_000, ageDays: 800, stakedXrd: 2_000_000, twab90Xrd: 2_400_000, min90Xrd: 2_300_000 },
+            { account: 'small1', choices: ['Against'], power: 40_000, ageDays: 400, stakedXrd: 0, twab90Xrd: 30_000, min90Xrd: 20_000 },
+            { account: 'small2', choices: ['For'], power: 15_000, ageDays: 30, stakedXrd: 15_000, twab90Xrd: 5_000, min90Xrd: 0 },
+            { account: 'dust', choices: ['Against'], power: 50, ageDays: 2, stakedXrd: 0, twab90Xrd: 10, min90Xrd: 0 },
+        ];
+
+        it('equals the single-vote score table 1:1 when only one vote is analysed (incl. share caps)', () => {
+            const entry = makeEntry('9', 'Single');
+            const results = compareMethods(mixedVoters, itemChoices(entry.kind, entry.item), entry.item);
+            const ready = results.filter(r => r.counted > 0);
+            const single = computeMethodScoreRows(ready, { quantile: parseQuantile(undefined) });
+            const summary = aggregateHistoricalMethods([{ entry, voters: mixedVoters }], true);
+            const hist = computeHistoricalMethodScoreRows(summary.methods.filter(m => m.votesEvaluated > 0), summary.votesAnalyzed);
+            expect(hist).toHaveLength(single.length);
+            const histByKey = new Map(hist.map(r => [r.key, r]));
+            for (const row of single) {
+                const h = histByKey.get(row.key)!;
+                expect(h, row.key).toBeDefined();
+                expect(h.resistanceScore, row.key).toBe(row.resistanceScore);
+                expect(h.decentralisationScore, row.key).toBe(row.decentralisationScore);
+                expect(h.finalScore, row.key).toBe(row.finalScore);
+                expect(h.minDifficulty, row.key).toBe(row.minDifficulty);
+                expect(h.avgMaxShare, row.key).toBeCloseTo(row.avgMaxShare, 12);
+            }
+        });
+
+        it('scores 0 on votes where a rule counts nobody, instead of averaging only the votes it survives', () => {
+            const withWhale = makeEntry('10', 'With whale');
+            const noWhale = makeEntry('11', 'Without whale');
+            const smallVoters = mixedVoters.filter(v => v.power < 1_000_000);
+            const summary = aggregateHistoricalMethods([
+                { entry: withWhale, voters: mixedVoters },
+                { entry: noWhale, voters: smallVoters },
+            ], true);
+            const whalesOnly = summary.methods.find(m => m.key === 'whales_only')!;
+            expect(whalesOnly.votesEvaluated).toBe(1);
+
+            const one = compareMethods(mixedVoters, itemChoices(withWhale.kind, withWhale.item), withWhale.item)
+                .filter(r => r.key === 'whales_only');
+            const [singleRow] = computeMethodScoreRows(one, { quantile: parseQuantile(undefined) });
+            expect(whalesOnly.avgFinalScore).toBe(Math.round((singleRow.finalScore! / 2) * 10) / 10);
+            expect(whalesOnly.avgDecentralisationScore).toBe(Math.round((singleRow.decentralisationScore! / 2) * 10) / 10);
+            // Resistance describes the rule where it applies, so it is averaged over evaluated votes only.
+            expect(whalesOnly.avgResistanceScore).toBe(singleRow.resistanceScore);
+            expect(whalesOnly.avgSpread).toBeCloseTo(one[0].concentration.spread! / 2, 12);
+        });
+    });
+
+    describe('quorum', () => {
+        const item = { ...makeItem('Quorum'), quorum: 13_000_000 };
+        const entry = { ...makeEntry('12', 'Quorum'), item };
+        const voters: MethodVoter[] = [
+            { account: 'whale', choices: ['For'], power: 12_000_000, ageDays: 30, stakedXrd: 0, twab90Xrd: 0, min90Xrd: 0 },
+            { account: 'vet', choices: ['Against'], power: 2_000_000, ageDays: 900, stakedXrd: 2_000_000, twab90Xrd: 2_000_000, min90Xrd: 2_000_000 },
+        ];
+        const results = compareMethods(voters, itemChoices(entry.kind, item), item);
+        const byKey = new Map(results.map(r => [r.key, r]));
+
+        it('weight caps keep the full XRD of every counted voter in the quorum', () => {
+            const capped = byKey.get('capped')!;
+            expect(capped.totalWeight).toBe(2_000_000);
+            expect(capped.quorumXrd).toBe(14_000_000);
+            expect(capped.quorumMet).toBe(true);
+        });
+
+        it('voters dropped for their size still count toward the quorum, but not toward the vote', () => {
+            const noTop1 = byKey.get('no_top1')!;
+            expect(noTop1.counted).toBe(1);
+            expect(noTop1.eligibleXrd).toBe(2_000_000);
+            expect(noTop1.quorumXrd).toBe(14_000_000);
+            expect(noTop1.quorumMet).toBe(true);
+            expect(noTop1.outcome).toBe('rejected');
+        });
+
+        it('voters dropped for failing a requirement do not count toward the quorum', () => {
+            const veterans = byKey.get('veterans')!;
+            expect(veterans.counted).toBe(1);
+            expect(veterans.quorumXrd).toBe(2_000_000);
+            expect(veterans.quorumMet).toBe(false);
+            expect(veterans.outcome).toBe('no_quorum');
+        });
     });
 });

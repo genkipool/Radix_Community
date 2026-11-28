@@ -13,7 +13,9 @@ import { toMethodVoters, useAccountAges } from '../hooks/useAccountAges';
 import { useMethodComparisonControls } from '../hooks/useMethodComparisonControls';
 import { itemChoices } from '../lib/governanceVotes';
 import {
-    METHODS, balanceExtremes, compareMethods, computeConsensusResistance, computeElectionConclusions, computeElectionConsensus, computeMethodScoreRows, effectiveExtremes, spreadExtremes,
+    CONTROL_SHARE, METHODS, compareMethods, computeAttackDifficulty, computeConsensusResistance, computeElectionConclusions,
+    computeElectionConsensus, computeMethodResistance, computeMethodScoreRows, methodResistanceMetricsFromResult, scoreMethodResult,
+    fairBalanceScore, fairEffectiveScore, fairScoreExtremes, sortMethodScoreRows, spreadExtremes,
     type MethodKey,
     type MethodResult,
 } from '../lib/votingMethods';
@@ -35,6 +37,7 @@ import { MethodScoresTable, toScoreTableEntries } from './MethodScoresTable';
 import { useRegisterTabExport, type RegisterTabExport } from './JsonExportPill';
 import {
     ruleParams, tip, methodText, matchesMethodQuery, formatBalanceHint, nextSort, sortComparisonRows,
+    methodCatalogForExport, glossaryForExport,
     ComparisonTile, FamilyFilterBar, MethodSearchInput, SortableHeaderButton, ComparisonGlossary,
     ProgressBar, FactTile, GroupedMethodList,
     type CompareDict,
@@ -61,7 +64,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         family, setFamily, query, setQuery, sort, setSort, focusedMethod, jumpToMethod,
     } = useMethodComparisonControls('method-row-');
     const [guidePanel, setGuidePanel] = useState<
-        | { kind: 'method'; method: MethodResult }
+        // Only the key: the method is looked up on every render so the panel never shows a stale snapshot.
+        | { kind: 'method'; key: MethodKey }
         | { kind: 'consensus' }
         | { kind: 'current' }
         | null
@@ -83,9 +87,38 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
     const pending = rows.filter(v => v.votePower === null).length;
     const zeroPower = rows.filter(v => v.votePower !== null && !(Number(v.votePower) > 0)).length;
     const readyForExport = results.filter(r => !(r.needsAge && !ages.done) && r.counted > 0);
+    // Any unread ledger figure leaves the voter out of some rule (same rule as the historical tab).
+    const unknownAgesCount = ages.done
+        ? voters.filter(v => v.ageDays === null || v.stakedXrd == null || v.twab90Xrd == null || v.min90Xrd == null).length
+        : 0;
     const electionConsensus = kind === 'election'
         ? computeElectionConsensus(readyForExport, tallyQuery.data?.electionData)
         : null;
+    const electionData = tallyQuery.data?.electionData ?? null;
+    // Computed before the export getter so the JSON always contains the same
+    // ranking rows as the table, even while tallies/ages are still loading.
+    const scoreEntries = toScoreTableEntries(
+        computeMethodScoreRows(readyForExport, {
+            quantile: parseQuantile(electionData?.gradeQuantileApplied),
+            consensus: kind === 'election' && Boolean(item.election) && electionConsensus
+                ? {
+                    methodWeights: electionConsensus.methodWeights,
+                    concentration: electionConsensus.weightedConcentration,
+                }
+                : null,
+        }),
+        c,
+        language,
+        electionConsensus?.evaluatedMethods,
+    );
+
+    // The balance tiles are the first and last rows of the score table itself, so ties can never
+    // make them name a different method than the table shows.
+    const tableOrder = sortMethodScoreRows(scoreEntries.filter(r => !r.isConsensus), 'final', 'desc');
+    const tableBalance = {
+        most: tableOrder.length ? results.find(r => r.key === tableOrder[0].key) : undefined,
+        least: tableOrder.length ? results.find(r => r.key === tableOrder[tableOrder.length - 1].key) : undefined,
+    };
 
     useRegisterTabExport(onRegisterExport, () => {
         const currentResult = results.find(r => r.current);
@@ -93,6 +126,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
         return {
             tab: 'compare',
             exportedAt: new Date().toISOString(),
+            language,
             system: {
                 key: system.key,
                 name: system.name,
@@ -107,6 +141,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 deadline: item.deadline,
                 quorum: item.quorum,
                 approvalThreshold: item.approvalThreshold,
+                /** Full proposal/election metadata, including options, description and candidate slate. */
+                item,
             },
             filters: { family, query, sort },
             summary: {
@@ -115,10 +151,11 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                 pendingVoters: pending,
                 zeroPowerVoters: zeroPower,
                 eligibleXrd: currentResult?.eligibleXrd ?? 0,
+                quorumXrd: currentResult?.quorumXrd ?? 0,
                 agesLoaded: ages.loaded,
                 agesTotal: ages.total,
                 agesDone: ages.done,
-                unknownAges: ages.done ? voters.filter(v => v.ageDays === null).length : 0,
+                unknownAges: unknownAgesCount,
                 sameOutcomeCount: otherResults.filter(r => r.sameAsCurrent).length,
                 comparedMethodsCount: otherResults.length,
             },
@@ -135,8 +172,19 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                         ...electionConsensus,
                         conclusions,
                         resistance: {
-                            level: 'high' as const,
-                            scenarios: computeConsensusResistance(readyForExport, electionConsensus.methodWeights),
+                            // Level and score are the consensus row of the ranking table, not a fixed label.
+                            level: scoreEntries.find(r => r.key === 'consensus')?.resistance ?? null,
+                            score: scoreEntries.find(r => r.key === 'consensus')?.resistanceScore ?? null,
+                            // `maxShare` is what the cards show; `difficulty` is scored from `scoringShare`, like the cards.
+                            scenarios: computeConsensusResistance(
+                                readyForExport,
+                                electionConsensus.methodWeights,
+                                parseQuantile(electionData?.gradeQuantileApplied),
+                            ).map(sc => ({
+                                ...sc,
+                                decidesResult: sc.scoringShare > CONTROL_SHARE,
+                                difficulty: computeAttackDifficulty(sc.id, sc.scoringShare).score,
+                            })),
                         },
                     },
                     ...(currentResult ? {
@@ -148,7 +196,8 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                                 decisiveBlock: conclusions.currentDecisiveBlock,
                                 concentration: currentResult.concentration,
                                 eligibleXrd: currentResult.eligibleXrd,
-                                quorumXrd: item.quorum,
+                                quorumRequiredXrd: item.quorum,
+                                quorumReachedXrd: currentResult.quorumXrd,
                                 quorumMet: currentResult.quorumMet,
                                 electedSeats: currentResult.electionSummary?.elected ?? [],
                                 agreementWithOtherMethods: {
@@ -158,14 +207,96 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                                 },
                             },
                             resistance: {
-                                level: 'high' as const,
-                                scenarios: CURRENT_ATTACK_SHARES,
+                                // Structural tier from the catalogue and the 0..10 score of the ranking table.
+                                level: currentResult.resistance,
+                                score: scoreEntries.find(r => r.key === currentResult.key)?.resistanceScore ?? null,
+                                scenarios: CURRENT_ATTACK_SHARES.map(sc => ({
+                                    ...sc,
+                                    decidesResult: sc.maxShare > CONTROL_SHARE,
+                                    difficulty: computeAttackDifficulty(sc.id, sc.maxShare).score,
+                                })),
                             },
                         },
                     } : {}),
                 };
             })() : {}),
-            methods: results,
+            /** The KPI tiles exactly as shown (balance = final score / 10, effectiveness = ∛(resistance/10 × spread × quorum)). */
+            kpis: (() => {
+                const q = parseQuantile(electionData?.gradeQuantileApplied);
+                const pickKpi = (r: MethodResult | undefined, value?: number) => (r ? { key: r.key, ...(value !== undefined ? { value } : {}) } : null);
+                const kpiReady = readyForExport;
+                const spreadKpi = spreadExtremes(kpiReady, r => r.concentration.spread);
+                const fair = fairScoreExtremes(kpiReady, q);
+                const otherReady = kpiReady.filter(r => !r.current);
+                return {
+                    sameOutcome: { same: otherReady.filter(r => r.sameAsCurrent).length, total: otherReady.length },
+                    mostDecentralised: pickKpi(spreadKpi.most, spreadKpi.most?.concentration.spread ?? undefined),
+                    mostConcentrated: pickKpi(spreadKpi.least, spreadKpi.least?.concentration.spread ?? undefined),
+                    mostBalanced: pickKpi(tableBalance.most, tableBalance.most ? fairBalanceScore(tableBalance.most, q) : undefined),
+                    leastBalanced: pickKpi(tableBalance.least, tableBalance.least ? fairBalanceScore(tableBalance.least, q) : undefined),
+                    mostEffective: pickKpi(fair.effective.most, fair.effective.most ? fairEffectiveScore(fair.effective.most, q) : undefined),
+                    leastEffective: pickKpi(fair.effective.least, fair.effective.least ? fairEffectiveScore(fair.effective.least, q) : undefined),
+                };
+            })(),
+            /**
+             * Every method's full result. `scored` is false while it still needs account ages
+             * (or counts nobody): such methods are left out of the tiles, the table and `methodAudits`.
+             */
+            methods: results.map(r => ({ ...r, scored: readyForExport.includes(r) })),
+            /** The resistance panel of each scored method, exactly as rendered (localized texts included). */
+            methodAudits: (() => {
+                const q = parseQuantile(electionData?.gradeQuantileApplied);
+                const dict = c as Record<string, unknown>;
+                return readyForExport.map(m => {
+                    const { scores } = scoreMethodResult(m, q);
+                    const report = computeMethodResistance(m.key, methodResistanceMetricsFromResult(m, q), language);
+                    return {
+                        key: m.key,
+                        resistanceTier: m.resistance,
+                        scores: {
+                            resistance: scores.score,
+                            structural: scores.structuralScore,
+                            attackDefence: scores.attackScore,
+                            weakestAttack: scores.minDifficulty,
+                            averageDifficulty: scores.avgDifficulty,
+                            averageMaxShare: scores.avgMaxShare,
+                            decentralisation: scores.decentralisationScore,
+                            final: scores.finalScore,
+                        },
+                        balance: fairBalanceScore(m, q),
+                        effectiveness: fairEffectiveScore(m, q),
+                        attacks: report.scenarios.map(sc => ({
+                            id: sc.id,
+                            maxShare: sc.maxShare,
+                            decidesResult: sc.maxShare > CONTROL_SHARE,
+                            difficulty: computeAttackDifficulty(sc.id, sc.maxShare).score,
+                            captures: fill(String(dict[sc.capturesKey] ?? ''), sc.params),
+                            blocked: fill(String(dict[sc.blockedKey] ?? ''), sc.params),
+                        })),
+                    };
+                });
+            })(),
+            /** Name, rule, family and resistance of all 50 methods, plus the figures their rules use. */
+            methodCatalog: methodCatalogForExport(c, language),
+            /** Ranking table exactly as rendered, with localized labels and score metrics. */
+            scoreTable: {
+                rows: scoreEntries,
+                defaultSort: { key: 'final', dir: 'desc' },
+            },
+            /** Glossary shown under the table, with every level tip and hint. */
+            glossary: glossaryForExport(c),
+            /** Every ballot row, including vote history and per-candidate grades. */
+            voters: rows,
+            /** Raw tally payload (collector election results when available). */
+            tally: tallyQuery.data ?? null,
+            notes: [
+                c.note_hypothetical ?? '',
+                zeroPower > 0 ? fill(c.note_zero_power ?? '', { n: zeroPower.toLocaleString(language) }) : '',
+                pending > 0 ? fill(c.note_pending ?? '', { n: pending.toLocaleString(language) }) : '',
+                unknownAgesCount > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAgesCount.toLocaleString(language) }) : '',
+            ].filter(Boolean),
+            /** All localized strings used by the governance tabs (labels, tooltips, guide steps). */
+            labels: g,
         };
     });
 
@@ -205,44 +336,31 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             ],
         }, params, query));
     const sortedShown = sortComparisonRows(shown, sort, r => r.concentration.spread, r => r.resistance);
-    const unknownAges = ages.done ? voters.filter(v => v.ageDays === null).length : 0;
     const name = (r: MethodResult) => methodText(c, r.key, params).name;
-    const balance = balanceExtremes(ready);
-    const effective = effectiveExtremes(ready);
+    // Scored with the same 0..10 resistance as the ranking table.
+    const { effective } = fairScoreExtremes(ready, parseQuantile(electionData?.gradeQuantileApplied));
+    const balance = tableBalance;
+    const resistanceScoreOf = (r: MethodResult) => scoreEntries.find(e => e.key === r.key)?.resistanceScore;
     const balanceHint = (r: MethodResult) =>
-        formatBalanceHint(c, r.resistance, r.concentration.nakamoto, r.counted, r.concentration.spread, language);
+        formatBalanceHint(c, r.resistance, r.concentration.nakamoto, r.counted, r.concentration.spread, language, 0, resistanceScoreOf(r));
     const effectiveHint = (r: MethodResult) => fill(c.kpi_effective_hint || '', {
+        score: (resistanceScoreOf(r) ?? 0).toLocaleString(language, { maximumFractionDigits: 1 }),
         resistance: (((c.resistance ?? {}) as Record<string, string>)[r.resistance] || r.resistance).toLowerCase(),
         pct: formatPct(r.concentration.spread ?? 0, language),
         quorum: r.quorumMet === null ? (c.kpi_quorum_none || '') : r.quorumMet ? (c.kpi_quorum_ok || '') : (c.kpi_quorum_ko || ''),
     });
 
     const isElection = kind === 'election' && Boolean(item.election);
-    const electionData = tallyQuery.data?.electionData ?? null;
     const methodByKey = new Map(results.map(m => [m.key, m]));
+    const guideMethod = guidePanel?.kind === 'method' ? methodByKey.get(guidePanel.key) : undefined;
     const openMethodGuide = (key: MethodKey | 'consensus') => {
         if (key === 'consensus') {
             if (electionConsensus) setGuidePanel({ kind: 'consensus' });
             return;
         }
         const hit = methodByKey.get(key);
-        if (hit) setGuidePanel({ kind: 'method', method: hit });
+        if (hit) setGuidePanel({ kind: 'method', key: hit.key });
     };
-    const scoreEntries = toScoreTableEntries(
-        computeMethodScoreRows(readyForExport, {
-            quantile: parseQuantile(electionData?.gradeQuantileApplied),
-            consensus: isElection && electionConsensus
-                ? {
-                    methodWeights: electionConsensus.methodWeights,
-                    concentration: electionConsensus.weightedConcentration,
-                }
-                : null,
-        }),
-        c,
-        language,
-        electionConsensus?.evaluatedMethods,
-    );
-
     return (
         <div className="space-y-6">
             <section className="relative overflow-hidden rounded-3xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 sm:p-7">
@@ -255,7 +373,9 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                                 <Scale className="size-6" />
                             </span>
                             <h2 className="mt-4 text-xl md:text-2xl font-black text-[var(--color-text-main)]">{c.heading ?? ''}</h2>
-                            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{isElection ? (c.intro_election ?? c.intro) : c.intro}</p>
+                            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{isElection
+                                ? fill(c.intro_election ?? c.intro ?? '', { quantilePct: formatPct(parseQuantile(electionData?.gradeQuantileApplied), language) })
+                                : c.intro}</p>
                         </div>
                         <dl className={isElection ? 'grid grid-cols-2 gap-2.5' : 'grid grid-cols-2 sm:grid-cols-3 gap-2.5'}>
                             {(() => {
@@ -271,7 +391,11 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                                         [Users, c.fact_voters ?? '', current.counted.toLocaleString(language), votersTip],
                                         [Coins, c.fact_xrd ?? '', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
                                         [Target, c.fact_quorum ?? '', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
-                                        [Crown, c.fact_seats ?? '', (item.election?.seatCount ?? 0).toLocaleString(language), tip(c, 'fact_seats')],
+                                        [Crown, c.fact_seats ?? '', (item.election?.seatCount ?? 0).toLocaleString(language), tip(c, 'fact_seats'), undefined,
+                                            // Same "N candidatos" line as the seats box in the results tab.
+                                            (item.election?.candidates.length ?? 0) > 0
+                                                ? `${(item.election?.candidates.length ?? 0).toLocaleString(language)} ${(g.candidates_title ?? '').toLowerCase()}`
+                                                : undefined],
                                     ]
                                     : [
                                         [Users, c.fact_voters ?? '', current.counted.toLocaleString(language), votersTip],
@@ -287,7 +411,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                                         }),
                                     ]
                                 );
-                            })().map(([Icon, label, value, title, tone]) => (
+                            })().map(([Icon, label, value, title, tone, hint]) => (
                                 <FactTile
                                     key={label as string}
                                     icon={Icon as LucideIcon}
@@ -295,6 +419,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                                     value={value as string}
                                     title={title as string | undefined}
                                     tone={tone as string | undefined}
+                                    hint={hint as string | undefined}
                                 />
                             ))}
                         </dl>
@@ -364,7 +489,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             help={tip(c, 'kpi_effective')}
                             label={c.kpi_effective || ''}
                             value={effective.most ? name(effective.most) : undefined}
-                            hint={effective.most ? effectiveHint(effective.most) : undefined}
+                            hint={effective.most ? effectiveHint(effective.most) : (ready.length > 0 ? c.kpi_effective_none : undefined)}
                             onClick={effective.most ? () => jumpToMethod(effective.most!.key) : undefined}
                         />
                         <ComparisonTile
@@ -372,7 +497,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             help={tip(c, 'kpi_ineffective')}
                             label={c.kpi_ineffective || ''}
                             value={effective.least ? name(effective.least) : undefined}
-                            hint={effective.least ? effectiveHint(effective.least) : undefined}
+                            hint={effective.least ? effectiveHint(effective.least) : (ready.length > 0 ? c.kpi_effective_none : undefined)}
                             onClick={effective.least ? () => jumpToMethod(effective.least!.key) : undefined}
                         />
                     </div>
@@ -397,6 +522,24 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                         g={g}
                         language={language}
                     />
+                    {(() => {
+                        // The official ranking and our recount weigh ballots with powers fetched separately;
+                        // say so when the totals differ instead of silently showing two orders.
+                        const official = Number(electionData.totalVotingPower);
+                        const recounted = voters.reduce((sum, v) => sum + v.power, 0);
+                        if (!Number.isFinite(official) || Math.abs(official - recounted) < 1) return null;
+                        return (
+                            <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
+                                <Info className="size-3 mt-0.5 shrink-0" />
+                                {fill(c.election_official_mismatch_note ?? '', {
+                                    official: formatXrd(official, language),
+                                    counted: formatXrd(recounted, language),
+                                    diff: formatXrd(Math.abs(official - recounted), language),
+                                    zero: zeroPower.toLocaleString(language),
+                                })}
+                            </p>
+                        );
+                    })()}
                 </section>
             )}
 
@@ -465,7 +608,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                             language={language}
                             rowId={`method-row-${r.key}`}
                             focusNonce={focusedMethod?.key === r.key ? focusedMethod.nonce : 0}
-                            onOpenGuide={m => setGuidePanel({ kind: 'method', method: m })}
+                            onOpenGuide={m => setGuidePanel({ kind: 'method', key: m.key })}
                         />
                     )}
                 />
@@ -516,11 +659,11 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
             <ComparisonGlossary id="methods-glossary" c={c} />
 
             <MethodGuideModal
-                isOpen={guidePanel !== null && (guidePanel.kind === 'method' || Boolean(electionConsensus))}
+                isOpen={guidePanel !== null && (guidePanel.kind === 'method' ? Boolean(guideMethod) : Boolean(electionConsensus))}
                 onClose={() => setGuidePanel(null)}
-                target={guidePanel?.kind === 'method' ? {
+                target={guideMethod ? {
                     mode: 'single',
-                    method: guidePanel.method,
+                    method: guideMethod,
                     current,
                     allMethods: readyForExport,
                     quorum: item.quorum,
@@ -543,18 +686,21 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                     quorum: item.quorum,
                     gradeQuantile: electionData?.gradeQuantileApplied ?? null,
                 } : null}
-                methodName={guidePanel?.kind === 'method'
-                    ? methodText(c, guidePanel.method.key, params).name
+                methodName={guideMethod
+                    ? methodText(c, guideMethod.key, params).name
                     : guidePanel?.kind === 'current'
                         ? methodText(c, current.key, params).name
                         : electionConsensus
                             ? fill(c.election_consensus_title ?? '', { n: electionConsensus.evaluatedMethods.toLocaleString(language) })
                             : ''}
-                methodRule={guidePanel?.kind === 'method'
-                    ? methodText(c, guidePanel.method.key, params).rule
+                methodRule={guideMethod
+                    ? methodText(c, guideMethod.key, params).rule
                     : guidePanel?.kind === 'current'
                         ? methodText(c, current.key, params).rule
-                        : (c.election_consensus_hint ?? '')}
+                        : fill(c.election_consensus_hint ?? '', electionConsensus ? {
+                            families: electionConsensus.familyCount.toLocaleString(language),
+                            pct: formatPct(electionConsensus.familyCount > 0 ? 1 / electionConsensus.familyCount : 0, language),
+                        } : {})}
                 c={c}
                 g={g}
                 language={language}
@@ -565,7 +711,7 @@ export function MethodsComparison({ entry, system, g, language, now, onRegisterE
                     c.note_hypothetical,
                     zeroPower > 0 ? fill(c.note_zero_power ?? '', { n: zeroPower.toLocaleString(language) }) : null,
                     pending > 0 ? fill(c.note_pending ?? '', { n: pending.toLocaleString(language) }) : null,
-                    unknownAges > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAges.toLocaleString(language) }) : null,
+                    unknownAgesCount > 0 ? fill(c.note_unknown_age ?? '', { n: unknownAgesCount.toLocaleString(language) }) : null,
                 ].filter(Boolean).map((text, i) => (
                     <p key={i} className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
                         <Info className="size-3 mt-0.5 shrink-0" />{text}

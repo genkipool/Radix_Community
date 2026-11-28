@@ -12,6 +12,7 @@ import {
     computeHistoricalMethodScoreRows,
     computeMethodResistance,
     computeMethodScoreRows,
+    controlShare,
     methodResistanceMetricsFromHistorical,
     methodResistanceMetricsFromResult,
     nextMethodScoreSort,
@@ -118,7 +119,8 @@ describe('computeMethodResistance (all 50 methods)', () => {
         }
         // Single whale share scales realistically with vote size
         const smallVote = sharesOf('capped_10m', { ...baseMetrics, eligibleXrd: 5_000_000, totalWeight: 5_000_000 });
-        expect(smallVote.opportunistic_whale).toBeCloseTo(10_000_000 / 15_000_000, 6);
+        // The modelled whale brings 1.5 × 5M = 7.5M, below the 10M cap: the cap does not bind.
+        expect(smallVote.opportunistic_whale).toBeCloseTo(7_500_000 / 12_500_000, 6);
         const largeVote = sharesOf('capped_10m', { ...baseMetrics, eligibleXrd: 200_000_000, totalWeight: 200_000_000 });
         expect(largeVote.opportunistic_whale).toBeCloseTo(10_000_000 / 210_000_000, 6);
     });
@@ -427,6 +429,7 @@ describe('totalWeight, decisiveQuantileXrd, avgTotalWeight, and consensus funded
         for (const sc of consRes) {
             expect(sc.totalMethods).toBe(evaluated.length);
             let expectedShare = 0;
+            let expectedControlled = 0;
             let expectedAffected = 0;
             for (const r of evaluated) {
                 const rep = computeMethodResistance(r.key, {
@@ -442,8 +445,11 @@ describe('totalWeight, decisiveQuantileXrd, avgTotalWeight, and consensus funded
                     expectedShare += (weights[r.key] ?? 0) * val;
                     expectedAffected += 1;
                 }
+                if (controlShare(val) === 1) expectedControlled += weights[r.key] ?? 0;
             }
+            // Displayed share stays raw; scoring uses the weight of methods the attacker decides when larger.
             expect(sc.maxShare).toBeCloseTo(expectedShare, 6);
+            expect(sc.scoringShare).toBeCloseTo(Math.max(expectedShare, Math.min(1, expectedControlled)), 6);
             expect(sc.affectedCount).toBe(expectedAffected);
         }
     });
@@ -692,6 +698,12 @@ describe('totalWeight, decisiveQuantileXrd, avgTotalWeight, and consensus funded
                 avgSpread: 0.25,
                 avgTop1: 0.55,
                 avgEffective: 2.8,
+                avgResistanceScore: 7.2,
+                avgMinDifficulty: 6,
+                avgMaxShare: 0.4,
+                avgDecentralisationScore: 2.5,
+                avgFinalScore: 4.2,
+                historicalScores: { raw: { finalScore: 4.2 } },
             },
             {
                 key: 'one_address' as const,
@@ -707,6 +719,12 @@ describe('totalWeight, decisiveQuantileXrd, avgTotalWeight, and consensus funded
                 avgSpread: null,
                 avgTop1: 0.05,
                 avgEffective: 20,
+                avgResistanceScore: 1.5,
+                avgMinDifficulty: 0,
+                avgMaxShare: 0.9,
+                avgDecentralisationScore: null,
+                avgFinalScore: null,
+                historicalScores: { raw: { finalScore: null } },
             },
         ];
         expect(methodResistanceMetricsFromHistorical(syntheticHist[0], 5)).toEqual({
@@ -726,6 +744,10 @@ describe('totalWeight, decisiveQuantileXrd, avgTotalWeight, and consensus funded
         );
         expect(histRows).toHaveLength(2);
         expect(histRows[0].decentralisationScore).toBe(2.5);
+        expect(histRows[0].finalScore).toBe(4.2);
+        expect(histRows[0].resistanceScore).toBe(7.2);
+        expect(histRows[0].votesEvaluated).toBe(4);
+        expect(histRows[0].votesTotal).toBe(5);
         expect(histRows[0].top1).toBe(0.55);
         expect(histRows[1].decentralisationScore).toBeNull();
         expect(histRows[1].finalScore).toBeNull();
@@ -755,5 +777,38 @@ describe('totalWeight, decisiveQuantileXrd, avgTotalWeight, and consensus funded
         const s3 = nextMethodScoreSort(s2, 'resistance');
         expect(s3).toBeNull();
         expect(nextMethodScoreSort(s1, 'final')).toEqual({ key: 'final', dir: 'desc' });
+    });
+});
+
+describe('fair scoring units', () => {
+    it('scores any majority of the weight as full control, whatever unit the scenario was written in', () => {
+        expect(controlShare(0.5)).toBe(0.5);
+        expect(controlShare(0.52)).toBe(1);
+        expect(computeAttackDifficulty('opportunistic_whale', 0.52).rawScore)
+            .toBe(computeAttackDifficulty('opportunistic_whale', 1).rawScore);
+        expect(computeAttackDifficulty('opportunistic_whale', 0.27).rawScore)
+            .toBeGreaterThan(computeAttackDifficulty('opportunistic_whale', 1).rawScore);
+    });
+
+    it('does not reward a rule for dropping most voters and keeping a few similar ones', () => {
+        const item: GovernanceItem = {
+            title: 'Spread', shortDescription: null, description: null, options: [], links: [],
+            voteCount: null, revoteCount: null, start: 1_700_000_000, deadline: 1_700_500_000,
+            quorum: null, approvalThreshold: 0.5, author: null, parameterLabel: null,
+            elevatedProposalId: null, temperatureCheckId: null, maxSelections: 1, hidden: false, votersStore: null,
+        };
+        const voters: MethodVoter[] = [
+            ...[0, 1, 2].map(i => ({ account: `whale${i}`, choices: [i % 2 ? 'Against' : 'For'], power: 5_000_000, ageDays: 900 })),
+            ...Array.from({ length: 97 }, (_, i) => ({ account: `small${i}`, choices: [i % 2 ? 'Against' : 'For'], power: 2_000 + i * 50, ageDays: 900 })),
+        ];
+        const results = compareMethods(voters, itemChoices('temperature_check', item), item);
+        const whalesOnly = results.find(r => r.key === 'whales_only')!;
+        expect(whalesOnly.counted).toBe(3);
+        // Three equal whales among 100 addresses that voted: 3 % even, not 100 %.
+        expect(whalesOnly.concentration.spread).toBeCloseTo(0.03, 6);
+        const rows = computeMethodScoreRows(results.filter(r => r.counted > 0));
+        const oneAddress = rows.find(r => r.key === 'one_address')!;
+        expect(oneAddress.decentralisationScore).toBe(10);
+        expect(rows.find(r => r.key === 'whales_only')!.decentralisationScore).toBe(0.3);
     });
 });

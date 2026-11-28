@@ -269,9 +269,9 @@ export function ElectionCurrentConclusionsTab({
                     </h3>
                     <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
                         {fill(c.election_current_conclusions_quorum_text ?? '', {
-                            eligible: formatXrd(current.eligibleXrd, language),
+                            eligible: formatXrd(current.quorumXrd, language),
                             quorum: formatXrd(quorum, language),
-                            pct: formatPct(current.eligibleXrd / quorum, language),
+                            pct: formatPct(current.quorumXrd / quorum, language),
                         })}
                     </p>
                 </section>

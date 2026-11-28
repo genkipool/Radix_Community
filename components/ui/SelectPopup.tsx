@@ -57,19 +57,22 @@ interface SelectPopupTabsProps<T extends string> {
   tabs: Array<{ value: T; label: ReactNode; count?: number | string }>;
   active: T;
   onChange: (value: T) => void;
-  onClose: () => void;
-  closeLabel: string;
+  /** With `onClose` and `closeLabel` it is a title bar with the close button; without them, a plain tab row (e.g. as `toolbar`). */
+  onClose?: () => void;
+  closeLabel?: string;
+  /** Accessible name of the tab row. */
+  ariaLabel?: string;
 }
 
-/** A title bar made of tabs (underlined when active) and the close button; pass it as `header`. */
-export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onClose, closeLabel }: SelectPopupTabsProps<T>) {
+/** A row of tabs (underlined when active): pass it as `header` with the close button, or as `toolbar` without it. */
+export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onClose, closeLabel, ariaLabel }: SelectPopupTabsProps<T>) {
   return (
     // The top padding belongs to the tabs (their underline sits on the border),
     // so the close button centres on the whole bar.
     <div className="shrink-0 px-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
       {/* Each tab grows from its own width, so they fill the bar with even gaps;
           tabs that do not fit wrap onto another line instead of hiding behind a scroll. */}
-      <div role="tablist" className="flex flex-wrap gap-x-3 pt-3 flex-1 min-w-0">
+      <div role="tablist" aria-label={ariaLabel} className="flex flex-wrap gap-x-3 pt-3 flex-1 min-w-0">
         {tabs.map((tab) => (
           <button
             key={tab.value}
@@ -77,7 +80,7 @@ export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onCl
             role="tab"
             aria-selected={active === tab.value}
             onClick={() => onChange(tab.value)}
-            className="relative flex-auto py-2 px-1 outline-none flex items-center justify-center group"
+            className="relative flex-auto py-2 px-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 rounded-sm flex items-center justify-center group"
           >
             <span
               className={`text-[10px] font-bold tracking-wider uppercase whitespace-nowrap transition-opacity duration-200 ${
@@ -92,7 +95,7 @@ export function SelectPopupTabs<T extends string>({ tabs, active, onChange, onCl
           </button>
         ))}
       </div>
-      <SelectPopupClose onClick={onClose} label={closeLabel} />
+      {onClose && closeLabel !== undefined && <SelectPopupClose onClick={onClose} label={closeLabel} />}
     </div>
   );
 }

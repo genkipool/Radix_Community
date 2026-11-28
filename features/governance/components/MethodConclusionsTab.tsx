@@ -6,7 +6,7 @@ import {
     Target, PieChart, Crown, ShieldCheck, Scale, ArrowLeftRight, ExternalLink,
 } from 'lucide-react';
 import {
-    balanceScore, effectiveScore, type MethodResult,
+    fairBalanceScore, fairEffectiveScore, type MethodResult,
 } from '../lib/votingMethods';
 import type { HistoricalMethodRow } from '../lib/historicalMethods';
 import { gradeLabel, parseQuantile } from '../lib/majorityJudgment';
@@ -280,10 +280,14 @@ export function MethodSingleConclusionsTab({
     }
 
     const ready = allMethods.filter(m => m.counted > 0);
-    const methodBal = balanceScore(method);
-    const methodEff = effectiveScore(method);
-    const balanceRank = ready.filter(m => balanceScore(m) > methodBal).length + 1;
-    const effectiveRank = ready.filter(m => effectiveScore(m) > methodEff).length + 1;
+    // Same 0..10 resistance score as the ranking table, so ranks and table agree.
+    const q = parseQuantile(gradeQuantile);
+    const balanceOf = (m: MethodResult) => fairBalanceScore(m, q);
+    const effectiveOf = (m: MethodResult) => fairEffectiveScore(m, q);
+    const methodBal = balanceOf(method);
+    const methodEff = effectiveOf(method);
+    const balanceRank = ready.filter(m => balanceOf(m) > methodBal).length + 1;
+    const effectiveRank = ready.filter(m => effectiveOf(m) > methodEff).length + 1;
     const curTotal = current.counted;
     const altTotal = method.counted;
     const curEffStr = current.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 });
@@ -361,9 +365,9 @@ export function MethodSingleConclusionsTab({
     const quorumNode = quorum != null && quorum > 0 ? (
         <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
             {fill(c.method_conc_quorum_text ?? '', {
-                eligible: formatXrd(method.eligibleXrd, language),
+                eligible: formatXrd(method.quorumXrd, language),
                 quorum: formatXrd(quorum, language),
-                pct: formatPct(method.eligibleXrd / quorum, language),
+                pct: formatPct(method.quorumXrd / quorum, language),
             })}
         </p>
     ) : undefined;
@@ -506,9 +510,9 @@ export function MethodSingleConclusionsTab({
 
                 <CompositeScoresFooter
                     quorumNode={quorumNode}
-                    balancePct={formatPct(balanceScore(method), language)}
+                    balancePct={formatPct(methodBal, language)}
                     balanceRank={balanceRank}
-                    effectivePct={formatPct(effectiveScore(method), language)}
+                    effectivePct={formatPct(methodEff, language)}
                     effectiveRank={effectiveRank}
                     totalRanked={ready.length}
                     c={c}
@@ -622,9 +626,9 @@ export function MethodSingleConclusionsTab({
 
             <CompositeScoresFooter
                 quorumNode={quorumNode}
-                balancePct={formatPct(balanceScore(method), language)}
+                balancePct={formatPct(methodBal, language)}
                 balanceRank={balanceRank}
-                effectivePct={formatPct(effectiveScore(method), language)}
+                effectivePct={formatPct(methodEff, language)}
                 effectiveRank={effectiveRank}
                 totalRanked={ready.length}
                 c={c}
@@ -791,14 +795,13 @@ export function MethodHistoricalConclusionsTab({
         </section>
     );
 
-    const avgXrdPerVote = row.votesEvaluated > 0 ? row.totalEligibleXrd / row.votesEvaluated : 0;
     const quorumNode = (
         <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
             {fill(c.method_conc_hist_quorum_text ?? '', {
                 valid: row.validVotesCount.toLocaleString(language),
                 total: totalVotes.toLocaleString(language),
                 pct: formatPct(totalVotes > 0 ? row.validVotesCount / totalVotes : 0, language),
-                xrd: formatXrd(avgXrdPerVote, language),
+                xrd: formatXrd(totalVotes > 0 ? row.totalQuorumXrd / totalVotes : 0, language),
             })}
         </p>
     );

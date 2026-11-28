@@ -130,6 +130,13 @@ export interface MethodSpec {
     headcount?: boolean;
     /** Optional filter for which voters count in the headcount chamber of a double majority. */
     headcountFilter?: (v: MethodVoter) => boolean;
+    /**
+     * The rule leaves voters out for their rank among the other voters (the
+     * largest, the ten largest), not for failing a requirement known in advance
+     * (age, minimum balance, stake): they still took part, so their XRD counts
+     * toward the quorum even though their vote weighs nothing.
+     */
+    quorumCountsExcluded?: boolean;
 }
 
 export const DUST = 1;
@@ -272,8 +279,8 @@ export const METHODS: readonly MethodSpec[] = [
         needsAge: true,
         weigh: v => (isSybilSafe(v) ? Math.sqrt(v.power) : 0),
     },
-    { key: 'no_top1', family: 'hybrid', resistance: 'low', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (v.account === ctx.largest ? 0 : v.power) },
-    { key: 'no_whales', family: 'hybrid', resistance: 'low', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (ctx.whales.has(v.account) ? 0 : v.power) },
+    { key: 'no_top1', family: 'hybrid', resistance: 'low', sybil: CAPITAL, needsAge: false, quorumCountsExcluded: true, weigh: (v, ctx) => (v.account === ctx.largest ? 0 : v.power) },
+    { key: 'no_whales', family: 'hybrid', resistance: 'low', sybil: CAPITAL, needsAge: false, quorumCountsExcluded: true, weigh: (v, ctx) => (ctx.whales.has(v.account) ? 0 : v.power) },
     { key: 'whales_only', family: 'hybrid', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, minXrd: METHOD_PARAMS.whaleMin }, needsAge: false, weigh: v => (v.power >= METHOD_PARAMS.whaleMin ? v.power : 0) },
 ];
 

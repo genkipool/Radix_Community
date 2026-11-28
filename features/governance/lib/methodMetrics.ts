@@ -10,9 +10,10 @@ export interface Concentration {
     /** Fewest voters that together hold more than half of the weight. */
     nakamoto: number | null;
     /**
-     * Degree of decentralisation, 0..1: effective voters over voters (Simpson
-     * evenness, from the Herfindahl index). 1 when every address weighs the
-     * same.
+     * Degree of decentralisation, 0..1: effective voters over every address
+     * that voted (Simpson evenness, from the Herfindahl index), so voters a
+     * rule leaves out count as weighing nothing. 1 when every address that
+     * voted weighs the same.
      */
     spread: number | null;
     /** Voters that would give the same concentration if all weighed the same (1 / Σ share²). */
@@ -36,7 +37,13 @@ export function concentrationLevel({ nakamoto, spread }: Pick<Concentration, 'na
     return 'minimal';
 }
 
-export function concentration(weights: number[]): Concentration {
+/**
+ * Concentration of `weights`. `population` is how many addresses voted
+ * (counted or not); it defaults to the addresses with weight. Dividing by
+ * everyone who voted keeps a rule from looking decentralised just because it
+ * dropped most voters and kept a few similar ones.
+ */
+export function concentration(weights: number[], population?: number): Concentration {
     const w = weights.filter(x => x > 0).sort((a, b) => b - a);
     const total = w.reduce((s, x) => s + x, 0);
     if (total <= 0) return { nakamoto: null, spread: null, effective: 0, top1: 0, top10: 0 };
@@ -49,7 +56,7 @@ export function concentration(weights: number[]): Concentration {
     const sumSq = w.reduce((s, x) => s + (x / total) ** 2, 0);
     return {
         nakamoto,
-        spread: nakamoto === null ? null : 1 / sumSq / w.length,
+        spread: nakamoto === null ? null : 1 / sumSq / Math.max(w.length, population ?? 0),
         effective: 1 / sumSq,
         top1: w[0] / total,
         top10: w.slice(0, 10).reduce((s, x) => s + x, 0) / total,

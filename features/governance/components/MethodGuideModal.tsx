@@ -251,7 +251,7 @@ export function MethodGuideModal({
             c.standard_guide_step2 ?? '',
             target.quorum !== null
                 ? fill(c.standard_guide_step3 ?? '', {
-                    xrd: formatXrd(singleMethod.eligibleXrd, language),
+                    xrd: formatXrd(singleMethod.quorumXrd, language),
                     quorum: formatXrd(target.quorum, language),
                 })
                 : fill(c.standard_guide_step3_no_quorum ?? '', {
@@ -271,7 +271,7 @@ export function MethodGuideModal({
                         ? formatPct(singleMethod.winner.share, language)
                         : '—',
             },
-            { label: c.detail_quorum ?? '', value: `${formatXrd(singleMethod.eligibleXrd, language)} XRD` },
+            { label: c.detail_quorum ?? '', value: `${formatXrd(singleMethod.quorumXrd, language)} XRD` },
             {
                 label: c.detail_spread ?? '',
                 value: singleMethod.concentration.spread !== null ? formatPct(singleMethod.concentration.spread, language) : '—',
@@ -323,11 +323,14 @@ export function MethodGuideModal({
         const enteredCount = consensusTarget.candidates.filter(cand => cand.inSeats && cand.changedFromCurrent).length;
         const droppedCount = consensusTarget.candidates.filter(cand => !cand.inSeats && cand.changedFromCurrent).length;
         const seatsChanged = Math.max(enteredCount, droppedCount);
-        const familyCount = new Set(target.methods.filter(m => m.electionSummary && m.counted > 0).map(m => m.family)).size || 4;
+        const familyCount = consensusTarget.familyCount;
         kicker = c.election_consensus_guide_kicker ?? '';
         intro = fill(c.election_consensus_guide_intro ?? '', { n: nStr });
         steps = [
-            c.election_consensus_guide_step1 ?? '',
+            fill(c.election_consensus_guide_step1 ?? '', {
+                families: consensusTarget.familyCount.toLocaleString(language),
+                pct: formatPct(consensusTarget.familyCount > 0 ? 1 / consensusTarget.familyCount : 0, language),
+            }),
             fill(c.election_consensus_guide_step2 ?? '', { n: nStr }),
             fill(c.election_consensus_guide_step3 ?? '', { n: nStr }),
             fill(c.election_consensus_guide_step4 ?? '', { n: nStr }),
@@ -336,7 +339,7 @@ export function MethodGuideModal({
         liveMetrics = [
             { label: c.col_method ?? '', value: nStr },
             { label: c.fact_seats ?? '', value: consensusTarget.seatCount.toLocaleString(language) },
-            { label: c.election_consensus_live_families ?? '', value: `${formatPct(1 / familyCount, language)} × ${familyCount}` },
+            { label: c.election_consensus_live_families ?? '', value: familyCount > 0 ? `${formatPct(1 / familyCount, language)} × ${familyCount}` : '—' },
             {
                 label: c.election_consensus_live_changed ?? '',
                 value: seatsChanged === 0
@@ -502,6 +505,10 @@ export function MethodGuideModal({
                             metrics={methodResistanceMetricsFromHistorical(target.row, target.totalVotes)}
                             spread={target.row.avgSpread}
                             methodRuleAttack={methodText(c, target.row.key, ruleParams(language)).attack}
+                            historical={{
+                                attacks: target.row.attacks,
+                                scores: target.row.historicalScores,
+                            }}
                             c={c}
                             language={language}
                         />
